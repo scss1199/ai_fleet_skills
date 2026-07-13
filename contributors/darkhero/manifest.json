@@ -5,14 +5,13 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-07-13T09:20:49Z",
-  "manifest_sha": "2c60c8d81c2dbd83",
+  "generated_at": "2026-07-13T09:21:04Z",
+  "manifest_sha": "53260e5708ef868d",
   "required": [
     "ztm-fleet-inbox-absorb",
     "ztm-skill-submit",
     "ztm-git-ship",
     "ztm-web-auth-ops",
-    "ztm-cursor-edge-auth",
     "ztm-goal-compact-enforce",
     "agc-auto-goal-compact",
     "ztm-verify-before-done",
@@ -20,7 +19,7 @@
     "adus-auto-deploy-upgrading-skill",
     "ztm-fleet-intelligence"
   ],
-  "skill_count": 27,
+  "skill_count": 28,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -71,6 +70,12 @@
       "lane": "zero-token-mechanism"
     },
     {
+      "name": "mtm-fleet-skill-github",
+      "sha": "e6947e7e7bafc3c5",
+      "required": false,
+      "lane": "zero-token-mechanism"
+    },
+    {
       "name": "mtm-github-ops",
       "sha": "ec805873aa772342",
       "required": false,
@@ -109,7 +114,7 @@
     {
       "name": "ztm-cursor-edge-auth",
       "sha": "8638664539085429",
-      "required": true,
+      "required": false,
       "lane": "zero-token-mechanism"
     },
     {
