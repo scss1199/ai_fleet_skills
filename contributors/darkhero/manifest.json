@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-07-13T16:23:05Z",
-  "manifest_sha": "2e70b9eb499861fd",
+  "generated_at": "2026-07-13T17:08:50Z",
+  "manifest_sha": "6b41f9f9b670b080",
   "required": [
     "ztm-fleet-inbox-absorb",
     "ztm-skill-submit",
