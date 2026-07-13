@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "generated": "2026-07-10T15:22:35",
+  "required": [
+    "ztm-fleet-inbox-absorb",
+    "ztm-skill-submit",
+    "ztm-git-ship",
+    "ztm-web-auth-ops",
+    "ztm-cursor-edge-auth",
+    "ztm-goal-compact-enforce",
+    "agc-auto-goal-compact",
+    "ztm-verify-before-done",
+    "mtm-mto-first",
+    "adus-auto-deploy-upgrading-skill",
+    "ztm-fleet-intelligence"
+  ],
+  "optional": [
+    "accountability-unblock",
+    "auto-skill-upgrade-deploy",
+    "mtd-judgment-escalation",
+    "mtm-api-pool-offload",
+    "mtm-claude-remnant-cleanup",
+    "mtm-fleet-audit",
+    "mtm-github-ops",
+    "mtm-mte-mint",
+    "pfkt-auto-unblock",
+    "pfkt-parallel-wave",
+    "sso-browser-session",
+    "ztm-fracdigi-psync",
+    "ztm-meta-oauth-console",
+    "ztm-portal-google-sso-edge",
+    "ztm-webapp-verify",
+    "ztm-ziyaoastro-vercel"
+  ],
+  "species": {
+    "MTE": {
+      "full_en": "minimal-token-engine-skill",
+      "zh": "重複動作腳本化技能",
+      "trigger": [
+        "same engine/cmd sequence >=3 per session",
+        "mtm-token-waste-scan skill_gap",
+        "adus-detect repeat_pattern"
+      ],
+      "canonical_skill": "mtm-mte-mint",
+      "engine": "_skill/engines/adus-detect.py",
+      "reflect_question": "這步重複第三次了嗎？→ 能否 MTE 腳本化？"
+    },
+    "VAR": {
+      "full_en": "variant-adaptive-skill",
+      "zh": "同目標不同環境的自適應變體",
+      "trigger": [
+        "web login/oauth/console",
+        "new provider or redirect surface",
+        "browser OOM or tab leak"
+      ],
+      "canonical_skills": [
+        "ztm-web-auth-ops",
+        "ztm-cursor-edge-auth",
+        "ztm-meta-oauth-console"
+      ],
+      "variant_registry": "_registry/auth-variants.json",
+      "reflect_question": "這是又一種網站/權限組合嗎？→ VAR 表要加一行？"
+    },
+    "POOL": {
+      "full_en": "context-offload-api-pool-skill",
+      "zh": "大量 context 外包給 API pool 平行代勞",
+      "trigger": [
+        "bulk read/summarize/classify",
+        "context burn > agc threshold",
+        "free-tier API available in vault"
+      ],
+      "canonical_skill": "mtm-api-pool-offload",
+      "reflect_question": "這步在燒我的 context 嗎？→ POOL 能否代勞？"
+    }
+  },
+  "reflect_triad": [
+    "MTE?",
+    "VAR?",
+    "POOL?"
+  ],
+  "curator": "ai_darkhero"
+}

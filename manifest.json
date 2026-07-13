@@ -1,0 +1,217 @@
+{
+  "schema": 1,
+  "repo": "https://github.com/scss1199/ai_fleet_skills.git",
+  "generated_at": "2026-07-13T07:50:01Z",
+  "contributors": [
+    "darkhero",
+    "scar3"
+  ],
+  "manifests": {
+    "darkhero": "c5459adb47201eef",
+    "scar3": "0000000000000000"
+  },
+  "detail": {
+    "darkhero": {
+      "schema": 1,
+      "authority": "ai_darkhero",
+      "contributor": "darkhero",
+      "role": "upstream_curator",
+      "machine": "darkhero",
+      "repo": "https://github.com/scss1199/ai_fleet_skills.git",
+      "generated_at": "2026-07-13T07:50:01Z",
+      "manifest_sha": "c5459adb47201eef",
+      "required": [
+        "ztm-fleet-inbox-absorb",
+        "ztm-skill-submit",
+        "ztm-git-ship",
+        "ztm-web-auth-ops",
+        "ztm-cursor-edge-auth",
+        "ztm-goal-compact-enforce",
+        "agc-auto-goal-compact",
+        "ztm-verify-before-done",
+        "mtm-mto-first",
+        "adus-auto-deploy-upgrading-skill",
+        "ztm-fleet-intelligence"
+      ],
+      "skill_count": 27,
+      "skills": [
+        {
+          "name": "accountability-unblock",
+          "sha": "faf8f28d4a4e9ebd",
+          "required": false,
+          "lane": "MTD"
+        },
+        {
+          "name": "adus-auto-deploy-upgrading-skill",
+          "sha": "fccce17b3f1988e1",
+          "required": true,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "agc-auto-goal-compact",
+          "sha": "5ea4c82f04b31361",
+          "required": true,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "auto-skill-upgrade-deploy",
+          "sha": "5a543cd79bc18756",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "mtd-judgment-escalation",
+          "sha": "0547978a13e4d388",
+          "required": false,
+          "lane": "MTD"
+        },
+        {
+          "name": "mtm-api-pool-offload",
+          "sha": "d819f187ebdc57fe",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "mtm-claude-remnant-cleanup",
+          "sha": "10fb45a19a4fe37b",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "mtm-fleet-audit",
+          "sha": "dfe10afb39d9724e",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "mtm-github-ops",
+          "sha": "ec805873aa772342",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "mtm-mte-mint",
+          "sha": "cb2723c6893fb821",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "mtm-mto-first",
+          "sha": "8fd2ec7c10880f09",
+          "required": true,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "pfkt-auto-unblock",
+          "sha": "49337780aecd27fe",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "pfkt-parallel-wave",
+          "sha": "a529abdab610f4c2",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "sso-browser-session",
+          "sha": "e2ffd4e42481a5fa",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "ztm-cursor-edge-auth",
+          "sha": "8638664539085429",
+          "required": true,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "ztm-fleet-inbox-absorb",
+          "sha": "8889dc9a607530b3",
+          "required": true,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "ztm-fleet-intelligence",
+          "sha": "2d7921c2bdff936d",
+          "required": true,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "ztm-fracdigi-psync",
+          "sha": "65ab4210aa11bd53",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "ztm-git-ship",
+          "sha": "86507e34c0f4ddd6",
+          "required": true,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "ztm-goal-compact-enforce",
+          "sha": "319f3c81e40fd3ad",
+          "required": true,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "ztm-meta-oauth-console",
+          "sha": "61c4e0a2f5d2a571",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "ztm-portal-google-sso-edge",
+          "sha": "890b0fd82711f00a",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "ztm-skill-submit",
+          "sha": "e23b335c524d03e3",
+          "required": true,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "ztm-verify-before-done",
+          "sha": "e5a885dd6be1f7f7",
+          "required": true,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "ztm-web-auth-ops",
+          "sha": "b8f910ec275701d7",
+          "required": true,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "ztm-webapp-verify",
+          "sha": "bcaf108ca278d93b",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "ztm-ziyaoastro-vercel",
+          "sha": "3d85484fdfcbc703",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        }
+      ]
+    },
+    "scar3": {
+      "schema": 1,
+      "authority": "ai_scar3",
+      "contributor": "scar3",
+      "role": "downstream_curator",
+      "machine": "scar3",
+      "repo": "https://github.com/scss1199/ai_fleet_skills.git",
+      "generated_at": "2026-07-13T00:00:00Z",
+      "manifest_sha": "0000000000000000",
+      "required": [],
+      "skill_count": 0,
+      "skills": []
+    }
+  },
+  "union_sha": "947521be978d5bcf"
+}
