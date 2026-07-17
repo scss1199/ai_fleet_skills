@@ -24,7 +24,7 @@
 | **jci_taipei** | GAS SSO 白名單 | N/A | `chrome_ctx.py` CDP + LINE Console | N/A | N/A | Sheets | CDP + GAS | USE |
 | **ai_darkhero** | N/A | N/A | `line/*` tunnel/webhook/reconfigure | N/A | LINE HMAC selftest | N/A | API + CDP | USE |
 | **ai_news** | N/A | N/A | ingest webhook（fork line 殼） | N/A | `webhook_selftest.py` | N/A | API | USE |
-| **ai_busker** | N/A | N/A | N/A | N/A | N/A | N/A | Edge persistent iSSO | USE |
+| **ai_busker** | Next.js dedicated `ai-busker-web` / iron-wave | Cursor MCP GCP Console | N/A | `vercel-env-sync.py` + npx vercel | N/A | N/A | Google SSO + gov iSSO realm | USE |
 | **ai_metadata** | N/A | N/A | N/A | N/A | N/A | N/A | `login_webview.py` + `social-login.py` | USE |
 | **ai_trader** | N/A | N/A | N/A | N/A | N/A | N/A | `web-page-atlas` + 手動 Chrome | USE |
 | **ai_ziyaoastro** | FastAPI OAuth2（產品端 SSO） | N/A | N/A | `ztm-ziyaoastro-vercel` skill | N/A | N/A | vercel CLI | USE |
@@ -109,9 +109,15 @@
 
 | 場景 | 路徑 | 判定 |
 |------|------|------|
-| tpbusker iSSO | `sso_browser.py` realm `gov.isso.tpbusker` | USE |
+| Product Google SSO | https://ai-busker.vercel.app/ + dedicated client `ai-busker-web` | USE |
+| OAuth SSOT | `web/config/gcp_oauth.json` (GCP `iron-wave-466411-v5`) | USE |
+| Vercel env | `web/scripts/vercel-env-sync.py` | USE |
+| GCP Audience/URI | Cursor browser MCP → Console（禁 Windows Chrome/CDP） | USE |
+| Meta / LINE product OAuth | — | N/A（本 seat 無 Meta 池／LINE Messaging） |
+| tpbusker.gov lottery iSSO | `sso_browser.py` realm `gov.isso.tpbusker` | USE |
 | Profile | `_secrets/browser-profiles/gov.isso.tpbusker/` | USE |
-| 瀏覽器 | Playwright `channel=msedge` | USE |
+| Lottery browser | Playwright `channel=msedge`（政府站自動化；**非** Google product OAuth UI） | USE |
+| Windows Chrome 做 Google SSO | — | AVOID |
 
 ### ai_metadata
 

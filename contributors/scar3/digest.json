@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-07-14T13:20:46",
+  "generated": "2026-07-17T12:13:06",
   "required": [
     "ztm-fleet-inbox-absorb",
     "ztm-skill-submit",
@@ -23,6 +23,7 @@
     "mtm-fleet-skill-github",
     "mtm-github-ops",
     "mtm-mte-mint",
+    "mtm-obsidian-wiki",
     "pfkt-auto-unblock",
     "pfkt-parallel-wave",
     "sso-browser-session",
@@ -30,6 +31,7 @@
     "ztm-fracdigi-psync",
     "ztm-meta-oauth-console",
     "ztm-portal-google-sso-edge",
+    "ztm-web-stack",
     "ztm-webapp-verify",
     "ztm-ziyaoastro-vercel"
   ],
