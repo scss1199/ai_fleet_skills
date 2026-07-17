@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "authority": "ai_scar3",
-  "contributor": "scar3",
-  "role": "downstream_curator",
-  "machine": "scar3",
+  "authority": "ai_darkhero",
+  "contributor": "darkhero",
+  "role": "upstream_curator",
+  "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-07-17T04:12:07Z",
-  "manifest_sha": "df51993ab6e69f36",
+  "generated_at": "2026-07-13T17:08:50Z",
+  "manifest_sha": "6b41f9f9b670b080",
   "required": [
     "ztm-fleet-inbox-absorb",
     "ztm-skill-submit",

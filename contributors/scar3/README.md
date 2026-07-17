@@ -1,13 +1,9 @@
-# scar3 contributor
+# Contributor `scar3`
 
-Skills uploaded from **scar3** machine (`ai_scar3` curator).
+- **Seat:** `ai_scar3`
+- **Machine:** `scar3`
+- **Generated:** 2026-07-17T04:12:07Z
+- **Skills:** 28
+- **Manifest SHA:** `df51993ab6e69f36`
 
-```powershell
-python %AI_WORKSPACE%\_skill\engines\mtm-fleet-skill-github.py push --node ai_scar3
-```
-
-Pull upstream from darkhero first:
-
-```powershell
-python %AI_WORKSPACE%\_skill\engines\mtm-fleet-skill-github.py pull --node ai_scar3
-```
+Shared repo layout: `contributors/darkhero/` · `contributors/scar3/`
