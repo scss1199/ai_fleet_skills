@@ -1,7 +1,8 @@
 {
   "schema": 1,
-  "generated": "2026-07-17T14:01:57",
+  "generated": "2026-07-17T16:02:29",
   "required": [
+    "aex-agent-evolution",
     "ztm-fleet-inbox-absorb",
     "ztm-skill-submit",
     "ztm-git-ship",
@@ -16,6 +17,8 @@
   "optional": [
     "accountability-unblock",
     "auto-skill-upgrade-deploy",
+    "aware-dual-field",
+    "hubpulse-ops",
     "mtd-judgment-escalation",
     "mtm-api-pool-offload",
     "mtm-claude-remnant-cleanup",
@@ -24,6 +27,7 @@
     "mtm-github-ops",
     "mtm-mte-mint",
     "mtm-obsidian-wiki",
+    "mtm-token-ladder",
     "pfkt-auto-unblock",
     "pfkt-parallel-wave",
     "sso-browser-session",
