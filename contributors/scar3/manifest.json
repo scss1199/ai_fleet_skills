@@ -5,9 +5,10 @@
   "role": "downstream_curator",
   "machine": "scar3",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-07-17T06:01:07Z",
-  "manifest_sha": "b7fe59a77a93dd82",
+  "generated_at": "2026-07-17T08:01:43Z",
+  "manifest_sha": "67ad2b3a5770e895",
   "required": [
+    "aex-agent-evolution",
     "ztm-fleet-inbox-absorb",
     "ztm-skill-submit",
     "ztm-git-ship",
