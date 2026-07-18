@@ -12,6 +12,8 @@ metadata:
     token_budget: zero
     engine: _skill/engines/mtm-fleet-skill-github.py
     registry: _registry/fleet-skill-github.json
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # mtm-fleet-skill-github — 共享 skill repo（雙機分目錄）

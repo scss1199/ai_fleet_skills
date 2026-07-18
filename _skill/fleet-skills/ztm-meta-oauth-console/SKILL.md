@@ -9,6 +9,8 @@ metadata:
     lane: zero-token-mechanism
     project: new.messages.fracdigi.com
     meta_oauth_browser: cursor-edge
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # ztm-meta-oauth-console — psync Meta 池 OAuth

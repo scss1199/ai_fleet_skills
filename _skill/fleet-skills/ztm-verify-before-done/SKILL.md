@@ -7,6 +7,8 @@ metadata:
     secrets: none
     scheduler: session
     token_budget: low
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # ztm-verify-before-done — 宣稱完成前的機械審查

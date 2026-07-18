@@ -14,6 +14,8 @@ metadata:
     engine: _skill/engines/mtm-claude-tick.py
     registry: _registry/mtm-claude-cleanup-protocol.json
     seat: ai_darkhero
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # mtm-claude-remnant-cleanup

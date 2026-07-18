@@ -15,6 +15,8 @@ metadata:
     parent: ztm-cursor-edge-auth
     engine: _skill/engines/mtm-portal-sso-verify.py
     registry: _registry/portal-sso-edge-protocol.json
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # Portal Google SSO — Cursor Edge（ai-darkhero.vercel.app）

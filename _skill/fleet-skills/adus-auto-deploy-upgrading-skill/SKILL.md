@@ -14,6 +14,8 @@ metadata:
     engine: _skill/engines/adus-deploy.py
     registry: _registry/adus-protocol.json
     lexicon: _registry/fleet-lexicon.json
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # ADUS — 自動部署型自我進化技能

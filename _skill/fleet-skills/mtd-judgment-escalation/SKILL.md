@@ -7,6 +7,8 @@ metadata:
     secrets: schema-only
     scheduler: session
     token_budget: judgment
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # mtd-judgment-escalation — 何時該用 token（MTD lane）
