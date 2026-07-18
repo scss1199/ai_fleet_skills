@@ -15,6 +15,8 @@ metadata:
     species: VAR
     parent: ztm-web-auth-ops
     registry: _registry/fleet-browser-auth-mandate.json
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # VAR — Cursor 內建瀏覽器認證（全艦 OAuth 唯一表面）

@@ -12,6 +12,8 @@ metadata:
     required: true
     engine: _skill/engines/mtm-token-waste-scan.py
     registry: _registry/mtm-protocol.json
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # mtm-mto-first — 機械先行（止 TRN 燒 token）

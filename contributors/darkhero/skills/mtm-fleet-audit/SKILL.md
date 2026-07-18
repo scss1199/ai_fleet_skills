@@ -13,6 +13,8 @@ metadata:
     required: false
     engine: _skill/engines/mtm-fleet-audit.py
     registry: _registry/mtm-protocol.json
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # mtm-fleet-audit — 全艦最少 token 審計

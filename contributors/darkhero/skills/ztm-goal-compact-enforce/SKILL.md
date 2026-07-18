@@ -13,6 +13,8 @@ metadata:
     required: true
     engine: _skill/engines/ztm-session-brief.py
     registry: _registry/ztm-enforce.json
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # ztm-goal-compact-enforce — 目標壓縮（必讀）

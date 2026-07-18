@@ -17,6 +17,8 @@ metadata:
       - mtm-wiki-absorb
       - mtm-wiki-onepkg
       - mtm-wiki-digest
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # mtm-obsidian-wiki — Wiki-first MTM（TR0）

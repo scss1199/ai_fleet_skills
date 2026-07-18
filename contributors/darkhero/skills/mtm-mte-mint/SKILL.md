@@ -14,6 +14,8 @@ metadata:
     species: MTE
     engine: _skill/engines/adus-detect.py
     registry: _registry/skill-taxonomy.json
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # MTE — 重複動作腳本化（Minimal Token Engine Skill）

@@ -7,6 +7,8 @@ metadata:
     secrets: operator-gated
     scheduler: session
     token_budget: zero
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # ztm-fracdigi-psync — new.messages ship（高爭議 seat 專用）
