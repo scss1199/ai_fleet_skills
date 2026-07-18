@@ -13,6 +13,8 @@ metadata:
     concept_id: POOL_OFFLOAD
     species: POOL
     registry: _registry/skill-taxonomy.json
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # POOL — Context 外包（API Pool Offload）

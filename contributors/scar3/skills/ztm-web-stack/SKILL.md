@@ -14,6 +14,8 @@ metadata:
     concept_id: WEBSTACK
     engine: _skill/engines/web-stack-route.py
     registry: _registry/web-stack-matrix.json
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # ztm-web-stack — 全艦網站／OAuth／Webhook／API 統整

@@ -12,6 +12,8 @@ metadata:
     required: false
     engine: _skill/engines/pfkt-wave.py
     registry: _registry/parallel-gates.json
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # pfkt-parallel-wave — 平行 PFKT wave（ZT）

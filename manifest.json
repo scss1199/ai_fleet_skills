@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-07-18T20:03:14Z",
+  "generated_at": "2026-07-18T22:03:08Z",
   "contributors": [
     "darkhero",
     "scar3"
   ],
   "manifests": {
     "darkhero": "a47bbc090f959d93",
-    "scar3": "90a41bc96d456cc3"
+    "scar3": "e79392106acb62d8"
   },
   "detail": {
     "darkhero": {
@@ -248,8 +248,8 @@
       "role": "downstream_curator",
       "machine": "scar3",
       "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-      "generated_at": "2026-07-18T12:01:10Z",
-      "manifest_sha": "90a41bc96d456cc3",
+      "generated_at": "2026-07-18T22:03:08Z",
+      "manifest_sha": "e79392106acb62d8",
       "required": [
         "aex-agent-evolution",
         "ztm-fleet-inbox-absorb",
@@ -263,7 +263,7 @@
         "adus-auto-deploy-upgrading-skill",
         "ztm-fleet-intelligence"
       ],
-      "skill_count": 30,
+      "skill_count": 34,
       "skills": [
         {
           "name": "accountability-unblock",
@@ -273,13 +273,19 @@
         },
         {
           "name": "adus-auto-deploy-upgrading-skill",
-          "sha": "fccce17b3f1988e1",
+          "sha": "faf184e9ecc61858",
+          "required": true,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "aex-agent-evolution",
+          "sha": "4a9c3001cffd495a",
           "required": true,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "agc-auto-goal-compact",
-          "sha": "5ea4c82f04b31361",
+          "sha": "881779f57bf6321f",
           "required": true,
           "lane": "zero-token-mechanism"
         },
@@ -290,68 +296,86 @@
           "lane": "zero-token-mechanism"
         },
         {
+          "name": "aware-dual-field",
+          "sha": "d3a55e4a16f3104b",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "hubpulse-ops",
+          "sha": "aa656b74fed9cecc",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
           "name": "mtd-judgment-escalation",
-          "sha": "0547978a13e4d388",
+          "sha": "c5b95198818e809d",
           "required": false,
           "lane": "MTD"
         },
         {
           "name": "mtm-api-pool-offload",
-          "sha": "d819f187ebdc57fe",
+          "sha": "71b294c39cc54e10",
           "required": false,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "mtm-claude-remnant-cleanup",
-          "sha": "10fb45a19a4fe37b",
+          "sha": "bd0fad2975c4c7dd",
           "required": false,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "mtm-fleet-audit",
-          "sha": "dfe10afb39d9724e",
+          "sha": "2887239f36d9f7f5",
           "required": false,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "mtm-fleet-skill-github",
-          "sha": "e6947e7e7bafc3c5",
+          "sha": "6b7b2417865549c7",
           "required": false,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "mtm-github-ops",
-          "sha": "ec805873aa772342",
+          "sha": "294596e0625c974c",
           "required": false,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "mtm-mte-mint",
-          "sha": "cb2723c6893fb821",
+          "sha": "87485b52f0040b9e",
           "required": false,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "mtm-mto-first",
-          "sha": "8fd2ec7c10880f09",
+          "sha": "b69a2b8c078e82bb",
           "required": true,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "mtm-obsidian-wiki",
-          "sha": "bf4a0b8e3d152fd7",
+          "sha": "9f6e696c7aa4815e",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "mtm-token-ladder",
+          "sha": "866acf2908d337fa",
           "required": false,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "pfkt-auto-unblock",
-          "sha": "49337780aecd27fe",
+          "sha": "bbf3a1ffefff038b",
           "required": false,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "pfkt-parallel-wave",
-          "sha": "a529abdab610f4c2",
+          "sha": "61a3d7a82ceefcff",
           "required": false,
           "lane": "zero-token-mechanism"
         },
@@ -363,90 +387,90 @@
         },
         {
           "name": "ztm-cursor-edge-auth",
-          "sha": "8638664539085429",
+          "sha": "4fb7443dd6c99b51",
           "required": false,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "ztm-fleet-inbox-absorb",
-          "sha": "8889dc9a607530b3",
+          "sha": "472799b82807ea19",
           "required": true,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "ztm-fleet-intelligence",
-          "sha": "2d7921c2bdff936d",
+          "sha": "4bce3ef9f27712ab",
           "required": true,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "ztm-fracdigi-psync",
-          "sha": "65ab4210aa11bd53",
+          "sha": "721b3c84f11c61ff",
           "required": false,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "ztm-git-ship",
-          "sha": "86507e34c0f4ddd6",
+          "sha": "763b5727f9bc59b1",
           "required": true,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "ztm-goal-compact-enforce",
-          "sha": "319f3c81e40fd3ad",
+          "sha": "0f5a161e39d17287",
           "required": true,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "ztm-meta-oauth-console",
-          "sha": "61c4e0a2f5d2a571",
+          "sha": "d1178c1bf8cec380",
           "required": false,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "ztm-portal-google-sso-edge",
-          "sha": "890b0fd82711f00a",
+          "sha": "acb836a7edaa795f",
           "required": false,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "ztm-skill-submit",
-          "sha": "e23b335c524d03e3",
+          "sha": "6dc6d2bdd9275b9d",
           "required": true,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "ztm-verify-before-done",
-          "sha": "e5a885dd6be1f7f7",
+          "sha": "c2e4d81b0d26cd88",
           "required": true,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "ztm-web-auth-ops",
-          "sha": "b8f910ec275701d7",
+          "sha": "c1cb827bf65f41ca",
           "required": true,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "ztm-web-stack",
-          "sha": "f80d5c0ade2966de",
+          "sha": "d5b8a41291edcefe",
           "required": false,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "ztm-webapp-verify",
-          "sha": "bcaf108ca278d93b",
+          "sha": "0f81731ba5d54b15",
           "required": false,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "ztm-ziyaoastro-vercel",
-          "sha": "3d85484fdfcbc703",
+          "sha": "08d00c100191adf0",
           "required": false,
           "lane": "zero-token-mechanism"
         }
       ]
     }
   },
-  "union_sha": "f55912dd3e58b552"
+  "union_sha": "c75315400f3b355e"
 }

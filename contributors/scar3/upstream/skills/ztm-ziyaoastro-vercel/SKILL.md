@@ -7,6 +7,8 @@ metadata:
     secrets: none
     scheduler: session
     token_budget: zero
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # ztm-ziyaoastro-vercel — Vercel 首 deploy（Fly 退役）

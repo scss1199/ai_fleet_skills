@@ -20,6 +20,8 @@ metadata:
       - ztm-meta-oauth-console
       - sso-browser-session
       - ztm-webapp-verify
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # ztm-web-auth-ops — 全艦網頁登入／設定（必讀）

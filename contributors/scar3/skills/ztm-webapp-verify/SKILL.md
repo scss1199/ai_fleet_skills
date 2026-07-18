@@ -7,6 +7,8 @@ metadata:
     secrets: none
     scheduler: session
     token_budget: low
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 <!-- fleet-import: anthropics/skills/webapp-testing · vetted 2026-07-05 · scripts/ NOT imported -->

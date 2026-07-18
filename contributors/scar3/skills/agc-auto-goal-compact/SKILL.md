@@ -13,6 +13,8 @@ metadata:
     required: true
     engine: _skill/engines/agc-compact.py
     registry: _registry/agc-protocol.json
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # agc-auto-goal-compact — 自動目標壓縮（必讀）

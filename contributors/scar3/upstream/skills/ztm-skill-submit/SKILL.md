@@ -7,6 +7,8 @@ metadata:
     secrets: none
     scheduler: session
     token_budget: zero
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # ztm-skill-submit — 回寫 skill 給 hub curator（0-token）

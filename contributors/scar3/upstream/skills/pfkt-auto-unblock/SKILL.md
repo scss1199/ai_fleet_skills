@@ -12,6 +12,8 @@ metadata:
     required: false
     engine: _skill/engines/auto-gate-unblock.py
     registry: _registry/auto-gate-protocol.json
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # pfkt-auto-unblock — gate 強制 remediation（ZT）

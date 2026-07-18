@@ -13,6 +13,8 @@ metadata:
     concept_id: FLEET_INTEL
     engine: _skill/engines/fleet-intelligence-gen.py
     registry: _registry/skill-taxonomy.json
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # Fleet Intelligence — 全艦變聰明（被動吸收）

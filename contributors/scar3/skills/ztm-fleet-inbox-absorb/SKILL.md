@@ -7,6 +7,8 @@ metadata:
     secrets: none
     scheduler: hybrid
     token_budget: zero
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # ZCT fleet-inbox-absorb — 全艦 A2A（HubClock 背景，零 operator 步驟）

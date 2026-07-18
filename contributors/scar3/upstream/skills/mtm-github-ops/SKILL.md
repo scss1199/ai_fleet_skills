@@ -13,6 +13,8 @@ metadata:
     required: false
     engine: _skill/engines/mtm-github-fleet-scan.py
     registry: _registry/mtm-protocol.json
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
 # mtm-github-ops — MTM GitHub 機械先行
