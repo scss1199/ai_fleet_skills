@@ -57,16 +57,3 @@ SSOT：`_registry/ztm-task-routes.json` · `_registry/workspace-seat-contract.js
 - Full charter: `C:\ai_workspace\ai_fleet_skills/CLAUDE.md`
 
 <!-- truncated to 4KB -->
-
-<!-- SEAT-SPEC:BEGIN (MTM seat contract; edit via hub portal or here) -->
-## 五段落 SEAT-SPEC — standing work contract (MTM)
-Single source of truth: **this block** in AGENTS.md.
-See `mtm-token-ladder` / `fleet-token-ladder.py show` — do not re-teach PPTT.
-P = Outcome, measured by Verification.
-
-- **1 Outcome (= P, the goal functional)** -- Operate this hub seat with verified outcomes (portal light / claim-linter / ship evidence when claimed).
-- **2 Verification** -- fleet-compliance green or amber without blocking; zat-verify-gate on done; inbox absorb→execute→ack.
-- **3 Constraints (project-specific red lines; hub-global rules are inherited)** -- AGENTS.md charter; HubClock only (no schtasks); no secrets in chat; Cursor Edge for OAuth/SSO.
-- **4 Iteration** -- MTO prework+router; PFKT for multi-step; park via goal_compact at milestones.
-- **5 Error handling** -- On red/deny: fleet-mech-remediate + fix remaining flags; never fake-delivery (P unverified).
-<!-- SEAT-SPEC:END -->
