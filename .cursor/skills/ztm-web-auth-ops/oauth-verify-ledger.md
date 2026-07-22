@@ -71,3 +71,6 @@ node scripts/oauth-verify-log.mjs --provider=meta --account=scss1199@gmail.com -
 ```
 
 Required fields: `provider`, `account`, `surface`, `result` (`pass`|`fail`|`blocked`|`fixed`), `browser` (`cursor-edge`).
+
+| 2026-07-22 | Instagram phone login loop | scss1199 | Cursor IDE browser → Accounts Center → Add IG (ig_linking) | **BLOCKED / HANDOFF** | AC only had FB; IG not linked; email reset=No account; username prefilled scss1199; agent no password; operator enter IG password in Cursor browser then confirm link |
+
