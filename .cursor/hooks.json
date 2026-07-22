@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py C:\\ai_workspace\\_skill\\engines\\hooks\\session-start-notice.ps1",
+        "timeout": 20
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-session-inbox.py",
+        "timeout": 20
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-agent-session-open.py",
+        "timeout": 90
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-mtm-session-inject.py",
+        "timeout": 15
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-agc-session-inject.py",
+        "timeout": 15
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-adus-session-hint.py",
+        "timeout": 10
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-fleet-inbox-auto.py",
+        "timeout": 15
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-mtm-mto-remind.py",
+        "timeout": 12
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-mtm-hot-inject.py",
+        "timeout": 20
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-agc-auto-compact.py",
+        "timeout": 18
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-auto-gate-unblock.py",
+        "timeout": 18
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-a2a-read-gate.py",
+        "timeout": 12
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-accountability-gate.py",
+        "timeout": 12
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py C:\\ai_workspace\\_skill\\engines\\hooks\\prework-gate.ps1",
+        "timeout": 15
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py C:\\ai_workspace\\_skill\\engines\\hooks\\claim-linter-gate.ps1",
+        "timeout": 12
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-ztm-broad-gate.py",
+        "timeout": 12
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-pfkt-gate.py",
+        "timeout": 12
+      }
+    ],
+    "preCompact": [
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py C:\\ai_workspace\\_skill\\engines\\hooks\\compaction-guard.ps1",
+        "timeout": 12
+      }
+    ],
+    "stop": [
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py C:\\ai_workspace\\_skill\\engines\\hooks\\claim-linter-gate.ps1",
+        "timeout": 15
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\log_session.py",
+        "timeout": 25
+      }
+    ],
+    "subagentStop": [
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py C:\\ai_workspace\\_skill\\engines\\hooks\\claim-linter-gate.ps1",
+        "timeout": 15
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\log_session.py",
+        "timeout": 25
+      }
+    ]
+  }
+}
