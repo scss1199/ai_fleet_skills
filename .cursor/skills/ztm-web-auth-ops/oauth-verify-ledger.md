@@ -74,3 +74,6 @@ Required fields: `provider`, `account`, `surface`, `result` (`pass`|`fail`|`bloc
 
 | 2026-07-22 | Instagram phone login loop | scss1199 | Cursor IDE browser → Accounts Center → Add IG (ig_linking) | **BLOCKED / HANDOFF** | AC only had FB; IG not linked; email reset=No account; username prefilled scss1199; agent no password; operator enter IG password in Cursor browser then confirm link |
 
+
+| 2026-07-23 | Instagram update_risky_contactpoint | scss1199 / heartlink.tw | Cursor browser AC add email → IG home | **PASS** | Added heartlink.tw@gmail.com; challenge cleared; landed instagram.com feed |
+
