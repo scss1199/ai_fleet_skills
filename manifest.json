@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-07-26T14:03:11Z",
+  "generated_at": "2026-07-26T14:29:01Z",
   "contributors": [
     "darkhero",
     "scar3"
   ],
   "manifests": {
     "darkhero": "72cd3b7131109d79",
-    "scar3": "12d82527d1f0a72a"
+    "scar3": "71f97b242f3e0ae7"
   },
   "detail": {
     "darkhero": {
@@ -248,8 +248,8 @@
       "role": "downstream_curator",
       "machine": "scar3",
       "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-      "generated_at": "2026-07-26T14:03:11Z",
-      "manifest_sha": "12d82527d1f0a72a",
+      "generated_at": "2026-07-26T14:29:01Z",
+      "manifest_sha": "71f97b242f3e0ae7",
       "required": [
         "aex-agent-evolution",
         "ztm-fleet-inbox-absorb",
@@ -472,5 +472,5 @@
       ]
     }
   },
-  "union_sha": "9fd69f9f947f0516"
+  "union_sha": "bc3539d58e466cfc"
 }
