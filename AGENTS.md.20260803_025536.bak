@@ -4,8 +4,6 @@
 # ai_fleet_skills — Cursor bootstrap (≤4KB)
 
 > Identity + mandate load only when **cwd = `C:/ai_workspace/ai_fleet_skills`**. Hub root `C:\ai_workspace` silently makes you `ai_master`.
-> **THIS file is the seat charter.** `CLAUDE.md` starts with `@AGENTS.md`, so Claude and Codex read the same bytes.
-> (Kept high in the file on purpose: the bootstrap is truncated at 4KB, and 7 seats' content pushes the tail past the cut.)
 
 ## Session open (ZTM — SessionStart 三層 hook)
 
@@ -61,6 +59,8 @@ SSOT：`_registry/ztm-task-routes.json` · `_registry/workspace-seat-contract.js
        Templating this to ai_fleet_skills.html was tried 2026-08-03 and reverted — it produced
        19 dead links, since only ai_darkhero.html and ai_master.html exist on disk. -->
 
+- Claude entry point: `C:\ai_workspace\ai_fleet_skills/CLAUDE.md` — a one-line `@AGENTS.md` import, because
+  Claude Code reads CLAUDE.md and Codex reads AGENTS.md. THIS file is the charter; the
 
 <!-- truncated to 4KB -->
 
