@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-08-04T00:03:34",
+  "generated": "2026-08-04T02:03:25",
   "required": [
     "aex-agent-evolution",
     "ztm-fleet-inbox-absorb",
@@ -31,6 +31,7 @@
     "pfkt-auto-unblock",
     "pfkt-parallel-wave",
     "sso-browser-session",
+    "token-preflight",
     "ztm-cursor-edge-auth",
     "ztm-fracdigi-psync",
     "ztm-meta-oauth-console",

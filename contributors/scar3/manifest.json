@@ -5,8 +5,8 @@
   "role": "downstream_curator",
   "machine": "scar3",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-03T18:03:10Z",
-  "manifest_sha": "a0c1dae7e96790d1",
+  "generated_at": "2026-08-03T18:29:05Z",
+  "manifest_sha": "b9e52f8a3e74950f",
   "required": [
     "aex-agent-evolution",
     "ztm-fleet-inbox-absorb",
@@ -20,7 +20,7 @@
     "adus-auto-deploy-upgrading-skill",
     "ztm-fleet-intelligence"
   ],
-  "skill_count": 34,
+  "skill_count": 35,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -141,6 +141,12 @@
       "sha": "e2ffd4e42481a5fa",
       "required": false,
       "lane": "zero-token-mechanism"
+    },
+    {
+      "name": "token-preflight",
+      "sha": "9a49a91bd4d6a708",
+      "required": false,
+      "lane": null
     },
     {
       "name": "ztm-cursor-edge-auth",
