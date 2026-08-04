@@ -64,8 +64,9 @@ Produce a working public URL, not a placeholder page. Preserve the application's
    - Do not embed secrets in `wrangler.jsonc`, source files, shell history, or chat.
    - Update OAuth callbacks to the exact public URL only after the Worker itself passes public smoke tests.
    - Select the OAuth provider client by the deployed runtime `GOOGLE_CLIENT_ID`; do not assume a preferred client named in repository metadata is active.
-   - For Google web clients, add the exact `https://<worker>.<account-subdomain>.workers.dev` origin and the exact `/api/auth/callback` redirect URI. Verify `/api/auth/login` reaches the Google account chooser without `redirect_uri_mismatch`.
-   - Reaching the account chooser proves the callback registration, not a completed application login. Claim full SSO only after a secure authenticated browser flow returns to the application; if secure browser authentication is unavailable, report that boundary without requesting credentials in chat.
+   - Inspect the redirect URI emitted by the deployed login button. For Firebase same-origin auth, register the hostname in Firebase Authentication `authorizedDomains` and add `https://<host>/__/auth/handler` to the matching Google web client. If the application also runs a server OAuth route, separately add its exact emitted callback such as `https://<host>/api/auth/google/callback`.
+   - Do not trust a `prompt=none` or signed-out OAuth probe as final proof: Google may reach an account chooser and still reject the URI after account selection or while configuration propagates. Verify the exact URI is visible in the provider console, then run a secure authenticated browser flow through account selection and back to the application.
+   - Reaching the account chooser proves only the initial authorization request. Claim full SSO only after the browser returns to the application with a valid application session; if secure browser authentication is unavailable, report that boundary without requesting credentials in chat.
 
 5. Run local workerd and verify real application routes. Prefer the process-safe wrapper so Windows child processes cannot retain `.open-next` locks:
 
