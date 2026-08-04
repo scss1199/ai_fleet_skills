@@ -1,6 +1,12 @@
 ---
 name: deploy-nextjs-cloudflare
 description: Deploy existing Next.js applications to Cloudflare Workers with OpenNext using a shared, AI_WORKSPACE-only, local-build-first workflow, including workers.dev naming, isolated migration, environment-secret handling, local workerd checks, public smoke tests, and MTM/PFKT evidence. Use when any model or agent moves a Next.js project from Vercel or another host to Cloudflare Workers, creates a free workers.dev deployment, avoids hosted build-minute usage, or repairs and repeats that deployment workflow.
+metadata:
+  fleet:
+    lane: ZTM
+    secrets: vault-schema-only
+    scheduler: on-demand
+    token_budget: low
 ---
 
 # Deploy Next.js to Cloudflare Workers
