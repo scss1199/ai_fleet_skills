@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-08-04T14:03:31",
+  "generated": "2026-08-04T16:04:12",
   "required": [
     "aex-agent-evolution",
     "ztm-fleet-inbox-absorb",
@@ -18,6 +18,7 @@
     "accountability-unblock",
     "auto-skill-upgrade-deploy",
     "aware-dual-field",
+    "deploy-nextjs-cloudflare",
     "hubpulse-ops",
     "mtd-judgment-escalation",
     "mtm-api-pool-offload",
