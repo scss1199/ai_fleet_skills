@@ -67,6 +67,7 @@ Produce a working public URL, not a placeholder page. Preserve the application's
    - Inspect the redirect URI emitted by the deployed login button. For Firebase same-origin auth, register the hostname in Firebase Authentication `authorizedDomains` and add `https://<host>/__/auth/handler` to the matching Google web client. If the application also runs a server OAuth route, separately add its exact emitted callback such as `https://<host>/api/auth/google/callback`.
    - Do not trust a `prompt=none` or signed-out OAuth probe as final proof: Google may reach an account chooser and still reject the URI after account selection or while configuration propagates. Verify the exact URI is visible in the provider console, then run a secure authenticated browser flow through account selection and back to the application.
    - Reaching the account chooser proves only the initial authorization request. Claim full SSO only after the browser returns to the application with a valid application session; if secure browser authentication is unavailable, report that boundary without requesting credentials in chat.
+   - Firebase Admin remote Auth operations may fail inside workerd even when the same service-account key succeeds locally. If `setCustomUserClaims`, `createSessionCookie`, or `verifySessionCookie(..., true)` fails after the OAuth callback, keep RSA signing local and call the documented Identity Toolkit REST endpoints with a short-lived service-account access token. Preserve security by verifying the session signature and checking `disabled` plus `validSince`; never bypass verification merely to make login appear successful.
 
 5. Run local workerd and verify real application routes. Prefer the process-safe wrapper so Windows child processes cannot retain `.open-next` locks:
 
@@ -109,6 +110,7 @@ For fleet-wide non-fracdigi migrations, start from `%AI_WORKSPACE%\_skill\fleet-
 - Local workerd routes passed.
 - Public routes returned expected statuses and Cloudflare served the response.
 - A browser inspection showed the actual application UI.
+- If authentication exists, a real signed-in browser returned to the application and remained signed in after reopening the root URL.
 - `quick_validate.py` passed for this skill.
 - The PFKT fragment was completed with the public verification output as evidence.
 
