@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-04T16:59:17Z",
+  "generated_at": "2026-08-04T17:44:01Z",
   "contributors": [
     "darkhero",
     "scar3"
   ],
   "manifests": {
     "darkhero": "393dfc5a38e119a3",
-    "scar3": "62753c53481af6be"
+    "scar3": "e475d2076a36ec9a"
   },
   "detail": {
     "darkhero": {
@@ -260,8 +260,8 @@
       "role": "downstream_curator",
       "machine": "scar3",
       "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-      "generated_at": "2026-08-04T16:07:13Z",
-      "manifest_sha": "62753c53481af6be",
+      "generated_at": "2026-08-04T17:44:01Z",
+      "manifest_sha": "e475d2076a36ec9a",
       "required": [
         "aex-agent-evolution",
         "ztm-fleet-inbox-absorb",
@@ -275,7 +275,7 @@
         "adus-auto-deploy-upgrading-skill",
         "ztm-fleet-intelligence"
       ],
-      "skill_count": 35,
+      "skill_count": 36,
       "skills": [
         {
           "name": "accountability-unblock",
@@ -310,6 +310,12 @@
         {
           "name": "aware-dual-field",
           "sha": "d3a55e4a16f3104b",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "deploy-nextjs-cloudflare",
+          "sha": "6bc8e7f8cf8450de",
           "required": false,
           "lane": "zero-token-mechanism"
         },
@@ -490,5 +496,5 @@
       ]
     }
   },
-  "union_sha": "61dad768b6911ff3"
+  "union_sha": "7e482d23244367ac"
 }
