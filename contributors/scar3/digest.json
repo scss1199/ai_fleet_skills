@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-08-06T10:03:40",
+  "generated": "2026-08-06T12:03:36",
   "required": [
     "aex-agent-evolution",
     "ztm-fleet-inbox-absorb",
@@ -36,6 +36,7 @@
     "ztm-cursor-edge-auth",
     "ztm-fracdigi-psync",
     "ztm-meta-oauth-console",
+    "ztm-oauth-redirect-fleet",
     "ztm-portal-google-sso-edge",
     "ztm-web-stack",
     "ztm-webapp-verify",
