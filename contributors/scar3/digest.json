@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-08-06T12:03:36",
+  "generated": "2026-08-06T14:03:20",
   "required": [
     "aex-agent-evolution",
     "ztm-fleet-inbox-absorb",
@@ -12,7 +12,9 @@
     "ztm-verify-before-done",
     "mtm-mto-first",
     "adus-auto-deploy-upgrading-skill",
-    "ztm-fleet-intelligence"
+    "ztm-fleet-intelligence",
+    "token-preflight",
+    "cca-token-governance"
   ],
   "optional": [
     "accountability-unblock",
@@ -32,7 +34,6 @@
     "pfkt-auto-unblock",
     "pfkt-parallel-wave",
     "sso-browser-session",
-    "token-preflight",
     "ztm-cursor-edge-auth",
     "ztm-fracdigi-psync",
     "ztm-meta-oauth-console",

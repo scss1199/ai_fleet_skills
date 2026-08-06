@@ -23,3 +23,5 @@ Treat probe/config errors as UNKNOWN. Never treat UNKNOWN as clear, consumed, he
 The script writes a receipt. A session touch without a receipt is not skill consumption. Reuse the receipt while the task fingerprint and referenced artifact hashes are unchanged.
 
 Read [references/concept-map.md](references/concept-map.md) only when changing framework architecture.
+
+Load `cca-token-governance` only when the route proposes a Claude-to-Codex review or audits cross-provider token usage.

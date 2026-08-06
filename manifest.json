@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-06T06:09:01Z",
+  "generated_at": "2026-08-06T06:29:01Z",
   "contributors": [
     "darkhero",
     "scar3"
   ],
   "manifests": {
     "darkhero": "4c61074c155903fb",
-    "scar3": "faff32e1f56063bc"
+    "scar3": "4841aec43c7430bb"
   },
   "detail": {
     "darkhero": {
@@ -274,8 +274,8 @@
       "role": "downstream_curator",
       "machine": "scar3",
       "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-      "generated_at": "2026-08-06T06:03:08Z",
-      "manifest_sha": "faff32e1f56063bc",
+      "generated_at": "2026-08-06T06:29:01Z",
+      "manifest_sha": "4841aec43c7430bb",
       "required": [
         "aex-agent-evolution",
         "ztm-fleet-inbox-absorb",
@@ -291,7 +291,7 @@
         "token-preflight",
         "cca-token-governance"
       ],
-      "skill_count": 36,
+      "skill_count": 38,
       "skills": [
         {
           "name": "accountability-unblock",
@@ -328,6 +328,12 @@
           "sha": "d3a55e4a16f3104b",
           "required": false,
           "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "cca-token-governance",
+          "sha": "80c81f5cf0b4206f",
+          "required": true,
+          "lane": "MTD"
         },
         {
           "name": "deploy-nextjs-cloudflare",
@@ -421,7 +427,7 @@
         },
         {
           "name": "token-preflight",
-          "sha": "9a49a91bd4d6a708",
+          "sha": "c55798d8572f23ad",
           "required": true,
           "lane": "zero-token-mechanism"
         },
@@ -468,6 +474,12 @@
           "lane": "zero-token-mechanism"
         },
         {
+          "name": "ztm-oauth-redirect-fleet",
+          "sha": "6c401673ad09c922",
+          "required": false,
+          "lane": "zero-token-mechanism"
+        },
+        {
           "name": "ztm-portal-google-sso-edge",
           "sha": "acb836a7edaa795f",
           "required": false,
@@ -475,7 +487,7 @@
         },
         {
           "name": "ztm-skill-submit",
-          "sha": "6dc6d2bdd9275b9d",
+          "sha": "193c0085e9bc8c4f",
           "required": true,
           "lane": "zero-token-mechanism"
         },
@@ -512,5 +524,5 @@
       ]
     }
   },
-  "union_sha": "f5e7d0c617862e56"
+  "union_sha": "6e33618b7e349b31"
 }
