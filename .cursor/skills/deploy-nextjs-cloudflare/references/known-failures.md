@@ -1,0 +1,581 @@
+# Known deployment failures
+
+Keep this file limited to reproducible, secret-free facts discovered during real deployments.
+
+## workers.dev URL shape
+
+- Symptom: The requested URL is `<worker>.workers.dev` or contains an underscore.
+- Cause: Cloudflare uses `<worker>.<account-subdomain>.workers.dev`, and DNS labels permit letters, digits, and dashes only.
+- Fix: Confirm the account subdomain and normalize the Worker name to hyphen-case before deployment.
+- Verify: The public deployment URL exactly matches the expected hostname.
+
+## 2026-08-04 — dependency-resolution
+
+- Symptom: npm install failed with ERESOLVE for Next 16.2.7 and OpenNext 1.20.2
+- Cause: OpenNext requires Next >=16.2.11 for the Next 16 line
+- Fix: upgrade the isolated copy to Next 16.2.12 and rerun both builds
+- Verify: `npm run build; npm run cf:build; npx wrangler deploy --dry-run`
+
+## 2026-08-04 — windows-local-runtime
+
+- Symptom: OpenNext rebuild failed with EPERM while removing .open-next
+- Cause: Wrangler dev child workerd and esbuild processes survived parent-shell termination
+- Fix: run local smoke through local_smoke.py so the exact Wrangler process tree is terminated
+- Verify: `python scripts/local_smoke.py PROJECT --path /; npm run cf:build`
+
+## 2026-08-04 — windows-wrangler-oauth
+
+- Symptom: wrangler login with OS keyring failed because @napi-rs/keyring was missing
+- Cause: noninteractive Windows login does not auto-install the optional keyring package
+- Fix: install `@napi-rs/keyring@1.3.0` globally on Windows before retrying noninteractive keyring login; a project-local install is not resolved by Wrangler.
+- Verify: `npx wrangler whoami`
+
+## 2026-08-04 — public-route-verification
+
+- Symptom: protected API returned 401 after secrets enabled and the verifier marked deployment failed
+- Cause: the verifier assumed every healthy route must return 200
+- Fix: declare expected status per route and preserve the application authorization policy
+- Verify: `python scripts/verify_deployment.py --url URL --path / --expect /api/private=401`
+
+## 2026-08-04 — google-oauth-cutover
+
+- Symptom: Google returns redirect_uri_mismatch for the new workers.dev callback
+- Cause: The OAuth client matching the deployed GOOGLE_CLIENT_ID did not contain the exact workers.dev origin and callback; a repository config referenced a different preferred client
+- Fix: Select the provider client by the runtime GOOGLE_CLIENT_ID, then add the exact https workers.dev origin and /api/auth/callback URI
+- Verify: `Open /api/auth/login and confirm Google reaches the account chooser for the exact workers.dev callback without redirect_uri_mismatch; claim full login only after a secure authenticated browser session returns to the application`
+
+## 2026-08-04 — windows-preflight
+
+- Symptom: preflight crashed with UnicodeDecodeError when wrangler whoami emitted UTF-8 under a CP950 Python locale
+- Cause: subprocess.run text mode inherited the Windows locale decoder
+- Fix: decode subprocess output explicitly as UTF-8 with replacement for non-UTF-8 bytes
+- Verify: `run preflight.py --check-auth on a Traditional Chinese Windows host and confirm JSON output`
+
+## 2026-08-04 — isolated-copy
+
+- Symptom: a nested scripts/.secrets directory and generated Firebase artifacts were copied into the isolated deployment workspace
+- Cause: the copy exclusion list covered build directories and root secrets but not recursively named .secrets or generated Firebase/test directories
+- Fix: exclude every .secrets and .env* path recursively, plus .firebase, test-results, verification screenshots, and build caches; verify zero secret/env paths before install
+- Verify: `scan the isolated tree and require SECRET_DIRS=0 and ENV_FILES=0 before preparing the project`
+
+## 2026-08-04 — opennext-bundle
+
+- Symptom: OpenNext failed to resolve jose because the copied package contained only Node CJS files while workerd selected the browser export
+- Cause: Next.js bundled/traced jose under Node conditions even though jose publishes a workerd-specific conditional export
+- Fix: add jose to next.config serverExternalPackages so OpenNext resolves and copies the workerd entrypoint
+- Verify: `rerun npm run cf:build and require OpenNext build complete with .open-next/worker.js`
+
+## 2026-08-04 — Firestore protobuf code generation
+
+- Symptom: routes that import Firebase Admin / Firestore return 500 in workerd with `EvalError: Code generation from strings disallowed for this context`, even with Firestore `preferRest: true`.
+- Cause: `google-gax` and `protobufjs` lazily compile reflection serializers on the first request. Cloudflare permits dynamic code generation during Worker startup, not while handling requests. OpenNext also embeds its own protobuf module inside the server-function bundle, so warming a separate copied `protobufjs` package does not affect the failing instance.
+- Fix: in a post-OpenNext build patch, warm the embedded handler's Firestore, GAX, status, and `protobufjs/google/protobuf/descriptor.json` roots at module startup; cache `Root.fromJSON` by serialized JSON; make OpenNext's top-level main-handler creation lazy; then statically import that patched handler from the Worker entrypoint. Keep the patch version-controlled and fail closed when expected OpenNext bundle markers change.
+- Verify: `npm run cf:build`; run `local_smoke.py` against one Firestore-backed route; require status 200; run `wrangler deploy --dry-run` and confirm gzip remains below the plan limit; deploy and require the same public route to return real Firestore data.
+
+## 2026-08-04 — custom domain belongs to another Cloudflare account
+
+- Symptom: custom-domain deployment returns code `10082` (cannot infer zone) and, after specifying `zone_name`, code `10083` (zone does not exist on your account).
+- Cause: the authenticated Workers account does not own or have access to the DNS zone, even when the domain already uses Cloudflare nameservers.
+- Fix: keep `workers_dev: true` so a partially failed trigger update cannot remove the fallback URL. Stop the cutover, authenticate an account that owns the zone or grant that account zone access, then redeploy the custom-domain route. Do not update provider webhooks to an unresolved hostname.
+- Verify: `wrangler whoami` lists the account that owns the zone; the custom-domain deploy succeeds; public DNS resolves; HTTPS smoke tests pass on both the company hostname and the workers.dev fallback before provider callbacks are changed.
+
+## 2026-08-04 — multi-channel LINE webhook uses one global secret
+
+- Symptom: a service has multiple LINE channel access tokens and webhook endpoints, but verifies every event with one `LINE_CHANNEL_SECRET` environment variable.
+- Cause: each LINE Messaging API channel owns a different channel secret. A single global HMAC secret cannot authenticate a multi-channel webhook safely, and a channel access token cannot be used to retrieve the channel secret.
+- Fix: inventory live channels through their stored access tokens before cutover. Store each channel secret server-side by destination/channel ID, parse only the untrusted `destination` needed for secret lookup, then verify the raw request body with that channel's secret before processing any event. Do not redirect live endpoints until every active channel has a verified secret.
+- Verify: for each active channel, send a provider verification/test event to the new endpoint; require valid signatures to return 200 and a signature generated with any other channel's secret to return 401.
+
+## 2026-08-04 — Firebase handler registered but real Google callback still mismatches
+
+- Symptom: `https://<worker>.<subdomain>.workers.dev/__/auth/handler` passes a signed-out OAuth probe, but clicking Google login and choosing an account still returns `redirect_uri_mismatch`.
+- Cause: the deployed login button emits a separate server callback such as `https://<worker>.<subdomain>.workers.dev/api/auth/google/callback`. Registering only Firebase's `__/auth/handler` does not authorize that route. A `prompt=none` probe without an authenticated account can also produce a false positive before Google performs the account-selection validation.
+- Fix: add the workers.dev hostname to Firebase Authentication `authorizedDomains`; add both the exact Firebase handler and the exact callback observed from the live login request to the Google web client; preserve all existing URIs; wait for provider propagation.
+- Verify: reopen the Google client and confirm both exact values are present. In an authenticated browser, start from the deployed sign-in page, choose an account, and require the browser to return to the application without `redirect_uri_mismatch`; do not treat the account chooser alone as completion.
+
+## 2026-08-04 — Firebase Admin Auth succeeds locally but session creation or revocation checks fail in workerd
+
+- Symptom: Google returns to the Worker, then the application reports a stage such as `session_failed_allowlist_claims` or `session_failed_create_session_cookie`; a session may briefly redirect into the app but disappear when server identity verification runs.
+- Cause: Firebase Admin's remote Auth calls use a transport path that is not reliably compatible with workerd. Local `verifyIdToken` or RSA signing can succeed while `setCustomUserClaims`, `createSessionCookie`, or `verifySessionCookie(cookie, true)` fails.
+- Fix: create Firebase custom tokens with local RS256 signing and exchange them through `accounts:signInWithCustomToken`; create the session through `projects/{projectId}:createSessionCookie` using an OAuth access token minted from the same service account; verify the cookie signature with `verifySessionCookie(cookie, false)`, then reproduce the revoked/disabled check through `projects/{projectId}/accounts:lookup` and compare `auth_time` with `validSince`.
+- Guardrail: do not silently fall back to accepting an unverified or potentially revoked cookie. Fail closed when the REST revocation check is unavailable, and never log the service-account key, OAuth access token, Firebase ID token, custom token, or session cookie.
+- Verify: run a real Google account flow, require the application to show the expected user and role, reopen the Worker root URL, and confirm it stays inside the authenticated application rather than returning to `/signin`.
+
+## 2026-08-04 — local workerd smoke (Git Bash)
+
+- Symptom: local_smoke.py aborts with http.client.InvalidURL: URL can't contain control characters. '/Program Files/Git/'
+- Cause: MSYS argument path conversion rewrites a bare '/' CLI argument into the Git installation path before Python sees it, so the probe path becomes a Windows directory string
+- Fix: Invoke the script from PowerShell, or export MSYS_NO_PATHCONV=1 / MSYS2_ARG_CONV_EXCL='*' before calling it from Git Bash
+- Verify: `python scripts/local_smoke.py http://127.0.0.1:8788 / (run from PowerShell)`
+
+## 2026-08-04 — wrangler secret bulk
+
+- Symptom: wrangler reports 'No content found in file, or piped input' even though the generator prints valid JSON
+- Cause: the secret-payload generator shells out to helper scripts that inherit fd 1 and print progress lines, so the pipe delivered progress text mixed with JSON
+- Fix: Redirect fd 1 to fd 2 at OS level (os.dup/os.dup2) around the collection phase and write the JSON to the saved stdout only at the end
+- Verify: `python cf_env_jci.py --dry-run then python cf_env_jci.py | npx wrangler secret bulk --name <worker>`
+
+## 2026-08-04 — LINE webhook endpoint re-point
+
+- Symptom: PUT /v2/bot/channel/webhook/endpoint returns 401 for every channel; tokens are 172-char opaque strings with no decodable channelId
+- Cause: long-lived channel access tokens had already expired and the vault stores only LINE_BOT_CHANNEL_SECRET, never LINE_BOT_CHANNEL_ID, so client_credentials re-issue is impossible offline
+- Fix: Store LINE_BOT_CHANNEL_ID next to the secret at provisioning time; then re-mint with POST /v2/oauth/accessToken grant_type=client_credentials. Without the channel ID the only route is the OA Manager console, which needs an interactive logged-in browser
+- Verify: `python line_endpoint_sync.py https://<worker>.workers.dev <code> (expect before.status 200 not 401)`
+
+## 2026-08-04 — local-smoke (workerd)
+
+- Symptom: CompileError: WebAssembly.compile(): Wasm code generation disallowed by embedder, thrown from .open-next/server-functions/default/handler.mjs on first request
+- Cause: A dependency imports the bare specifier 'undici' (e.g. @vercel/blob 2.x does import { fetch } from 'undici'); Next resolves it to next/dist/compiled/undici, whose llhttp parser boots through a runtime WebAssembly.compile(). workerd forbids dynamic Wasm compilation, so the module throws at import time and every route 500s.
+- Fix: Alias the specifier to the Workers-native global fetch. Add lib/undici-shim.ts re-exporting globalThis.fetch/Headers/Request/Response/FormData, then in next.config.ts set turbopack.resolveAlias = { undici: './lib/undici-shim.ts' } (Next 16 builds with Turbopack, so a webpack alias is ignored). Do NOT add the package to serverExternalPackages - that keeps the Wasm copy.
+- Verify: `Re-run cf:build, then grep .open-next/server-functions/default/handler.mjs for 'WebAssembly.compile' (must be absent), then local_smoke.py must return ok:true. After deploy, exercise a route that actually uses the dependency (for @vercel/blob: an API route that reads a blob) and require HTTP 200.`
+
+## 2026-08-04 — secrets (wrangler secret bulk)
+
+- Symptom: wrangler aborts with 'No content found in file, or piped input' even though the producing command printed valid JSON
+- Cause: PowerShell pipes .NET objects, not OS bytes. npx.ps1 therefore receives an empty $input and wrangler sees no stdin. Same command works in cmd/bash. This is distinct from the earlier stdout-pollution class (helper printing progress on fd 1).
+- Fix: Never rely on a shell pipe. Drive wrangler from Python: build the payload in-process and call subprocess.run(['npx','wrangler','secret','bulk'], cwd=..., input=json.dumps(payload).encode('utf-8'), shell=True, capture_output=True). See _temp/cf-migrate/push_secrets.py. Route all helper diagnostics to stderr so no secret value ever reaches a console.
+- Verify: `Helper prints only {count, keys}; wrangler reports 'Finished processing secrets JSON file' with the uploaded count equal to that count; npx wrangler secret list shows the key names.`
+
+## 2026-08-04 — public verification (immediately post-deploy)
+
+- Symptom: One route returns HTTP 404 with body 'error code: 1042' and content-type text/plain; charset=UTF-8, while every other route is healthy
+- Cause: Cloudflare edge error served before the Worker runs - the new Version had not finished propagating to that colo. It is not an application 404 (the app's own 404 is text/html or the route's own 'Not Found' body).
+- Fix: Do not change compatibility_flags or bindings. Wait and re-probe: any edge error page (text/plain 'error code: NNNN') is a platform-side response, so re-run the probe 30-60s later before diagnosing the app.
+- Verify: `curl -i the same path again: it returned 307 to accounts.google.com with the correct https redirect_uri on the first retry, with no redeploy and no config change.`
+
+## esbuild `[commonjs-variable-in-esm]` silently drops every export
+
+- Symptom: `wrangler deploy --dry-run` succeeds but prints, per CommonJS file, `▲ [WARNING] The CommonJS "module" variable is treated as a global variable in an ECMAScript module ... [commonjs-variable-in-esm]` pointing at `module.exports = {...}`, citing `package.json:"type":"module"`.
+- Cause: `"type": "module"` makes esbuild parse every sibling `.js` as ESM, so `module.exports = ...` becomes a write to a stray global and the exports vanish. `require()` of that file then yields `{}` at runtime. This is a correctness bug, not cosmetic - the build still exits 0.
+- Fix: Do NOT add `"type": "module"` to a Worker package that carries hand-written CommonJS (ported Vercel `(req,res)` handlers, shared `lib/*.js`). Instead drop the field and rename only the Worker entry + its ESM-only helpers to `.mjs`, updating `wrangler` `main` and the relative import. esbuild then keys format off the extension: `.mjs` = ESM entry, plain `.js` = CommonJS.
+- Verify: `wrangler deploy --dry-run --outdir .wrangler-dry-run` emits zero warnings and reaches the `Total Upload: ... / gzip: ...` line; then probe a route whose handler lives in one of the CommonJS files and confirm it is not a 500.
+
+## Cloudflare 1010 blocks scripted verification (not an app fault)
+
+- Symptom: A public probe that passed under `curl` returns HTTP 403 with the plain-text body `error code: 1010` when the same request is replayed from Python `urllib`/`requests`.
+- Cause: 1010 is the Cloudflare edge browser-integrity check rejecting the client's TLS/UA signature. It fires before the Worker, so it says nothing about the deployment. Python's default `User-Agent: Python-urllib/3.x` is the trigger.
+- Fix: Set an explicit non-default `User-Agent` on the scripted probe (any realistic provider/tool UA). Never conclude the Worker is broken from a 1010, and never disable a security setting to make a test pass.
+- Verify: Re-issue the identical request with a `user-agent` header set - it returned 200 where the header-less call returned 403.
+
+## `wrangler secret bulk` is an upsert, so multi-source secrets need no merge step
+
+- Symptom: Uncertainty about whether pushing a second `.env` file wipes the secrets uploaded by the first pass.
+- Cause: N/A - behaviour question, verified rather than assumed.
+- Fix: Run one `secret bulk` per source file. When the same key name means different things in two sources (e.g. one LINE channel token per bot), rename on the way in - `push_secrets.py --rename OLD=NEW --only NEW` - rather than editing either source `.env`.
+- Verify: `wrangler secret list` after three passes of 4 + 13 + 1 keys returned exactly 18 distinct names, so later passes add without deleting.
+
+## `(req,res)` shim wired wrong — 500 at runtime, clean at build
+
+**Symptom.** `wrangler deploy --dry-run` exits 0 with no warnings, but every
+request to a ported Vercel handler returns 500 with
+`TypeError: res.setHeader is not a function` (or `res.end is not a function`).
+
+**Root cause.** `makeRes()` returns the *pair* `{ res, toResponse }`, not the
+response object. `const res = makeRes()` therefore hands the handler a wrapper
+that has neither `setHeader` nor `end`. esbuild cannot catch it: the shape is
+only resolved at call time.
+
+**Safe fix.** Always destructure:
+```js
+const { res, toResponse } = makeRes();
+const done = handler(req, res, env);
+return toResponse(done);
+```
+
+**Retry rule.** A green dry-run proves the bundle links, never that the shim is
+wired correctly. Run `wrangler dev --local` and probe one route per handler
+*before* `wrangler deploy` — this class of bug is invisible until first call.
+
+## OpenNext refuses the pinned Next version (ERESOLVE at install)
+
+**Symptom** — `npm i -D @opennextjs/cloudflare` exits before anything is built:
+`peer next@">=15.5.21 <16 || >=16.2.11" from @opennextjs/cloudflare@1.20.2`
+against a project pinned at `next@16.2.7`.
+
+**Root cause** — the adapter blacklists the 16.0.0–16.2.10 window, not just old
+majors. The pin is a Vercel-era artifact: Vercel builds the app with its own
+Next, so the exact pin never had to be adapter-compatible.
+
+**Safe fix** — bump the pin inside the isolated copy to the nearest release the
+peer range accepts (16.2.7 → 16.2.12) and rebuild. Do NOT reach for
+`--legacy-peer-deps` or `--force`: the range is a real compatibility
+statement about internal Next APIs the adapter patches, so overriding it moves
+the failure from install time to a silent runtime break.
+
+**Retry rule** — read the peer range off the error, run `npm view next@<major>
+version` to pick the lowest accepted release, edit package.json, reinstall.
+Re-run `next build` afterwards; a passing TypeScript pass is the signal the
+bump did not change app semantics.
+
+## `wrangler kv key put --path` dies at exit when its output is piped (Windows)
+
+**Symptom** — a scripted upload of a large value reports
+`Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c,
+line 76` and exit code 3221226505 (0xC0000409). Running the identical command
+by hand in the terminal succeeds. `kv key list` afterwards shows the key was
+never written, so the crash is not merely a noisy teardown.
+
+**Root cause** — wrangler's stdout was not a console. A pipe (`subprocess.run(...,
+capture_output=True)`) triggers it, and so does a file redirect: the same script
+crashed identically when run as a detached background task logging to a file, even
+after `capture_output` had been removed. Anything other than a real console handle
+while wrangler streams a multi-MiB `--path` body trips a libuv handle-close race in
+the Node build on Windows, and the process dies before the PUT reaches the API.
+
+**Safe fix** — run these puts in the foreground with wrangler attached to the
+terminal, looping in the shell (`for k in ...; do npx wrangler kv key put ...;
+done`) rather than from a Python driver, and never from a background/detached
+runner. Verified: 6 × 20 MiB puts, exit 0 each.
+
+**Retry rule** — any wrangler subcommand that streams file bytes (`kv key put
+--path`, `r2 object put`) runs in the foreground on a console. Verify with `kv key
+list`, never with the exit code alone: the Python wrapper reported exit 0 for a run
+in which five of six puts never happened. And never read a crash whose text looks
+like a shutdown warning as "it uploaded anyway".
+
+## Worker → Worker `fetch()` on the same zone is blocked (`error code: 1042`)
+
+**Symptom** — a front Worker proxies to a backend Worker and every request comes
+back as a Cloudflare HTML error page containing `error code: 1042`, with a 5xx
+status. The backend Worker answers the identical URL correctly when called from
+outside. Retrying does not help: observed persisting through 12 retries × 6 s,
+which rules out post-deploy propagation.
+
+**Root cause** — both Workers live on the same zone (here `*.kyloren.workers.dev`),
+and an ordinary `fetch()` subrequest from one Worker to another on that zone is
+rejected at the edge. The failure only appears once the origin *moves onto* the
+same zone — the same code worked while the origin was on Fly.io, so it reads like
+a regression in the front Worker when nothing in the front Worker changed.
+
+**Safe fix** — a service binding, which routes internally by RPC and never leaves
+the edge (available on the free plan). In `wrangler.jsonc`:
+
+```jsonc
+"services": [{ "binding": "BACKEND", "service": "<backend-worker-name>" }]
+```
+
+then dispatch through it, keeping plain `fetch` as the fallback for the case where
+the origin is genuinely external:
+
+```js
+const dispatch = env.BACKEND ? env.BACKEND : { fetch };
+const upstream = await dispatch.fetch(target.toString(), { method, headers, body });
+```
+
+`deploy` prints `env.BACKEND (<name>)  Worker` in the binding table — that line is
+the confirmation the binding is live. Body bytes pass through untouched, so
+signature verification (LINE, Stripe) still works.
+
+**Retry rule** — before deploying, grep the source *and* the `vars` for the account's
+own `workers.dev` subdomain. Every hit that is not a self-reference is a 1042 waiting
+to happen, including ones inside `scheduled()` cron handlers, which fail silently.
+Convert each to a service binding. Never read 1042 as transient.
+
+## `const X = process.env.Y` at module top level silently ignores `vars`
+
+**Symptom** — a `vars` entry is re-pointed in `wrangler.jsonc`, the deploy succeeds
+and the dashboard shows the new value, but the Worker keeps using the old default.
+No error anywhere.
+
+**Root cause** — Workers do not reliably populate `process.env`; the values arrive on
+the `env` argument of each invocation. A module-top-level read is evaluated once at
+isolate load, before any invocation, so it always sees `undefined` and freezes the
+`||` fallback into the module for the isolate's whole life. Carried-over Vercel/Node
+handlers are full of this pattern (`const TARGET = flyWebhookUrl(...)`).
+
+**Safe fix** — hydrate per invocation, and make every env read lazy:
+
+```js
+function hydrateEnv(env) {
+  for (const [k, v] of Object.entries(env)) {
+    if (typeof v === "string") process.env[k] = v;
+  }
+}
+const TOPICS_URL = () => process.env.AEX_TOPICS_URL || "<default>";
+```
+
+Call `hydrateEnv(env)` first in *both* `fetch()` and `scheduled()`. Bindings
+(services, KV, R2) cannot be hydrated this way — they are objects, not strings; pass
+`env` down explicitly or stash it in a module-scoped setter called per invocation.
+
+**Retry rule** — after any `vars` change, grep for `process.env` outside a function
+body. Verify the change took effect by observing behaviour (the request actually
+reaching the new origin), never by reading the config back.
+
+## `redirect_uri_mismatch` is invisible to a scripted probe (base64 `authError`)
+**Symptom** - A verifier replays a site's `accounts.google.com/o/oauth2/v2/auth?...`
+URL and reports every site REGISTERED, including sites the operator can see failing
+in a real browser.
+
+**Root cause** - Google does not return a plain 400 page to a non-browser client. It
+302s to `https://accounts.google.com/signin/oauth/error?authError=<urlsafe-base64
+protobuf>`. The literal string `redirect_uri_mismatch` exists *only inside the decoded
+payload*. Substring-matching the response body or the visible URL therefore matches
+nothing and the probe falls through to its success branch - a false REGISTERED for
+every input.
+
+**Safe fix** - Suppress redirects (`HTTPRedirectHandler.redirect_request -> None`) so
+the `Location` header is the evidence, then urlsafe-b64decode the `authError` query
+param (re-pad to a multiple of 4) and search the decoded bytes. Also send a Chrome
+User-Agent: Cloudflare answers `Python-urllib` with error 1010 before the request ever
+reaches the app.
+
+**Retry rule** - Never ship an OAuth-registration detector without a negative control.
+Feed it the same real `client_id` with one URI believed registered and one certainly
+bogus; if both come back the same, the detector is broken, not the sites. Run the
+control again after every change to the detector.
+
+## No scripted path exists to add a redirect URI to a classic OAuth Web client
+**Symptom** - Migration is complete and every Worker serves, but all logins die at
+`redirect_uri_mismatch`, and there is no CLI that can fix it.
+
+**Root cause** - Classic OAuth 2.0 Client IDs (APIs & Services -> Credentials) are
+managed by the Cloud Console private clientauthconfig backend. `gcloud iap
+oauth-clients` covers IAP brands only; `gcloud alpha iam oauth-clients` is Workforce
+Identity Federation and returns `Listed 0 items` for a project whose Web clients are
+in active use - verified, not assumed. There is no public API.
+
+**Safe fix** - Treat the console edit as an operator step with a machine-generated work
+list: group the failing sites by `client_id` (clients are often shared between two
+sites), emit one deep link per client, and state ADD-ONLY explicitly - editing or
+deleting an existing line on a shared client takes a working site offline.
+
+**Retry rule** - Check the browser surface *before* planning any console work:
+`list_connected_browsers` empty and `sso_browser.py list` without a Google realm means
+no logged-in session exists, and entering the account password is not an agent action.
+Stop and hand off with the deep links rather than burning turns on a login wall.
+
+## PowerShell `>` writes a UTF-8 BOM, so the next module block cannot read the state file
+**Symptom** - `python probe.py > state.json` succeeds, then every downstream script dies
+with `json.decoder.JSONDecodeError: Unexpected UTF-8 BOM (decode using utf-8-sig)`.
+
+**Root cause** - PowerShell 5.1 redirection encodes as UTF-8 **with BOM**. `json.load`
+rejects the BOM. The producing script looks fine, so the failure is attributed to the
+consumer.
+
+**Safe fix** - A module block writes its own state file:
+`pathlib.Path(__file__).with_name("state.json").write_text(json.dumps(rows), encoding="utf-8")`.
+Never hand the shell responsibility for a machine-read artifact.
+
+**Retry rule** - Any file that another script parses must be written by Python, not by
+`>` / `Out-File` / `Set-Content`. Reading with `encoding="utf-8-sig"` is a patch on the
+consumer and leaves the BOM for the next reader.
+
+## A hard-coded positive case turns a negative control into a false alarm
+**Symptom** - The control prints `expect REGISTERED -> MISMATCH`, implying the detector
+is broken, while the detector is in fact correct.
+
+**Root cause** - The control pinned its "known good" pair to one specific site
+(`ai-career`). That site was itself in the set being repaired, so its URI was legitimately
+unregistered. The control was asserting a fact that the task had invalidated.
+
+**Safe fix** - Derive the positive case from the *current* measurement:
+`next(r for r in rows if r["google"] == "REGISTERED")`, and synthesise the negative case
+from it (`url.replace("://", "://definitely-not-registered-xyz.", 1)`). The control then
+follows the fleet instead of drifting from it.
+
+**Retry rule** - Before believing a control failure, ask whether the control's fixture is
+part of the change under test. A control must depend only on facts the task cannot alter.
+
+## Probe the origin that resolves, not the one `wrangler.jsonc` intends
+**Symptom** - A deployed, working site probes as `NO_OAUTH_REDIRECT(0)`; the underlying
+error is `ERR URLError: getaddrinfo failed`.
+
+**Root cause** - The probe took its base URL from the `routes[].pattern`
+(`custom_domain: true`) in `wrangler.jsonc`. The Worker is deployed and the route is
+declared, but DNS for that hostname is not cut over, so the name does not resolve. The
+live origin was the `workers.dev` one all along.
+
+**Safe fix** - Resolve the base URL by measurement: try `https://<worker>.<subdomain>.workers.dev`
+and the declared custom domain, and probe whichever answers. Keep the override in an
+explicit `BASES` map with a dated comment on why.
+
+**Retry rule** - A `0` status with `getaddrinfo` is a **name** failure, never an OAuth
+verdict. Never fold it into the MISMATCH set - it would send an operator to the console
+to fix something that is not broken.
+
+## `vercel env pull` blanks every encrypted value, so a bulk tool legitimately reports 0 secrets
+**Symptom** - `secrets_bulk.py --dry-run .env.vercel.production` prints `count: 0` while
+the parser demonstrably returns 38 keys. Looks like a broken parser or a UTF-16 file.
+
+**Root cause** - `vercel env pull` writes `KEY=""` for every variable marked
+*Encrypted/Sensitive*. The file is structurally complete (all names present) but
+value-blank: measured `total 38, empty_after_quote_strip 29`. The generator's
+`if v == "": continue` is correct behaviour, not a bug. Head bytes were `23 20 43 72`
+(`# Cr`, plain ASCII), so the UTF-16 hypothesis is wrong — check bytes before chasing it.
+
+**Safe fix** - Treat `.env.vercel.*` as an *inventory of key names only*. Take values from
+the developer-machine `.env.local` (real values, often UTF-8 BOM — parse with
+`utf-8-sig`) and from per-service files such as `functions/.env.<project>`. Cross-check
+the resulting count against `wrangler secret list --name <old-worker>` before pushing.
+
+**Retry rule** - Before debugging a producer that yields zero rows, print
+`{total_parsed, empty_after_quote_strip}`. Measure length *after* quote-stripping — a
+length check on the raw token reports `""` as 2 chars and hides the whole failure.
+
+## A renamed Worker is a NEW Worker with zero secrets
+**Symptom** - `wrangler.jsonc` `name` is changed and deployed; the site builds and serves
+but every server route fails on missing credentials.
+
+**Root cause** - Worker names are immutable. Changing `name` creates a second Worker. Its
+secret store starts empty, `wrangler` has no cross-worker secret copy, and secrets are
+write-only (`wrangler secret list` returns names + types, never values). The old Worker
+keeps its secrets and keeps running, which masks the problem during testing.
+
+**Safe fix** - Before deploying under the new name: `wrangler secret list --name <old>` to
+get the target set, re-source the values from the original secure files, and push with
+`scripts/cf_secret_push.py --worker <new> --env A --env B --only …`. `secret bulk` on a
+name that does not exist yet creates the Worker shell first (non-interactive answers
+*yes*) — that is expected and lets secrets land before the first deploy. Any key with no
+readable on-disk source is an operator handoff, never an exfiltration from the live Worker.
+
+**Retry rule** - Diff the new Worker's `secret list` against the old one's and require the
+difference to be exactly the documented handoff set. Do not delete the old Worker —
+deletion is operator-performed, and it is the only rollback.
+
+## A dead Vercel deployment (402) silently kills the whole scheduled-data pipeline
+**Symptom** - The site renders but every aggregate panel shows `—` / empty. Auth works;
+nothing in the UI reports an error.
+
+**Root cause** - Two independent breaks in series. (1) External schedulers (Firebase Cloud
+Functions `onSchedule`) still POST `/api/cron/*` at the retired Vercel origin, which
+answers `402 Payment required · DEPLOYMENT_DISABLED` on *every* path — so no rollup has
+run since the cutover. (2) Even repointed at the Worker, `isAuthorizedCron()` fails closed
+when `CRON_SECRET` is unset, and a freshly-named Worker has no secrets. Meanwhile the
+read path swallows errors (`countOrNull` → `catch` → `null` → UI renders `—`), so a read
+failure is visually identical to a true zero.
+
+**Safe fix** - Repoint the scheduler's `APP_ORIGIN` to the live Worker **and** provision
+`CRON_SECRET` on it, then redeploy the functions so the new default takes effect. Also
+re-subscribe provider webhooks (Meta app-level) from the new origin.
+
+**Retry rule** - "Empty data" is never one bug. Probe the scheduler's target origin
+directly (a 402/404 there is decisive), then confirm the auth secret exists on the
+receiving Worker, then check whether the read path converts failures into nulls. Never
+report "no data" as a data problem before all three are measured.
+
+## Same-origin Firebase Auth proxy needs a per-host `/__/auth/handler` registration
+**Symptom** - Google SSO works on the old host and dies with `redirect_uri_mismatch` on
+the new one immediately after a Worker rename, with no code change to auth.
+
+**Root cause** - `next.config.ts` `rewrites()` reverse-proxies `/__/auth/:path*` to
+`<project>.firebaseapp.com`, and the client sets `authDomain` to
+`window.location.hostname`. The redirect_uri therefore becomes
+`https://<new-host>/__/auth/handler` — a URI the OAuth web client has never seen.
+
+**Safe fix** - ADD (never replace) `https://<new-host>/__/auth/handler` to the *login*
+client's Authorised redirect URIs, and add the host to Firebase Auth `authorizedDomains`.
+Keep the old host listed so the previous Worker keeps a working login during cutover.
+
+**Retry rule** - Any change to the origin a user's tab sits on — rename, custom domain,
+preview host — invalidates the auth handler registration. Register the new host before
+flipping traffic, and confirm with a real signed-in browser round-trip, not a probe.
+
+## `npm run cf:deploy` skips the mandatory post-build bundle patch
+**Symptom** - A deploy that "succeeded" serves Next's generic `_error` HTML with HTTP 500
+on every server route, while `npm run cf:build` locally is green.
+
+**Root cause** - `cf:deploy` is defined as `opennextjs-cloudflare build && wrangler deploy`
+(or similar) and does **not** run the project's own post-build patch step, so the deployed
+bundle is the unpatched OpenNext output. Any fix implemented as a bundle patch (Firestore
+protobuf warmup, gax transport swap) is silently absent from production only.
+
+**Safe fix** - Deploy with `npm run cf:build` followed by `npx wrangler deploy`. Delete or
+re-define `cf:deploy` so it cannot be the convenient path.
+
+**Retry rule** - Grep the build log for every patch script's success line *before*
+deploying. Absent line = do not deploy. A green `cf:build` in an earlier shell is not
+evidence about the bundle `wrangler` is currently uploading.
+
+## HTML `_error` body vs JSON error body tells you whether the handler ever ran
+**Symptom** - A route 500s and the instinct is to blame credentials or the database.
+
+**Root cause** - Two different failure classes produce a 500. A **text/html** Next `_error`
+page means the request never reached the route's own `try/catch` — module load, bundle
+patch, or handler creation failed. A **JSON** `{"ok":false,"error":…}` body means the
+handler ran and the application caught something.
+
+**Safe fix** - Read the content-type first. For HTML, investigate the bundle/startup path.
+For JSON, prove the credential independently (mint a JWT locally and exchange it at
+`oauth2.googleapis.com/token`) and prove the datastore independently (a second route that
+touches it), before touching either.
+
+**Retry rule** - Never change a secret in response to a 500 whose body is HTML. The secret
+is not in the call path yet.
+
+## `firebase-admin` `credential.getAccessToken()` fails in workerd
+**Symptom** - Routes backed by Cloud Monitoring / any Google REST API return
+`"Could not refresh access token."`; the same service-account key works locally.
+
+**Root cause** - firebase-admin's credential refresh uses a Node transport path that is not
+workerd-compatible. The key is valid; the transport is not.
+
+**Safe fix** - Hand-roll the token: build an RS256 JWT with `node:crypto` `createSign`,
+POST it to `https://oauth2.googleapis.com/token` with
+`grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer`, scope `cloud-platform`. Keep it
+in one helper (here `resolveGoogleServiceAccountAccessToken()`) and route every caller
+through it.
+
+**Retry rule** - After writing the helper, grep **all** of `src/` for
+`getAccessToken(`/`credential.` — the call sites are scattered across admin routes, cron
+handlers and lib modules, and one missed caller leaves a whole panel empty with no error
+in the UI.
+
+## `"minify": false` pushes the OpenNext bundle past the Worker size limit
+**Symptom** - `wrangler deploy` is rejected outright with
+`Your Worker failed validation because it exceeded size limits.` right after minification
+was disabled to make a stack trace readable.
+
+**Root cause** - An OpenNext Next.js bundle is already near the plan's compressed-size
+ceiling; unminified it exceeds it. The deploy never happens, so it looks like a regression
+in whatever was changed just before.
+
+**Safe fix** - Keep `"minify": true` permanently. Debugging does not need it off: workerd's
+`node-internal:` frames are never minified, and application frames still carry file and
+line.
+
+**Retry rule** - Before blaming a code change for a rejected deploy, diff `wrangler.jsonc`.
+Size-limit rejection is a config fact, not an application fault.
+
+## google-gax picks node-fetch when `window` is undefined, so `Firestore.getAll` dies in workerd
+**Symptom** - Firestore **queries** (`collection().get()`) return real data, but any route
+using `getAll` / `batchGet` (document-reference fan-out) fails with
+`TypeError: Cannot read properties of null (reading 'has')` thrown from workerd's
+`processHeader`. The site therefore renders *some* panels and leaves most internal data
+empty — which reads like a permissions or data problem, not a transport one.
+
+**Root cause** - `google-gax/build/src/fallbackServiceStub.js` selects its fetch
+implementation as `hasWindowFetch() ? window.fetch : node_fetch.default`. workerd has no
+`window`, so it takes `node-fetch` → `node:http` `ClientRequest`, whose header handling
+workerd rejects. Queries use a different (streaming gRPC-fallback) path and are unaffected.
+
+**Safe fix** - Patch the *bundled* handler after the OpenNext build, rewriting the ternary's
+fallback to `globalThis.fetch`. That is byte-for-byte gax's own supported browser branch:
+the same `stream_1.pipeline(response.body, streamArrayParser, cb)` consumes a web
+`ReadableStream` there. Match with a regex (`hasWindowFetch\)\(\)\?window\.fetch:[A-Za-z0-9_$]+\.default`)
+because the minified local name is not stable, and throw if it matches nothing.
+**Never** define `globalThis.window` to force the browser branch — Next/React would then
+believe they are running in a browser.
+
+**Retry rule** - A working query proves nothing about `batchGet`. Probe a `getAll` code path
+explicitly before declaring Firestore healthy in workerd, and require the patch script's
+own success line (`… switched to native fetch (N site(s)).`) in the build log.
+
+## `error code: 1102` is the Worker CPU/resource limit, not an application error
+**Symptom** - One route returns HTTP 503 with the plain-text body `error code: 1102` while
+every sibling route on the same Worker returns 200 with real data.
+
+**Root cause** - 1102 is the Cloudflare edge reporting that the invocation exceeded the
+Worker's CPU-time/resource budget. Typically a backfill or migration loop that iterated a
+whole collection in one request — fine on a Node host with a 300 s function timeout, fatal
+under a per-invocation CPU cap.
+
+**Safe fix** - Chunk the work: bound the loop by batch size and a wall-clock/CPU budget,
+persist a cursor, and return `{done:false, cursor}` so the scheduler drives repeated small
+invocations. Do not raise `maxDuration` — it is a Node/Vercel concept and does not govern
+the workerd CPU cap.
+
+**Retry rule** - 1102 on exactly one route while others are healthy is decisive: stop
+looking for a transport, credential, or data bug. Also note the neighbouring Next trap —
+App Router treats `_`-prefixed directories as private, so a temporary
+`src/app/api/**/_diag/route.ts` 404s and looks like a routing failure.
