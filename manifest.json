@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-06T04:24:01Z",
+  "generated_at": "2026-08-06T05:29:02Z",
   "contributors": [
     "darkhero",
     "scar3"
   ],
   "manifests": {
     "darkhero": "b4e8fe6e90d642a1",
-    "scar3": "c15f8d107ac97679"
+    "scar3": "c0760862d6304b3b"
   },
   "detail": {
     "darkhero": {
@@ -260,8 +260,8 @@
       "role": "downstream_curator",
       "machine": "scar3",
       "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-      "generated_at": "2026-08-06T04:24:01Z",
-      "manifest_sha": "c15f8d107ac97679",
+      "generated_at": "2026-08-06T05:29:02Z",
+      "manifest_sha": "c0760862d6304b3b",
       "required": [
         "aex-agent-evolution",
         "ztm-fleet-inbox-absorb",
@@ -273,7 +273,9 @@
         "ztm-verify-before-done",
         "mtm-mto-first",
         "adus-auto-deploy-upgrading-skill",
-        "ztm-fleet-intelligence"
+        "ztm-fleet-intelligence",
+        "token-preflight",
+        "cca-token-governance"
       ],
       "skill_count": 36,
       "skills": [
@@ -406,8 +408,8 @@
         {
           "name": "token-preflight",
           "sha": "9a49a91bd4d6a708",
-          "required": false,
-          "lane": null
+          "required": true,
+          "lane": "zero-token-mechanism"
         },
         {
           "name": "ztm-cursor-edge-auth",
@@ -496,5 +498,5 @@
       ]
     }
   },
-  "union_sha": "6209eca38bb5ab7b"
+  "union_sha": "4d0058faaec09659"
 }
