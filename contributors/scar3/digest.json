@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-08-06T16:03:22",
+  "generated": "2026-08-06T18:03:12",
   "required": [
     "aex-agent-evolution",
     "ztm-fleet-inbox-absorb",
