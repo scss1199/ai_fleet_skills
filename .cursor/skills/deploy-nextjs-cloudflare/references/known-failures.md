@@ -579,3 +579,116 @@ the workerd CPU cap.
 looking for a transport, credential, or data bug. Also note the neighbouring Next trap —
 App Router treats `_`-prefixed directories as private, so a temporary
 `src/app/api/**/_diag/route.ts` 404s and looks like a routing failure.
+
+## workerd's `util.debuglog` is always live, so bundled `readable-stream` logs every chunk
+**Symptom** - A Firestore-heavy route returns `error code: 1102`. `wrangler tail` capture
+balloons to hundreds of KB of `STREAM: readableAddChunk { document: {...} }` /
+`STREAM: ondata` / `STREAM: dest.write true`, and the tail reports
+`Log size limit exceeded: More than 256KB of data ... during a single request`.
+
+**Root cause** - `readable-stream` picks its logger with
+`debugUtil && debugUtil.debuglog ? debug = debugUtil.debuglog("stream") : debug = function(){}`.
+On Node this returns a no-op unless `NODE_DEBUG` contains `stream`. workerd's `nodejs_compat`
+`util.debuglog` is **not** gated on `NODE_DEBUG`, so it hands back a real logger and every
+Firestore document chunk is `console.log`-ed. Setting/clearing `NODE_DEBUG` does nothing;
+neither `wrangler.jsonc` `vars` nor `wrangler secret list` ever contained it.
+
+**Safe fix** - In the post-build bundle patch, rewrite the whole ternary to an unconditional
+no-op (`debug = function(){}`), matching with a regex over the minified local names and
+throwing if it matches nothing. This restores Node's default (NODE_DEBUG-off) behaviour.
+
+**Retry rule** - Before blaming application code for 1102, check the *size* of one tail
+capture. 256 KB of `STREAM:` lines is the log-limit failure mode, not a CPU failure mode;
+they need different fixes and can mask each other. Verified fix = tail capture drops to a
+few KB with `"logs": []`.
+
+## `wrangler tail` on Windows: positional name, and stdout must be a file handle
+**Symptom** - `npx wrangler tail --name <worker>` fails with `Unknown argument: name`.
+Piping tail's stdout in PowerShell crashes with
+`Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 76`
+(exit 9), so no log is ever captured.
+
+**Root cause** - The worker name is a **positional** argument, not a flag. And libuv on
+Windows asserts when wrangler's tail stream is attached to a pipe that the parent closes.
+
+**Safe fix** - Redirect to a real file and let the process own its own console:
+`Start-Process cmd.exe -ArgumentList "/c npx wrangler tail <worker-name> --format json"`
+`-WorkingDirectory <repo> -RedirectStandardOutput <file> -RedirectStandardError <file>`
+`-PassThru -WindowStyle Hidden`, then `Stop-Process -Id $p.Id -Force` when done.
+`--format json` emits concatenated pretty-printed objects, so parse with
+`json.JSONDecoder().raw_decode` in a loop rather than `json.loads` on the whole file.
+
+**Retry rule** - Always `Stop-Process` the tail before finishing a task; orphaned tails keep
+a websocket open against the account.
+
+## Workers **Free** plan: 10 ms CPU and 50 subrequests per invocation - not tunable
+**Symptom** - A route intermittently returns 200 and intermittently `error code: 1102`.
+`wrangler tail` shows `outcome=exceededCpu` with wildly different `cpuTime` values for the
+same code path (observed: 456 ms **ok**, 744 ms **ok**, then 10 ms **exceededCpu** on the very
+next request; also 1175 ms and 2010 ms exceededCpu). Adding
+`"limits": { "cpu_ms": 60000 }` to `wrangler.jsonc` makes `wrangler deploy` fail with
+`CPU limits are not supported for the Free plan ... [code: 100328]`.
+
+**Root cause** - Cloudflare's documented per-invocation limits are **10 ms CPU and 50
+subrequests** on Workers Free (Paid: 30 s default, up to 5 min, and 10,000 subrequests).
+The docs also say each isolate "has some built-in flexibility to allow for cases where your
+Worker infrequently runs over the configured limit", and that a Worker "hitting the limit
+consistently" gets terminated. That flexibility is exactly what produces the misleading
+mixed 200/1102 pattern, and it is why a `cpuTime` of 456 ms can succeed while 10 ms fails.
+cite: https://developers.cloudflare.com/workers/platform/limits/
+
+**Safe fix** - There is no code-only fix for a handler whose steady-state cost is orders of
+magnitude over 10 ms CPU / 50 subrequests (a Firestore batch job is). Either move that
+workload off the Worker (Cloud Functions / a scheduled host with no per-invocation CPU cap)
+or move the account to Workers Paid. Under migration Rule 14 this is a
+"needs payment" decision that belongs to the operator - escalate, do not silently degrade.
+
+**Retry rule** - Never conclude "it works" from a single 200 on a Free-plan Worker doing
+non-trivial work: the first request after an idle period rides the burst flexibility.
+Probe the same route **twice back-to-back in one tail capture**; if the second is
+`exceededCpu` with a tiny `cpuTime`, the limit is being enforced and the route is not viable.
+
+## Wall-clock budgets cannot bound CPU on workerd
+**Symptom** - A handler is given a 5 s wall-clock budget and still dies with
+`outcome=exceededCpu`; the tail reports `cpuTime=2010 wallTime=18324`. Tightening the
+wall-clock budget changes `wallTime` and leaves `cpuTime` pinned at the cap.
+
+**Root cause** - Wall time and CPU time are different resources, and on a Firestore-heavy
+handler they diverge by more than an order of magnitude (measured on one prologue:
+**16035 ms wall vs 744 ms CPU**) because almost all wall time is network round-trips.
+Worse, workerd freezes `Date.now()` between I/O operations, so a `Date.now()`-based budget
+is structurally blind to pure-CPU work - the only thing it can bound is the number of I/O
+round-trips.
+
+**Safe fix** - Bound the work in **units** (documents, connections, batches), not in
+milliseconds, and persist a cursor so a scheduler drives repeated small invocations.
+Keep a wall-clock budget only as a secondary guard against slow I/O.
+
+**Retry rule** - Localise CPU with an **in-handler stage probe that returns its timings in
+the HTTP response body** (`?probe=stages[&stop=N]` behind the same auth gate), then read the
+single `cpuTime` for that request from one tail capture. This is far cheaper than
+`console.log` + tail parsing, and the per-stage wall times immediately show whether a stage
+is I/O-bound (safe) or CPU-bound (fatal). Do not conclude a stage is the CPU hog because it
+is slow - measure both numbers.
+
+## `.env*` exists only in the source tree, never in the isolated deploy copy
+**Symptom** - A verification/health tool that reads a token out of
+`<isolated-copy>/functions/.env.<project>` reports `no_credential` and the auth-gated route is
+never actually probed. `Test-Path` on that path returns `False` even though the deployment
+itself works and the same file plainly exists somewhere on disk.
+
+**Root cause** - Migration Rule 3 forbids `.git`, `.env*`, `.secrets`, credentials, tokens,
+caches and build output inside the isolated deploy copy. The exclusion is doing its job: the
+env file lives **only** in the GitHub source tree
+(`<hub>\<project>\GitHub\<repo>\functions\.env.<project>`), not under `<hub>\<project>\Cloudflare\<worker>\`.
+This is structural, not a path typo - it will reproduce for every migrated project.
+
+**Safe fix** - Point every `secret_sources` / env-file reference at the **GitHub source tree**
+path and say so in a `_note` beside it, so the next reader does not "correct" it back to the
+deploy copy. Resolve the real path with a glob (`<hub>/<project>/**/.env.<name>`) instead of
+assuming it sits next to `wrangler.jsonc`. The value is read at run time and handed to the
+request in memory only - never copied into the isolated tree, never logged (Rule 9).
+
+**Retry rule** - When a health check reports `no_credential`, do **not** treat it as a broken
+route or a missing secret: first glob for the env file, because the most likely cause is that
+the tool is pointed at the isolated copy, where Rule 3 guarantees it can never be.
