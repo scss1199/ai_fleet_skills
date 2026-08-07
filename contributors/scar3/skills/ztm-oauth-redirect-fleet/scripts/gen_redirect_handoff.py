@@ -84,7 +84,7 @@ lines += [
     "## Verify",
     "",
     "```bash",
-    "python C:/ai_workspace/_temp/cf-migrate/probe_redirect_uri.py",
+    "python C:/ai_workspace/_skill/fleet-skills/ztm-oauth-redirect-fleet/scripts/probe_redirect_uri.py",
     "```",
     "",
     "Done when the stderr summary reads `BAD=0`. The probe is self-checking: "
