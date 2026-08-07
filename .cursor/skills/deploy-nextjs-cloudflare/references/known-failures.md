@@ -849,3 +849,48 @@ an **independently reimplemented** guard predicate — code that imports the swe
 self-consistency. The checkable property is "every guarded line is byte-identical to its backup";
 measured after the 2026-08-07 apply: 31 files, 115 lines rewritten, 193 guarded lines, 0 guarded
 lines touched, 0 `ai-ai-` doubled prefixes.
+
+## A generator that SYNTHESISES the host from a folder name re-manufactures dead hosts
+**Symptom** - The sweep reports the LIVE lane clean (0 files / 0 occurrences) while `public/*`
+still carries 216 occurrences of the dead host, and two seats (`ai_busker`, `ai_eatery`)
+reappear in `public/portal-data.json` after every single sweep. Grepping every registry for
+those hosts finds nothing to fix. Worse, re-running the generators pushed the LIVE lane
+*backwards*, from 0 pending files to 3: `_registry/insight_portal.json`, `fathom_portal.json`
+and `calendar_portal.json` were rewritten back to the vercel host by their own producers.
+
+**Root cause** - Two different shapes of the same defect, both at the generator, not the data.
+1. **Synthesis.** `hub-portal-gen.py:_canonical_vercel_url()` built
+   `"https://%s.vercel.app/" % agent.replace("_","-")` as the fallback whenever no registry
+   supplied an explicit canonical. Nothing anywhere needs to *contain* the dead host for the
+   generator to emit it, so no amount of registry rewriting can ever converge.
+2. **Hard-coded literals.** `brain/insight/insight_portal_data.py:164`,
+   `brain/fathom/fathom_portal_data.py:176` and `brain/calendar/calendar_portal_data.py:210`
+   each carried a literal `"vercel_url": "https://ai-darkhero.vercel.app/<page>"` inside the
+   built document, so each run re-polluted both `_registry/*.json` and `public/*-latest.json`.
+
+A third artifact, `public/aex-harvest-topics.json`, is in the DERIVED lane but has **no**
+generator at all (no writer found across `*.{js,mjs,json,yml,yaml,toml}`). It is a 195-line
+mirror of `fleet_fly_hooks/data/darkhero/aex_harvest_topics.json` differing at exactly one
+line, and the fly copy was already correct.
+
+**Safe fix** - Point the fallback at the migration SSOT
+(`_registry/vercel-to-workers-map.json`) instead of at string formatting, and keep the
+vercel face for seats in the `hold` bucket on purpose: a `hold` seat has **no deployed
+worker**, so synthesising a `workers.dev` URL for it would assert a deployment that was
+never made. Fix the three literals at source. Sync the generator-less mirror **from its
+SSOT**, never by hand-editing the value into it. Two follow-on call sites break the moment
+canonicals start resolving to `workers.dev`: `_is_public_deploy_face()` did not recognise
+`workers.dev`, so collapse-to-one-public-face stopped applying to every migrated seat, and
+`_deploy_info()` matched neither `vercel.app` nor `fly.dev` and fell through to the `"."`
+placeholder, dropping the URL from the dashboard.
+
+**Retry rule** - Before declaring a host sweep done, **run every generator and re-scan**. A
+sweep that has not survived a regeneration cycle is unverified, not clean. Read the bucket
+counts out of the state JSON: the console summary printed `LIVE pending: 0` while 7 files
+and 30 occurrences sat unmentioned in `derived_fix_the_generator`. Grep generator sources
+for the host as a **format string**, not only as a literal (`%s.vercel.app`, `${x}.vercel.app`,
+`+ ".vercel.app"`). Measured arc on 2026-08-07: DERIVED 9 files/216 occ -> 7/30 after running
+two generators -> **0/0** after fixing the sources and running all five; LIVE `pending_files`
+3 -> **0**; portal faces afterwards: 0 `"."` placeholders, 0 seats with more than one public
+web face, 8 seats resolving to `workers.dev`, and the only 11 `vercel.app` hosts left are
+exactly the `hold` bucket.
