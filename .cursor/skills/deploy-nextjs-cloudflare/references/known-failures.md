@@ -692,3 +692,101 @@ request in memory only - never copied into the isolated tree, never logged (Rule
 **Retry rule** - When a health check reports `no_credential`, do **not** treat it as a broken
 route or a missing secret: first glob for the env file, because the most likely cause is that
 the tool is pointed at the isolated copy, where Rule 3 guarantees it can never be.
+
+## A fleet-wide hostname rewrite corrupts hosts that are suffixes of other hosts
+**Symptom** - After a bulk `*.vercel.app` -> `*.workers.dev` substitution, a file contains
+`ai-ai-ziyaoastro.kyloren.workers.dev`. Nothing errors, the build stays green, and the bad host
+only surfaces as a failed request much later.
+
+**Root cause** - `ziyaoastro.vercel.app` is a **suffix substring** of `ai-ziyaoastro.vercel.app`.
+A plain `re.sub(re.escape(host), target, text)` iterated in dict order matches the short host
+*inside* the long one and rewrites its tail, stranding the `ai-` prefix in front of the new
+target. Sorting each file's hosts longest-first is **not sufficient**: an alias that is on `hold`,
+or absent from the map entirely, never enters the per-file host set, so it can never be ordered
+relative to the host that contains it.
+
+**Safe fix** - Do both, and know which half is load-bearing:
+
+```python
+for host, info in sorted(f["hosts"].items(), key=lambda kv: -len(kv[0])):
+    new = re.sub(r"(?<![A-Za-z0-9-])" + re.escape(host), info["to"], new, flags=re.I)
+```
+
+The negative lookbehind is the essential half - it anchors the match to a DNS label boundary and
+therefore protects against hosts the tool has never heard of. Longest-first ordering is only the
+cheap belt to that braces.
+
+**Retry rule** - After any bulk host rewrite, re-read the written bytes and assert **two**
+properties per file: zero residual old-domain hosts, **and** zero doubled prefixes
+(`grep 'ai-ai-'`). A post-apply rescan reporting `pending: 0` proves only the first - a corrupted
+host no longer matches the old-domain pattern, so it counts as clean.
+
+## Rewriting a generated artifact fixes nothing and hides the real defect
+**Symptom** - A sweep reports hundreds of stale hostnames concentrated in a handful of files under
+`public/` (measured 2026-08-07: 216 occurrences across 9 files - `index.html` 75, `portal.html` 75,
+`portal-data.json` 61). Rewriting them turns the sweep green; the next generator run puts every
+stale host straight back.
+
+**Root cause** - Those files are build output, not source. The stale host lives in the
+**generator**, or in the registry the generator reads. The sweep was measuring the symptom.
+
+**Safe fix** - Classify any path under a generated directory into a separate `DERIVED` lane the
+writer refuses to touch, and report it as *fix the GENERATOR*. Put the directory check **before**
+the suffix check, so a generated `.json` or `.html` cannot fall through into the writable lane on
+the strength of its extension.
+
+**Retry rule** - Before rewriting a file, ask what writes it. If the answer is "a script in this
+repo", the edit belongs in that script. Precedent in this fleet: `gen_redirect_handoff.py` once
+emitted a stale `_temp/cf-migrate/` path, and patching the generated markdown would have regressed
+on the very next run.
+
+## The mapping SSOT contains every host as a literal, so an unguarded sweep rewrites itself
+**Symptom** - The first `plan` run lists the mapping file itself among the files to rewrite (11
+hits), and a second run would re-map already-migrated targets.
+
+**Root cause** - A host-to-host map necessarily stores every source hostname as a literal key. Any
+scanner that walks the tree by content will therefore match its own configuration, its own state
+file, and any probe state file that records measured URIs.
+
+**Safe fix** - An explicit `exclude_files` lane checked by **basename, in the first branch of the
+classifier**: the map file, the sweep's own state file, and `redirect_uri_state.json`. Basename and
+not full path, so a copy under a different root stays excluded too.
+
+**Retry rule** - Any content-walking tool whose configuration is data of the same shape it searches
+for must exclude its own artifacts before anything else. Read the first `plan` output for the
+tool's own filenames before trusting a single number in it.
+
+## Rewriting a hostname inside a dated DEPRECATED comment falsifies the record
+**Symptom** - A sweep flags `ut.vercel.app` at `ai_ut/web/fly.toml:1` and `seth-match-app.vercel.app`
+in `ai_career` workflows. Both look like ordinary stale references.
+
+**Root cause** - Both sit inside dated deprecation notes (`# DEPRECATED 2026-07-04 - Fly retired;
+LIVE = https://ut.vercel.app`). The hostname is not a live reference, it is the *content of a
+historical statement*. Rewriting it produces a note asserting that a Worker existed on a date it
+did not.
+
+**Safe fix** - Route them to a `hold` map with a written reason per entry - `"no worker exists"` is
+a reason, `"probably fine"` is not. The same reasoning protects `_inbox`, `technique_output`,
+`_logs` and every other append-only record directory: rewriting history is falsification, not
+migration.
+
+**Retry rule** - Read the **line**, not just the match, before rewriting any hostname. A match
+preceded by a comment marker, or sitting inside a `_note` / `_doc` field, is a record; the correct
+action is to add a new line beside it, never to edit the old one.
+
+## A mojibake source file must not be silently "repaired" by an unrelated rewrite
+**Symptom** - `ai_ut/web/fly.toml` carries encoding damage (`??` where an em-dash belongs, stray
+CJK on line 2). A read-modify-write through Python would normalise or worsen those bytes as a side
+effect of changing an unrelated hostname on the same line.
+
+**Root cause** - `path.read_text(encoding="utf-8")` + `write_text` round-trips the **whole file**,
+so every byte the decoder guessed at is re-encoded from that guess. The diff then contains changes
+the task never intended, in a file the task was only passing through.
+
+**Safe fix** - Keep the file out of the writable set (here: `hold`, since its only match was inside
+a deprecation comment anyway). When a damaged file genuinely must be edited, fix the encoding as a
+separate single-purpose commit first, so the two changes stay reviewable apart.
+
+**Retry rule** - Before a bulk rewrite, scan the target set for replacement characters and
+CP950/UTF-8 confusion. Any hit is a file the bulk tool must skip: its diff will not be reviewable,
+and the damage will be attributed to the migration.
