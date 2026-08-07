@@ -894,3 +894,59 @@ two generators -> **0/0** after fixing the sources and running all five; LIVE `p
 3 -> **0**; portal faces afterwards: 0 `"."` placeholders, 0 seats with more than one public
 web face, 8 seats resolving to `workers.dev`, and the only 11 `vercel.app` hosts left are
 exactly the `hold` bucket.
+
+## A verifier assertion that SURVIVES an architecture migration unchanged silently inverts
+
+**Symptom** - After the vercel -> workers.dev cutover, `verify-fly-routing.py` reported
+`face_fly_fail=4`: every migrated LINE face "failed". The sites were live, the routes
+answered 200, and `cf-worker-health.py` was green on the same seats. Meanwhile
+`verify-line-e2e.py` reported `fail=5`, three of them `403 error code: 1010` against hosts
+that a browser loads normally.
+
+**Root cause** - Two independent defects, both in the *test*, neither in the deployment.
+1. **Obsolete assertion.** Pre-migration the public face was a thin Vercel route that
+   proxied to `fleet-line-hooks.fly.dev`, so the verifier asserted "the face must reach
+   Fly" by looking for `via: 1.1 fly.io` / `fly-request-id` / a `"mode":"fly"` body. The
+   migrated Worker does not proxy: it **ports** the handler and verifies the LINE HMAC at
+   the edge. The assertion kept running, kept its old meaning, and therefore scored a
+   correct migration as a total failure. Only the hostnames had been updated in the
+   earlier pass; the predicate they were fed to had not.
+2. **Missing User-Agent.** `http()` passed `headers or {}`, so urllib sent its default UA,
+   and Cloudflare's browser-integrity check answered `403 error code: 1010`. The sibling
+   verifier had always sent `User-Agent: verify-fly-routing/1` and never saw a single 1010
+   - the contrast is the proof. Worse, one row asserted only the status code
+   (`code in (401, 403, 302)` = "needs SSO") and so **PASSED on a 1010 body**: right
+   status, wrong reason, a green row for a request that never reached the app.
+
+**Safe fix** - Decide proxy-vs-local with an **unsigned POST**, not a GET: a proxying edge
+forwards it and the origin stamps its marker on the 401, a local handler 401s clean. Then
+make the assertion a disjunction over both legal shapes -
+`served = fly_hit or edge_handler(...)` - because at least one seat (`ai-ziyaoastro`)
+genuinely still proxies (`401` + `via: 1.1 fly.io`) and replacing the old assertion instead
+of widening it would just invert which seats break. `edge_handler()` must still catch the
+case worth catching, a **missing route swallowed by the SPA catch-all**: `405` proves the
+router matched the path and rejected the verb (a catch-all never 405s), and a JSON
+content-type carrying the handler's own `"ok":` proves the handler ran, while `text/html`
+means the request fell through to `index.html`. Test that with a substring, not
+`json.loads` - the fetch reads a 400-byte prefix and a longer body is legitimately
+truncated. Send an explicit `User-Agent` on every probe, seeded first so caller headers
+(`Authorization`, `X-Line-Signature`) still win. Finally, resolve hosts through the
+migration SSOT and **SKIP** rows whose map entry is `hold` + T0: asserting a public face
+for a seat the map declares not-public manufactures a permanent failure out of a
+deliberate decision.
+
+**Retry rule** - When an architecture changes, the migration is not done until every
+assertion *about* that architecture has been re-read, and an assertion that still compiles
+is not an assertion that still means what it says. Grep the verifiers for the old
+mechanism's fingerprints (`via`, `fly-request-id`, `"mode":"fly"`) before trusting a red
+result, and treat "the test is red but health is green" as a claim about the test first.
+Never assert on a status code alone against a Cloudflare-fronted host - pair it with a body
+predicate, or an edge rejection will pass as an application response. Measured 2026-08-07:
+`verify-fly-routing.py` `face_fly_fail=4` -> `direct_fail=0 face_fail=0 face_skip=1`,
+EXIT=0; `verify-line-e2e.py` `fail=5` -> `fail=3` (UA) -> `fail=2 total=9 skip=1` (T0 skip),
+with the residual 2 being expired LINE channel access tokens, an operator-side console item
+unrelated to the migration. The positive evidence the rewrite bought: a correctly
+HMAC-signed LINE event POSTed to `ai-darkhero.kyloren.workers.dev/api/line/webhook` returns
+**HTTP 200 `OK`**, byte-identical to the Fly origin, which proves the edge handler executes
+signature verification and accepts real events - something the old "did it reach Fly?"
+assertion could never have shown.
