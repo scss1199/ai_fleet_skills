@@ -790,3 +790,62 @@ separate single-purpose commit first, so the two changes stay reviewable apart.
 **Retry rule** - Before a bulk rewrite, scan the target set for replacement characters and
 CP950/UTF-8 confusion. Any hit is a file the bulk tool must skip: its diff will not be reviewable,
 and the damage will be attributed to the migration.
+
+## Substituting a host in a console attestation silently deletes a live login
+**Symptom** - A host-migration sweep rewrites `config/gcp_oauth.json` and the
+`redirect_uris` / `js_origins` blocks of `_registry/fleet-oauth-clients.json`. Nothing errors,
+the tree is consistent, and every Google SSO login in the fleet breaks at the next sign-in with
+`redirect_uri_mismatch`.
+
+**Root cause** - Those files are not configuration that *drives* the console; they are a mirror of
+what the console **contains**. The console still holds only the vercel URI, because no API exists
+to add the worker one (classic Web OAuth clients have no public write API). Substituting turns the
+mirror into a lie and, worse, removes the record of the one URI that currently works — so the next
+person "reconciles" the console to the file and takes the login offline for real.
+
+**Safe fix** - Give the sweep an **ADDITIVE lane**: matched, reported, never written. The tool
+prints the exact `+ https://<worker-host>/<callback-path>` lines to paste into the console, and the
+substitution is deferred until after the console add. Encoded as `lanes.additive_files` plus a
+line-level `guards.attest_keys` / `guards.attest_value_paths` in
+`_registry/vercel-to-workers-map.json`. Strip trailing punctuation off any URL extracted from prose
+(`url.rstrip(".,;:)]}'\"")`) — a callback registered as `…/api/auth/callback.` never matches.
+
+**Retry rule** - Before widening a rewrite to a new file class, ask what the file *asserts*. If it
+asserts the state of an external system you cannot write to, it is ADD-only. Verify by re-running
+the plan and confirming the ADDITIVE bucket's occurrence count went **up** while the writable count
+went **down**; if both fell, the guard silently swallowed live config.
+
+## A lane is a property of a path, but a shared registry file mixes three kinds of content
+**Symptom** - Path-level classification (LIVE / RECORD / DERIVED) is correct on every project
+directory and still wrong on `_registry/*.json`. One file holds live config
+(`portal-sso-edge-protocol.json:8` `"portal": "https://ai-darkhero.vercel.app"` — must move),
+console attestation (`:22` `"redirect_uri"` — ADD-only) and dated probe evidence
+(`fleet-google-objects.json:10-30` `"website_probe_20260721": {"vercel_ok": [...]}` — must never
+move) within a few lines of each other. Any whole-file verdict is wrong for two of the three.
+
+**Root cause** - Lanes assume one file = one kind of content. Shared SSOT registries violate that.
+Three distinct ways the guard was found under-specified, all on 2026-08-07:
+1. **Key spelling** — `attest_keys` was written from Google's canonical field names, so
+   `javascript_origins` was guarded but the abbreviated `js_origins` actually used at
+   `fleet-oauth-clients.json:26,46,75,97,119,146,185` was not. Seven live registered origins sat in
+   the writable set.
+2. **Date in the filename** — `_registry/mtm-audit/portal-sso-*-2026-07-09T*.json` are dated
+   snapshots, but nothing *inside* them carries a date key, so no key-based guard can see them.
+3. **Platform-named keys** — `vercel_canonical` / `vercel_live` / `vercel_url` / `vercel_api_proxy`
+   hold the URL being migrated. The value must move; the key name then lies about it.
+
+**Safe fix** - Add a **line-level guard layer** below the path lane, and make `apply` rewrite
+**lines, not files** (`splitlines(keepends=True)` + touch only recorded line numbers). A line's
+label comes from three sources, because one is never enough: the enclosing JSON key (tracked by
+indentation, not by parsing — re-emitting parsed JSON would reformat a hand-maintained file and
+destroy the original line numbers the report cites), the key on the line itself, and the **value**
+(`attest_value_paths`, since `auth-inventory.json:39` states its callback inside a prose field).
+For (2) add the directory to `record_dirs`. For (3) rewrite the values and book the
+`vercel_* -> workers_*` rename as debt **with a measured consumer list**, not as a vague TODO.
+
+**Retry rule** - Build the guard key list from the files, never from the vendor's documentation.
+Grep the actual population (`"vercel[a-z_]*"\s*:`) before exercising a lane. Verify the write with
+an **independently reimplemented** guard predicate — code that imports the sweep engine proves only
+self-consistency. The checkable property is "every guarded line is byte-identical to its backup";
+measured after the 2026-08-07 apply: 31 files, 115 lines rewritten, 193 guarded lines, 0 guarded
+lines touched, 0 `ai-ai-` doubled prefixes.
