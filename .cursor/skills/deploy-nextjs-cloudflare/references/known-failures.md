@@ -1574,3 +1574,123 @@ not one. And note the shape of this failure: a validator whose own subject is a 
 be broken by prose about the validator. That is the check working, not misfiring - the selftest's
 `unmutated_control` case is what turns "my edit broke it" from a guess into a measurement, which is
 why an all-green check set is worthless without a control that is able to go red.
+
+## A health checker that follows redirects cannot express a gate assertion at all, so the prescribed fix silently produced a permanent false red
+
+**Symptom** - the entry above ("A Vercel Edge Middleware auth gate is NOT ported...") already
+prescribes the fix: `cf-health-targets.json` must expect a 3xx, not a 200, on a gated root. Writing
+exactly that produced a route that could never pass. The recorded rule was correct and unusable, and
+because nobody had tried it, the fleet ran for a further day on the criterion the rule condemns.
+
+**Root cause** - `cf-worker-health.py`'s `_fire()` called bare `urllib.request.urlopen`, which
+follows redirects. The response the checker graded was therefore always the FINAL hop: for
+`ai-darkhero`'s `GET /` that was the login page's `200`, never the `302` that carried the gate. So
+`expect: 200` passed both while the gate was live and while it was missing entirely, and the
+prescribed `expect: 302` could not match any response the checker was capable of seeing. A single
+knob was missing, and its absence silently inverted a rule into its opposite.
+
+**Safe fix** - a `_NoRedirect` opener (`redirect_request` returns `None`) selected per route by
+`follow: false`, plus `expect_location_suffix` compared against the Location **path**
+(`urllib.parse.urlsplit(loc).path`) - Workers emit an absolute `https://host/login.html` on one site
+and a relative `/login` on another, so a raw-header suffix match misses one of them. Three further
+details were load-bearing: `Cache-Control: no-cache` on gate routes only, because the edge cache
+sits in front of the Worker (see the entry above) and forcing every route past it would push a dozen
+unrelated paths onto the Worker and risk fresh `cpu_limit` reds on the Free plan; a `bad_location`
+verdict distinct from `bad_status`, so "the redirect exists but no longer lands on the gate" names
+itself; and a pre-flight `bad_config` guard, because `expect_location_suffix` with `follow: true` or
+a non-3xx expect can never match and would otherwise re-create the same permanent false red one
+level up. Note what that guard must NOT assert: `follow: false` does not imply a 3xx expect, since a
+non-following route legitimately expects `200` to assert the ABSENCE of a redirect.
+
+**Retry rule** - when a known-failures retry rule prescribes a configuration, run it once and confirm
+it can go both green and red before trusting the rule; a rule nobody has executed is a hypothesis.
+And when one instance of a criterion defect is found, probe every peer with the same criterion before
+declaring it closed - here, probing the nine remaining bare-root targets `follow: false` proved
+`ai-busker` and `ai-eatery` were carrying the identical false GREEN (`/` is `307 -> /login`), which
+no amount of re-reading the ai-darkhero fix would have revealed. Two negative results from that same
+sweep are worth keeping: `ai-ziyaoastro`'s `/login` `307` is trailing-slash normalisation and not a
+gate, and a "does this page have a password input" probe that reads only the first 4 KB proves
+nothing about a client-rendered form - a field a probe can emit is not automatically a claim it
+supports.
+
+## A site's ROOT shape is not evidence of its gate, so "200 at `/` plus a `/login`" is neither a missing gate nor a present one
+
+**Symptom** - after the sweep above proved `ai-busker` and `ai-eatery` were carrying the same false
+GREEN as `ai-darkhero`, the two sites left on a bare `{"path":"/","expect":200}` looked like the same
+bug: `ai-heartlink` and `ai-jci-taipei` both answer `200` at `/` and both ship a login route. Acting
+on that resemblance would have converted both roots to 3xx gate assertions and taken two working
+targets permanently red - and the resemblance is also what left both sites with NO gate assertion at
+all for a day, since the shape was read as "undetermined" rather than measured.
+
+**Root cause** - a site-wide bounce is only one of at least three gate designs, and they are
+indistinguishable at `/`. `ai-darkhero` bounces the root (`302 -> /login.html`). `ai-heartlink` is
+public at the root by design and hides its admin surface with a server-side existence gate -
+`app/admin/page.tsx` does `verifySession(token); if (!email) notFound()`, and `lib/auth.ts:3` states
+the SSO is 主辦後台用, admin backend only. `ai-jci-taipei` is public at the root and gates one level
+in: `app/(site)/admin/page.tsx:28-30` is `redirect("/messages")` for anyone failing
+`canEditAccessBindings`, and `/messages` itself `307`s to `/api/auth/login`. The root response is
+identical in all three of "gated site", "public site with a gated area", and "gate removed", so it
+carries no information about the gate either way.
+
+**Safe fix** - assert the PROTECTED route, not the root, and pick the assertion by what it can
+falsify. Measured unauthenticated, twice each: `ai-heartlink /admin` `404`; `ai-jci-taipei /messages`
+`307 -> /api/auth/login`, `/admin` `307 -> /messages`, `/api/auth/login` `307 -> /o/oauth2/v2/auth`.
+Prefer a redirect assertion where one exists, because a `404` assertion is strictly weaker - it also
+passes when the route is simply undeployed, so it asserts non-rendering, not gate-liveness, and that
+limit belongs in the target's `_note` rather than in nobody's head. Keep the sign-in entrance
+asserted too (`/login.html`, `/login`, `/api/auth/login`): a gate nobody can pass is also broken.
+`follow: false` on a non-3xx expect is legitimate here and the `bad_config` guard permits it - on
+`/admin expect 404` it exists to force `Cache-Control: no-cache` past the edge cache, not to chase a
+Location.
+
+**Retry rule** - never infer a gate's design from a status code at `/`; read the route source and
+probe the protected path. Two candidate assertions must be rejected explicitly rather than
+quietly: `ai-heartlink`'s `/api/auth/me` returns `{}` with `200` unauthenticated by design, so it
+scores identically gated or not; `ai-jci-taipei`'s `/api/meetings` and `/api/term/*` return `404`
+with a JSON `{ok:false,error:"unauthorized"}` body (`app/api/meetings/route.ts:8,12`), which a
+status-only probe cannot tell from an undeployed route - the engine has no body matcher, so use a
+redirect assertion instead of a weaker one. Finally, this class closes the middleware hunt rather
+than extending it: globbing `*/middleware.{ts,js,tsx,mjs}` and `*/src/middleware.{ts,js}` across
+every deploy copy returns exactly one file, `ai-jci-taipei/middleware.ts`, and that is the
+canonical-host fix for the 308 self-redirect loop recorded above, not an auth gate - its own comment
+records the branch is dead code on `workers.dev`. Do not re-run that sweep.
+
+## Deleting `.git/index.lock` as a command prefix is not enough, because a concurrent hub job re-creates it between the delete and the git call
+
+**Symptom** - the documented prefix (`Remove-Item -Force .git\index.lock` immediately followed by the
+git call) ran, and `git add` still returned `ADD_RC=128` with the "Another git process seems to be
+running" message; the follow-up `git commit` returned `COMMIT_RC=128` for the same reason. Inspecting
+straight afterwards showed `.git\index.lock` **absent** and **no `git` process running** - so the
+obvious reading ("stale lock left by a crashed git") was wrong, and deleting harder would not have
+helped. The batch's `git push` in the same call printed `Everything up-to-date` with `PUSH_RC=0`,
+which is a true statement about an empty push and is easy to misread as evidence the commit landed.
+
+**Root cause** - this workspace runs background hub jobs (HubClock riders, tray jobs) that touch the
+same repository. The lock is not stale, it is *live*: another process takes it in the window between
+the `Remove-Item` and the git invocation. A prefix-delete only fixes the crashed-git case; it cannot
+fix contention, and worse, force-deleting a lock that a running git actually owns is how an index
+gets corrupted.
+
+**Safe fix** - retry with backoff, and only when the failure really is the lock:
+
+```powershell
+function Try-Git {
+  param($args_)
+  for ($i = 0; $i -lt 6; $i++) {
+    $out = & git @args_ 2>&1 | Out-String
+    if ($LASTEXITCODE -eq 0) { return @($true, $out) }
+    if ($out -notmatch 'index.lock') { return @($false, $out) }   # a real error - do not loop on it
+    Start-Sleep -Milliseconds 1500
+  }
+  return @($false, $out)
+}
+```
+
+It succeeded on the first retry. Note it reads `$LASTEXITCODE`, not the exception text: PowerShell 5.1
+renders a native executable's stderr as `NativeCommandError` even when the exit code is 0.
+
+**Retry rule** - never treat `PUSH_RC=0` as proof a commit exists; confirm with `git log -1 --oneline`
+or `git status`. Never chain `Remove-Item index.lock` + git as the whole strategy, and never delete a
+lock while a `git` process is genuinely alive - check first, then wait it out. Six attempts at 1.5 s
+covers the observed contention with room to spare; if it exhausts, that is a real finding (a wedged
+background job) and should be reported, not forced.
