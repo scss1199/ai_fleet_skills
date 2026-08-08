@@ -950,3 +950,40 @@ HMAC-signed LINE event POSTed to `ai-darkhero.kyloren.workers.dev/api/line/webho
 **HTTP 200 `OK`**, byte-identical to the Fly origin, which proves the edge handler executes
 signature verification and accepts real events - something the old "did it reach Fly?"
 assertion could never have shown.
+
+## A skip-list honoured by one code path and not its sibling silently reverses a quarantine
+
+**Symptom** - `mtm-claude-quarantine.py --apply` moved 39 Claude remnants (38 of them redeployed
+skill copies under `ai_master/.cursor/skills/`) into `_delete/claude-remnant-20260808/` with a SHA
+manifest, and `mtm-claude-sweep.py` confirmed `remaining_hits: 0`. Immediately afterwards
+`fleet-skill-sync.py verify` returned `VERIFY FAIL missing=27`, every row `ai_master
+.cursor/skills/<name>`, and `verify --seats-only` returned the **identical** 27 rows.
+
+**Root cause** - two independent defects in `_skill/engines/fleet-skill-sync.py`. (1) `SKIP_SEATS`
+(line 110, containing `ai_master`) was consulted only by `_seats()`, which feeds `deploy
+--seats-only`. The all-folders path `_all_deploy_roots()` builds its root set by walking the
+`_projects` matrix and never looked at `SKIP_SEATS`, so it kept `ai_master`. `cmd_tick()` calls
+`cmd_deploy(all_folders=True)`, and `cmd_tick` is what the `fleet-skill-pulse` HubClock rider
+(`_registry/hosts.json`, cadence 15m, `fleet-skill-sync-tick.py`) executes - so the next tick
+would have re-written all 38 quarantined skill files and reversed the quarantine within 15
+minutes, with no error anywhere. (2) `cmd_verify(all_folders=..., only=...)` accepted
+`all_folders` and never read it; the body always called `_all_deploy_roots()`. That is why
+`--seats-only` changed nothing, and it is what made the first defect look like a mode artifact
+instead of a real skip-list hole.
+
+**Safe fix** - make the skip list authoritative at the enumeration, not at one caller: `continue`
+on `_name in SKIP_SEATS` inside the matrix loop, plus a second gate on the first path segment of
+the relative root in the final filter (a skipped seat can also surface as another entry's
+component/sub-root, where the matrix key no longer identifies it). Then make `cmd_verify` honour
+its own parameter: `all_folders` -> `_all_deploy_roots()`, otherwise the seat roots from
+`_seats()`. Measured 2026-08-08: `missing=27` -> `VERIFY OK 34 root(s)` EXIT=0 (all-folders) and
+`VERIFY OK 20 root(s)` EXIT=0 (seats-only).
+
+**Retry rule** - after any quarantine or removal, identify every scheduled writer that could
+re-create the removed paths and read the code path that scheduler actually calls, not the one
+documented in the skill. A rider is a background writer with the same authority as a manual run.
+When a constant like `SKIP_SEATS` exists, grep every use of it and confirm no sibling enumeration
+bypasses it - a skip list applied at one of two enumerations is worse than none, because the
+half that honours it makes the system look correct. And a keyword argument that is accepted but
+never referenced in the body is a silent no-op: when two CLI modes return byte-identical output,
+suspect a dead parameter before concluding the modes are equivalent.
