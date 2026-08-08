@@ -987,3 +987,126 @@ bypasses it - a skip list applied at one of two enumerations is worse than none,
 half that honours it makes the system look correct. And a keyword argument that is accepted but
 never referenced in the body is a silent no-op: when two CLI modes return byte-identical output,
 suspect a dead parameter before concluding the modes are equivalent.
+
+## `git add -A -- <dir>` after a quarantine commits the deploy artifacts you meant to leave alone
+
+**Symptom** - a quarantine moved 8 git-tracked worker sources out of `ai_darkhero/cf/` and the
+follow-up commit was staged with `git add -A -- cf` to record the deletions. The commit landed as
+`68 files changed, 4847 insertions(+), 3558 deletions(-)`: the deletions were right, but 60
+previously-untracked files under `cf/.agents/` and `cf/.cursor/` were newly **added** to the repo.
+Those are fleet-skill deploy artifacts whose SSOT is `_skill/fleet-skills/`, and a seat repo must
+never track them. It was pushed before the stat line was read.
+
+**Root cause** - `-A` means "stage additions, modifications and deletions", so scoping it to a
+path scopes *where* it looks, not *what class of change* it stages. A quarantine leaves a
+directory whose remaining contents are exactly the untracked residue you deliberately did not
+move, which is the worst possible input for `-A`. The intent was deletions only.
+
+**Safe fix** - to record moves-out, stage removals only: `git add -u -- <dir>`, or
+`git rm -r --cached <specific paths>` for anything already tracked. Read `git diff --cached
+--stat` *before* committing and confirm the insertion count is 0 when the commit is supposed to
+be a removal. If it has already been pushed, do not rewrite history on a shared branch: move the
+wrongly-added files into the same dated `_delete/` directory, extend `manifest.json` with their
+SHA-256s, re-stage, and commit the correction with the reason. Confirm with `git ls-files <dir>`
+returning nothing.
+
+**Retry rule** - before quarantining a directory, check whether it is a fleet-skill deploy root,
+because that decides whether the skill trees inside it will come back. `_all_deploy_roots()`
+promotes a sub-directory to a root when `_has_project_marker()` matches (`package.json`, other
+MARKER_FILES, or `.git`). Here `cf/package.json` was the only reason `cf` was a root; moving the
+worker source removed the marker, `_all_deploy_roots()` went 34 -> 33 roots with `verify` EXIT=0,
+and the skill trees became safe to quarantine too. Had the marker survived, quarantining them
+would have been undone on the next `fleet-skill-pulse` tick - the same failure mode as entry #10.
+
+## PowerShell 5.1 `Set-Content -Encoding utf8` puts a BOM in the commit subject
+
+**Symptom** - a commit message file written with `... | Set-Content msg.txt -Encoding utf8` and
+passed to `git commit -F msg.txt` produced `git log --oneline` showing an invisible zero-width
+character before the first word of the subject: `<U+FEFF>docs(known-failures): ...`.
+
+**Root cause** - "utf8" in Windows PowerShell 5.1 means UTF-8 **with** BOM, for `Set-Content`,
+`Add-Content` and `Out-File` alike. Git does not strip a BOM from a `-F` message file, so the
+three BOM bytes become the first characters of the subject line.
+
+**Safe fix** - write commit messages and any file another tool will parse with a writer that does
+not add a BOM: the agent's own file-write tool, or Python `io.open(p, "w", encoding="utf-8",
+newline="\n")`. PowerShell 5.1 alternatives are `[IO.File]::WriteAllText($p, $s)` (UTF-8 no BOM)
+or `-Encoding utf8NoBOM`, which exists only in PowerShell 6+.
+
+**Retry rule** - do not amend and force-push a shared branch to remove a BOM from a subject
+already pushed; the damage is cosmetic and a force-push on a branch other agents pull is not.
+Check `git log --oneline -1` after any `-F` commit. The same BOM rule already applies to
+appending to Markdown - see the `known-failures.md` append path, which is Python for exactly this
+reason.
+
+## An ack-then-persist webhook cannot be verified by status code, so sign an EMPTY batch
+
+**Symptom** - the migrated jci_taipei face needed proof that its LINE webhook still worked after the
+move off Vercel. `GET /api/line/webhook/<code>` returns `mode: "vercel"` hard-coded in the route
+source, so it cannot discriminate proxy from worker, and the obvious next step - POST a signed event
+- would have written into the committee's live inbox.
+
+**Root cause** - two independent properties of the handler. (1) `processLineWebhook` maps
+`persistEvent` over `body.events` with **no filtering** (`lib/line-webhook-server.ts:187-190`), so any
+signed event is a real dual-write into the committee's Drive+GAS inbox: a smoke test would have
+appended a fake message to real organisation data. (2) The route acks *before* it persists (`void
+processLineWebhook(...)` then `return NextResponse.json({ ok: true })`,
+`app/api/line/webhook/[code]/route.ts:59-63`), so a 200 asserts only "a signed event was accepted",
+never "Drive+GAS were written". No response code can report the dual-write.
+
+**Safe fix** - sign `{"events": []}`. The HMAC check must still pass, which proves the deployed face
+holds the same channel secret as the committee's local `.env`, while `events.map(...)` over an empty
+array persists nothing. Pair it with **one** unsigned POST as a negative control: a face that never
+reached the HMAC check (static catch-all, missing binding) cannot answer `401 bad_signature`, and
+without that row a blanket-401 or blanket-200 face reads as a PASS for the wrong reason. Measured:
+four provisioned OAs answer `200 {"ok":true}` signed and `401 bad_signature` unsigned.
+
+**Retry rule** - state in the verifier what the assertion does *not* cover. Here the dual-write
+itself stays out of scope by construction; reading it back needs an SSO session on `/api/inbox`,
+which answers `401 unauthorized` unauthenticated. Do not let a later reader mistake "signature
+accepted" for "persisted". Check the transport registration too: the Fly gateway registers the jci
+routes for POST only (`fleet_fly_hooks/src/gateway.js:119`), so a Fly GET row would 404 and prove
+nothing - it was deliberately not added.
+
+## A verifier row for a deliberately unprovisioned subject is a permanent FAIL, not a finding
+
+**Symptom** - `jci calndr face GET [T2]` failed with `404 {"ok":false,"error":"unknown_code"}`. The
+row was correct about the observation and wrong about its meaning: the committee OA was simply never
+provisioned.
+
+**Root cause** - the loop guarded only the signed POST behind "has a channel secret" and probed the
+GET unconditionally. `calndr` has `LINE_BOT_CHANNEL_SECRET` of length 0 in its `line/.env`, and the
+deployed face agrees - `lineOaCodes()` omits it, hence the 404. A deliberate state was being asserted
+as a defect, so the suite could never go green and the two real failures (expired LINE tokens) would
+be lost in the noise.
+
+**Safe fix** - skip the subject **whole**, not partially: move the `if not secret: skipped.append(...)
+; continue` above the GET probe, and say in the skip line *why* it is absent. This is the precedent
+already in the same file for T0 seats, whose comment states the principle: probing a public face for
+a seat the map declares not-public "turns a deliberate decision into a permanent FAIL".
+
+**Retry rule** - after adding rows to a suite, read the skip list as carefully as the fail list. Any
+FAIL that a registry entry or an absent credential already *predicts* belongs in `skipped` with the
+prediction quoted. Measured after the fix: `fail=2 total=19 skip=2`, and both remaining failures are
+operator-side expired LINE channel access tokens.
+
+## A crashed background rider leaves a zero-byte `.git/index.lock` that blocks every later commit
+
+**Symptom** - `git add` in the hub repo died with `fatal: Unable to create
+'C:/ai_workspace/.git/index.lock': File exists.` Waiting 90 s, then another 60 s, did not clear it;
+the lock's `LastWriteTime` never advanced while its age climbed past 380 s.
+
+**Root cause** - a HubClock rider spawns `git` in this repo every couple of minutes, so
+`Get-Process git` alternates between 0 and 2 hits and *looks* like an owner is holding the lock. It
+is not: the file was 0 bytes and never rewritten, i.e. residue from an earlier git that was killed
+mid-operation. The transient processes are later riders failing on the same stale lock.
+
+**Safe fix** - do not delete a lock on the strength of a single sample. Poll until `Get-Process git`
+returns 0 **and** the lock's age exceeds a threshold well past a normal git operation (120 s was
+used), then in that same iteration **move it aside** into the dated scratchpad rather than deleting
+it - `.git/index` itself is untouched, so the move is reversible. Then stage and commit immediately,
+before the next rider tick.
+
+**Retry rule** - never `Remove-Item` a lock in a repo other agents write to, and never on age alone
+while a git process is live. If the lock keeps being recreated with a *fresh* timestamp, it has a
+real owner: wait, do not intervene.
