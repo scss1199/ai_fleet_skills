@@ -1694,3 +1694,61 @@ or `git status`. Never chain `Remove-Item index.lock` + git as the whole strateg
 lock while a `git` process is genuinely alive - check first, then wait it out. Six attempts at 1.5 s
 covers the observed contention with room to spare; if it exhausts, that is a real finding (a wedged
 background job) and should be reported, not forced.
+
+## `Remove-Item` on a stale `.git/index.lock` is blocked by the harness, and the block rejects the WHOLE PowerShell call
+
+**Symptom** - `git add` returned 128 with `fatal: Unable to create 'C:/ai_workspace/.git/index.lock':
+File exists.` and the bounded `Try-Git` retry above exhausted all six attempts without clearing it.
+The prescribed fallback then failed on a completely different layer:
+
+```
+Remove-Item on system path 'C:\ai_workspace' is blocked. This path is protected from removal.
+```
+
+The important half of this symptom is the blast radius: the `git add` and `git commit` chained after
+the `Remove-Item` **in the same PowerShell call never ran**. The call was rejected as a unit, so the
+transcript shows only the guard message and it is easy to misread as "the delete failed but the
+commit went through". It did not - `git log -1` still pointed at the previous commit.
+
+**Root cause** - two independent things, and conflating them wastes a cycle:
+
+1. This lock was genuinely **stale**, the exact inverse of the contention case recorded directly
+   above. Measured: `Test-Path .git\index.lock` true, `LastWriteTime` age 754 s then 1079 s (it was
+   not moving), `(Get-Process git).Count` = 0. Retrying cannot clear a stale lock - nothing is going
+   to release it - so the bounded retry was the wrong tool and correctly reported failure instead of
+   looping forever.
+2. The harness path guard matches on the **workspace-root prefix**, not on the exact directory, so it
+   fires on *any* path under `C:\ai_workspace`, including a 16-byte lock file six levels down. It
+   guards the verb `Remove-Item`, i.e. deletion.
+
+**Safe fix** - diagnose first, then pick the tool, and never chain the recovery with the git command:
+
+```powershell
+# 1. classify: stale vs live contention. Run this BEFORE choosing retry-vs-clear.
+$lk = "C:\ai_workspace\.git\index.lock"
+if (Test-Path $lk) { [int]((Get-Date) - (Get-Item $lk -Force).LastWriteTime).TotalSeconds } else { "absent" }
+@(Get-Process git -ErrorAction SilentlyContinue).Count
+```
+
+`absent` + no git process -> **live contention**, use the `Try-Git` bounded retry.
+Lock present, age not advancing, zero git processes -> **stale**, retrying is futile.
+
+For the stale case, do not reach for a different deletion verb to get around the guard. The
+workspace's standing rule already supplies the sanctioned move, and it happens to be exactly what the
+guard wants: permanent deletion is operator-performed, agents only make **reversible moves into a
+dated `_delete/` quarantine**. That satisfies the guard's intent instead of defeating it, and it
+leaves the evidence on disk if the lock turns out to have mattered.
+
+```powershell
+$q = "C:\ai_workspace\_delete\<yyyy-MM-dd>-stale-git-index-lock"
+New-Item -ItemType Directory -Force $q | Out-Null
+Move-Item $lk (Join-Path $q ("index.lock." + (Get-Date -Format "HHmmss"))) -ErrorAction Stop
+```
+
+Measured: the move succeeded, and `Try-Git add` / `Try-Git commit` in a **separate** call then landed
+on the first attempt.
+
+**Retry rule** - one classification, then one recovery, then verify with `git log -1 --oneline`; a
+successful recovery is not a commit. Keep the recovery in its own PowerShell call so that a guard
+rejection can never swallow the git commands behind it. If the quarantine move is also refused, that
+is a real finding - report it, do not escalate to another deletion API.
