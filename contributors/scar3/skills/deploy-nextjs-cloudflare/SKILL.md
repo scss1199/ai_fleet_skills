@@ -94,6 +94,14 @@ Produce a working public URL, not a placeholder page. Preserve the application's
 
    Treat a URL mismatch as failure even if deployment succeeded. Declare expected `401`/`403` statuses for protected routes; never weaken application authorization to make a smoke test pass.
 
+   If the site had an auth gate on Vercel, a root probe expecting `200` is the WRONG check and will
+   score a missing gate as healthy — measured 2026-08-08 on `ai-darkhero`, where the Vercel Edge
+   Middleware gate was never ported and `GET / -> 200` read as GREEN while the portal was public.
+   Verify gated sites per path with `%AI_WORKSPACE%\_skill\engines\mtm-portal-gate-parity.py`
+   (every path classified gated/open, exit 0 only at full parity) and the SSO hop chain with
+   `mtm-portal-sso-verify.py`. Both send a browser User-Agent; a Cloudflare-fronted host answers
+   `Python-urllib` with 403.
+
 ## Dynamic skill update
 
 For every new deployment failure:
@@ -101,7 +109,17 @@ For every new deployment failure:
 1. Stop at the failed stage; do not skip or weaken it.
 2. Classify it as account/policy, source compatibility, build, runtime, secret, OAuth, or DNS.
 3. If the fix is deterministic and reusable, run `%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\record_failure.py` and patch the canonical shared skill or its scripts before retrying.
-4. Run the skill validator after every material change.
+4. Run the skill validator after every material change:
+
+   ```powershell
+   python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\quick_validate.py"
+   ```
+
+   It checks the frontmatter contract AND that every `.py`/`.md` file named in a SKILL.md code
+   span actually exists — this file itself was named in the completion evidence below for months
+   while no copy existed anywhere outside a quarantined `skill-creator` plugin, so the evidence
+   line asserted a run nobody could have performed. `scripts\selftest_quick_validate.py` mutates a
+   throwaway copy once per check and must stay at 8/8, otherwise a passing validator proves nothing.
 5. Retry from the failed stage and preserve before/after evidence.
 
 Read `%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\references\known-failures.md` for observed fixes. Add only reproducible facts; never store credentials.
@@ -116,8 +134,8 @@ For fleet-wide non-fracdigi migrations, start from `%AI_WORKSPACE%\_skill\fleet-
 - Local workerd routes passed.
 - Public routes returned expected statuses and Cloudflare served the response.
 - A browser inspection showed the actual application UI.
-- If authentication exists, a real signed-in browser returned to the application and remained signed in after reopening the root URL.
-- `quick_validate.py` passed for this skill.
+- If authentication exists, a real signed-in browser returned to the application and remained signed in after reopening the root URL, and `mtm-portal-gate-parity.py` reported `PARITY_BAD=0` — a signed-in browser cannot show that the gate rejects a signed-OUT visitor.
+- `quick_validate.py` exited 0 for this skill, and `selftest_quick_validate.py` reported 8/8.
 - The PFKT fragment was completed with the public verification output as evidence.
 
 Do not report completion without the final working URL.

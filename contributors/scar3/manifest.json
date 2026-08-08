@@ -5,8 +5,8 @@
   "role": "downstream_curator",
   "machine": "scar3",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-08T18:03:10Z",
-  "manifest_sha": "164c3641554c6efb",
+  "generated_at": "2026-08-08T20:03:36Z",
+  "manifest_sha": "0ae358182aabfe7b",
   "required": [
     "aex-agent-evolution",
     "ztm-fleet-inbox-absorb",
@@ -68,7 +68,7 @@
     },
     {
       "name": "deploy-nextjs-cloudflare",
-      "sha": "6bc8e7f8cf8450de",
+      "sha": "5992d9bc07eb2c00",
       "required": false,
       "lane": "zero-token-mechanism"
     },
