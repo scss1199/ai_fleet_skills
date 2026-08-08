@@ -1221,3 +1221,39 @@ git; only its length is ever printed.
 **Retry rule** - classify every secret before minting it: machine-only -> `--generate`; human-typed ->
 gitignored vault file + `--add-file`. Note `--only` filters env-file keys only, so `--add-file`
 entries are appended regardless and cannot be filtered out by accident.
+
+## A host sweep cannot tell a comment from code, and `hold` is the wrong instrument when the host is live
+
+**Symptom** - After the whole tree was migrated, the full-tree `scan` still reported exactly one
+LIVE pending file: `jci_taipei/jci_taipei_website/middleware.ts (2)`. Both occurrences sit inside
+that file's own JSDoc post-mortem of the 308 self-redirect outage - the note recording that
+`jcitaipeiwebsite.vercel.app` and `jci-taipei-website.vercel.app` are two DIFFERENT names that the
+migration mapped onto ONE worker. `apply` would rewrite both to the worker name and turn the
+sentence explaining the outage into one that cannot be parsed.
+
+**Root cause** - Two separate gaps. (1) A content sweep matches a hostname wherever it appears; a
+comment is documentation, but to a regex it is a string like any other. (2) The existing remedy for
+a hostname-inside-a-record (`hold`, see the DEPRECATED-comment entry above) is **host-level**: it
+suppresses that host across every file and every lane. Both hosts here are live `map` entries (T2),
+so holding them would silently stop rewriting genuine future references everywhere - a global
+suppression bought to protect two lines.
+
+**Safe fix** - `guards.comment_line_re` (`^\s*(//|/\*|\*/|\*(?!/)|#)`), a third label in
+`guard_labels()` alongside `attest` and `evidence`, reported in a `guarded_comment` bucket.
+Line-level, so the unguarded lines of the same file are still rewritten; `apply()` needed no change
+at all because it iterates only `state["findings"]`, which a guarded occurrence never enters -
+"reported, never substituted" is structural, not a rule someone has to remember. The match is
+**whole-line only** on purpose: `guard_labels()` returns one label per LINE, and a trailing
+`// old host was X` sits on a line whose code half is exactly what the sweep exists to rewrite, so
+widening it would suppress a real rewrite. The check runs BEFORE the enclosing-key logic and does
+not touch the indentation stack - a comment is not a key and must not become the inherited label
+for the lines beneath it.
+
+**Retry rule** - Reach for `guards` when the thing to protect is a LINE, and `hold` only when the
+thing to protect is a HOST that must never be rewritten anywhere. Any widening of a guard regex is
+paired with a control run (`scan --only _registry`) whose ADDITIVE/EVIDENCE counts must reproduce
+the previous full-tree baseline **exactly**; `comment_line_re` includes `#`, which is a live comment
+marker in `.toml`/`.yml`, so this is not a theoretical risk. Measured 2026-08-08: control
+`2/24/1/1` + evidence `10`, identical to baseline; target `scan --only jci_taipei` ->
+`LIVE pending: 0 files / 0 occurrences` with the file still listed under `GUARDED comment`; collapse
+fixtures still 6/6.
