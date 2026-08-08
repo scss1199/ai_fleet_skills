@@ -58,6 +58,9 @@ metadata:
 # 1) 首次登入（開 Edge 視窗，你完成 iSSO）
 python %AI_WORKSPACE%\_skill\engines\sso_browser.py seed gov.isso.tpbusker
 
+# 1b) 視窗要等久一點（agent 先開好、operator 稍後才來登入）
+python %AI_WORKSPACE%\_skill\engines\sso_browser.py seed gov.isso.tpbusker --wait 3600
+
 # 2) 確認 session 仍有效
 python %AI_WORKSPACE%\_skill\engines\sso_browser.py check gov.isso.tpbusker
 
@@ -89,8 +92,23 @@ python %AI_WORKSPACE%\_skill\engines\sso_browser.py with gov.isso.tpbusker -- py
 1. 編輯 `_registry/sso-realms.json`（PR / SUBMIT）
 2. `mode`: `persistent` | `cookie_jar` | `cdp`
 3. `validate.logged_in_url_contains` / `logged_out_url_contains` — **必填**（防 guest session 假陽性）
-4. `python sso_browser.py seed <realm>` 實測
-5. SUBMIT `_inbox/from_projects/<project>/sso-realm-<name>.md`
+   - 比對只看 **host + path**（`_url_key()` 丟掉 query／fragment）。登入頁的
+     `?continue=` / `redirect_uri=` / `next=` / `ReturnUrl=` 一定帶著目的地網址，
+     用整條 URL 做子字串比對會在登入頁**自我滿足**（2026-08-08 實際發生，見
+     `references/known-failures.md#1`）。
+   - `logged_out_url_contains` 要寫 IdP 的 host＋path（`accounts.google.com/`、
+     `/signin/identifier`、`/ServiceLogin`），不要只寫產品名。
+   - pattern 內**不可**含 `?` `&` `=`：query 已被丟掉，這種 pattern 永遠不會 match，
+     `selftest` 會直接 lint fail。
+   - 若某 realm 登入前後**只差 query**（URL 分不出來），改用 DOM 訊號：
+     `validate.logged_in_selector` / `logged_out_selector`。DOM 只會**收斂** URL 判定
+     （`ok = url_ok and dom_ok`），不會把 URL 的 no 變成 yes。
+4. `python sso_browser.py selftest` — URL matcher 回歸案例 + registry lint，`0` 才算過；
+   改任何 `validate` 區塊或 matcher 都要跑
+5. `python sso_browser.py seed <realm>` 實測
+6. SUBMIT `_inbox/from_projects/<project>/sso-realm-<name>.md`
+
+> `seeded: true` 只代表 seed 跑完，**不代表有 session**；權威是 `check <realm>`。
 
 ---
 

@@ -1185,7 +1185,11 @@ deploy-only paths are listed as `deploy_only`; `sync` re-runs its own plan after
 
 **Retry rule** - treat `_temp/cf-migrate/<site>/` as authored source, not as a cache. Before any bulk
 copy into it, diff the top level and ask which files have no counterpart in the work tree; every one
-of those is load-bearing and unversioned. (Open debt: these files still are not in git.)
+of those is load-bearing and unversioned. (Closed 2026-08-08 for the configuration subset:
+`_registry/cf-deploy-configs/` snapshots all ten `wrangler.jsonc` files plus the four hand-written
+Worker entries and their import closures - 25 files, refreshed by `archive_cfg.py`, verified
+byte-identical to `_temp`. Still open for build configs and data dirs: `.wrangler-dry-run/`,
+`ai-trader/.wrangler-dev.log`, `ai-heartlink/worker-configuration.d.ts`, `ai-search/data/`.)
 
 ## `npx tsc` in a repo with no local TypeScript installs a decoy package and fails the typecheck
 
@@ -1394,3 +1398,179 @@ then verify independently with `git ls-remote --heads origin`.
 
 **Retry rule** - Any push of a repo over a few thousand files goes to the background on the
 FIRST attempt. Confirm with `ls-remote`, never with the timed-out call's output.
+
+## A Vercel Edge Middleware auth gate is NOT ported by any vercel.json reproduction, and `GET / -> 200` calls that GREEN
+
+**Symptom** - `ai-darkhero` migrated cleanly, `cf-worker-health.py check` reported it GREEN, and the
+portal answered `GET / -> 200` with the full 1038289-byte HTML. It was serving the entire internal
+fleet portal to anonymous requests. The SSO gate that Vercel had enforced was simply absent.
+
+**Root cause** - the gate lived in `ai_darkhero/middleware.js`, Vercel *Edge Middleware*. The
+migration reproduced `vercel.json` by hand (headers / rewrites / redirects) into `src/index.mjs`, and
+`middleware.js` is not part of `vercel.json` - it is a separate Vercel-only convention that
+Cloudflare Workers Static Assets never executes. Nothing in the deploy pipeline reads it, so nothing
+reported it missing. The health criterion made it worse: GREEN means `GET / -> 200`, which for a
+gated site is exactly the broken state.
+
+**Safe fix** - port the middleware into the Worker entry as a function called on the last hop before
+any static asset is served, and reuse the site's own CommonJS verifier (`lib/auth.js`) rather than
+re-implementing it. Two divergences from the edge copy were load-bearing for `ai-darkhero`: only
+`lib/auth.js` honours `kind:"passcode"`, so a verbatim port would have locked out the `SITE_PASSCODE`
+escape hatch that is the working access path while the OAuth redirect URI is unregistered; and the
+"no auth configured -> no gate" bail must also check `passcodeConfigured()`, or a passcode-only
+deployment stays wide open. `process.env` is readable in the Worker with `nodejs_compat` +
+`compatibility_date` 2026-08-04, so the verifier needs no rewrite.
+
+**Retry rule** - for any migrated site, grep the work tree for `middleware.js`/`middleware.ts` BEFORE
+declaring the migration complete, and never accept a 200 on `/` as health for a site that had a gate.
+Assert the gate positively: `python _skill/engines/mtm-portal-gate-parity.py --brief` must print
+`PARITY_BAD=0`, and `cf-health-targets.json` must expect a 3xx, not a 200, on a gated root.
+
+## `assets.run_worker_first` as a narrow glob silently disables every request-time behaviour on HTML
+
+**Symptom** - the ported SSO gate deployed successfully and did not fire. `GET /` still returned 200
+with the full portal, and no amount of re-reading the gate code explained it, because the gate code
+was correct.
+
+**Root cause** - `wrangler.jsonc` had `"assets": { "run_worker_first": ["/*.json"] }`, set during
+migration because only the `*.json` responses needed the Worker (CORS + `max-age=300`). With a narrow
+glob, Cloudflare's asset server answers every non-matching path straight off the edge and the Worker
+script is never invoked at all. Widening to `true` flipped `portal_status` from 200 to 302 with no
+other change.
+
+**Safe fix** - `"run_worker_first": true` for any site that needs ANY request-time logic on HTML -
+auth, rewrites, header injection. A glob is only safe when the Worker's job is genuinely confined to
+the paths it matches.
+
+**Retry rule** - after adding request-time logic to a Static Assets site, verify by asserting the
+NEW behaviour on a path the glob would exclude, not by checking the deploy succeeded. `GET / -> 200`
+looks healthy for the entire duration of this bug.
+
+## Static Assets' `html_handling` manufactures extensionless twins, so a Vercel allowlist ported verbatim locks the site shut
+
+**Symptom** - with the gate finally firing, the site became unreachable: `/login` answered `302` to
+`/login.html`, `/login.html` answered `307` to `/login`, forever. The login page could not be loaded,
+so nobody could authenticate. A redirect-following probe reported the login page `200` and healthy.
+
+**Root cause** - Static Assets' default `html_handling` (`auto-trailing-slash`) rewrites `/x.html` to
+the extensionless `/x`. That hop does not exist on Vercel, so `middleware.js` never needed `/login`
+in its allowlist - only `/login.html`. Ported verbatim, the extensionless twin was gated, bounced to
+`/login.html`, which was rewritten back. `/messages` and `/insight` already appeared in BOTH forms in
+the original allowlist, which is precisely why only `/login` looped. Same family as the jci
+`308` self-redirect outage above: a host-level rewrite the source code cannot see.
+
+**Safe fix** - allowlist both forms of every public HTML path. Setting `assets.html_handling: "none"`
+also stops the loop but is the wrong instrument - it would additionally stop `/` resolving to
+`index.html`.
+
+**Retry rule** - after porting an allowlist off Vercel, enumerate every entry in both `.html` and
+extensionless form and probe each one hop-by-hop with loop detection. Never follow redirects blindly
+when verifying an auth gate: `urllib` will follow a loop far enough that the caller cannot tell a
+loop from a slow page.
+
+## The Cloudflare edge cache sits IN FRONT of the Worker, so a cached copy re-opens a gate that is now closed
+
+**Symptom** - the same URL, same minute, two answers: `GET /login` returned `200` with
+`cf-cache-status: HIT`, and the identical request with `Cache-Control: no-cache` returned `302` from
+the Worker. `mtm-portal-sso-verify.py` was green while the login page was in fact an infinite
+redirect loop.
+
+**Root cause** - two compounding defects. (1) Static Assets serves HTML with a publicly cacheable
+default, and the edge cache is consulted before the Worker runs, so an anonymous request can be
+answered from a copy stored BEFORE the gate existed - the cache silently re-opens the gate. (2) The
+verifier followed redirects with no cache-defeating header, so it read the stale copy and graded it.
+
+**Safe fix** - in the Worker, wrap every response that was reached by a verified session (i.e. any
+path not on the allowlist) in `Cache-Control: private, no-store`; allowlisted public paths keep their
+normal caching. In every probe, send `Cache-Control: no-cache` + `Pragma: no-cache` on EVERY request
+and append a cache-busting query parameter when walking a chain. Note that `workers.dev` has no zone,
+so purge-by-URL is unavailable - already-cached entries must age out.
+
+**Retry rule** - a security probe that can be answered from cache is not a measurement. When
+tightening a probe, ADD terms to its pass condition and leave the existing ones byte-identical - the
+`ok` clause here went from six terms to seven (`hops <= MAX_HOPS`), so a future loop reports red
+instead of green. Verify with both engines, which must agree:
+`python _skill/engines/mtm-portal-gate-parity.py --brief` (`PARITY_BAD=0`) and
+`python _skill/engines/mtm-portal-sso-verify.py --brief` (`"ok": true`); the latter's `login_hops: 2`
+must match the former's `/login.html open 307->200 2h` row.
+
+## A Cloudflare-fronted Worker answers the default `Python-urllib` User-Agent with 403, so every unheadered probe reports a dead site
+
+**Symptom** - `urllib.request.Request(url)` against `ai-darkhero.kyloren.workers.dev` returned `403`
+on every path, while the same URL in a browser returned `200`. Read naively, the whole site is down.
+
+**Root cause** - the request goes out with `User-Agent: Python-urllib/3.x` and is refused at the
+Cloudflare edge before the Worker runs. This is the same defence that produces `error code: 1010`
+for a UA-less request; the 403 form is easier to misread because it looks like an application-level
+authorization decision.
+
+**Safe fix** - define one `UA` constant per engine with a real browser User-Agent and thread it
+through EVERY HTTP helper in the module, not just the one being written. `mtm-portal-gate-parity.py`
+and `mtm-portal-sso-verify.py` both carry it, matching
+`ztm-oauth-redirect-fleet/scripts/probe_redirect_uri.py`.
+
+**Retry rule** - never conclude "the site is down" from a `403`/`1010` on a Cloudflare-fronted host
+until the request has been re-sent with a browser UA. When adding a second HTTP helper to an existing
+probe, check that it inherits the UA - a partially-headered module fails only on the paths the new
+helper touches, which reads as a routing bug.
+
+## `Path.write_text()` on Windows rewrites LF as CRLF, so a config snapshot diffs against its own source on every line
+
+**Symptom** - a snapshot archive copied out of the deploy tree looks fine (the archiver printed a
+byte count for every file, the run exited clean), but a size comparison against the source shows 16
+of 25 files LARGER than their originals by roughly one byte per line: `ai-darkhero/src/node-shim.mjs`
+archived 3493 against a 3383-byte source, exactly 110 extra bytes for 110 lines. Diffing a snapshot
+against the tree it was taken from reports every line as changed, which makes the archive useless for
+the one thing it exists to do.
+
+**Root cause** - `Path.read_text()` opens with universal newlines and collapses `\r\n` to `\n`;
+`Path.write_text()` opens with `newline=None`, which translates every `\n` back out as
+`os.linesep`, i.e. `\r\n` on Windows. A text round-trip is therefore not identity on this platform -
+it normalises the file to the host's line ending. Only 16 of 25 files were hit because the source
+tree has MIXED line endings: the nine that already stored CRLF on disk survived unchanged, which is
+luck, not correctness. `ai-darkhero/src/index.mjs`, the most security-relevant file in the set, was
+one of the lucky ones - a partial corruption is far easier to miss than a total one.
+
+**Safe fix** - copy with `read_bytes()` / `write_bytes()` and never with `read_text()` /
+`write_text()`. Decoding is still needed to run the secret guards, so decode into a local variable
+and write the ORIGINAL bytes: `raw = p.read_bytes(); text = raw.decode("utf-8"); ...guards...;
+target.write_bytes(raw)`. A file authored fresh by the script (a generated README) has no source to
+diff against and may keep `write_text`.
+
+**Retry rule** - verify an archive by comparing `stat().st_size` of each written file against its
+source, never by re-reading the length the writer itself printed. The archiver's own output cannot
+detect this class: it reports `len(text)` in characters BEFORE the newline translation happens, so
+the number it prints is right about the string and wrong about the file. More generally, a mechanism
+fully determined by code you wrote is still not a measurement - the reasoned prediction here was that
+the archived files would be SMALLER than source (characters < UTF-8 bytes for CJK comments), and the
+measurement found them larger, from an unrelated cause. Also match a verifier's guard to the pass
+that produced the file: applying the source pass's opaque-literal guard to config files flagged eight
+`wrangler.jsonc` snapshots on 32-char hex strings that are Cloudflare RESOURCE identifiers (the
+`account_id`, and the `HL_MEDIA` KV namespace id documented in-file as holding two oversized event
+videos), not credentials. A verifier stricter than the archiver it checks manufactures leaks.
+
+## A filename extractor that checks only the suffix reads `.py` as a filename, and `Path.stem` will not save you
+
+**Symptom** - `quick_validate.py`, freshly written and measured green (`VALIDATE_RC=0`, selftest 8/8),
+exited 1 immediately after a documentation edit to the SKILL.md it validates:
+`SKILL.md references file(s) that do not exist ...: .py, .md`. The selftest dropped to 7/8 with
+`unmutated_control` as the failing case, because that case copies the live SKILL.md.
+
+**Root cause** - two independent defects stacked. First, `_referenced_files()` harvested every
+backtick code-span token whose basename ended in `.py`/`.md` without requiring anything before the
+dot, so the prose span `` `.py` `` - a file CLASS, not a file - became a demanded filename. Second,
+the obvious guard is wrong: `Path(".py").stem` is `".py"`, not `""`, because pathlib reads a leading
+dot as a dotfile name with no suffix. The first version of the fix used `if not Path(name).stem` and
+silently never fired; the failure output after "fixing" it was byte-identical to the failure before.
+
+**Safe fix** - split the stem by hand: `if not name.rsplit(".", 1)[0]: continue`. Measured after:
+`Skill is valid: deploy-nextjs-cloudflare (8 referenced file(s) all resolved)`, `VALIDATE_RC=0`,
+`SELFTEST_RC=0 (8/8)`.
+
+**Retry rule** - when a fix produces output identical to the bug, suspect the guard never executed
+rather than assuming a second cause. Never use `Path(x).suffix`/`.stem` to decide whether a string
+naming a dotted token is a real filename; those APIs are defined for paths, and a bare extension is
+not one. And note the shape of this failure: a validator whose own subject is a prose document will
+be broken by prose about the validator. That is the check working, not misfiring - the selftest's
+`unmutated_control` case is what turns "my edit broke it" from a guess into a measurement, which is
+why an all-green check set is worthless without a control that is able to go red.
