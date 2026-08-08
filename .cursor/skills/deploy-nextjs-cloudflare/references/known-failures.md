@@ -1110,3 +1110,106 @@ before the next rider tick.
 **Retry rule** - never `Remove-Item` a lock in a repo other agents write to, and never on age alone
 while a git process is live. If the lock keeps being recreated with a *fresh* timestamp, it has a
 real owner: wait, do not intervene.
+
+## A many-to-one hostname sweep turns a host canonicaliser into a whole-site redirect loop
+
+**Symptom** - every path of `ai-jci-taipei.kyloren.workers.dev` answered `308` with `Location` equal
+to the request path: `/`, `/api/auth/passcode` and `/api/auth/passcode/` alike. The site had been
+100% down since the vercel->workers sweep and nothing caught it, because the only route anybody
+probed after the sweep was a route that had not shipped yet.
+
+**Root cause** - `middleware.ts` canonicalised one Vercel alias to another:
+`if (host === "jcitaipeiwebsite.vercel.app") redirect(308, "jci-taipei-website.vercel.app")`. Two
+DIFFERENT names. The sweep maps every `*.vercel.app` for a site onto that site's single
+`*.workers.dev` name, so source and target collapsed into the same string and the branch redirected
+every request to itself. The sweep's own `verify` could not see it: it asserts the ABSENCE of the old
+strings, which was true, while the runtime behaviour it created was fatal.
+
+**Safe fix** - guard the branch on inequality, `if (host && host !== CANONICAL_HOST)`. On workers.dev
+a Worker only ever serves its own hostname, so the branch becomes dead code while the canonicalisation
+semantics stay correct for a future custom domain. Then sync -> rebuild -> redeploy: patching the work
+tree alone ships nothing, the deploy copy under `_temp/cf-migrate/` is what wrangler uploads.
+`ai-darkhero` did not break because its migration DROPPED the host redirect instead of rewriting it
+(`src/index.mjs`: "moot on workers.dev: a Worker only ever serves its own hostname").
+
+**Retry rule** - after any many-to-one host rewrite, grep every `middleware.{ts,js,mjs}` and any
+redirect table for a rule whose source host now equals its target host; that is the collapse
+signature. And probe `/` live, not only the route you changed - a static string check cannot observe
+an infinite redirect. Blast radius here was exactly one site (measured by grep across the hub); the
+pre-rewrite copy in `_delete/<date>-vercel-sweep-backup/` is what made the root cause provable.
+
+## A fresh deploy after a fix reads STALE at the edge, so one 308 is not a defect
+
+**Symptom** - immediately after a successful `wrangler deploy`, the wrong-passcode POST returned
+`308` with `Location` = the request path, while the handler source plainly returns `303` to
+`?e=1`. The verifier printed `LIVE POST 308 wrong-passcode set_cookie=False UNEXPECTED` and exited 3.
+
+**Root cause** - the probe raced the deploy's propagation and was answered by the previous version.
+Re-measured a few minutes later, unchanged code and unchanged deployment: `303` ->
+`/api/auth/passcode?e=1` -> `401`, `x-opennext=1`, no `Set-Cookie`. Contract satisfied all along.
+
+**Safe fix** - when a live status contradicts the source you just shipped, re-measure before editing.
+Distinguish the two cases with a control request: a POST to a path with no route returned `404` from
+Next (`x-powered-by: Next.js`), proving the Worker was serving and the anomaly was version skew, not
+routing.
+
+**Retry rule** - never patch code on the strength of a single post-deploy probe. Any status that
+disagrees with freshly deployed source needs a second measurement plus one control path before it is
+treated as a bug; otherwise the "fix" is a change made to satisfy a stale response.
+
+## The deploy copy holds build wiring that exists nowhere in git, so re-isolating destroys the site
+
+**Symptom** - the obvious way to refresh a Cloudflare deploy copy is `isolate.py --force`. It would
+have silently removed `wrangler.jsonc`, `open-next.config.ts` and `ai-darkhero`'s entire `src/`
+worker entry, after which the site cannot deploy at all.
+
+**Root cause** - measured across the hub: **no work tree contains a `wrangler.*` file**. The deploy
+config was authored during migration and lives ONLY in `_temp/cf-migrate/<site>/`, unversioned.
+`isolate.py --force` `rmtree`s the destination before copying, so "refresh" means "delete the only
+copy". The same asymmetry applies to `package.json` and `next.config.ts`: the deploy copies carry the
+extra `cf:build`/`cf:deploy` scripts and the `@opennextjs/cloudflare` + `wrangler` devDependencies, so
+mirroring them from the work tree dismantles the build.
+
+**Safe fix** - `_skill/engines/cf-deploy-sync.py`: a DELTA sync, work tree -> deploy copy, never the
+reverse, never deleting. Build-config filenames sit in `PINNED` and are reported rather than copied;
+deploy-only paths are listed as `deploy_only`; `sync` re-runs its own plan afterwards and prints
+`residual after sync: N`, returning 0 only at 0 residual, so the sync verifies itself.
+
+**Retry rule** - treat `_temp/cf-migrate/<site>/` as authored source, not as a cache. Before any bulk
+copy into it, diff the top level and ask which files have no counterpart in the work tree; every one
+of those is load-bearing and unversioned. (Open debt: these files still are not in git.)
+
+## `npx tsc` in a repo with no local TypeScript installs a decoy package and fails the typecheck
+
+**Symptom** - `npx tsc --noEmit` in `ai_career/match-app-web` exited 1 with
+`This is not the tsc command you are looking for`, reading exactly like a type error and blocking a
+site that had nothing wrong with it.
+
+**Root cause** - `node_modules` was not installed, so `npx` resolved `tsc` from the registry and
+fetched the squatted `tsc@2.0.4` placeholder package instead of the project's TypeScript.
+
+**Safe fix** - `npm ci --no-audit --no-fund` first, then `npx tsc --noEmit` -> exit 0.
+
+**Retry rule** - a typecheck failure whose message is not a TS-code diagnostic (`TSxxxx`) is a
+toolchain failure, not a code failure. Confirm `node_modules/typescript` exists before believing any
+`npx tsc` result.
+
+## `push_secrets.py --generate` is correct for machine-only secrets and wrong for human-typed ones
+
+**Symptom** - `SITE_PASSCODE` was about to be minted with `push_secrets.py --generate
+SITE_PASSCODE=16`, which satisfies Rule 9 perfectly and would have made the escape hatch unusable.
+
+**Root cause** - `--generate` keeps the value in-process and pipes it straight to wrangler; it never
+touches disk or console by design. That is exactly right for `AUTH_SECRET`, which no human ever
+types. `SITE_PASSCODE` exists so the operator can log in, so a value nobody can read is a value
+nobody can use.
+
+**Safe fix** - mint into the gitignored vault (`_secrets/<site>/site_passcode.txt`; measured
+`git check-ignore -v` -> `.gitignore:5:_secrets/`) with an ambiguity-free alphabet (no `0/O/1/l/I`),
+idempotent so a re-run cannot lock the operator out of a passcode already in use, then upload with
+`push_secrets.py --add-file SITE_PASSCODE=<path>`. The value never reaches terminal, chat, report or
+git; only its length is ever printed.
+
+**Retry rule** - classify every secret before minting it: machine-only -> `--generate`; human-typed ->
+gitignored vault file + `--add-file`. Note `--only` filters env-file keys only, so `--add-file`
+entries are appended regardless and cannot be filtered out by accident.
