@@ -1257,3 +1257,43 @@ marker in `.toml`/`.yml`, so this is not a theoretical risk. Measured 2026-08-08
 `2/24/1/1` + evidence `10`, identical to baseline; target `scan --only jci_taipei` ->
 `LIVE pending: 0 files / 0 occurrences` with the file still listed under `GUARDED comment`; collapse
 fixtures still 6/6.
+
+## `git commit -- <paths>` silently undoes a preceding `git rm --cached`
+
+**Symptom** - Untracking a secret-bearing file before a repo gains its first remote:
+`git rm --cached -- a b c` prints three `rm '...'` lines and exits 0, then
+`git commit -F msg.txt -- .gitignore a b c` either dies with
+`error: pathspec 'c' did not match any file(s) known to git` (when `c` was staged-but-never-committed,
+so `rm --cached` leaves no HEAD-vs-index delta to name), or "succeeds" with a stat line reading
+`1 file changed` - the `.gitignore` alone. `git ls-files` afterwards still lists the very files that
+were just removed. The secret is still tracked and the report says the job is done.
+
+**Root cause** - A path-limited `git commit -- <paths>` does not commit the INDEX for those paths. It
+re-reads each named path from the WORKING TREE and commits that content, which is documented
+behaviour and exactly wrong here: `git rm --cached` leaves the file on disk on purpose, so the commit
+faithfully restores the entry the `rm` had just deleted. The failure is silent because the stat line
+only reports what changed, and nothing changed.
+
+**Safe fix** - Do not path-limit a commit whose payload is a deletion. When the main index also holds
+unrelated staged work (here 2.4 MB of it, so a bare `git commit` was not an option), build the commit
+in a throwaway index instead of the real one:
+
+```
+$env:GIT_INDEX_FILE = "<scratchpad>\tmpidx"
+git -C $r read-tree HEAD
+git -C $r rm --cached -q -- <paths>
+$tree = git -C $r write-tree
+$env:GIT_INDEX_FILE = $null            # commit-tree/update-ref use the real repo, not the temp index
+$commit = git -C $r commit-tree $tree -p HEAD -F msg.txt
+git -C $r update-ref HEAD $commit
+```
+
+This commits exactly the deletion, touches nothing else that was staged, and leaves the files on
+disk. Measured 2026-08-08 on `jci_taipei`: `3818868`, `2 files changed, 69 deletions(-)`.
+
+**Retry rule** - An untracking is not done when the commit succeeds; it is done when
+`git ls-files "*.env.local*" "*.env.vercel*"` prints nothing. Verify with `ls-files`, never with the
+commit's own stat line. And note what untracking does NOT do: the blobs stay in every earlier
+commit (`git grep -l <pattern> $(git rev-list --all)` still finds them), so for a repo about to
+receive its FIRST remote, untracking is only half the job - the history scrub is a separate,
+destructive step that needs operator approval.
