@@ -1132,11 +1132,19 @@ tree alone ships nothing, the deploy copy under `_temp/cf-migrate/` is what wran
 `ai-darkhero` did not break because its migration DROPPED the host redirect instead of rewriting it
 (`src/index.mjs`: "moot on workers.dev: a Worker only ever serves its own hostname").
 
-**Retry rule** - after any many-to-one host rewrite, grep every `middleware.{ts,js,mjs}` and any
-redirect table for a rule whose source host now equals its target host; that is the collapse
-signature. And probe `/` live, not only the route you changed - a static string check cannot observe
-an infinite redirect. Blast radius here was exactly one site (measured by grep across the hub); the
-pre-rewrite copy in `_delete/<date>-vercel-sweep-backup/` is what made the root cause provable.
+**Retry rule** - this is no longer a manual grep. `vercel-to-workers-sweep.py` now runs
+`collapse_scan()` in EVERY mode including `scan`, and returns **exit 5** - ranked above `3 UNMAPPED`
+and `2 pending`, because a collapse means a site is already serving an infinite redirect while the
+other two only mean work is outstanding. It parses the two ROLES a host can play in a LIVE-lane
+`.ts/.tsx/.js/.jsx/.mjs/.cjs` file or a `_redirects` table - *compared for equality* and *assigned as
+a redirect destination* - and reports any host in both. `const NAME = "host"` bindings are resolved
+because real code compares an identifier, not a literal; only literal bindings, since a computed
+value is a miss rather than a guess. The `!==` operator is excluded by `(?<![!<>=])...(?!=)`: that
+operator IS the fix above, so flagging it would make the detector demand its own reversion. Regression
+fixtures (BAD literal/const/`_redirects`, GOOD shipped-jci-fix/cross-host) all pass. Still probe `/`
+live, not only the route you changed - a static string check cannot observe an infinite redirect.
+Blast radius here was exactly one site (measured by grep across the hub); the pre-rewrite copy in
+`_delete/<date>-vercel-sweep-backup/` is what made the root cause provable.
 
 ## A fresh deploy after a fix reads STALE at the edge, so one 308 is not a defect
 
