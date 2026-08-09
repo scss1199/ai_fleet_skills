@@ -12,10 +12,19 @@ So registration state is measurable WITHOUT opening Cloud Console. Nothing is
 written and nothing is changed: this is a read-only, independently rerunnable
 verifier. Re-run it after any console edit to confirm the fix.
 
+Google's answer alone is NOT sufficient. A site can emit a redirect_uri that is
+perfectly registered and still be broken, because the URI points at a host that
+no longer serves the app (measured 2026-08-09: ai-ziyaoastro emitted
+ai-ziyaoastro.vercel.app, which answers 402 DEPLOYMENT_DISABLED). Google is happy,
+issues a code, and strands the user. So every row also gets an ORIGIN-MATCH test
+against the origin we just probed; a foreign origin is STALE_ORIGIN, not OK.
+
 CITE: _skill/technique_output/50-techniques/add-missing-gcp-redirect-uris.md
+CITE: references/known-failures.md "A registered redirect_uri can still be dead"
 """
 import base64
 import json
+import os
 import pathlib
 import sys
 import urllib.parse
@@ -57,6 +66,28 @@ SITES = {
     "ai-ziyaoastro": ["/api/auth/google/login", "/api/auth/login", "/api/login/google"],
 }
 
+# Candidates for a worker discovered on disk that nobody added to SITES by hand.
+DEFAULT_PATHS = ["/api/auth/login", "/api/auth/google/login", "/api/auth/google/start"]
+
+
+def discover_workers():
+    """Union SITES with every deployed worker in _registry/cf-deploy-configs.
+
+    A hand-maintained SITES map silently under-reports: "every site was checked"
+    then means "every site someone remembered". Measured 2026-08-09 — ai-trader
+    had a deploy config and no SITES row, so eight runs of this probe never once
+    looked at it. Discovery makes the coverage claim structural.
+    """
+    root = pathlib.Path(os.environ.get("AI_WORKSPACE") or
+                        pathlib.Path(__file__).resolve().parents[4])
+    sites = {w: list(p) for w, p in SITES.items()}
+    cfg = root / "_registry" / "cf-deploy-configs"
+    if cfg.is_dir():
+        for d in sorted(cfg.iterdir()):
+            if d.is_dir():
+                sites.setdefault(d.name, list(DEFAULT_PATHS))
+    return sites
+
 
 def get(url, timeout=25):
     req = urllib.request.Request(url, headers={"User-Agent": UA})
@@ -69,14 +100,15 @@ def get(url, timeout=25):
         return 0, {}, f"ERR {type(e).__name__}: {e}"
 
 
-def find_authorize(worker):
+def find_authorize(worker, paths):
     base = BASES.get(worker, f"https://{worker}.kyloren.workers.dev")
-    for path in SITES[worker]:
+    st = 0
+    for path in paths:
         st, hd, _ = get(base + path)
         loc = hd.get("Location") or hd.get("location") or ""
         if st in (301, 302, 303, 307, 308) and "accounts.google.com" in loc:
-            return path, st, loc
-    return None, st, ""
+            return base, path, st, loc
+    return base, None, st, ""
 
 
 def _decode_auth_error(loc):
@@ -112,20 +144,41 @@ def check_google(authorize_url):
     return f"UNKNOWN_{st}", st
 
 
+def check_origin(base, redirect_uri):
+    """Is the callback host the SAME host we just probed?
+
+    Google never checks this — a stale URI left over from a previous host is
+    registered and therefore 'valid' to Google, while the user lands on a dead
+    deployment after authenticating. Compare netloc only: scheme is always https
+    here and the path is the app's business.
+    """
+    want = urllib.parse.urlparse(base).netloc.lower()
+    got = urllib.parse.urlparse(redirect_uri).netloc.lower()
+    return want == got, got, want
+
+
 def main():
     rows = []
-    for worker in SITES:
-        path, st, loc = find_authorize(worker)
+    for worker, paths in discover_workers().items():
+        base, path, st, loc = find_authorize(worker, paths)
         if not path:
-            rows.append({"worker": worker, "login": "-", "status": f"NO_OAUTH_REDIRECT({st})"})
+            rows.append({"worker": worker, "login": "-", "http": st,
+                         "google": "NO_LOGIN", "detail": f"no oauth redirect ({st})"})
             continue
         q = urllib.parse.parse_qs(urllib.parse.urlparse(loc).query)
         cid = (q.get("client_id") or ["-"])[0]
         ruri = (q.get("redirect_uri") or ["-"])[0]
         verdict, gst = check_google(loc)
+        same, got, want = check_origin(base, ruri)
+        # Order matters: a MISMATCH is already BAD and naming the registration
+        # gap is more actionable than naming the host. Only a would-be GREEN
+        # gets downgraded.
+        if verdict == "REGISTERED" and not same:
+            verdict = "STALE_ORIGIN"
         rows.append({
             "worker": worker, "login": path, "http": st,
             "client_id": cid, "redirect_uri": ruri,
+            "probe_origin": want, "callback_origin": got, "origin_match": same,
             "google": verdict, "google_http": gst,
         })
     # Write the state file ourselves: PowerShell's `>` redirection writes a
@@ -134,10 +187,17 @@ def main():
     pathlib.Path(__file__).with_name("redirect_uri_state.json").write_text(
         json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")
     print(json.dumps(rows, indent=2, ensure_ascii=False))
-    bad = [r for r in rows if r.get("google") != "REGISTERED"]
-    print(f"\nOK={len(rows)-len(bad)} BAD={len(bad)}", file=sys.stderr)
+    # NO_LOGIN is neither OK nor BAD: a hooks-only worker has no SSO to break.
+    # It is still printed, because silently dropping it is how a site that LOST
+    # its login endpoint would disappear from the report.
+    nologin = [r for r in rows if r.get("google") == "NO_LOGIN"]
+    bad = [r for r in rows if r.get("google") not in ("REGISTERED", "NO_LOGIN")]
+    ok = len(rows) - len(bad) - len(nologin)
+    print(f"\nOK={ok} BAD={len(bad)} NOLOGIN={len(nologin)}", file=sys.stderr)
     for r in bad:
         print(f"  {r['worker']:16s} {r.get('google','-'):14s} {r.get('redirect_uri','-')}", file=sys.stderr)
+    for r in nologin:
+        print(f"  {r['worker']:16s} NO_LOGIN       {r.get('detail','-')}", file=sys.stderr)
 
 
 if __name__ == "__main__":
