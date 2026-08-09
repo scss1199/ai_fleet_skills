@@ -1,10 +1,12 @@
 # redirect_uri_mismatch — console fix list
 
-Source of truth: `redirect_uri_state.json` (probe run), 7 site(s) failing, 7 OAuth client(s) to edit.
+Source of truth: `redirect_uri_state.json` (probe run), 8 site(s) failing, 8 OAuth client(s) to edit.
 
 Rule: in the **Authorised redirect URIs** section (NOT JavaScript origins), click **+ Add URI**, paste the line, Save. **Only add** — never edit or delete an existing line; several of these clients are shared with live sites.
 
-Already REGISTERED — no console action (verified by the same probe run): `ai-fracdigi`, `ai-eatery`, `ai-ziyaoastro`
+Already REGISTERED — no console action (verified by the same probe run): `ai-fracdigi`, `ai-eatery`
+
+No OAuth login endpoint — nothing to register: `ai-fleet-fly-hooks`, `ai-trader`
 
 ## ai-jci-taipei
 
@@ -41,11 +43,10 @@ Already REGISTERED — no console action (verified by the same probe run): `ai-f
 - console: https://console.cloud.google.com/auth/clients/433379372607-ra924imb7vsm9b8fng7nmnr5t8e864sb.apps.googleusercontent.com?project=433379372607
 - ADD: `https://ai-ut.kyloren.workers.dev/api/auth/callback`
 
-## ai-ziyaoastro (pre-add, then flip the backend env)
+## ai-ziyaoastro
 
 - console: https://console.cloud.google.com/auth/clients/433379372607-rde329v31tp5mslqjbj2p6tj8231h1ki.apps.googleusercontent.com?project=433379372607
 - ADD: `https://ai-ziyaoastro.kyloren.workers.dev/api/auth/google/callback`
-- after the add: set the Fly backend `GOOGLE_REDIRECT_URI` to the same value
 
 ## Verify
 

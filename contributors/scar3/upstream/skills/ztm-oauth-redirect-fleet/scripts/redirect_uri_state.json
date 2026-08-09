@@ -5,6 +5,9 @@
     "http": 307,
     "client_id": "786327629029-d6r4ma3oh3vaas34dd60bi3vds750pu1.apps.googleusercontent.com",
     "redirect_uri": "https://ai-fracdigi.kyloren.workers.dev/api/auth/google/callback",
+    "probe_origin": "ai-fracdigi.kyloren.workers.dev",
+    "callback_origin": "ai-fracdigi.kyloren.workers.dev",
+    "origin_match": true,
     "google": "REGISTERED",
     "google_http": 302
   },
@@ -14,6 +17,9 @@
     "http": 307,
     "client_id": "576912529343-2gam6k5g6piafgbhcijl3v20mms0980d.apps.googleusercontent.com",
     "redirect_uri": "https://ai-jci-taipei.kyloren.workers.dev/api/auth/callback",
+    "probe_origin": "ai-jci-taipei.kyloren.workers.dev",
+    "callback_origin": "ai-jci-taipei.kyloren.workers.dev",
+    "origin_match": true,
     "google": "MISMATCH",
     "google_http": 302
   },
@@ -23,6 +29,9 @@
     "http": 302,
     "client_id": "433379372607-anspie07iub0b86lealvnsqu4qdvdc1f.apps.googleusercontent.com",
     "redirect_uri": "https://ai-darkhero.kyloren.workers.dev/api/auth/callback",
+    "probe_origin": "ai-darkhero.kyloren.workers.dev",
+    "callback_origin": "ai-darkhero.kyloren.workers.dev",
+    "origin_match": true,
     "google": "MISMATCH",
     "google_http": 302
   },
@@ -32,6 +41,9 @@
     "http": 307,
     "client_id": "433379372607-droj6ku1416v8jsc3iri4lig0e9jhvfa.apps.googleusercontent.com",
     "redirect_uri": "https://ai-search.kyloren.workers.dev/api/auth/callback",
+    "probe_origin": "ai-search.kyloren.workers.dev",
+    "callback_origin": "ai-search.kyloren.workers.dev",
+    "origin_match": true,
     "google": "MISMATCH",
     "google_http": 302
   },
@@ -41,6 +53,9 @@
     "http": 307,
     "client_id": "433379372607-ra924imb7vsm9b8fng7nmnr5t8e864sb.apps.googleusercontent.com",
     "redirect_uri": "https://ai-ut.kyloren.workers.dev/api/auth/callback",
+    "probe_origin": "ai-ut.kyloren.workers.dev",
+    "callback_origin": "ai-ut.kyloren.workers.dev",
+    "origin_match": true,
     "google": "MISMATCH",
     "google_http": 302
   },
@@ -50,6 +65,9 @@
     "http": 307,
     "client_id": "433379372607-vi35m4avraj0dlg7j0895983iatvd3ok.apps.googleusercontent.com",
     "redirect_uri": "https://ai-career.kyloren.workers.dev/api/auth/callback",
+    "probe_origin": "ai-career.kyloren.workers.dev",
+    "callback_origin": "ai-career.kyloren.workers.dev",
+    "origin_match": true,
     "google": "MISMATCH",
     "google_http": 302
   },
@@ -59,6 +77,9 @@
     "http": 307,
     "client_id": "433379372607-df1p2qlag8er16jkv9agfffbe9qhmgsg.apps.googleusercontent.com",
     "redirect_uri": "https://ai-busker.kyloren.workers.dev/api/auth/callback",
+    "probe_origin": "ai-busker.kyloren.workers.dev",
+    "callback_origin": "ai-busker.kyloren.workers.dev",
+    "origin_match": true,
     "google": "MISMATCH",
     "google_http": 302
   },
@@ -68,6 +89,9 @@
     "http": 307,
     "client_id": "178918414586-n9us1mi03n3pavumtt1t2abham7an2fb.apps.googleusercontent.com",
     "redirect_uri": "https://ai-heartlink.kyloren.workers.dev/api/auth/callback",
+    "probe_origin": "ai-heartlink.kyloren.workers.dev",
+    "callback_origin": "ai-heartlink.kyloren.workers.dev",
+    "origin_match": true,
     "google": "MISMATCH",
     "google_http": 302
   },
@@ -77,6 +101,9 @@
     "http": 307,
     "client_id": "433379372607-ra924imb7vsm9b8fng7nmnr5t8e864sb.apps.googleusercontent.com",
     "redirect_uri": "https://ai-eatery.kyloren.workers.dev/api/auth/callback",
+    "probe_origin": "ai-eatery.kyloren.workers.dev",
+    "callback_origin": "ai-eatery.kyloren.workers.dev",
+    "origin_match": true,
     "google": "REGISTERED",
     "google_http": 302
   },
@@ -85,8 +112,25 @@
     "login": "/api/auth/google/login",
     "http": 302,
     "client_id": "433379372607-rde329v31tp5mslqjbj2p6tj8231h1ki.apps.googleusercontent.com",
-    "redirect_uri": "https://ai-ziyaoastro.vercel.app/api/auth/google/callback",
-    "google": "REGISTERED",
+    "redirect_uri": "https://ai-ziyaoastro.kyloren.workers.dev/api/auth/google/callback",
+    "probe_origin": "ai-ziyaoastro.kyloren.workers.dev",
+    "callback_origin": "ai-ziyaoastro.kyloren.workers.dev",
+    "origin_match": true,
+    "google": "MISMATCH",
     "google_http": 302
+  },
+  {
+    "worker": "ai-fleet-fly-hooks",
+    "login": "-",
+    "http": 404,
+    "google": "NO_LOGIN",
+    "detail": "no oauth redirect (404)"
+  },
+  {
+    "worker": "ai-trader",
+    "login": "-",
+    "http": 404,
+    "google": "NO_LOGIN",
+    "detail": "no oauth redirect (404)"
   }
 ]

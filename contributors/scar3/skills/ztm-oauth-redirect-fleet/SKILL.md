@@ -51,7 +51,7 @@ python <skill>\scripts\gen_redirect_handoff.py      # writes redirect_uri_fix_ha
 python <skill>\scripts\probe_redirect_uri.py
 ```
 
-## Detector rules (all four are load-bearing)
+## Detector rules (all five are load-bearing)
 
 1. **Suppress redirects.** The `Location` header is the evidence; a following
    client swallows it.
@@ -65,6 +65,32 @@ python <skill>\scripts\probe_redirect_uri.py
    REGISTERED *in the current state file* and one certainly bogus. Never hard-code
    the positive case — the moment that site becomes the thing being fixed, the
    control fires a false alarm (this happened 2026-08-06 with `ai-career`).
+5. **Origin-match — Google's approval is not the site's approval.** Compare the
+   `netloc` of the emitted `redirect_uri` with the origin just probed. A URI left
+   over from a previous host stays registered forever, so Google returns consent,
+   issues a `code`, and strands the user on a dead deployment. That grades
+   `STALE_ORIGIN`, never OK (measured 2026-08-09: `ai-ziyaoastro` emitted
+   `ai-ziyaoastro.vercel.app`, which answers 402 `DEPLOYMENT_DISABLED`).
+
+## Coverage and verdicts
+
+`discover_workers()` unions the hand-written `SITES` map with every directory in
+`_registry/cf-deploy-configs`, so a deployed worker nobody remembered still gets
+probed — that is what makes "every site was checked" structural rather than a
+claim (2026-08-09: it surfaced `ai-trader` and `ai-fleet-fly-hooks`, unprobed
+across eight prior runs).
+
+The stderr summary is `OK=<n> BAD=<n> NOLOGIN=<n>`. `NO_LOGIN` is a worker with
+no endpoint that redirects to accounts.google.com — neither pass nor fail, but
+always printed, because a site that *lost* its login endpoint must not be able to
+disappear from the report by having nothing to say. Only `BAD` gates the loop:
+done still means `BAD=0`.
+
+**Fix order for `STALE_ORIGIN` is load-bearing:** register the new URI in the
+console FIRST, then flip the app's emit side (`GOOGLE_REDIRECT_URI` or whatever
+derives it). Reversed, a site that was broken *after* login becomes a site that
+cannot reach consent at all. Flipping the emit side converts the row to
+`MISMATCH` — that is the correct prerequisite state, not a regression.
 
 ## Configuring sites
 
