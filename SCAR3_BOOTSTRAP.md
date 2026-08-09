@@ -3,7 +3,7 @@
 On **scar3** machine after clone:
 
 ```powershell
-git clone https://github.com/scss1199/ai_fleet_skills.git C:\ai_workspace\ai_fleet_skills
+git clone https://github.com/scss1199/ai_fleet_skills.git C:\ai_workspace\_skill\ai_fleet_skills
 cd C:\ai_workspace\ai_scar3
 python %AI_WORKSPACE%\_skill\engines\mtm-fleet-skill-github.py sync --node ai_scar3
 ```

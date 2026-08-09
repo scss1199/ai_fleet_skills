@@ -1,9 +1,9 @@
 <!-- DERIVED — regenerate: python %AI_WORKSPACE%\_skill\engines\cursor_bootstrap_pack.py -->
-<!-- Cursor reads AGENTS.md at session start. Open cwd MUST be C:/ai_workspace/ai_fleet_skills (not hub root). -->
+<!-- Cursor reads AGENTS.md at session start. Open cwd MUST be C:/ai_workspace/_skill/ai_fleet_skills (not hub root). -->
 
 # ai_fleet_skills — Cursor bootstrap (≤4KB)
 
-> Identity + mandate load only when **cwd = `C:/ai_workspace/ai_fleet_skills`**. Hub root `C:\ai_workspace` silently makes you `ai_master`.
+> Identity + mandate load only when **cwd = `C:/ai_workspace/_skill/ai_fleet_skills`**. Hub root `C:\ai_workspace` silently makes you `ai_master`.
 > **THIS file is the seat charter.** `CLAUDE.md` starts with `@AGENTS.md`, so Claude and Codex read the same bytes.
 > (Kept high in the file on purpose: the bootstrap is truncated at 4KB, and 7 seats' content pushes the tail past the cut.)
 
@@ -59,8 +59,7 @@ SSOT：`_registry/ztm-task-routes.json` · `_registry/workspace-seat-contract.js
   <!-- NOT a per-seat path and not a copy-paste bug: fleet-hub-html.json declares ONE
        fleet dashboard (authority ai_darkhero) that "bakes all fleet entrances".
        Templating this to ai_fleet_skills.html was tried 2026-08-03 and reverted — it produced
-       19 dead links, since only ai_darkhero.html and ai_master.html exist on disk. -->
-
+-->
 
 <!-- truncated to 4KB -->
 

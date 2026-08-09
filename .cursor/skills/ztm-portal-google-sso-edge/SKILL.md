@@ -1,7 +1,7 @@
 ---
 name: ztm-portal-google-sso-edge
 description: >-
-  Cursor Edge ONLY: Google SSO for ai-darkhero.vercel.app portal + optional GCP
+  Cursor Edge ONLY: Google SSO for ai-darkhero.kyloren.workers.dev portal + optional GCP
   redirect URI. Pairs with mtm-portal-sso-verify.py TR0 probe. OOM-safe tabs.
 metadata:
   fleet:
@@ -19,7 +19,7 @@ ladder_ref: _registry/fleet-token-ladder.json
 parent_skill: aex-agent-evolution
 ---
 
-# Portal Google SSO — Cursor Edge（ai-darkhero.vercel.app）
+# Portal Google SSO — Cursor Edge（ai-darkhero.kyloren.workers.dev）
 
 > **Surface:** Cursor 內建 Edge · **browser MCP only**  
 > **禁止：** Windows Chrome、CDP :9222、Playwright chrome、`launch_scss1199_cdp*`  
@@ -27,7 +27,7 @@ parent_skill: aex-agent-evolution
 
 ## When to use
 
-- 驗證 / 完成 `https://ai-darkhero.vercel.app` Google 登入
+- 驗證 / 完成 `https://ai-darkhero.kyloren.workers.dev` Google 登入
 - GCP OAuth client 缺 redirect URI（`redirect_uri_mismatch`）
 - 被動 digest 需確認登入後可讀 JSON
 
@@ -46,18 +46,18 @@ python %AI_WORKSPACE%\_skill\engines\mtm-portal-sso-verify.py --write-runbook
 若 `GetMcpTools` 無 `cursor-ide-browser`：
 
 1. `CallMcpTool mcp_auth` → `cursor-ide-browser`
-2. 仍缺 → `move_agent_to_root` 至有 browser MCP 的 seat（如 `ai_career`），OAuth 目標仍為 ai-darkhero.vercel.app
+2. 仍缺 → `move_agent_to_root` 至有 browser MCP 的 seat（如 `ai_career`），OAuth 目標仍為 ai-darkhero.kyloren.workers.dev
 3. 完成後 `browser_unlock` + 關多餘 tab（OOM）
 
 ## Phase A — Portal 登入（browser MCP）
 
 1. `browser_tabs` list → 關閉無用 tab（OOM）
-2. `browser_navigate` → `https://ai-darkhero.vercel.app/login.html`
+2. `browser_navigate` → `https://ai-darkhero.kyloren.workers.dev/login.html`
 3. `browser_lock`
 4. `browser_snapshot` → 點 **用 Google 帳號登入**
 5. Google 選帳 → **scss1199@gmail.com**（chooser / Continue）
-6. `browser_snapshot` → URL 應為 `https://ai-darkhero.vercel.app/`（非 login）
-7. `browser_navigate` → `https://ai-darkhero.vercel.app/fleet-skills-digest.json`
+6. `browser_snapshot` → URL 應為 `https://ai-darkhero.kyloren.workers.dev/`（非 login）
+7. `browser_navigate` → `https://ai-darkhero.kyloren.workers.dev/fleet-skills-digest.json`
 8. 確認 JSON 含 `"required"` 陣列（≥9 項）
 9. `browser_tabs` close 非當前 tab
 10. `browser_unlock`
@@ -67,7 +67,7 @@ python %AI_WORKSPACE%\_skill\engines\mtm-portal-sso-verify.py --write-runbook
 1. `browser_navigate` → `config/gcp_oauth.json` 的 `console` URL（iron-wave 專案）
 2. 開啟 **ai-hr-match-app** OAuth client（client_id `433379372607-vi35…`）
 3. **Authorized redirect URIs** → 新增：
-   `https://ai-darkhero.vercel.app/api/auth/callback`
+   `https://ai-darkhero.kyloren.workers.dev/api/auth/callback`
 4. Save → ledger 寫 SUMMARY（`oauth-verify-ledger.md`）
 5. 重跑 Phase A
 
