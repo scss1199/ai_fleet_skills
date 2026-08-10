@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "version": "scf-v1",
+  "updated": "2026-06-24",
+  "purpose": "Self-Consistent Field (SCF) over the hub: ψ (field state), g (goal vector), r (result vector), residual R, convergence κ. Complements per-session PKT snapshot with cross-session evolution direction.",
+  "aliases": {
+    "PKT": "Primary name for P/(K·T); PPTT is deprecated alias (same formula)",
+    "P": "Numerator: alignment P_dot from goal·result + goal-compact quality gate",
+    "ψ": "Field state: spec + rules hash + KB version + promoted canon snapshot",
+    "g": "Goal vector (sparse checklist dims); MTD mint at task start",
+    "r": "Result vector (ZCT-verified dims at session end)",
+    "R": "Residual g − proj_g(r); evolution metric, not optional"
+  },
+  "pkt": {
+    "canon_formula": "PKT = P / (K_billable_ktok · T_total_min)",
+    "pptt_alias": true,
+    "p_formula": "P = P_align · P_compact; P_align = 100·dot(g,r)/dot(g,g); P_compact ∈ [0,1] from goal-compact orthogonality",
+    "t_formula": "T_total_s = T_agent_s + w_op·T_operator_wait_s; T_pkt_min = T_total_s/60",
+    "w_op": 10,
+    "metric_ref": "_registry/goal-vector-protocol.json",
+    "ledger_engine": "_skill/engines/token-ledger.py",
+    "state_engine": "_skill/engines/scf-residual.py"
+  },
+  "scf_loop": {
+    "steps": [
+      {"id": "goal_mint", "lane": "MTD", "output": "<stamp>.goal.json"},
+      {"id": "parallel_execute", "lane": "ZCT|ZTM|MTD", "ref": "_registry/parallel-gates.json"},
+      {"id": "result_verify", "lane": "ZCT", "output": "<stamp>.result.json"},
+      {"id": "residual", "lane": "ZCT", "engine": "scf-residual.py"},
+      {"id": "field_update", "lane": "ZCT|MTD", "output": "ψ bump via promote/spec_set/SUBMIT"},
+      {"id": "pkt_ledger", "lane": "ZCT", "engine": "token-ledger.py"}
+    ],
+    "converged_when": {
+      "R_norm_lt": 0.05,
+      "kappa_lt": 1.0,
+      "stable_cycles": 3,
+      "note": "κ = ‖R_n‖/‖R_{n-1}‖; σ tracks residual direction (DIIS-like)"
+    }
+  },
+  "goal_compact_in_P": {
+    "role": "Multiplicative gate on numerator — wrong compression destroys P direction",
+    "P_compact": "1 − mean(weight⊥) over compacted chunks; weight⊥ = ‖chunk − proj_g(chunk)‖/‖chunk‖",
+    "rule": "Compact only along g; never directionless SVD/PCA when g exists",
+    "engine": "_skill/engines/goal_compact.py",
+    "canon": "_registry/goal-compact-protocol.md"
+  },
+  "evolution_metrics": {
+    "R_norm": "‖R‖/‖g‖ — primary SCF residual",
+    "kappa": "‖R_n‖/‖R_{n-1}‖ — convergence rate (<1 improving)",
+    "sigma": "cos(R_n, R_{n-1}) — residual direction stability",
+    "psi_delta": "registry/rules/KB version change between cycles",
+    "journal": "_logs/scf/journal.jsonl",
+    "state": "_registry/scf-state.json"
+  },
+  "portal_tracks": [
+    "PKT ledger canon (token-ledger)",
+    "PFKT F/P numerators (pfkt-protocol.json — KT frozen mode)",
+    "SCF residual strip (scf-state)",
+    "Policy W* sim (portal JS — not KPI)"
+  ],
+  "pfkt_ref": "_registry/pfkt-protocol.json",
+  "mandate_ref": "_skill/engines/mandate-protocol.md",
+  "algebra_ref": "_skill/technique_output/10-foundations/effect-per-token-metric-algebra.md",
+  "numerics": {
+    "version": "scf-numerics-v1",
+    "updated": "2026-06-26",
+    "enabled": true,
+    "engine": "_skill/engines/scf_numerics.py",
+    "methods": {
+      "sigma": {
+        "formula": "sigma = cos(R_{n-1}, R_n) on aggregated gap vectors",
+        "ref": "scf-protocol evolution_metrics.sigma"
+      },
+      "anderson_acceleration": {
+        "formula": "R_predict = R_n - beta*(R_n - R_{n-1}); beta from (dr·dr2)/(dr2·dr2)",
+        "m_default": 3,
+        "ref": "Anderson (1965); Walker & Ni (2011)"
+      },
+      "relaxed_fixed_point": {
+        "formula": "R_relaxed = omega*R_n + (1-omega)*R_{n-1}; omega adapts from kappa",
+        "omega_range": [0.3, 1.0],
+        "ref": "Damped fixed-point for goal↔result coupling"
+      },
+      "kappa_anderson": {
+        "formula": "kappa_aa = R_predict / R_{n-1}",
+        "use_in_converged_when": true
+      }
+    },
+    "note": "Orthogonal to PKT denominator; augments hub roll in scf-residual.py"
+  }
+}

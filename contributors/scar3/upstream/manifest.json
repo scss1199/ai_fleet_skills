@@ -1,13 +1,14 @@
 {
-  "schema": 1,
+  "schema": 2,
   "authority": "ai_darkhero",
   "contributor": "darkhero",
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-10T01:44:02Z",
-  "manifest_sha": "423c462ad561816e",
+  "generated_at": "2026-08-10T12:03:38Z",
+  "manifest_sha": "ea082948a765393b",
   "required": [
+    "fames",
     "aex-agent-evolution",
     "ztm-fleet-inbox-absorb",
     "ztm-skill-submit",
@@ -22,235 +23,451 @@
     "token-preflight",
     "cca-token-governance"
   ],
-  "skill_count": 38,
+  "skill_count": 40,
   "skills": [
     {
       "name": "accountability-unblock",
       "sha": "faf8f28d4a4e9ebd",
       "required": false,
-      "lane": "MTD"
+      "lane": "MTD",
+      "package_sha": "fa75dc87a75cb87bcc9badc514bbf941993fb23eef3b6515bebab585f01ea5f8",
+      "files": {
+        "SKILL.md": "35e74b96bfc14fa92b08eb8f282c1b346459d36d2e8b6b9cdd3d8e8a5c2ecb75"
+      }
     },
     {
       "name": "adus-auto-deploy-upgrading-skill",
       "sha": "faf184e9ecc61858",
       "required": true,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "7fd5adea9591d8e2e078f6c8bf046282cd5447db215913099e3bc131f30328a0",
+      "files": {
+        "SKILL.md": "a6a3afcb3af107724dca4cf70d49d0c5b7777d1d703da8a304aa7e91b073c127"
+      }
     },
     {
       "name": "aex-agent-evolution",
       "sha": "4a9c3001cffd495a",
       "required": true,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "494cc8b0af44e5ec2bc4a55b3528c42f38e266716d50fcb35773ca6ead15a3dd",
+      "files": {
+        "SKILL.md": "4a9c3001cffd495aeeff2b4c7976aa48cf40451533e564cd7c9bcca52b9531ae"
+      }
     },
     {
       "name": "agc-auto-goal-compact",
       "sha": "881779f57bf6321f",
       "required": true,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "418adcd08a8963b236be6d73c3af7187659f2ff2fba1b0a8d5448753a591743a",
+      "files": {
+        "SKILL.md": "a892ace07cd4f0198c277c7305d7b089233d10a9bab11ea3450b6d4a5fde4d90"
+      }
     },
     {
       "name": "auto-skill-upgrade-deploy",
       "sha": "5a543cd79bc18756",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "eba72cb211a5cb5a9595de6b81af404e691b65bfd7bc466ad1fef37069c6bbcc",
+      "files": {
+        "SKILL.md": "5a543cd79bc1875679a270689edacf3a96eed6cb8610895e85fe34c4e201a813"
+      }
     },
     {
       "name": "aware-dual-field",
       "sha": "d3a55e4a16f3104b",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "997afa8f78040823e28f367a74ca77e904179d5752b2753671f4f70925974d56",
+      "files": {
+        "SKILL.md": "d3a55e4a16f3104b98f70f49a794417a130cf2eace3ac093a29c50bdb2b50885"
+      }
     },
     {
       "name": "cca-token-governance",
       "sha": "80c81f5cf0b4206f",
       "required": true,
-      "lane": "MTD"
+      "lane": "MTD",
+      "package_sha": "d3e5924360d23bd5bfadb9ae5da4d348ab4b2103483abc5e04ac2dd780adc97b",
+      "files": {
+        "SKILL.md": "80c81f5cf0b4206fc732ba08a85c7be01188a41f91ea24a769919b4cf107aab9",
+        "agents/openai.yaml": "e93bccd61d913fd236b112e65933a3d52e1b44fac2520a3918a314726fd29d9b",
+        "references/policy.md": "eaeeb7c2309216de248c47eb15f3d63a58e347a571508f14871fa92bbc21fcfe"
+      }
     },
     {
       "name": "deploy-nextjs-cloudflare",
-      "sha": "5992d9bc07eb2c00",
+      "sha": "432f1935711417b7",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "a2ed71c89ebd64d1c91c0db9337d38d63363fc7585fa4f3920a6cda1775c08ea",
+      "files": {
+        "SKILL.md": "432f1935711417b7782d6498e16b25225bbd251489442467c00bb5aab33d5979",
+        "agents/openai.yaml": "138a80cd1780892c6b4f1f1b9395e3a601f80790782a4b8681deae98eadf5f39",
+        "assets/claude-cloudflare-migration-prompt.md": "5797029cef1900825fdcca1eaa5119f272bacc784e0bed46f9839f46fdef04c2",
+        "references/known-failures.md": "1f495b0051598336b714d7efd0e17d26d5ec0d8e715e2bbacd0a0b2ce76e5687",
+        "scripts/cf_secret_push.py": "c584ab31e54a8ce5a37ffb67c8715d6f44702f0698f726e6155c6ccf9cdb49de",
+        "scripts/local_smoke.py": "2bfd81c2c7c8a3940083b21a39cd850fd957111800afa34e6c527c4684155320",
+        "scripts/preflight.py": "437740c989ea5b8db53186d9caaecd98d299938890aa2fe53ca2969e58b2ece2",
+        "scripts/prepare_project.py": "b7120579ebb77eae3bd8f53a0f314493cf1c4114de5ded92b1328d624f2da2ec",
+        "scripts/quick_validate.py": "be293b71b766dcade8a380c867a325fed1a1f7a494d88e5fc37c804f5afae96c",
+        "scripts/record_failure.py": "87723a5609f6c0ef135da94d6208535c0784a0c2a38663a806f989bfd35a9d11",
+        "scripts/selftest_quick_validate.py": "41d345f312b0737b9df9e45fb0acb4eb4233c28c460214cd3810e349cfebd503",
+        "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37"
+      }
+    },
+    {
+      "name": "fames",
+      "sha": "2dc881cfef4cba9d",
+      "required": true,
+      "lane": null,
+      "package_sha": "e01f813082d943555c0dd673cbdaee7e65e921815c4f4a842781ee9b1cc67bb8",
+      "files": {
+        "SKILL.md": "2dc881cfef4cba9d99e5b2730099c64a71cfae905e31c7894a233c8d8e4940d7",
+        "bundle-manifest.json": "604c5d75cd1d0b8b3cb5c9235f6283360028cc67abd57164f9ce4f93d654a04c",
+        "agents/openai.yaml": "0e2fc04d4ebbb939f4e51f0c45964134c830972017188a3bf0be385cd219eac1",
+        "references/protocols/fames-protocol.json": "dcfe14f1386e7e560151b9df42b52605eb7b357bebac81247ff077ee2a7f1e00",
+        "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
+        "references/protocols/goal-vector-protocol.json": "204f845523bb75294895a384d14019eef583400323b1a5d6472ead778413e45a",
+        "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
+        "references/protocols/scf-protocol.json": "030e10038fc0d2585553f21aaf2d5d9ba04dedff1b45039292df5804bb0dc82b",
+        "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
+        "scripts/fames_fleet.py": "c1ca31e57a197b77ee8eb6ce2b8b32d0ebb91a35bb4af76dcbd790a385d7a6f0"
+      }
     },
     {
       "name": "hubpulse-ops",
       "sha": "aa656b74fed9cecc",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "bb03c86a5b0fba6a8f4ae01ff73fe0a5cdc07474f4e385c697634a76624d1546",
+      "files": {
+        "SKILL.md": "aa656b74fed9cecccfef7779bd837cbea9b1263147550c47445766b0bcc80700"
+      }
+    },
+    {
+      "name": "line-oa-ingest",
+      "sha": "7f5e7d4088d0381b",
+      "required": false,
+      "lane": null,
+      "package_sha": "2e45ece395032d5ba2db2929476b5de9f001246f7d0af03bc0b27a45409e4ae6",
+      "files": {
+        "SKILL.md": "7f5e7d4088d0381b870b992898e56b7f739644f665ac2cc51d40ed8870dbf6c4",
+        "agents/openai.yaml": "3b3a5bb4f3fc5b43bd8242ef17dec4e8503111acc39ca46ef8c6019f83342002",
+        "references/line-api-boundaries.md": "c5f8bb100756aa34dd2266601caf25bd16bcd339dbc96858602f000895e4d516",
+        "scripts/fetch_public_social.mjs": "2c1a76c0ab02d816f9bd98f2a7e3d653ab0cea615b7fa0b7cf04e761eb52d087",
+        "scripts/inspect_line_inbox.py": "460168215f3ecf231dbd202d87922dd1a234530deaf14937b7df23c0c6f10fa1",
+        "scripts/test_inspect_line_inbox.py": "de695f9296a1d47af6721aa16b8aff95d6fb4642719db8a9ce771ec1d34f36e8"
+      }
     },
     {
       "name": "mtd-judgment-escalation",
       "sha": "c5b95198818e809d",
       "required": false,
-      "lane": "MTD"
+      "lane": "MTD",
+      "package_sha": "0163f70c0be1acf0449492cc4440bf92a5787730822fdacd7d416c8e8f4e5e59",
+      "files": {
+        "SKILL.md": "e7b3f589989591435cc3c5c27309564d173dea077b31f24a3cc0a55c41480ba4"
+      }
     },
     {
       "name": "mtm-api-pool-offload",
       "sha": "71b294c39cc54e10",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "2dab5f888c33d731684adb40673ef82f932629f9172e665fc702dc960d8485e7",
+      "files": {
+        "SKILL.md": "cc6da2c6444d7e73312ff8ae282eff66cc985a38735e60f488e1c53dfd2ce8c0"
+      }
     },
     {
       "name": "mtm-claude-remnant-cleanup",
       "sha": "bd0fad2975c4c7dd",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "2648107d7385f998263b418f68f3d62f0248732ac99927689f133a484a39b89c",
+      "files": {
+        "SKILL.md": "72973c68a9f555432a33216121305116369467fb711dcb85b48a3246dbc3727f"
+      }
     },
     {
       "name": "mtm-fleet-audit",
       "sha": "2887239f36d9f7f5",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "1b14385e4054655aaa862f37fddccf42d0f8963f6e2ec0dba8031f42d14204a8",
+      "files": {
+        "SKILL.md": "6825f4a38bb17dea38bcef17923c5ba3004ff1bc70470f4c1600bc5f3ce9763e"
+      }
     },
     {
       "name": "mtm-fleet-skill-github",
       "sha": "2a37fc1df5cba610",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "87da8f1d2d8ec680a1623e4fcfdac4c2bb82d467187d816df57f6041d5dc1061",
+      "files": {
+        "SKILL.md": "2a37fc1df5cba61094a119fea73740a71f3df7e54d703ba74454749369e337e5"
+      }
     },
     {
       "name": "mtm-github-ops",
       "sha": "294596e0625c974c",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "350e3657554a03554ecc3c8cc5d4d68b385e4724e635f7750ce237181823f7e8",
+      "files": {
+        "SKILL.md": "ab0beb18ec80d06126c5add559e667f1819fc591c5c02895f47de47d46ad0b59"
+      }
     },
     {
       "name": "mtm-mte-mint",
       "sha": "87485b52f0040b9e",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "6647470fcc7a2cdbb179a234feecf73fdbedc8a41ed2af55fc7aaf9652babf6c",
+      "files": {
+        "SKILL.md": "d1652815bd7f7cff9d1453f6a7b2054273b598fdab3fa0621232412027df2599"
+      }
     },
     {
       "name": "mtm-mto-first",
       "sha": "b69a2b8c078e82bb",
       "required": true,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "6054373e6c52cb8cbe7eeca3885e3db0d5b173989efd3d964cbab6dc0fd67938",
+      "files": {
+        "SKILL.md": "2f708aa33b32c5756278d6f92a0f4c7c836599771cbe5a8826d6138592b8f0d9"
+      }
     },
     {
       "name": "mtm-obsidian-wiki",
       "sha": "9f6e696c7aa4815e",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "22aa8c9a8f8f3e30bc1bb96581bc41de024314ad5d6b74a1c2856f0e172c9aad",
+      "files": {
+        "SKILL.md": "3eaf43e67ddef910cd1a1a8e4831fdb95f909ad4a55ffed17c1f99057f3c5374"
+      }
     },
     {
       "name": "mtm-token-ladder",
       "sha": "866acf2908d337fa",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "f4e2f03db1ddafe99d0cdae78b30990a3ea6bde871ddf8b70c03982ee13a2784",
+      "files": {
+        "SKILL.md": "866acf2908d337fa9fe6bc1a10646eb3e37695903073545c33b983830d68ff0c"
+      }
     },
     {
       "name": "pfkt-auto-unblock",
       "sha": "bbf3a1ffefff038b",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "17e2ff71de3fe58ad9001e33726b64b5e1b2a02c910085a583bbcf11d047cd0f",
+      "files": {
+        "SKILL.md": "e6b65bed5416d310eaafaab3fe825709bc82f63a702f2d83547b0c34e8021112"
+      }
     },
     {
       "name": "pfkt-parallel-wave",
       "sha": "61a3d7a82ceefcff",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "55febb37d790812f76a2f69f5360b5b0d738e7a1d979ff3ec0f83dee031aa5ff",
+      "files": {
+        "SKILL.md": "99344902bd986c0d3891b17e471925e1465e72aa841ed5ce3fd69449af2b441c"
+      }
     },
     {
       "name": "sso-browser-session",
       "sha": "ca55894ff9304f05",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "6e56b3586f80a38dffa6647c4331dd716d7496f5db6c619d76ee46a402ddbe96",
+      "files": {
+        "SKILL.md": "ca55894ff9304f05769f5e705a6e1a542483694d3a757ec51a230d8772cfa1ae",
+        "references/known-failures.md": "e69fe868d4db006fbacd14a46cdb7ef8db84ec1230483c15e5ae086931ffb804"
+      }
     },
     {
       "name": "token-preflight",
-      "sha": "c55798d8572f23ad",
+      "sha": "a24cf9ca39487740",
       "required": true,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "de8c81d3b47751245ee0f1080719c953d7ff7b908cde75c74c140e5e2da843b2",
+      "files": {
+        "SKILL.md": "a24cf9ca3948774067082884500797131a78ac5dbbf7b6f27f4b3afa42ca81a0",
+        "agents/openai.yaml": "3e6775a97aeefe019b1c41ea53d1801934988be12922960e7eb2a345b6c92265",
+        "references/concept-map.md": "889f919398e94745d31314ca9835ed21758d193e6c351e0e4fc512ade6499044",
+        "scripts/claude_session_hook.py": "9a89630622943843eb2756839d4297cab0a373c5007136c74b3a617d4711dacf",
+        "scripts/preflight.py": "969d214be3867a61d8d58c5ec73d5b9173358d41efbadc9396a8adc090c23437"
+      }
     },
     {
       "name": "ztm-cursor-edge-auth",
       "sha": "4fb7443dd6c99b51",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "f10ac0f6b8503760b834a0ef62754c6156e51d1a1546bad57371cb80d7e66b2d",
+      "files": {
+        "SKILL.md": "88fa2eb3dc141c9917e868c59e6748923e277a5de2d9474cac070e22de97d18d"
+      }
     },
     {
       "name": "ztm-fleet-inbox-absorb",
       "sha": "472799b82807ea19",
       "required": true,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "9991e49216b3ea108e54fea917295e971568b5c273882237c4409445b8d13a7c",
+      "files": {
+        "SKILL.md": "6367311d5ef68235e7d9ad8e596b1da4cdffeb4cd6ead1997591b426b0248d11"
+      }
     },
     {
       "name": "ztm-fleet-intelligence",
       "sha": "b8bc0e79083ed8ef",
       "required": true,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "005347f8772353f503880f93309357c422c934ed927bc499143a1c093fe45820",
+      "files": {
+        "SKILL.md": "2401ad12ef05ccc980cbee208c078d3d0811b6441cd85b55f93302284d7cce17"
+      }
     },
     {
       "name": "ztm-fracdigi-psync",
       "sha": "721b3c84f11c61ff",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "df05dba8a2cde73c77a7641a46105ce95479f9def055ceacebda03a5e60f7bc2",
+      "files": {
+        "SKILL.md": "1e375b74aac3e0d96a5046fb5e5ffdff199e415998b7289f1f1b37acb7c235bb"
+      }
     },
     {
       "name": "ztm-git-ship",
       "sha": "763b5727f9bc59b1",
       "required": true,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "fb1d8b25737f39ed949d58e31774fb4a02fbe21f958115cca218985fa8d284c8",
+      "files": {
+        "SKILL.md": "4be35fde873124f2635efd3d5f7fb1b15dbf44417791f2ff611a11e528c0daa8"
+      }
     },
     {
       "name": "ztm-goal-compact-enforce",
       "sha": "0f5a161e39d17287",
       "required": true,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "3acaf533cf4cadd106f11813c37b38277eea8daae9bcf64cf6401d05510e2cd0",
+      "files": {
+        "SKILL.md": "f2c0077c48b242eafe86464cc221c409519fb7b45276afeb2a1f71e283a5cd09"
+      }
     },
     {
       "name": "ztm-meta-oauth-console",
       "sha": "d1178c1bf8cec380",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "981fb502047e88b80d748b2b897573e8aa6a831967a8c872400328f447f03d2c",
+      "files": {
+        "SKILL.md": "7a5b04d9934c8888be771b3774a5a1a6a31fcc5bc7b70372a1575ef6775d59b2"
+      }
     },
     {
       "name": "ztm-oauth-redirect-fleet",
       "sha": "ae0317e0d3eaab01",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "da1f3edc2ea6d8537551eee2814ac7b881c5deff4feb5313d2f6d55cf5e7cbf6",
+      "files": {
+        "SKILL.md": "ae0317e0d3eaab015dc074b2f055f8b339269575ba111a812befc35c686582e9",
+        "references/known-failures.md": "069351280ad26bb9b317f8e2afa8e19e87a29ab2109dfceccec5c0f59cbb80d9",
+        "scripts/control_redirect_uri.py": "bb3e971f9a236203154d5064acbb66da4c993a115e8b55d9da5affdbf9606e2c",
+        "scripts/gen_redirect_handoff.py": "73f71d691b44d60561f69e08401ec4f2dbee5c92935a0672f14337db3985ead6",
+        "scripts/inventory.json": "6a14f1c5d34b7af1c445ad5d864c402058474118195b0a8ffd974074852d112b",
+        "scripts/probe_redirect_uri.py": "f2e2a892e5de7e7e39bdffe6efccb9e824211262f276c50e2686d919a1734610",
+        "scripts/redirect_uri_fix_handoff.md": "2b67fea328895347c60bc57c314511d7c7c66e1b93b39b42f17e8cf77f2e1778",
+        "scripts/redirect_uri_state.json": "290ec0c9bbc6b1e9044a55dd6ba9f6f225c724f6dbdb16b57116ee7d14e435f4",
+        "scripts/test_redirect_uri.py": "d37e8d3cbd3d5888aca64db7a26fe92b66ec993963c68bdaad739fa8754c2887"
+      }
     },
     {
       "name": "ztm-portal-google-sso-edge",
       "sha": "e7bd40d7be7f57bd",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "befbea9797fd9a8cfd3bbaef98fd140f9b3af366b862cb2ae4752dafd588dd71",
+      "files": {
+        "SKILL.md": "c8614c88a3758bfa277ed635c48a5f21c103f1ee79bd1e7351c31d20d48ce924"
+      }
     },
     {
       "name": "ztm-skill-submit",
       "sha": "193c0085e9bc8c4f",
       "required": true,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "993fb767e37d72273043ac0d3e7672a7c697edfd13802dd1f691351e9256eea1",
+      "files": {
+        "SKILL.md": "193c0085e9bc8c4f00f06fe906cad32b13abdd28cb731ebbbc1081d817f37d7f",
+        "references/fleet-metadata.md": "d0247742625fe2d7690778aee529b1f6fb5b030fddee8e95fa0bae1af2d160f2"
+      }
     },
     {
       "name": "ztm-verify-before-done",
       "sha": "c2e4d81b0d26cd88",
       "required": true,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "769a0f0045e705cf1f491cba586a60af3d6e97221129747b4dbf9a416a055ac0",
+      "files": {
+        "SKILL.md": "33159e7d480fc78cece6cb99f84243527c88d941aa5c18f73acdd9581ed6a8a4"
+      }
     },
     {
       "name": "ztm-web-auth-ops",
       "sha": "c1cb827bf65f41ca",
       "required": true,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "149dcff2d82dbdd8b317df8c0528e632023576997d5e7db0b66c3ec25273e97c",
+      "files": {
+        "SKILL.md": "83a50dd704e4ff4c7b2653272d1fad01da9650f6b4b7498e53e670ce5ce43f83",
+        "oauth-verify-ledger.md": "6fde816caf1de47c36abc4b1ac732e29f128fa65479050912157d576413fca1b",
+        "reference.md": "0f890af0f5e9acb38e12f6dcf6ebaaa5be868ce0cda1e0c1b099a044d093a9d6"
+      }
     },
     {
       "name": "ztm-web-stack",
       "sha": "f2706517da442e15",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "b9cd2f38b064d3c78b969e7d379a21793a3e31963d6242c05b1e202328b97022",
+      "files": {
+        "SKILL.md": "0f7a04d70803d4e697d099e771af6f3811a3b88c8309b2899fec6bdd1c005a41",
+        "reference.md": "33ba0add716d94504abf58f5c37f452f9c30b8da6e5059abe88ad6cb53bf87bc"
+      }
     },
     {
       "name": "ztm-webapp-verify",
       "sha": "0f81731ba5d54b15",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "2952d1f3f6775d3c983817504e124507824e99041824f8b2e24dec1e9cf83965",
+      "files": {
+        "SKILL.md": "3232ad8d3e7d6d3cb519fc6e58b3fb4cea7aca58e31fb8c9b940a91fc92a9c62"
+      }
     },
     {
       "name": "ztm-ziyaoastro-vercel",
       "sha": "b5b22d8a080816b1",
       "required": false,
-      "lane": "zero-token-mechanism"
+      "lane": "zero-token-mechanism",
+      "package_sha": "321079d7038f5b424a3c81324c2d887adb71520e0755a366f165f67da8106ca2",
+      "files": {
+        "SKILL.md": "955ff985c853f040090a42d8a4693c1e9fc489ecd1fefebc91e2e069654b4886"
+      }
     }
   ]
 }
