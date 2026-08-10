@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-10T08:57:33Z",
-  "manifest_sha": "db6a26a0935610a5",
+  "generated_at": "2026-08-10T09:06:02Z",
+  "manifest_sha": "266c9486ed2c9c2b",
   "required": [
     "fames",
     "aex-agent-evolution",
