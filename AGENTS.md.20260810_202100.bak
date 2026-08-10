@@ -23,7 +23,6 @@ Debug: `python C:\\ai_workspace\\_skill\\engines\\agent-session-open.py`
 
 Standalone `FAMES` means the full `FP -> MTM -> SCF -> AEX -> SEAL` contract; report every phase, fail closed on UNKNOWN, and never expand user authority. SSOT: `_registry/fames-protocol.json`; Skill: `fames`.
 
-
 ## Standing rules (portal rules tab = this source)
 
 STANDING RULES (_registry/rules-blueprint.json — portal rules tab = this source; obey every turn):
