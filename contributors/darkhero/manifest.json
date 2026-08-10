@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-10T09:13:00Z",
-  "manifest_sha": "84b67791a7acd88b",
+  "generated_at": "2026-08-10T10:07:07Z",
+  "manifest_sha": "b3092e33bb6ac7aa",
   "required": [
     "fames",
     "aex-agent-evolution",
@@ -23,7 +23,7 @@
     "token-preflight",
     "cca-token-governance"
   ],
-  "skill_count": 39,
+  "skill_count": 40,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -84,6 +84,12 @@
       "sha": "aa656b74fed9cecc",
       "required": false,
       "lane": "zero-token-mechanism"
+    },
+    {
+      "name": "line-oa-ingest",
+      "sha": "184ff4368feb9006",
+      "required": false,
+      "lane": null
     },
     {
       "name": "mtd-judgment-escalation",
