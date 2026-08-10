@@ -5,7 +5,9 @@ description: Execute the complete FP, MTM, SCF, AEX, and SEAL contract. Use when
 
 # FAMES
 
-Treat FAMES as one completion contract, not as a label or permission grant. Read `%AI_WORKSPACE%\_registry\fames-protocol.json` and run `token-preflight` before broad exploration.
+Treat FAMES as one completion contract, not as a label or permission grant. Read the [bundled FAMES protocol](references/protocols/fames-protocol.json) before execution and run `token-preflight` before broad exploration. The bundled protocol is the portable authority; if `%AI_WORKSPACE%\_registry\fames-protocol.json` also exists, require it to describe the same version and execution order or report `UNKNOWN`.
+
+Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` from this skill directory. The verifier must pass without reading any workspace file; this is the cold-load proof that GitHub delivered a complete skill rather than a pointer to one machine's registry.
 
 ## Execute the contract
 
@@ -22,3 +24,7 @@ Perform the task itself between MTM routing and the SCF result comparison. Prese
 Report one row for every phase with `PASS`, `NOT_APPLICABLE`, `UNKNOWN`, or `FAIL`, plus its evidence. `NOT_APPLICABLE` needs an explicit false activation predicate; it is never an implicit skip. Any missing, stale, mismatched, exception-producing, or unverifiable evidence is `UNKNOWN`, and `UNKNOWN` fails closed.
 
 FAMES broadens completeness only and does not expand user authority. It never authorizes destructive actions, external writes, live-device access, deployment, credential access, or any action outside the user's stated scope.
+
+## Fleet generation rule
+
+Treat `bundle-manifest.json.package_sha` as the FAMES generation identity. A machine has FAMES only when its installed package verifies and its GitHub contributor manifest reports that exact `package_sha`. A missing contributor receipt, stale manifest, hash mismatch, or unreadable bundled protocol is `UNKNOWN`; never infer convergence from a matching folder name.
