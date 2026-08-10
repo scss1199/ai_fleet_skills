@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-08-10T16:57:48",
+  "generated": "2026-08-10T18:07:19",
   "required": [
     "fames",
     "aex-agent-evolution",
@@ -23,6 +23,7 @@
     "aware-dual-field",
     "deploy-nextjs-cloudflare",
     "hubpulse-ops",
+    "line-oa-ingest",
     "mtd-judgment-escalation",
     "mtm-api-pool-offload",
     "mtm-claude-remnant-cleanup",

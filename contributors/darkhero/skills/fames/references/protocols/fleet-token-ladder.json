@@ -1,0 +1,283 @@
+{
+  "schema": 2,
+  "version": "2.3.0",
+  "updated": "2026-08-10",
+  "name": "fleet-aex",
+  "legacy_name": "fleet-token-ladder",
+  "zh": "Agent Evolution Index — SCF 閉環飛輪 + Krylov 加速；升級只 bump 本檔",
+  "token_class": "ZT",
+  "cite": [
+    "_registry/fleet-token-ladder.json",
+    "_registry/scf-protocol.json",
+    "_registry/pfkt-protocol.json",
+    "arxiv:2604.08988 SEA-Eval",
+    "arxiv:2505.22954 Darwin Gödel Machine",
+    "operator GPAW thesis CG→BiCG→GMRES escalation"
+  ],
+  "engine": "_skill/engines/fleet-token-ladder.py",
+  "skill": "aex-agent-evolution",
+  "legacy_skills": ["mtm-token-ladder"],
+  "lexicon_concept": "AEX",
+  "parent_umbrella": "FAMES",
+  "fames_ref": "_registry/fames-protocol.json",
+  "north_star": "閉環疊代收斂：EXEC⇄…⇄GUARD 像 SCF；用 CG/BiCGStab/GMRES 選子空間加速 ‖R‖↓",
+  "policy": {
+    "single_entry": "FAMES 是五階段入口；本檔與 aex-agent-evolution 僅處理 AEX 跨週期進化階段",
+    "alias_never_delete": true,
+    "instruments_not_os": "MTM/MTO/PFKT/EFF/SEAT-SPEC are instruments only",
+    "cycle_mandatory": "phases form a closed loop — never one-shot; next cycle starts at EXEC after GUARD",
+    "bump_on_concept_change": "PATCH=prose; MINOR=rung/engine; MAJOR=equation rewrite"
+  },
+  "flywheel": {
+    "phases": ["execution", "distillation", "augmented_execution"],
+    "cite": "SEA-Eval Evolutionary Flywheel",
+    "closed_cycle": ["EXEC", "INSTR", "DISTILL", "PROMOTE", "OPEN", "GUARD", "EXEC"]
+  },
+  "scf_bridge": {
+    "protocol": "_registry/scf-protocol.json",
+    "pfkt_protocol": "_registry/pfkt-protocol.json",
+    "note": "PFKT = upper-level Fragment/Parallel overlay ON SCF (g,r,R,κ); AEX cycle drives field update ψ",
+    "phase_to_scf_step": {
+      "EXEC": ["ztm_execute", "result_verify"],
+      "INSTR": ["pkt_ledger", "pfkt_bind"],
+      "DISTILL": ["field_update"],
+      "PROMOTE": ["field_update"],
+      "OPEN": ["pfkt_split", "pfkt_wave", "pfkt_close"],
+      "GUARD": ["residual", "goal_mint"]
+    },
+    "residual": {
+      "R_aex": "0.5*(1-SR) + 0.3*min(1,T_norm) + 0.2*(1-A_norm)",
+      "kappa": "R_n / R_{n-1} (from _registry/aex-iterate-state.json)",
+      "sigma": "cos(gap_n, gap_{n-1}) via scf_numerics.compute_sigma",
+      "anderson": "scf_numerics.anderson_extrapolate on R history",
+      "periodic_pulay": "scf_numerics.periodic_pulay_mix (every k=3 Anderson else linear)",
+      "R_ops": "0.35*tray + 0.25*hubclock + 0.40*cursor (measure_r_ops); R_work=0.7*R_aex+0.3*R_ops",
+      "aware": "_registry/aware-protocol.json · aware-field.py (ψ_hub / ψ_seat)",
+      "converged_when": {"R_aex_lt": 0.15, "kappa_lt": 0.85, "stable_cycles": 2}
+    }
+  },
+  "krylov": {
+    "cite": "goal-compact-distillation.md · hub-portal Krylov solver selection · GPAW CG→BiCG→GMRES",
+    "analogy": {
+      "EXEC": "apply operator A (run with current ψ)",
+      "INSTR": "form residual R = g - proj(r) / AEX gaps",
+      "DISTILL": "build Krylov basis vector from R (compress trajectory)",
+      "PROMOTE": "accept search direction into ψ (durable update)",
+      "OPEN": "expand / restart subspace (archive variants = stepping stones)",
+      "GUARD": "convergence test + precondition / held-out verify"
+    },
+    "solvers": [
+      {
+        "id": "CG",
+        "when": "kappa < 0.7 AND sigma >= 0.8 AND R_aex decreasing",
+        "phases": ["EXEC", "INSTR", "DISTILL", "PROMOTE", "GUARD"],
+        "skip": ["OPEN"],
+        "note": "smooth SPD-like residual — cheapest cycle; skip OPEN archive"
+      },
+      {
+        "id": "BiCGStab",
+        "when": "sigma < 0.5 OR kappa oscillates (0.7..1.2)",
+        "phases": ["EXEC", "INSTR", "DISTILL", "OPEN", "PROMOTE", "GUARD"],
+        "skip": [],
+        "note": "nonsymmetric / oscillating — bi-orthogonal: INSTR+OPEN search both ways"
+      },
+      {
+        "id": "GMRES",
+        "when": "kappa >= 1.0 OR R_aex not falling over 2 cycles OR verdict=pseudo",
+        "phases": ["EXEC", "INSTR", "DISTILL", "PROMOTE", "OPEN", "GUARD"],
+        "skip": [],
+        "restart_m": 6,
+        "anderson": true,
+        "note": "stiff — full subspace + Anderson accelerate R; force OPEN archive"
+      }
+    ],
+    "default_solver": "CG",
+    "escalate": ["CG", "BiCGStab", "GMRES"]
+  },
+  "equations": {
+    "primitives": {
+      "SR": "verify-done rate (zat-verify-gate / claim-linter pass ratio on recent claims)",
+      "T": "billable ktok (pptt ledger / EFF denominator)",
+      "A": "durable asset delta (ADUS promote, new engine, SUBMIT, park pointer)",
+      "N": "sequence index for similar tasks (same seat + goal stamp or thread)"
+    },
+    "slopes": {
+      "K_eff": "(T_{k+1} - T_k) / ΔN",
+      "K_SR": "(SR_{k+1} - SR_k) / ΔN",
+      "K_A": "(A_{k+1} - A_k) / ΔN"
+    },
+    "genuine": "K_eff < 0 AND K_SR >= 0 AND K_A > 0",
+    "pseudo": "SR acceptable AND K_eff ≈ 0 AND K_A <= 0",
+    "AEX_scalar": "AEX = SR * (1 + α*A_norm) / (1 + β*T_norm) * (1 + γ*max(0, -K_eff)) * Γ",
+    "weights": {"alpha": 0.5, "beta": 1.0, "gamma": 0.3},
+    "Gamma": "alignment ∈ (0,1]: lower mandatory re-inject / extreme-stuck → higher Γ"
+  },
+  "instruments": {
+    "note": "Measuring standards — not the evolution OS",
+    "EFF": {
+      "formula": "EFF = P / (K_billable_ktok × T_active_min)",
+      "legacy": "PPTT",
+      "ledger": "_logs/pptt/<project>.jsonl"
+    },
+    "PFKT": {
+      "formula": "PF = 0.6*F + 0.4*P_par",
+      "protocol": "_registry/pfkt-protocol.json",
+      "role": "SCF upper overlay — Fragment/Parallel numerators; OPEN phase / GMRES subspace",
+      "scf_parent": "_registry/scf-protocol.json"
+    },
+    "SCF": {
+      "protocol": "_registry/scf-protocol.json",
+      "role": "Self-Consistent Field iteration: g,r,R,κ,σ — AEX cycle updates ψ",
+      "engines": ["scf-residual.py", "scf_numerics.py", "pfkt-scf-bridge.py"]
+    },
+    "MTM": {
+      "classes": ["TR0", "TR1", "TW1", "TWD", "TRN"],
+      "protocol": "_registry/mtm-protocol.json",
+      "role": "constrain how T is sampled; not an evolution score alone"
+    },
+    "SEAT_SPEC": {
+      "role": "seat O/V/C/I/E contract anchors",
+      "legacy": "PPTT-SPEC"
+    }
+  },
+  "rungs": [
+    {
+      "id": "EXEC",
+      "order": 0,
+      "first_principle": "用既有 MTO/引擎跑完並可驗收（抬 SR）",
+      "spoken": "EXEC",
+      "legacy_aliases": ["ZT", "MTO_MTM", "ZCT_ZTM"],
+      "escalate_when": "需要讀儀器診斷成本/碎片狀態",
+      "demote_when": "純本機 JSON/parse 即可",
+      "concepts": ["MTO", "ZT"],
+      "protocol": "_registry/mtm-protocol.json",
+      "skills": ["mtm-mto-first", "ztm-verify-before-done"],
+      "engines": ["prework.py", "ztm-task-router.py", "zat-verify-gate.py"],
+      "verify": "python %AI_WORKSPACE%\\_skill\\engines\\fleet-token-ladder.py api EXEC"
+    },
+    {
+      "id": "INSTR",
+      "order": 1,
+      "first_principle": "讀儀器：MTM 類別、PFKT F/P、EFF — 不把儀器當進化本體",
+      "spoken": "INSTRUMENTS",
+      "legacy_aliases": ["MTM", "PFKT", "EFF", "PPTT"],
+      "escalate_when": "有軌跡可蒸餾成耐久資產",
+      "demote_when": "尚未完成一次可驗收 EXEC",
+      "concepts": ["MTM", "PFKT", "EFF"],
+      "protocol": "_registry/mtm-protocol.json",
+      "skills": ["mtm-fleet-audit", "pfkt-session-lane"],
+      "engines": ["mtm-token-waste-scan.py", "pfkt-score.py", "token-ledger.py"],
+      "verify": "python %AI_WORKSPACE%\\_skill\\engines\\fleet-token-ladder.py api INSTR"
+    },
+    {
+      "id": "DISTILL",
+      "order": 2,
+      "first_principle": "軌跡→park/stash/SOP/engine（SEA Φ distillation）",
+      "spoken": "DISTILL",
+      "legacy_aliases": [],
+      "escalate_when": "資產可推廣到其他 seat → PROMOTE",
+      "demote_when": "尚無可壓縮軌跡",
+      "concepts": ["AGC"],
+      "protocol": "_registry/agc-protocol.json",
+      "skills": ["ztm-goal-compact-enforce", "agc-auto-goal-compact", "mtm-mte-mint"],
+      "engines": ["goal_compact.py", "agc-should-compact.py"],
+      "verify": "python %AI_WORKSPACE%\\_skill\\engines\\fleet-token-ladder.py api DISTILL"
+    },
+    {
+      "id": "PROMOTE",
+      "order": 3,
+      "first_principle": "ADUS verify→promote→deploy：耐久資產 A↑",
+      "spoken": "PROMOTE",
+      "legacy_aliases": ["ADUS", "ASU"],
+      "escalate_when": "需平行變體探索（OPEN）",
+      "demote_when": "僅本地 park 即可",
+      "concepts": ["ADUS"],
+      "protocol": "_registry/adus-protocol.json",
+      "skills": ["adus-auto-deploy-upgrading-skill", "ztm-skill-submit"],
+      "engines": ["adus-detect.py", "adus-verify.py", "adus-promote.py", "adus-deploy.py"],
+      "verify": "python %AI_WORKSPACE%\\_skill\\engines\\lexicon-resolve.py ADUS --json"
+    },
+    {
+      "id": "OPEN",
+      "order": 4,
+      "first_principle": "PFKT archive / 平行變體 — DGM stepping stones，保留次優路徑",
+      "spoken": "OPEN",
+      "legacy_aliases": ["PFKT_rung"],
+      "escalate_when": "度量可能被 hack 或不可約判斷",
+      "demote_when": "單一確定路徑已足夠",
+      "concepts": ["PFKT"],
+      "protocol": "_registry/pfkt-protocol.json",
+      "skills": ["pfkt-parallel-wave", "pfkt-session-lane"],
+      "engines": ["pfkt-fragment.py", "pfkt-wave.py"],
+      "verify": "python %AI_WORKSPACE%\\_skill\\engines\\fleet-token-ladder.py api OPEN"
+    },
+    {
+      "id": "GUARD",
+      "order": 5,
+      "first_principle": "MTD + held-out verify — 度量與 skill 不被 reward-hack（Double Ratchet 精神）",
+      "spoken": "GUARD",
+      "legacy_aliases": ["MTD"],
+      "escalate_when": "operator 紅線",
+      "demote_when": "已可寫成 engine/skill 且 verify 穩定",
+      "concepts": ["MTD"],
+      "protocol": "_registry/mtd-ztm-contract.json",
+      "skills": ["mtd-judgment-escalation", "ztm-verify-before-done"],
+      "engines": ["claim-linter.py", "zat-verify-gate.py"],
+      "verify": "python %AI_WORKSPACE%\\_skill\\engines\\lexicon-resolve.py MTD --json"
+    }
+  ],
+  "cost_ladder_legacy": {
+    "note": "v1 token-cost escalation — retained as instrument map only",
+    "order": ["ZT", "ZCT_ZTM", "MTO_MTM", "PFKT", "MTD"]
+  },
+  "rename_edges": [
+    {"from": "LADDER", "to": "AEX", "since": "2026-07", "note": "token ladder → agent evolution index"},
+    {"from": "token-ladder", "to": "AEX", "since": "2026-07", "note": "legacy skill/module name"},
+    {"from": "fleet-token-ladder", "to": "AEX", "since": "2026-07", "note": "file kept; spoken AEX"},
+    {"from": "mtm-token-ladder", "to": "AEX", "since": "2026-07", "note": "skill → aex-agent-evolution"},
+    {"from": "ZT", "to": "EXEC", "since": "2026-07", "note": "cost rung → evolution phase"},
+    {"from": "ZCT_ZTM", "to": "EXEC", "since": "2026-07", "note": "legacy cost rung"},
+    {"from": "MTO_MTM", "to": "EXEC", "since": "2026-07", "note": "MTO is instrument under EXEC/INSTR"},
+    {"from": "ZCT", "to": "MTO", "since": "2026-07", "note": "spoken upgrade"},
+    {"from": "ZTM", "to": "MTM", "since": "2026-07", "note": "spoken upgrade; instrument"},
+    {"from": "ZAT", "to": "MTO", "since": "2026-07", "note": "deliverable unit"},
+    {"from": "PPTT", "to": "EFF", "since": "2026-07", "note": "metric instrument"},
+    {"from": "PPTT-SPEC", "to": "SEAT-SPEC", "since": "2026-07", "note": "seat contract"},
+    {"from": "MTD", "to": "GUARD", "since": "2026-07", "note": "judgment phase"}
+  ],
+  "seat_spec": {
+    "anchor_begin": "<!-- SEAT-SPEC:BEGIN",
+    "anchor_end": "<!-- SEAT-SPEC:END -->",
+    "legacy_begin": "<!-- PPTT-SPEC:BEGIN",
+    "legacy_end": "<!-- PPTT-SPEC:END -->",
+    "legacy_anchors": ["PPTT-SPEC"],
+    "heading": "## 五段落 SEAT-SPEC — standing work contract (MTM instrument)",
+    "fields": ["O", "V", "C", "I", "E"]
+  },
+  "efficiency": {
+    "concept": "EFF",
+    "legacy_name": "PPTT",
+    "formula": "EFF = P / (K_billable_ktok × T_active_min)",
+    "ledger": "_logs/pptt/<project>.jsonl",
+    "version_file": "_registry/pptt-version.json",
+    "note": "instrument under INSTR; not evolution OS"
+  },
+  "default_rung": "EXEC",
+  "changelog": [
+    {
+      "v": "2.1.0",
+      "date": "2026-07-17",
+      "note": "MINOR: closed AEX cycle + Krylov CG/BiCGStab/GMRES solver select; PFKT↔SCF bridge; aex iterate"
+    },
+    {
+      "v": "2.0.0",
+      "date": "2026-07-17",
+      "note": "MAJOR: Token Ladder → AEX evolution flywheel; MTM/PFKT/EFF demoted to instruments; SEA-Eval equations"
+    },
+    {
+      "v": "1.0.0",
+      "date": "2026-07-17",
+      "note": "Initial token-cost ladder + SEAT-SPEC"
+    }
+  ]
+}

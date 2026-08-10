@@ -1,85 +1,92 @@
 ---
 name: line-oa-ingest
-description: [TODO: Complete and informative explanation of what the skill does and when to use it. Include WHEN to use this skill - specific scenarios, file types, or tasks that trigger it.]
+description: Inspect and filter LINE Official Account inbound webhook events that were already persisted to a Google Drive inbox, distinguish saved group or 1:1 events from unavailable LINE chat history, verify the configured bot identity without exposing credentials, and route captured social URLs through the shared zero-Codex-token acquisition engine. Use for LINE OA inbox audits, group or direct-message retrieval, webhook-storage checks, saved-event exports, and LINE-to-social-content ingestion.
 ---
 
-# Line Oa Ingest
+# LINE OA Ingest
 
-## Overview
+Treat LINE Messaging API webhooks as the acquisition surface. Do not claim that
+LINE exposes an endpoint for arbitrary chat-history retrieval.
 
-[TODO: 1-2 sentences explaining what this skill enables]
+## Inspect saved events
 
-## Structuring This Skill
+Run a metadata-only probe first. It prints counts and group names but no message
+text, sender name, LINE ID, group ID, or credential:
 
-[TODO: Choose the structure that best fits this skill's purpose. Common patterns:
+```powershell
+python scripts/inspect_line_inbox.py --env C:\path\to\line\.env --probe-bot
+```
 
-**1. Workflow-Based** (best for sequential processes)
-- Works well when there are clear step-by-step procedures
-- Example: DOCX skill with "Workflow Decision Tree" -> "Reading" -> "Creating" -> "Editing"
-- Structure: ## Overview -> ## Workflow Decision Tree -> ## Step 1 -> ## Step 2...
+Scan the manifest for one exact group and include only the content needed by the
+request:
 
-**2. Task-Based** (best for tool collections)
-- Works well when the skill offers different operations/capabilities
-- Example: PDF skill with "Quick Start" -> "Merge PDFs" -> "Split PDFs" -> "Extract Text"
-- Structure: ## Overview -> ## Quick Start -> ## Task Category 1 -> ## Task Category 2...
+```powershell
+python scripts/inspect_line_inbox.py --env C:\path\to\line\.env --group-name "Group name" --include-text --include-urls --limit 50
+```
 
-**3. Reference/Guidelines** (best for standards or specifications)
-- Works well for brand guidelines, coding standards, or requirements
-- Example: Brand styling with "Brand Guidelines" -> "Colors" -> "Typography" -> "Features"
-- Structure: ## Overview -> ## Guidelines -> ## Specifications -> ## Usage...
+Add `--scan-raw` to inspect saved raw event files beyond the manifest's newest
+200 rows. This is a Drive archive scan, not a LINE history pull. Bound it with
+`--max-files` and an exact group filter.
 
-**4. Capabilities-Based** (best for integrated systems)
-- Works well when the skill provides multiple interrelated features
-- Example: Product Management with "Core Capabilities" -> numbered capability list
-- Structure: ## Overview -> ## Core Capabilities -> ### 1. Feature -> ### 2. Feature...
+Use `--source-type user` to count saved 1:1 inbound events. Keep text off unless
+the user explicitly requested those private messages. Use `--out` for a local
+JSON evidence artifact; the script never writes to Drive or LINE.
 
-Patterns can be mixed and matched as needed. Most skills combine patterns (e.g., start with task-based, add workflow for complex operations).
+## Interpret the result
 
-Delete this entire "Structuring This Skill" section when done - it's just guidance.]
+Read [references/line-api-boundaries.md](references/line-api-boundaries.md)
+before making access or completeness claims.
 
-## [TODO: Replace with the first main section based on chosen structure]
+- A passing bot probe proves that the configured access token identifies a LINE
+  OA. It does not prove that historical messages are queryable.
+- A saved `source_type=group` or `source_type=user` row proves that the webhook
+  received and retained an inbound event.
+- An empty result proves only that the inspected manifest/archive lacks a match.
+  It does not prove that the conversation never existed.
+- Do not call the saved inbox a complete two-way transcript unless outbound OA
+  messages are independently persisted and verified.
 
-[TODO: Add content here. See examples in existing skills:
-- Code samples for technical skills
-- Decision trees for complex workflows
-- Concrete examples with realistic user requests
-- References to scripts/templates/references as needed]
+## Acquire linked social content
 
-## Resources (optional)
+Extract URLs deterministically with `--include-urls`, then pass each approved URL
+to the shared engine:
 
-Create only the resource directories this skill actually needs. Delete this section if no resources are required.
+```powershell
+python C:\ai_workspace\_skill\engines\distill-url.py "https://example.com/item" --json
+```
 
-### scripts/
-Executable code (Python/Bash/etc.) that can be run directly to perform specific operations.
+For public Instagram posts/reels or Threads share links, use the deterministic
+headless public-page extractor before using an authenticated browser:
 
-**Examples from other skills:**
-- PDF skill: `fill_fillable_fields.py`, `extract_form_field_info.py` - utilities for PDF manipulation
-- DOCX skill: `document.py`, `utilities.py` - Python modules for document processing
+```powershell
+node scripts/fetch_public_social.mjs "https://www.instagram.com/p/SHORTCODE/" --include-text
+```
 
-**Appropriate for:** Python scripts, shell scripts, or any executable code that performs automation, data processing, or specific operations.
+Instagram is normalized to its public `/embed/captioned/` page. Threads redirects
+are followed to the canonical post. The script reuses an installed Playwright
+package and an installed browser; it does not use a session profile. `unfetchable`
+is a terminal evidence state; never reconstruct missing body text from a title or
+thumbnail.
 
-**Note:** Scripts may be executed without loading into context, but can still be read by Codex for patching or environment adjustments.
+The acquisition route uses platform/free providers and the hub free model pool,
+so it consumes no Codex or Claude API tokens. External free-provider quotas and
+the current agent's reasoning tokens are separate and must not be described as
+zero total compute.
 
-### references/
-Documentation and reference material intended to be loaded into context to inform Codex's process and thinking.
+## Safety contract
 
-**Examples from other skills:**
-- Product management: `communication.md`, `context_building.md` - detailed workflow guides
-- BigQuery: API reference documentation and query examples
-- Finance: Schema documentation, company policies
+- Never print access tokens, refresh tokens, client secrets, channel secrets,
+  reply tokens, user IDs, or group IDs.
+- Verify webhook signatures before accepting new events.
+- Prefer exact group filters and bounded raw scans.
+- Respect unsend events; if the ingestion service does not delete unsent content,
+  report that privacy residual rather than presenting the archive as canonical.
+- Treat OAuth and LINE requests as read-only. Do not change webhook settings,
+  send messages, or write to Drive in this workflow.
 
-**Appropriate for:** In-depth documentation, API references, database schemas, comprehensive guides, or any detailed information that Codex should reference while working.
+## Validate
 
-### assets/
-Files not intended to be loaded into context, but rather used within the output Codex produces.
-
-**Examples from other skills:**
-- Brand styling: PowerPoint template files (.pptx), logo files
-- Frontend builder: HTML/React boilerplate project directories
-- Typography: Font files (.ttf, .woff2)
-
-**Appropriate for:** Templates, boilerplate code, document templates, images, icons, fonts, or any files meant to be copied or used in the final output.
-
----
-
-**Not every skill requires all three types of resources.**
+```powershell
+python -m unittest discover -s scripts -p "test_*.py"
+python C:\Users\sc\.codex\skills\.system\skill-creator\scripts\quick_validate.py .
+```
