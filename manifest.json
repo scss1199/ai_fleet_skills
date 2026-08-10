@@ -1,13 +1,13 @@
 {
   "schema": 1,
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-10T02:02:09Z",
+  "generated_at": "2026-08-10T08:57:33Z",
   "contributors": [
     "darkhero",
     "scar3"
   ],
   "manifests": {
-    "darkhero": "423c462ad561816e",
+    "darkhero": "db6a26a0935610a5",
     "scar3": "4fd3f9475f4fb4b0"
   },
   "detail": {
@@ -18,9 +18,10 @@
       "role": "upstream_curator",
       "machine": "darkhero",
       "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-      "generated_at": "2026-08-10T01:44:02Z",
-      "manifest_sha": "423c462ad561816e",
+      "generated_at": "2026-08-10T08:57:33Z",
+      "manifest_sha": "db6a26a0935610a5",
       "required": [
+        "fames",
         "aex-agent-evolution",
         "ztm-fleet-inbox-absorb",
         "ztm-skill-submit",
@@ -35,7 +36,7 @@
         "token-preflight",
         "cca-token-governance"
       ],
-      "skill_count": 38,
+      "skill_count": 39,
       "skills": [
         {
           "name": "accountability-unblock",
@@ -81,9 +82,15 @@
         },
         {
           "name": "deploy-nextjs-cloudflare",
-          "sha": "5992d9bc07eb2c00",
+          "sha": "432f1935711417b7",
           "required": false,
           "lane": "zero-token-mechanism"
+        },
+        {
+          "name": "fames",
+          "sha": "86acd2e6aaef723d",
+          "required": true,
+          "lane": null
         },
         {
           "name": "hubpulse-ops",
@@ -171,7 +178,7 @@
         },
         {
           "name": "token-preflight",
-          "sha": "c55798d8572f23ad",
+          "sha": "a24cf9ca39487740",
           "required": true,
           "lane": "zero-token-mechanism"
         },
@@ -524,5 +531,5 @@
       ]
     }
   },
-  "union_sha": "1f0f0fb7eaa914ca"
+  "union_sha": "d4daf424362d17c9"
 }
