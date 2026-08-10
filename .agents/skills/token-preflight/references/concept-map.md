@@ -1,5 +1,7 @@
 # Minimal concept map
 
+`FAMES` is the public umbrella and standalone trigger. Its execution order is FP -> MTM -> SCF -> AEX -> SEAL; PFKT is an optional MTM work-graph overlay. `AEX` alone remains the narrow cross-cycle evolution phase.
+
 | Phase | Owns | Must not own |
 |---|---|---|
 | FP | Outcome, Verification, Constraints, semantic hash | execution loop |

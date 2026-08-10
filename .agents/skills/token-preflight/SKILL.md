@@ -1,9 +1,11 @@
 ---
 name: token-preflight
-description: Route non-trivial coding, audit, research, deployment, or multi-step work through the smallest verified context path. Use before broad Read/Grep/Shell exploration, when a task may need parallel decomposition, when resuming a long Claude session, or when auditing token usage. This is the single entry point; FP, MTM, PFKT, SCF, SEAL and AEX are internal phases loaded only when active.
+description: Route non-trivial coding, audit, research, deployment, or multi-step work through the smallest verified context path. Use before broad Read/Grep/Shell exploration, when a task may need parallel decomposition, when resuming a long Claude session, or when auditing token usage. FAMES is the complete public umbrella; FP, MTM, PFKT, SCF, AEX, and SEAL are bounded internal phases loaded only when active.
 ---
 
 # Token Preflight
+
+When the user invokes `FAMES`, load the `fames` skill and account for every phase under `_registry/fames-protocol.json`. Token Preflight remains the required first execution step; it is not a substitute for the full FAMES completion contract.
 
 Run `python scripts/preflight.py --agent <seat> --task "<request>"` before broad exploration.
 

@@ -1752,3 +1752,10 @@ on the first attempt.
 successful recovery is not a commit. Keep the recovery in its own PowerShell call so that a guard
 rejection can never swallow the git commands behind it. If the quarantine move is also refused, that
 is a real finding - report it, do not escalate to another deletion API.
+
+## 2026-08-10 — local-workerd
+
+- Symptom: local_smoke timed out on a project whose deployment target uses wrangler.workers-dev.jsonc
+- Cause: local_smoke always launched Wrangler with the default config and hid the log on startup timeout
+- Fix: accept --config, pass it to wrangler dev, and print the log tail for startup failures
+- Verify: `local_smoke.py . --config wrangler.workers-dev.jsonc --path /signin exits 0`
