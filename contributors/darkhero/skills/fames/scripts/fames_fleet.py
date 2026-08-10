@@ -29,14 +29,22 @@ PROTOCOL_TARGETS = {
     for key, source in PROTOCOL_SOURCES.items()
 }
 MANIFEST_NAME = "bundle-manifest.json"
+TEXT_SUFFIXES = {
+    ".json",
+    ".md",
+    ".py",
+    ".ps1",
+    ".txt",
+    ".yaml",
+    ".yml",
+}
 
 
 def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(65536), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+    data = path.read_bytes()
+    if path.suffix.lower() in TEXT_SUFFIXES:
+        data = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return hashlib.sha256(data).hexdigest()
 
 
 def _stable_sha(payload: object) -> str:
