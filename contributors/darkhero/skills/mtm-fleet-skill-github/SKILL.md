@@ -24,7 +24,7 @@ parent_skill: aex-agent-evolution
 ## 目錄（區分上傳來源）
 
 ```
-ai_fleet_skills/
+_skill/ai_fleet_skills/
   manifest.json              # union（darkhero + scar3）
   contributors/
     darkhero/skills/...      # darkhero 機 · ai_darkhero 策展

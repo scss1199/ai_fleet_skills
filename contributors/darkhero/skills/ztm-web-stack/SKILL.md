@@ -57,7 +57,7 @@ Keywords examples: `google sso vercel` · `line webhook fly` · `meta oauth` · 
 
 ## Decision tree（一句）
 
-1. **只有 Google SSO 網頁** → clone `ai_search/web` or `ai_ut/web`；dedicated `ai-*-web` OAuth；face=`https://{seat}.vercel.app/`（`_`→`-`）  
+1. **只有 Google SSO 網頁** → clone `ai_search/web` or `ai_ut/web`；dedicated `ai-*-web` OAuth；face=`https://{seat_with_hyphens}.kyloren.workers.dev/`（`_`→`-`）  
 2. **LINE inbound** → `zct-fleet-fly-line` + Fly；Vercel 僅薄 rewrite  
 3. **Meta** → Cursor Edge + `ztm-meta-oauth-console`；verify → oauth-verify-ledger  
 4. **Maps／美食** → clone patterns from `ai_eatery`／`ai_foodie`；Places key schema-only  
