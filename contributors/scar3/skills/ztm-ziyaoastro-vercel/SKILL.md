@@ -13,11 +13,11 @@ parent_skill: aex-agent-evolution
 
 # ztm-ziyaoastro-vercel — Vercel 首 deploy（Fly 退役）
 
-**token-class: ZT** · cwd=`ai_ziyaoastro` · SSOT live=`https://ziyaoastro.vercel.app`
+**token-class: ZT** · cwd=`ai_ziyaoastro` · SSOT live=`https://ai-ziyaoastro.kyloren.workers.dev`
 
 ## 現況（2026-07-04 verify）
 
-- `ziyaoastro.vercel.app` → **404**（尚未 prod deploy）
+- `ai-ziyaoastro.kyloren.workers.dev` → canonical Workers face（health must be 2xx/3xx）
 - `ziyaoastro.fly.dev` → 302 `/login`（legacy；GHA `if: false`）
 - `.vercel/project.json` 已 link
 
@@ -36,7 +36,7 @@ cd frontend; npm run build; cd ..
 python -m compileall -q backend
 # deploy
 vercel deploy --prod --yes
-curl.exe -sI https://ziyaoastro.vercel.app/
+curl.exe -sI https://ai-ziyaoastro.kyloren.workers.dev/
 ```
 
 ## PFKT

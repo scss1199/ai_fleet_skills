@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-10T01:44:02Z",
+  "generated_at": "2026-08-10T02:02:09Z",
   "contributors": [
     "darkhero",
     "scar3"
   ],
   "manifests": {
     "darkhero": "423c462ad561816e",
-    "scar3": "1b3d533455b7e770"
+    "scar3": "4fd3f9475f4fb4b0"
   },
   "detail": {
     "darkhero": {
@@ -274,8 +274,8 @@
       "role": "downstream_curator",
       "machine": "scar3",
       "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-      "generated_at": "2026-08-10T01:39:33Z",
-      "manifest_sha": "1b3d533455b7e770",
+      "generated_at": "2026-08-10T02:02:09Z",
+      "manifest_sha": "4fd3f9475f4fb4b0",
       "required": [
         "aex-agent-evolution",
         "ztm-fleet-inbox-absorb",
@@ -373,7 +373,7 @@
         },
         {
           "name": "mtm-fleet-skill-github",
-          "sha": "6b7b2417865549c7",
+          "sha": "2a37fc1df5cba610",
           "required": false,
           "lane": "zero-token-mechanism"
         },
@@ -445,7 +445,7 @@
         },
         {
           "name": "ztm-fleet-intelligence",
-          "sha": "4bce3ef9f27712ab",
+          "sha": "b8bc0e79083ed8ef",
           "required": true,
           "lane": "zero-token-mechanism"
         },
@@ -475,13 +475,13 @@
         },
         {
           "name": "ztm-oauth-redirect-fleet",
-          "sha": "838d03b88a38ef49",
+          "sha": "ae0317e0d3eaab01",
           "required": false,
           "lane": "zero-token-mechanism"
         },
         {
           "name": "ztm-portal-google-sso-edge",
-          "sha": "acb836a7edaa795f",
+          "sha": "e7bd40d7be7f57bd",
           "required": false,
           "lane": "zero-token-mechanism"
         },
@@ -505,7 +505,7 @@
         },
         {
           "name": "ztm-web-stack",
-          "sha": "d5b8a41291edcefe",
+          "sha": "f2706517da442e15",
           "required": false,
           "lane": "zero-token-mechanism"
         },
@@ -517,12 +517,12 @@
         },
         {
           "name": "ztm-ziyaoastro-vercel",
-          "sha": "08d00c100191adf0",
+          "sha": "b5b22d8a080816b1",
           "required": false,
           "lane": "zero-token-mechanism"
         }
       ]
     }
   },
-  "union_sha": "00312f68e8da0b61"
+  "union_sha": "1f0f0fb7eaa914ca"
 }

@@ -40,7 +40,7 @@ Callback patterns in wild:
 - `/api/auth/callback` （search/ut/career/busker/darkhero）
 - `/api/auth/google/callback` （ziyaoastro）
 
-Canonical face: `https://{folder_with_hyphens}.vercel.app/`
+Canonical face: `https://{folder_with_hyphens}.kyloren.workers.dev/`
 
 ## Meta OAuth
 

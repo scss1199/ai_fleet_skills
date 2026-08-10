@@ -3,7 +3,7 @@ name: ztm-oauth-redirect-fleet
 description: >-
   Fleet-wide redirect_uri_mismatch: measure registration state for every site
   with a 0-token probe (base64 authError decode + negative control), emit an
-  ADD-ONLY per-client console work list, re-verify until BAD=0.
+  ADD-ONLY per-client console work list, re-verify until BLOCKED=0.
 metadata:
   fleet:
     lane: zero-token-mechanism
@@ -36,20 +36,35 @@ REGISTERED while every login is broken.
 ## Loop
 
 ```powershell
+# 0. offline suite — no network, runs in <0.1 s, covers every verdict combination
+python <skill>\scripts\test_redirect_uri.py         # 92 tests; exit 0 required
+
 # 1. measure (read-only, no console, no LLM tokens)
 python <skill>\scripts\probe_redirect_uri.py        # writes redirect_uri_state.json
 
 # 2. verify the verifier (mandatory, never skip)
 python <skill>\scripts\control_redirect_uri.py
 
-# 3. turn MISMATCH rows into a per-client console work list
+# 3. turn blocking rows into a per-client console work list
 python <skill>\scripts\gen_redirect_handoff.py      # writes redirect_uri_fix_handoff.md
 
 # 4. do the console edits (see "Who can edit" below)
 
-# 5. re-measure — done when stderr reads BAD=0
+# 5. re-measure — done when stderr reads BLOCKED=0 and the probe exits 0
 python <skill>\scripts\probe_redirect_uri.py
 ```
+
+Step 2's exit code is three-valued and the distinction is load-bearing:
+
+| exit | meaning | who is accused |
+|---|---|---|
+| 0 | positive → REGISTERED **and** negative → MISMATCH | nobody; the probe can still tell them apart |
+| 1 | a control returned the **opposite** verdict | the probe — its answers are suspect until explained |
+| 2 | a control returned **no** verdict at all | the control itself — it never ran, and that is not a pass |
+
+Exit 2 covers: no `REGISTERED`+`MATCH` row in state to build the positive case from,
+Google unreachable, or Google rejecting the request *before* it ever compared the
+`redirect_uri`. Only `REGISTERED` and `MISMATCH` count as conclusive.
 
 ## Detector rules (all five are load-bearing)
 
@@ -65,28 +80,57 @@ python <skill>\scripts\probe_redirect_uri.py
    REGISTERED *in the current state file* and one certainly bogus. Never hard-code
    the positive case — the moment that site becomes the thing being fixed, the
    control fires a false alarm (this happened 2026-08-06 with `ai-career`).
-5. **Origin-match — Google's approval is not the site's approval.** Compare the
-   `netloc` of the emitted `redirect_uri` with the origin just probed. A URI left
-   over from a previous host stays registered forever, so Google returns consent,
-   issues a `code`, and strands the user on a dead deployment. That grades
-   `STALE_ORIGIN`, never OK (measured 2026-08-09: `ai-ziyaoastro` emitted
-   `ai-ziyaoastro.vercel.app`, which answers 402 `DEPLOYMENT_DISABLED`).
+
+   **The bogus host must be syntactically real.** Measured 2026-08-10: Google
+   validates the host against its OAuth policy *before* comparing the URI against
+   the client, so a host under the RFC 2606 reserved `.invalid` TLD answers
+   `invalid_request`, not `redirect_uri_mismatch` — the negative control never
+   reached the comparison it exists to exercise, and had been passing a policy
+   rejection off as proof. `BOGUS_HOST` is now under `example.com`: IANA holds it
+   permanently, so it is equally unacquirable, but it is a real domain.
+
+   ```
+   definitely-not-registered-xyz.invalid      -> invalid_request       (OAUTH_ERROR)
+   definitely-not-registered-xyz.example.com  -> redirect_uri_mismatch (MISMATCH)
+   ```
+
+   Do not "harden" this back to a reserved TLD. The control goes silently inert.
+5. **Registration and origin are orthogonal axes, not one verdict.** Google's
+   approval is not the site's approval: compare the emitted `redirect_uri`'s
+   normalized origin (scheme + hostname + effective port) with the service's
+   declared `canonical_origin`. A URI left over from a previous host stays
+   registered forever, so Google returns consent, issues a `code`, and strands the
+   user on a dead deployment. `registration` grades
+   `REGISTERED|MISMATCH|OAUTH_ERROR|UNREACHABLE|…` and `origin` grades
+   `MATCH|STALE|INSECURE_SCHEME|CREDENTIALS|MALFORMED` **independently** — a
+   MISMATCH row still reports its origin evidence rather than suppressing it,
+   which is what makes the handoff able to say "register the canonical URI, not
+   the one being emitted". The row-level `verdict` is `OK` / `BLOCKED` /
+   `NOT_APPLICABLE`. (Measured 2026-08-09: `ai-ziyaoastro` emitted
+   `ai-ziyaoastro.vercel.app`, answering 402 `DEPLOYMENT_DISABLED`; re-measured
+   2026-08-10 its emit side had been flipped and the origin now reads `MATCH`.)
 
 ## Coverage and verdicts
 
-`discover_workers()` unions the hand-written `SITES` map with every directory in
-`_registry/cf-deploy-configs`, so a deployed worker nobody remembered still gets
-probed — that is what makes "every site was checked" structural rather than a
-claim (2026-08-09: it surfaced `ai-trader` and `ai-fleet-fly-hooks`, unprobed
-across eight prior runs).
+Coverage comes from `inventory.json` (schema 1), read by `build_specs()`. Each
+service declares `expects_login`, `login_paths`, `canonical_origin`, `client_id`,
+and where the coverage claim came from — so "every site was checked" is a
+statement about a reviewed file, not about whatever directories happened to exist
+at run time. A deployed worker absent from the inventory is reported as
+`undeclared`, never silently skipped.
 
-The stderr summary is `OK=<n> BAD=<n> NOLOGIN=<n>`. `NO_LOGIN` is a worker with
-no endpoint that redirects to accounts.google.com — neither pass nor fail, but
-always printed, because a site that *lost* its login endpoint must not be able to
-disappear from the report by having nothing to say. Only `BAD` gates the loop:
-done still means `BAD=0`.
+`expects_login: false` (currently `ai-fleet-fly-hooks`, `ai-trader` — hooks-only,
+no browser login) grades `NOT_APPLICABLE` and issues **no** Google request at all.
+For every other service a missing or unreachable login endpoint is **blocking**
+(`LOGIN_MISSING` / `LOGIN_UNREACHABLE`): a site that declares Google SSO and
+serves no login is broken, and the old `NO_LOGIN` grade let exactly that state
+sit outside the failure count.
 
-**Fix order for `STALE_ORIGIN` is load-bearing:** register the new URI in the
+The stderr summary is `OK=<n> BLOCKED=<n> N/A=<n> undeclared=<n>`, and the probe
+exits 1 while `BLOCKED>0` (`--exit-zero` suppresses that for reporting runs).
+Done means `BLOCKED=0`.
+
+**Fix order for a stale origin is load-bearing:** register the new URI in the
 console FIRST, then flip the app's emit side (`GOOGLE_REDIRECT_URI` or whatever
 derives it). Reversed, a site that was broken *after* login becomes a site that
 cannot reach consent at all. Flipping the emit side converts the row to
@@ -94,12 +138,44 @@ cannot reach consent at all. Flipping the emit side converts the row to
 
 ## Configuring sites
 
-`SITES` maps worker → candidate login paths (first path that 3xx's to
-accounts.google.com wins). `BASES` overrides the origin for sites not on
-`*.kyloren.workers.dev`. **Probe the origin that resolves, not the one
-`wrangler.jsonc` intends** — a `custom_domain` route whose DNS is not cut over
-yet returns `getaddrinfo failed`, which the probe reports as
-`NO_OAUTH_REDIRECT(0)`, not as a mismatch.
+Everything lives in `scripts/inventory.json` — there is no longer a `SITES` map or
+a `BASES` override in the code. One entry per service:
+
+```json
+{
+  "worker": "ai-jci-taipei",
+  "expects_login": true,
+  "login_paths": ["/api/auth/signin/google", "/login"],
+  "canonical_origin": "https://ai-jci-taipei.kyloren.workers.dev",
+  "coverage_source": "cf-deploy-configs/ai-jci-taipei"
+}
+```
+
+`login_paths` is tried in order; the first path that 3xx's to accounts.google.com
+wins. `canonical_origin` is what the redirect URI **should** be built from, and is
+the only thing an `ADD:` line is ever derived from. **Probe the origin that
+resolves, not the one `wrangler.jsonc` intends** — a `custom_domain` route whose
+DNS is not cut over yet returns `getaddrinfo failed`, which grades
+`LOGIN_UNREACHABLE`, not a mismatch.
+
+## State file
+
+`redirect_uri_state.json` is a schema-versioned envelope
+(`{"schema": 2, "generated_at": …, "summary": {…}, "rows": [...]}`), written by a
+temp-file + `os.replace` so a crashed run cannot leave a half-written file that the
+next consumer reads as truth. Both `control_redirect_uri.py` and
+`gen_redirect_handoff.py` refuse to run against a schema they were not written for
+rather than treating absent fields as "fine". Do not hand-edit it; re-run the probe.
+
+## Offline tests
+
+`scripts/test_redirect_uri.py` — 92 `unittest` cases, no network, patching the
+single I/O chokepoint `probe_redirect_uri.http_get` (and `control_redirect_uri.
+check_google` one level up). Covers every registration × origin × login verdict
+combination, the handoff generator's shared-client / stale-ADD / unfixable paths,
+the state envelope's atomic-write and failure-rollback behaviour, and all three
+control exit codes. Run it before touching anything here; it is the only part of
+this skill that costs neither tokens nor network.
 
 ## ADD-ONLY discipline
 

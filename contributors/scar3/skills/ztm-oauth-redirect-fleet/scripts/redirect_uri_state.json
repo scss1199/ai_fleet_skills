@@ -1,136 +1,400 @@
-[
-  {
-    "worker": "ai-fracdigi",
-    "login": "/api/auth/google/start",
-    "http": 307,
-    "client_id": "786327629029-d6r4ma3oh3vaas34dd60bi3vds750pu1.apps.googleusercontent.com",
-    "redirect_uri": "https://ai-fracdigi.kyloren.workers.dev/api/auth/google/callback",
-    "probe_origin": "ai-fracdigi.kyloren.workers.dev",
-    "callback_origin": "ai-fracdigi.kyloren.workers.dev",
-    "origin_match": true,
-    "google": "REGISTERED",
-    "google_http": 302
+{
+  "schema": 2,
+  "generated_at": "2026-08-10T05:46:41+0800",
+  "generator": "probe_redirect_uri.py",
+  "summary": {
+    "total": 12,
+    "ok": 2,
+    "blocked": 8,
+    "not_applicable": 2,
+    "undeclared": 0
   },
-  {
-    "worker": "ai-jci-taipei",
-    "login": "/api/auth/login",
-    "http": 307,
-    "client_id": "576912529343-2gam6k5g6piafgbhcijl3v20mms0980d.apps.googleusercontent.com",
-    "redirect_uri": "https://ai-jci-taipei.kyloren.workers.dev/api/auth/callback",
-    "probe_origin": "ai-jci-taipei.kyloren.workers.dev",
-    "callback_origin": "ai-jci-taipei.kyloren.workers.dev",
-    "origin_match": true,
-    "google": "MISMATCH",
-    "google_http": 302
-  },
-  {
-    "worker": "ai-darkhero",
-    "login": "/api/auth/login",
-    "http": 302,
-    "client_id": "433379372607-anspie07iub0b86lealvnsqu4qdvdc1f.apps.googleusercontent.com",
-    "redirect_uri": "https://ai-darkhero.kyloren.workers.dev/api/auth/callback",
-    "probe_origin": "ai-darkhero.kyloren.workers.dev",
-    "callback_origin": "ai-darkhero.kyloren.workers.dev",
-    "origin_match": true,
-    "google": "MISMATCH",
-    "google_http": 302
-  },
-  {
-    "worker": "ai-search",
-    "login": "/api/auth/login",
-    "http": 307,
-    "client_id": "433379372607-droj6ku1416v8jsc3iri4lig0e9jhvfa.apps.googleusercontent.com",
-    "redirect_uri": "https://ai-search.kyloren.workers.dev/api/auth/callback",
-    "probe_origin": "ai-search.kyloren.workers.dev",
-    "callback_origin": "ai-search.kyloren.workers.dev",
-    "origin_match": true,
-    "google": "MISMATCH",
-    "google_http": 302
-  },
-  {
-    "worker": "ai-ut",
-    "login": "/api/auth/login",
-    "http": 307,
-    "client_id": "433379372607-ra924imb7vsm9b8fng7nmnr5t8e864sb.apps.googleusercontent.com",
-    "redirect_uri": "https://ai-ut.kyloren.workers.dev/api/auth/callback",
-    "probe_origin": "ai-ut.kyloren.workers.dev",
-    "callback_origin": "ai-ut.kyloren.workers.dev",
-    "origin_match": true,
-    "google": "MISMATCH",
-    "google_http": 302
-  },
-  {
-    "worker": "ai-career",
-    "login": "/api/auth/login",
-    "http": 307,
-    "client_id": "433379372607-vi35m4avraj0dlg7j0895983iatvd3ok.apps.googleusercontent.com",
-    "redirect_uri": "https://ai-career.kyloren.workers.dev/api/auth/callback",
-    "probe_origin": "ai-career.kyloren.workers.dev",
-    "callback_origin": "ai-career.kyloren.workers.dev",
-    "origin_match": true,
-    "google": "MISMATCH",
-    "google_http": 302
-  },
-  {
-    "worker": "ai-busker",
-    "login": "/api/auth/login",
-    "http": 307,
-    "client_id": "433379372607-df1p2qlag8er16jkv9agfffbe9qhmgsg.apps.googleusercontent.com",
-    "redirect_uri": "https://ai-busker.kyloren.workers.dev/api/auth/callback",
-    "probe_origin": "ai-busker.kyloren.workers.dev",
-    "callback_origin": "ai-busker.kyloren.workers.dev",
-    "origin_match": true,
-    "google": "MISMATCH",
-    "google_http": 302
-  },
-  {
-    "worker": "ai-heartlink",
-    "login": "/api/auth/login",
-    "http": 307,
-    "client_id": "178918414586-n9us1mi03n3pavumtt1t2abham7an2fb.apps.googleusercontent.com",
-    "redirect_uri": "https://ai-heartlink.kyloren.workers.dev/api/auth/callback",
-    "probe_origin": "ai-heartlink.kyloren.workers.dev",
-    "callback_origin": "ai-heartlink.kyloren.workers.dev",
-    "origin_match": true,
-    "google": "MISMATCH",
-    "google_http": 302
-  },
-  {
-    "worker": "ai-eatery",
-    "login": "/api/auth/login",
-    "http": 307,
-    "client_id": "433379372607-ra924imb7vsm9b8fng7nmnr5t8e864sb.apps.googleusercontent.com",
-    "redirect_uri": "https://ai-eatery.kyloren.workers.dev/api/auth/callback",
-    "probe_origin": "ai-eatery.kyloren.workers.dev",
-    "callback_origin": "ai-eatery.kyloren.workers.dev",
-    "origin_match": true,
-    "google": "REGISTERED",
-    "google_http": 302
-  },
-  {
-    "worker": "ai-ziyaoastro",
-    "login": "/api/auth/google/login",
-    "http": 302,
-    "client_id": "433379372607-rde329v31tp5mslqjbj2p6tj8231h1ki.apps.googleusercontent.com",
-    "redirect_uri": "https://ai-ziyaoastro.kyloren.workers.dev/api/auth/google/callback",
-    "probe_origin": "ai-ziyaoastro.kyloren.workers.dev",
-    "callback_origin": "ai-ziyaoastro.kyloren.workers.dev",
-    "origin_match": true,
-    "google": "MISMATCH",
-    "google_http": 302
-  },
-  {
-    "worker": "ai-fleet-fly-hooks",
-    "login": "-",
-    "http": 404,
-    "google": "NO_LOGIN",
-    "detail": "no oauth redirect (404)"
-  },
-  {
-    "worker": "ai-trader",
-    "login": "-",
-    "http": 404,
-    "google": "NO_LOGIN",
-    "detail": "no oauth redirect (404)"
-  }
-]
+  "rows": [
+    {
+      "worker": "ai-busker",
+      "declared": true,
+      "coverage_source": "inventory+cf-deploy-configs",
+      "expects_login": true,
+      "canonical_origin": "https://ai-busker.kyloren.workers.dev",
+      "login": "FOUND",
+      "login_path": "/api/auth/login",
+      "login_http": 307,
+      "login_attempts": [
+        {
+          "path": "/api/auth/login",
+          "http": 307,
+          "error": null,
+          "location": "https://accounts.google.com/o/oauth2/v2/auth?client_id=433379372607-df1p2qlag8er16jkv9agfffbe9qhmgsg.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-busker.kyloren.workers.dev%2Fapi%2Fauth%2F"
+        }
+      ],
+      "authorize_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=433379372607-df1p2qlag8er16jkv9agfffbe9qhmgsg.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-busker.kyloren.workers.dev%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid+email&state=h-CKba20A3OURHK3gDTSWA&prompt=select_account",
+      "client_id": "433379372607-df1p2qlag8er16jkv9agfffbe9qhmgsg.apps.googleusercontent.com",
+      "redirect_uri": "https://ai-busker.kyloren.workers.dev/api/auth/callback",
+      "registration": "MISMATCH",
+      "registration_http": 302,
+      "registration_error": null,
+      "origin": "MATCH",
+      "origin_problems": [],
+      "emitted_origin": "https://ai-busker.kyloren.workers.dev",
+      "callback_path": "/api/auth/callback",
+      "desired_redirect_uri": "https://ai-busker.kyloren.workers.dev/api/auth/callback",
+      "verdict": "BLOCKED",
+      "blocking": true,
+      "reasons": [
+        "registration_mismatch"
+      ]
+    },
+    {
+      "worker": "ai-career",
+      "declared": true,
+      "coverage_source": "inventory+cf-deploy-configs",
+      "expects_login": true,
+      "canonical_origin": "https://ai-career.kyloren.workers.dev",
+      "login": "FOUND",
+      "login_path": "/api/auth/login",
+      "login_http": 307,
+      "login_attempts": [
+        {
+          "path": "/api/auth/login",
+          "http": 307,
+          "error": null,
+          "location": "https://accounts.google.com/o/oauth2/v2/auth?client_id=433379372607-vi35m4avraj0dlg7j0895983iatvd3ok.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-career.kyloren.workers.dev%2Fapi%2Fauth%2F"
+        }
+      ],
+      "authorize_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=433379372607-vi35m4avraj0dlg7j0895983iatvd3ok.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-career.kyloren.workers.dev%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid+email&state=_IF_aAZOEwnEXfGDWA2cZg&prompt=select_account",
+      "client_id": "433379372607-vi35m4avraj0dlg7j0895983iatvd3ok.apps.googleusercontent.com",
+      "redirect_uri": "https://ai-career.kyloren.workers.dev/api/auth/callback",
+      "registration": "MISMATCH",
+      "registration_http": 302,
+      "registration_error": null,
+      "origin": "MATCH",
+      "origin_problems": [],
+      "emitted_origin": "https://ai-career.kyloren.workers.dev",
+      "callback_path": "/api/auth/callback",
+      "desired_redirect_uri": "https://ai-career.kyloren.workers.dev/api/auth/callback",
+      "verdict": "BLOCKED",
+      "blocking": true,
+      "reasons": [
+        "registration_mismatch"
+      ]
+    },
+    {
+      "worker": "ai-darkhero",
+      "declared": true,
+      "coverage_source": "inventory+cf-deploy-configs",
+      "expects_login": true,
+      "canonical_origin": "https://ai-darkhero.kyloren.workers.dev",
+      "login": "FOUND",
+      "login_path": "/api/auth/login",
+      "login_http": 302,
+      "login_attempts": [
+        {
+          "path": "/api/auth/login",
+          "http": 302,
+          "error": null,
+          "location": "https://accounts.google.com/o/oauth2/v2/auth?client_id=433379372607-anspie07iub0b86lealvnsqu4qdvdc1f.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-darkhero.kyloren.workers.dev%2Fapi%2Fauth%"
+        }
+      ],
+      "authorize_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=433379372607-anspie07iub0b86lealvnsqu4qdvdc1f.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-darkhero.kyloren.workers.dev%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid+email&state=1YAVYTLyPFoIAL8zLuT6Ag&prompt=select_account",
+      "client_id": "433379372607-anspie07iub0b86lealvnsqu4qdvdc1f.apps.googleusercontent.com",
+      "redirect_uri": "https://ai-darkhero.kyloren.workers.dev/api/auth/callback",
+      "registration": "MISMATCH",
+      "registration_http": 302,
+      "registration_error": null,
+      "origin": "MATCH",
+      "origin_problems": [],
+      "emitted_origin": "https://ai-darkhero.kyloren.workers.dev",
+      "callback_path": "/api/auth/callback",
+      "desired_redirect_uri": "https://ai-darkhero.kyloren.workers.dev/api/auth/callback",
+      "verdict": "BLOCKED",
+      "blocking": true,
+      "reasons": [
+        "registration_mismatch"
+      ]
+    },
+    {
+      "worker": "ai-eatery",
+      "declared": true,
+      "coverage_source": "inventory",
+      "expects_login": true,
+      "canonical_origin": "https://ai-eatery.kyloren.workers.dev",
+      "login": "FOUND",
+      "login_path": "/api/auth/login",
+      "login_http": 307,
+      "login_attempts": [
+        {
+          "path": "/api/auth/login",
+          "http": 307,
+          "error": null,
+          "location": "https://accounts.google.com/o/oauth2/v2/auth?client_id=433379372607-ra924imb7vsm9b8fng7nmnr5t8e864sb.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-eatery.kyloren.workers.dev%2Fapi%2Fauth%2F"
+        }
+      ],
+      "authorize_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=433379372607-ra924imb7vsm9b8fng7nmnr5t8e864sb.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-eatery.kyloren.workers.dev%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid+email&state=S82tMBfxcDhru5BaLQeCgg&prompt=select_account",
+      "client_id": "433379372607-ra924imb7vsm9b8fng7nmnr5t8e864sb.apps.googleusercontent.com",
+      "redirect_uri": "https://ai-eatery.kyloren.workers.dev/api/auth/callback",
+      "registration": "REGISTERED",
+      "registration_http": 302,
+      "registration_error": null,
+      "origin": "MATCH",
+      "origin_problems": [],
+      "emitted_origin": "https://ai-eatery.kyloren.workers.dev",
+      "callback_path": "/api/auth/callback",
+      "desired_redirect_uri": "https://ai-eatery.kyloren.workers.dev/api/auth/callback",
+      "verdict": "OK",
+      "blocking": false,
+      "reasons": []
+    },
+    {
+      "worker": "ai-fleet-fly-hooks",
+      "declared": true,
+      "coverage_source": "inventory+cf-deploy-configs",
+      "expects_login": false,
+      "canonical_origin": "https://ai-fleet-fly-hooks.kyloren.workers.dev",
+      "login": "NOT_APPLICABLE",
+      "login_path": null,
+      "login_http": null,
+      "login_attempts": [],
+      "authorize_url": null,
+      "client_id": null,
+      "redirect_uri": null,
+      "registration": "NOT_APPLICABLE",
+      "registration_http": null,
+      "registration_error": null,
+      "origin": "NOT_APPLICABLE",
+      "origin_problems": [],
+      "emitted_origin": null,
+      "callback_path": null,
+      "desired_redirect_uri": null,
+      "verdict": "NOT_APPLICABLE",
+      "blocking": false,
+      "reasons": []
+    },
+    {
+      "worker": "ai-fracdigi",
+      "declared": true,
+      "coverage_source": "inventory",
+      "expects_login": true,
+      "canonical_origin": "https://ai-fracdigi.kyloren.workers.dev",
+      "login": "FOUND",
+      "login_path": "/api/auth/google/start",
+      "login_http": 307,
+      "login_attempts": [
+        {
+          "path": "/api/auth/google/start",
+          "http": 307,
+          "error": null,
+          "location": "https://accounts.google.com/o/oauth2/v2/auth?client_id=786327629029-d6r4ma3oh3vaas34dd60bi3vds750pu1.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-fracdigi.kyloren.workers.dev%2Fapi%2Fauth%"
+        }
+      ],
+      "authorize_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=786327629029-d6r4ma3oh3vaas34dd60bi3vds750pu1.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-fracdigi.kyloren.workers.dev%2Fapi%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=eyJyZWRpcmVjdCI6Ii9sZWFkcyIsInRydXN0IjpmYWxzZSwib3JpZ2luIjoiaHR0cHM6Ly9haS1mcmFjZGlnaS5reWxvcmVuLndvcmtlcnMuZGV2Iiwibm9uY2UiOiJZWVkwMGdtZVpRaXdsWV9URnNLdC1RIiwiZXhwIjoxNzg2MzEyNTkyNzI0fQ.ORZk2qC-LDjgWN6nVA7yJtwAFO9CQkkYiGXS-ji9psQ&prompt=select_account&access_type=online",
+      "client_id": "786327629029-d6r4ma3oh3vaas34dd60bi3vds750pu1.apps.googleusercontent.com",
+      "redirect_uri": "https://ai-fracdigi.kyloren.workers.dev/api/auth/google/callback",
+      "registration": "REGISTERED",
+      "registration_http": 302,
+      "registration_error": null,
+      "origin": "MATCH",
+      "origin_problems": [],
+      "emitted_origin": "https://ai-fracdigi.kyloren.workers.dev",
+      "callback_path": "/api/auth/google/callback",
+      "desired_redirect_uri": "https://ai-fracdigi.kyloren.workers.dev/api/auth/google/callback",
+      "verdict": "OK",
+      "blocking": false,
+      "reasons": []
+    },
+    {
+      "worker": "ai-heartlink",
+      "declared": true,
+      "coverage_source": "inventory+cf-deploy-configs",
+      "expects_login": true,
+      "canonical_origin": "https://ai-heartlink.kyloren.workers.dev",
+      "login": "FOUND",
+      "login_path": "/api/auth/login",
+      "login_http": 307,
+      "login_attempts": [
+        {
+          "path": "/api/auth/login",
+          "http": 307,
+          "error": null,
+          "location": "https://accounts.google.com/o/oauth2/v2/auth?client_id=178918414586-n9us1mi03n3pavumtt1t2abham7an2fb.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-heartlink.kyloren.workers.dev%2Fapi%2Fauth"
+        }
+      ],
+      "authorize_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=178918414586-n9us1mi03n3pavumtt1t2abham7an2fb.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-heartlink.kyloren.workers.dev%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid+email&state=CSnuqcw6oT0UzSoZxJnqgw&prompt=select_account",
+      "client_id": "178918414586-n9us1mi03n3pavumtt1t2abham7an2fb.apps.googleusercontent.com",
+      "redirect_uri": "https://ai-heartlink.kyloren.workers.dev/api/auth/callback",
+      "registration": "MISMATCH",
+      "registration_http": 302,
+      "registration_error": null,
+      "origin": "MATCH",
+      "origin_problems": [],
+      "emitted_origin": "https://ai-heartlink.kyloren.workers.dev",
+      "callback_path": "/api/auth/callback",
+      "desired_redirect_uri": "https://ai-heartlink.kyloren.workers.dev/api/auth/callback",
+      "verdict": "BLOCKED",
+      "blocking": true,
+      "reasons": [
+        "registration_mismatch"
+      ]
+    },
+    {
+      "worker": "ai-jci-taipei",
+      "declared": true,
+      "coverage_source": "inventory+cf-deploy-configs",
+      "expects_login": true,
+      "canonical_origin": "https://ai-jci-taipei.kyloren.workers.dev",
+      "login": "FOUND",
+      "login_path": "/api/auth/login",
+      "login_http": 307,
+      "login_attempts": [
+        {
+          "path": "/api/auth/login",
+          "http": 307,
+          "error": null,
+          "location": "https://accounts.google.com/o/oauth2/v2/auth?client_id=576912529343-2gam6k5g6piafgbhcijl3v20mms0980d.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-jci-taipei.kyloren.workers.dev%2Fapi%2Faut"
+        }
+      ],
+      "authorize_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=576912529343-2gam6k5g6piafgbhcijl3v20mms0980d.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-jci-taipei.kyloren.workers.dev%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid+email+profile&state=TT574Ue3kAmERY7F5TuQhg&prompt=select_account",
+      "client_id": "576912529343-2gam6k5g6piafgbhcijl3v20mms0980d.apps.googleusercontent.com",
+      "redirect_uri": "https://ai-jci-taipei.kyloren.workers.dev/api/auth/callback",
+      "registration": "MISMATCH",
+      "registration_http": 302,
+      "registration_error": null,
+      "origin": "MATCH",
+      "origin_problems": [],
+      "emitted_origin": "https://ai-jci-taipei.kyloren.workers.dev",
+      "callback_path": "/api/auth/callback",
+      "desired_redirect_uri": "https://ai-jci-taipei.kyloren.workers.dev/api/auth/callback",
+      "verdict": "BLOCKED",
+      "blocking": true,
+      "reasons": [
+        "registration_mismatch"
+      ]
+    },
+    {
+      "worker": "ai-search",
+      "declared": true,
+      "coverage_source": "inventory+cf-deploy-configs",
+      "expects_login": true,
+      "canonical_origin": "https://ai-search.kyloren.workers.dev",
+      "login": "FOUND",
+      "login_path": "/api/auth/login",
+      "login_http": 307,
+      "login_attempts": [
+        {
+          "path": "/api/auth/login",
+          "http": 307,
+          "error": null,
+          "location": "https://accounts.google.com/o/oauth2/v2/auth?client_id=433379372607-droj6ku1416v8jsc3iri4lig0e9jhvfa.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-search.kyloren.workers.dev%2Fapi%2Fauth%2F"
+        }
+      ],
+      "authorize_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=433379372607-droj6ku1416v8jsc3iri4lig0e9jhvfa.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-search.kyloren.workers.dev%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid+email&state=IL4dPrkEYAWp_SDg14FVRg&prompt=select_account",
+      "client_id": "433379372607-droj6ku1416v8jsc3iri4lig0e9jhvfa.apps.googleusercontent.com",
+      "redirect_uri": "https://ai-search.kyloren.workers.dev/api/auth/callback",
+      "registration": "MISMATCH",
+      "registration_http": 302,
+      "registration_error": null,
+      "origin": "MATCH",
+      "origin_problems": [],
+      "emitted_origin": "https://ai-search.kyloren.workers.dev",
+      "callback_path": "/api/auth/callback",
+      "desired_redirect_uri": "https://ai-search.kyloren.workers.dev/api/auth/callback",
+      "verdict": "BLOCKED",
+      "blocking": true,
+      "reasons": [
+        "registration_mismatch"
+      ]
+    },
+    {
+      "worker": "ai-trader",
+      "declared": true,
+      "coverage_source": "inventory+cf-deploy-configs",
+      "expects_login": false,
+      "canonical_origin": "https://ai-trader.kyloren.workers.dev",
+      "login": "NOT_APPLICABLE",
+      "login_path": null,
+      "login_http": null,
+      "login_attempts": [],
+      "authorize_url": null,
+      "client_id": null,
+      "redirect_uri": null,
+      "registration": "NOT_APPLICABLE",
+      "registration_http": null,
+      "registration_error": null,
+      "origin": "NOT_APPLICABLE",
+      "origin_problems": [],
+      "emitted_origin": null,
+      "callback_path": null,
+      "desired_redirect_uri": null,
+      "verdict": "NOT_APPLICABLE",
+      "blocking": false,
+      "reasons": []
+    },
+    {
+      "worker": "ai-ut",
+      "declared": true,
+      "coverage_source": "inventory+cf-deploy-configs",
+      "expects_login": true,
+      "canonical_origin": "https://ai-ut.kyloren.workers.dev",
+      "login": "FOUND",
+      "login_path": "/api/auth/login",
+      "login_http": 307,
+      "login_attempts": [
+        {
+          "path": "/api/auth/login",
+          "http": 307,
+          "error": null,
+          "location": "https://accounts.google.com/o/oauth2/v2/auth?client_id=433379372607-ra924imb7vsm9b8fng7nmnr5t8e864sb.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-ut.kyloren.workers.dev%2Fapi%2Fauth%2Fcall"
+        }
+      ],
+      "authorize_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=433379372607-ra924imb7vsm9b8fng7nmnr5t8e864sb.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-ut.kyloren.workers.dev%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid+email&state=ISYx-ToYf0VZm5VqljtZrg&prompt=select_account",
+      "client_id": "433379372607-ra924imb7vsm9b8fng7nmnr5t8e864sb.apps.googleusercontent.com",
+      "redirect_uri": "https://ai-ut.kyloren.workers.dev/api/auth/callback",
+      "registration": "MISMATCH",
+      "registration_http": 302,
+      "registration_error": null,
+      "origin": "MATCH",
+      "origin_problems": [],
+      "emitted_origin": "https://ai-ut.kyloren.workers.dev",
+      "callback_path": "/api/auth/callback",
+      "desired_redirect_uri": "https://ai-ut.kyloren.workers.dev/api/auth/callback",
+      "verdict": "BLOCKED",
+      "blocking": true,
+      "reasons": [
+        "registration_mismatch"
+      ]
+    },
+    {
+      "worker": "ai-ziyaoastro",
+      "declared": true,
+      "coverage_source": "inventory+cf-deploy-configs",
+      "expects_login": true,
+      "canonical_origin": "https://ai-ziyaoastro.kyloren.workers.dev",
+      "login": "FOUND",
+      "login_path": "/api/auth/google/login",
+      "login_http": 302,
+      "login_attempts": [
+        {
+          "path": "/api/auth/google/login",
+          "http": 302,
+          "error": null,
+          "location": "https://accounts.google.com/o/oauth2/v2/auth?client_id=433379372607-rde329v31tp5mslqjbj2p6tj8231h1ki.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-ziyaoastro.kyloren.workers.dev%2Fapi%2Faut"
+        }
+      ],
+      "authorize_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=433379372607-rde329v31tp5mslqjbj2p6tj8231h1ki.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fai-ziyaoastro.kyloren.workers.dev%2Fapi%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=KmVV3RXNzycmGyMpa_PE1eugUVvl-YAt&access_type=online&prompt=select_account",
+      "client_id": "433379372607-rde329v31tp5mslqjbj2p6tj8231h1ki.apps.googleusercontent.com",
+      "redirect_uri": "https://ai-ziyaoastro.kyloren.workers.dev/api/auth/google/callback",
+      "registration": "MISMATCH",
+      "registration_http": 302,
+      "registration_error": null,
+      "origin": "MATCH",
+      "origin_problems": [],
+      "emitted_origin": "https://ai-ziyaoastro.kyloren.workers.dev",
+      "callback_path": "/api/auth/google/callback",
+      "desired_redirect_uri": "https://ai-ziyaoastro.kyloren.workers.dev/api/auth/google/callback",
+      "verdict": "BLOCKED",
+      "blocking": true,
+      "reasons": [
+        "registration_mismatch"
+      ]
+    }
+  ]
+}
