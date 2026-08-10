@@ -40,14 +40,18 @@ def main() -> int:
     parser.add_argument("--port", type=int, default=18790)
     parser.add_argument("--path", action="append", default=[])
     parser.add_argument("--startup-timeout", type=float, default=60.0)
+    parser.add_argument("--config", help="Wrangler config path relative to project_root")
     args = parser.parse_args()
 
     root = args.project_root.resolve()
     npx = "npx.cmd" if sys.platform == "win32" else "npx"
     creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0
     log_file = tempfile.TemporaryFile()
+    command = [npx, "wrangler", "dev", "--local", "--port", str(args.port)]
+    if args.config:
+        command.extend(["--config", args.config])
     process = subprocess.Popen(
-        [npx, "wrangler", "dev", "--local", "--port", str(args.port)],
+        command,
         cwd=root,
         stdout=log_file,
         stderr=subprocess.STDOUT,
@@ -101,6 +105,23 @@ def main() -> int:
             result["wrangler_log_tail"] = log_file.read().decode("utf-8", errors="replace")
         print(json.dumps(result, indent=2))
         return 0 if ok else 2
+    except Exception as error:
+        log_file.flush()
+        log_file.seek(0, os.SEEK_END)
+        size = log_file.tell()
+        log_file.seek(max(0, size - 12000))
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "url": base,
+                    "error": str(error),
+                    "wrangler_log_tail": log_file.read().decode("utf-8", errors="replace"),
+                },
+                indent=2,
+            )
+        )
+        return 2
     finally:
         terminate_tree(process)
         log_file.close()

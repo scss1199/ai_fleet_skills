@@ -81,6 +81,10 @@ Produce a working public URL, not a placeholder page. Preserve the application's
    python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\local_smoke.py" <isolated-app-root> --port 18790 --path / --path /api/places
    ```
 
+   When the deployment uses a non-default Wrangler target, pass its exact config
+   with `--config wrangler.workers-dev.jsonc`; the smoke test must exercise the
+   same bindings and public vars that will be deployed.
+
    Then inspect the rendered page in the available in-app browser.
 
 6. Authenticate interactively with Cloudflare. Never handle the user's password or OTP. Verify that the account-level workers.dev subdomain is the requested value before deployment.
