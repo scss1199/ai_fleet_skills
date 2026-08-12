@@ -151,12 +151,28 @@ check. Editing `DANGER_PATTERNS` to admit this skill is the same move one level
 up. A security scan that gets quietly reworded until it passes stops being a
 scan.
 
-**Retry rule.** Expect `hits=1 base64-exec` on this skill and treat it as the
-known baseline; report it rather than hiding it. Any *additional* hit, or a hit
-in a file other than `probe_redirect_uri.py`, is real and must be investigated.
-If the noise ever needs to stop, the correct route is a SUBMIT proposing a
-per-finding waiver mechanism in the engine — an operator decision, not a
-generator's edit to its own judge.
+**Retry rule.** Expect a `base64-exec` hit on this skill and treat it as the known
+baseline; report it rather than hiding it. Any *additional* hit is real and must be
+investigated.
+
+**Corrected 2026-08-12 — the accounting above was wrong, and following the retry
+rule is what caught it.** The scan reported `hits=2` after this skill grew
+`console_add_redirect.py`, so the extra hit was investigated as the rule demands.
+Neither hit is in code. `DANGER_PATTERNS` compiles to `(?i)base64\.b64decode`, and
+`_decode_auth_error()` actually calls `base64.urlsafe_b64decode` — which that
+pattern does **not** match. Both hits are lines 136 and 138 of *this file*: the
+prose documenting the finding contains the literal string the scanner greps for. So
+the code has produced zero hits at least since the entry was written, and the
+sentence "the only hit here is `_decode_auth_error()`" was false the moment it was
+typed. `console_add_redirect.py` contributed nothing (it has no base64 at all).
+
+Leave both hits standing. Rewording the prose to dodge the grep is the same
+"quietly reword until it passes" move this entry already forbids one level up, and
+the documentation is worth more than a clean scan line. What changes is the
+expectation: **the baseline is 2 hits, both in `references/known-failures.md`, none
+in `scripts/`.** A hit under `scripts/` is real. And the general lesson: a
+"known baseline" that names a specific cause ages into a false claim unless the
+cause is re-derived when the count moves.
 
 ---
 
@@ -188,6 +204,29 @@ action, hand off instead. Re-measure with the probe after the operator's edits;
 `BLOCKED=0` with the probe exiting 0 is the only completion signal, and the
 negative control (`control_redirect_uri.py`) must be run alongside it — and must
 exit **0**, not merely run — so a green report is not itself the third false GREEN.
+
+**Superseded in part, 2026-08-12 — the missing piece was a session, not a gate.**
+"No public API" still holds. "Therefore hand it to the operator" did not: the
+`google.cloud.console` persistent realm now exists, and once seeded,
+`console_add_redirect.py` performs the ADD-ONLY edit itself (measured on
+`jci-taipei`: three URIs before, four after, `lost_existing: []`, probe row
+`MISMATCH → REGISTERED`). The entry above had generalised one session's permission
+refusal into a permanent property of the world, and that claim then justified a
+handoff every single run — the operator's words for it were 「補個屁」. Read the
+blocker as *state* (`sso_browser.py check` → `ok:false`), re-measure it each time,
+and hand off only on the state that actually blocks: no session, because typing the
+password is the prohibited step.
+
+**Third defect in the same class, found the same day: the console opens on the
+wrong project.** The realm's `login_url` is a bare `/apis/credentials` with no
+`project=`, so it resolves to whatever the operator last used — measured: the
+target was `jci-taipei` and the console showed `messages-fracdigi-com`. Clicking
+around from there edits another project's client while every log line still says
+"jci". Compose the deep link explicitly
+(`/auth/clients/<client_id>?project=<project_id>`), assert the loaded URL, and
+always run `--dry-run` first: the dumped `uris_before` must agree with what the
+probe independently measured against Google. Two methods agreeing is what makes it
+the right client; a matching page title is not.
 
 ---
 
@@ -228,3 +267,69 @@ like an improvement and silently makes the control inert. The offline test asser
 general shape as the lesson: a control that cannot fail is not a control, so any
 verifier whose self-check has never once returned non-zero should be assumed
 untested until someone makes it fail on purpose.
+
+---
+
+## A probe run immediately after the console save reports a false RED
+
+**Symptom.** The ADD-ONLY edit succeeded (`uris_after` contained the new URI,
+`lost_existing: []`), and `check_google` on the same URI answered `MISMATCH`
+seconds later. Run in the same breath, the live flow replay
+(`/api/auth/login` → follow the `Location` to Google) came back with **no**
+`authError` at all — the two measurements contradicted each other (2026-08-12).
+
+**Root cause.** Google's authorization frontend does not see a client-config write
+instantly; the documented window is "5 minutes to a few hours", observed here as
+tens of seconds, and it is not uniform across frontends — one answered from the new
+config while another still held the old. So a single post-save probe samples a
+racing value, and because the pre-fix answer and the not-yet-propagated answer are
+the same string, the false verdict is indistinguishable from "the edit did not
+land".
+
+**Safe fix.** Never grade the fix on one post-save sample. Poll the pair
+(target + `BOGUS_HOST` control) until `target=REGISTERED and control=MISMATCH`, and
+treat any earlier `MISMATCH` as *undetermined*, not as failure. Here it flipped at
+the next 20 s tick. Cross-check with the live flow replay: `authError` absent from
+Google's `Location` is independent evidence that the comparison passed, and the two
+methods disagreeing means "still propagating", not "one of them is broken".
+
+**Retry rule.** Do not re-open the console, and above all do not "fix" it by adding
+the URI a second time or by editing an existing line — the write already succeeded
+and the screenshots prove it. Distrust a red that appears within a minute of a
+verified save; distrust a green that was never controlled.
+
+---
+
+## Two sections, one selector — "the last blank input" was about to write the URI into JavaScript origins
+
+**Symptom.** None yet, and that is the point: `console_add_redirect.py`'s first
+version clicked `get_by_role("button", name="新增 URI").last` and filled the last
+blank `input` on the page. It worked on `jci-taipei` and the write was verified. A
+structural dump of `ai-busker` before reusing it fleet-wide showed why that proved
+nothing (2026-08-12): the client page has **two** sections —
+「已授權的 JavaScript 來源」 and 「已授權的重新導向 URI」 — each with its **own
+identical 「新增 URI」 button** and the **same `https://www.example.com`
+placeholder**, and the buttons carry no distinguishing text, label, or attribute.
+
+**Root cause.** `jci-taipei`'s client has no JavaScript origins, so there was
+exactly one section and `.last` was unambiguous by accident. The verification
+afterwards asked "is the redirect URI now present?", which a wrong-section write
+would answer... by staying absent — but a *partially* wrong write (URI added to JS
+origins, save succeeded) reports `SAVE_NOT_REFLECTED` and hides that a second,
+unrelated setting was just mutated on a client shared by several live sites. One
+successful run on the simplest possible client had been read as evidence about all
+of them.
+
+**Safe fix.** Locate by section, not by ordinal. `_locate()` finds the redirect
+heading, finds the first trailing heading that follows it
+(「用戶端密鑰」/Additional information), and keeps only the `input`/`button`
+elements between them using `compareDocumentPosition`; the JS-origins inputs are
+collected separately *so they can be asserted unchanged*. The post-write audit is
+now two claims, not one: `lost_existing == []` **and** `jso_untouched`. Both must
+hold or the row grades `SAVE_NOT_REFLECTED_OR_COLLATERAL`.
+
+**Retry rule.** Before extending any console automation to a second client, dump
+the DOM structure of a client that exercises the *other* shape (has JS origins, has
+multiple URIs, is shared across sites) and diff it against the one you developed
+on. A single green run is a sample of one page's layout. And never grade a UI write
+solely on "the thing I wanted is present" — also assert that nothing adjacent moved.

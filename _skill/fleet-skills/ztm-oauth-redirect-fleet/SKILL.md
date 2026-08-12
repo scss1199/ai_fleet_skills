@@ -184,23 +184,119 @@ Clients are shared across sites (`ai-ut` and `ai-eatery` sit on one client;
 origins — click **+ Add URI** and add a line. **Never edit or delete an existing
 line**: that takes a currently-working site offline.
 
-## Who can edit (do not route around this)
+## Who can edit — the agent can, via the seeded realm (do not hand this off by reflex)
 
-There is **no public API**. `gcloud alpha iam oauth-clients` is Workforce Identity
-Federation (`Listed 0 items` on a project with live Web clients — verified);
-`gcloud iap oauth-clients` is IAP brands only. Classic Web clients are driven by
-the console's private `clientauthconfig` backend. Console UI only.
+There is still **no public API**. `gcloud alpha iam oauth-clients` is Workforce
+Identity Federation (`Listed 0 items` on a project with live Web clients —
+verified); `gcloud iap oauth-clients` is IAP brands only. Classic Web clients are
+driven by the console's private `clientauthconfig` backend. Console UI only.
 
-The auto-mode permission classifier **hard-denies** the agent editing OAuth
-redirect URIs, and **operator authorization in chat does not lift it** — the gate
-is at the harness layer and does not read the conversation. Retrying via
-DOM-inventory or an alternate browser tool is a **ROUTE-AROUND — do NOT**.
+**What changed 2026-08-12 (operator directive: "以後自己想辦法登入進來處理").** The
+UI is now driven by the agent, not the operator. `scripts/console_add_redirect.py`
+is a **hub-shared entry point every seat calls directly** — no per-seat copy, no
+handoff document:
 
-Unblocks, in order of preference:
+```powershell
+# AI_WORKSPACE is NOT set on this machine (Machine/User/Process all empty, checked
+# 2026-08-12) — every `%AI_WORKSPACE%\…` line in fleet docs is aspirational. Use the
+# literal hub path; the scripts fall back to it internally for the same reason.
+$P = "C:\ai_workspace\_skill\fleet-skills\ztm-oauth-redirect-fleet\scripts"
 
-1. **Operator pastes** from `redirect_uri_fix_handoff.md` (~20 s per client).
-2. Operator switches Claude Code to **bypass-permissions mode**, then "go".
-3. A **logged-in browser surface** must exist either way — see "Browser surface".
+python $P\console_add_redirect.py verify --from-state         # which projects am I in (read-only)
+python $P\console_add_redirect.py verify --client <client_id> # one client, read-only
+python $P\console_add_redirect.py add --client <id> --add <uri>
+python $P\console_add_redirect.py sync --from-state           # fleet dry-run
+python $P\console_add_redirect.py sync --from-state --apply   # fleet write
+python $P\console_add_redirect.py sync --from-state --apply --only ai-busker
+```
+
+Router entry: `ztm-task-router.py "redirect_uri_mismatch"` → route
+`oauth-redirect-uri` in `_registry/ztm-task-routes.json`. Every run writes
+`scripts/console_access_report.json` (per-client access, current URIs, outcome,
+screenshots). Exit 0 = all rows fine, 2 = a row failed or the UI did not match
+(nothing written), 3 = realm not signed in.
+
+**Seat copies are a discovery surface, not a second install.**
+`fleet-skill-sync.py deploy --skill ztm-oauth-redirect-fleet` puts this skill into
+33 seat roots (`<seat>/.claude/skills/…`) so every project can *find* it; the copies
+exist to be read, and the commands above deliberately point at the hub path. Those
+copies are **not** in git — every seat `.gitignore` excludes `.claude/`, so
+distribution is the `fleet-skill-sync-tick.py` rider in `_registry/hosts.json`
+(`@15m` per `_registry/aex-le-contract.json`), not a commit. After editing anything
+here, re-run `deploy` or the seats keep serving the previous version — measured
+2026-08-12: a seat copy deployed minutes before a hub edit still wrote its state
+seat-locally, which is exactly the drift the hub anchoring above prevents.
+`console_add_redirect.py` anchors `redirect_uri_state.json`,
+`console_access_report.json` and `_console_shots/` to the hub `scripts/` directory
+no matter which copy is executed — otherwise a seat copy would quietly maintain its
+own state file, and "two places that can each be believed" is the single root cause
+behind three of the entries in `known-failures.md`. The other scripts still resolve
+next to `__file__`: **run the probe from the hub path**, and treat a
+`redirect_uri_state.json` sitting under any `<seat>/.claude/skills/` as a stale
+artifact of the copy, never as a measurement.
+
+Three design decisions carry the safety, and each one is a measured failure that
+would otherwise be silent:
+
+1. **The project comes from the `client_id` numeric prefix, not from a registry.**
+   That prefix *is* the GCP project number and `?project=<number>` opens.
+   `_registry/fleet-oauth-clients.json` is a *plan*, not a measurement: it files
+   `jci_taipei` under `iron-wave-466411-v5` (real: `jci-taipei`/576912529343) and
+   its `ai_eatery` prefix does not match the live one. Trust the `client_id` the
+   probe read off the live login redirect.
+2. **Never a bare `/apis/credentials`.** The realm's `login_url` carries no
+   project, so the console opens whatever the operator last used — measured: it
+   opened `messages-fracdigi-com` while the target was `jci-taipei`. Clicking from
+   there edits another project's client while the log still says the target.
+3. **Fields are located by section heading, not by "the last blank input".** A
+   client page has two sections — 「已授權的 JavaScript 來源」 and
+   「已授權的重新導向 URI」 — **each with its own identical 「新增 URI」 button and
+   identical placeholder** (measured on `ai-busker`). `btn.last` / `blanks[-1]`
+   was only correct on `jci-taipei` because that client happens to have no JS
+   origins. `_locate()` slices by `compareDocumentPosition` between the redirect
+   heading and the trailing 「用戶端密鑰」/Additional-information heading, and the
+   post-write audit asserts both `lost_existing == []` **and**
+   `jso_untouched` — writing into the JavaScript-origins box would otherwise pass
+   a redirect-URI check while breaking the client a different way.
+
+Operator involvement is now **one login, once**, not one paste per client:
+
+```powershell
+python %AI_WORKSPACE%\_skill\engines\sso_browser.py check google.cloud.console   # ok:true?
+python %AI_WORKSPACE%\_skill\engines\sso_browser.py seed google.cloud.console    # only if ok:false
+```
+
+`seed` opens a headful window; the operator completes Google sign-in. **The agent
+must never type the account password** — still a prohibited action, and `ok:false`
+is the only state that justifies asking for anything.
+
+Fallback if the realm cannot be seeded: `redirect_uri_fix_handoff.md`, operator
+pastes (~20 s per client). Keep generating it — it is the evidence trail either
+way.
+
+## Reach — which projects the agent can actually edit
+
+Measured 2026-08-12 by `console_add_redirect.py verify --from-state`, signed in as
+`scss1199@gmail.com` (`console_access_report.json` holds the rows). **Do not assume
+this table; re-run `verify` — it is read-only and it is the whole point of the
+subcommand.**
+
+| GCP project | number | sites | access |
+|---|---|---|---|
+| `iron-wave-466411-v5` | 433379372607 | busker, career, darkhero, eatery, search, ut, ziyaoastro | OK |
+| `jci-taipei` | 576912529343 | jci-taipei | OK |
+| `messages-fracdigi-com` | 786327629029 | fracdigi | OK |
+| *(unnamed)* | 178918414586 | heartlink | **NO_ACCESS** |
+
+`ai-heartlink` is a **declared exception, not a bug in this skill**: the console
+answers 「您必須取得「專案」的其他存取權：178918414586」 and `gcloud projects list`
+for this account returns five projects that do not include it — the project belongs
+to a different Google account. Two ways out, both operator decisions: grant
+`scss1199@gmail.com` a role on 178918414586, or recreate heartlink's client inside
+`iron-wave-466411-v5` and re-wire `ai_heartlink/config/gcp_oauth.json`. Until then
+heartlink stays `NO_ACCESS`, and `NO_ACCESS` is graded separately from
+`UI_UNRECOGNISED` on purpose: one accuses the account, the other accuses this
+script's selectors.
 
 ## Browser surface (operator policy 2026-08-06)
 
@@ -218,15 +314,20 @@ python %AI_WORKSPACE%\_skill\engines\sso_browser.py list       # what realms exi
 python %AI_WORKSPACE%\_skill\engines\auth_check.py check console.cloud.google.com
 ```
 
-Measured 2026-08-06: **there is no Google realm.** `sso_browser.py list` returns
-`gov.isso.tpbusker`, `jci.line.console`, `social.instagram`, `social.twitter`;
-`auth_check.py check console.cloud.google.com` → `UNKNOWN service`; `key-health.py`
-inventories API keys only. So "use the shared login" does not currently resolve to
-a Cloud Console session — state that as measured, do not assume one is there.
+Measured 2026-08-06: there was no Google realm. **Superseded 2026-08-12: there is
+one.** `sso_browser.py list` now returns `google.cloud.console` (`mode=persistent`,
+`browser=msedge`, `project=ai_darkhero`) alongside `gov.isso.tpbusker`,
+`jci.line.console`, `social.instagram`, `social.twitter`. Once seeded,
+`sso_browser.py check google.cloud.console` → `ok:true` and
+`console_add_redirect.py` closes the loop without the operator.
 
-To create one the sanctioned way: add a realm to `_registry/sso-realms.json` with
+`auth_check.py check console.cloud.google.com` still returns `UNKNOWN service` —
+that is a gap in `auth_check`'s service table, **not** evidence that no session
+exists. Ask `sso_browser.py check` instead; it is the one that knows.
+
+To create the realm the sanctioned way: add it to `_registry/sso-realms.json` with
 `mode: persistent` (profile lands in `_secrets\browser-profiles\<realm>\`), have the
-**operator** complete the Google sign-in once in that profile, then reuse it headlessly.
+**operator** complete the Google sign-in once in that profile, then reuse it.
 The agent must never type the account password — prohibited action, hand off instead.
 
 Before declaring "blocked", confirm the surface: the internal browser landing on

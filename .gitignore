@@ -8,3 +8,8 @@ __pycache__/
 
 # AGENTS.md.<timestamp>.bak — produced by the AGENTS rewrite path, never consumed.
 *.bak
+
+# Agent skill surfaces — junctions into _skill/fleet-skills (agent-surfaces.json)
+.cursor/skills/
+.claude/skills/
+.agents/skills/
