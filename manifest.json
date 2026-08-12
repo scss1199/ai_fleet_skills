@@ -1,13 +1,13 @@
 {
   "schema": 1,
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-12T13:07:11Z",
+  "generated_at": "2026-08-12T13:09:02Z",
   "contributors": [
     "darkhero",
     "scar3"
   ],
   "manifests": {
-    "darkhero": "ac001c86746a75ed",
+    "darkhero": "ca05a6effb459aee",
     "scar3": "adf0b6719ea35761"
   },
   "detail": {
@@ -18,8 +18,8 @@
       "role": "upstream_curator",
       "machine": "darkhero",
       "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-      "generated_at": "2026-08-12T08:25:26Z",
-      "manifest_sha": "ac001c86746a75ed",
+      "generated_at": "2026-08-12T13:09:02Z",
+      "manifest_sha": "ca05a6effb459aee",
       "required": [
         "fames",
         "aex-agent-evolution",
@@ -80,12 +80,12 @@
         },
         {
           "name": "auto-skill-upgrade-deploy",
-          "sha": "5a543cd79bc18756",
+          "sha": "faf184e9ecc61858",
           "required": false,
           "lane": "zero-token-mechanism",
-          "package_sha": "eba72cb211a5cb5a9595de6b81af404e691b65bfd7bc466ad1fef37069c6bbcc",
+          "package_sha": "7fd5adea9591d8e2e078f6c8bf046282cd5447db215913099e3bc131f30328a0",
           "files": {
-            "SKILL.md": "5a543cd79bc1875679a270689edacf3a96eed6cb8610895e85fe34c4e201a813"
+            "SKILL.md": "a6a3afcb3af107724dca4cf70d49d0c5b7777d1d703da8a304aa7e91b073c127"
           }
         },
         {
@@ -392,20 +392,20 @@
         },
         {
           "name": "ztm-oauth-redirect-fleet",
-          "sha": "23f5a52d9aeefd0a",
+          "sha": "38482e844475ac22",
           "required": false,
           "lane": "zero-token-mechanism",
-          "package_sha": "f4e547098fe6adb07939cc935d4739f2e2111e352ba17438e5ae42dbd445232b",
+          "package_sha": "1834e93084d103fc853379119612343a2b2f83347e311ad758f2ad037f5c6c83",
           "files": {
-            "SKILL.md": "23f5a52d9aeefd0af8f7c04ed3d8442c07f4ada422f4b7ecf5909556b6f2d490",
+            "SKILL.md": "38482e844475ac22a161e19fc2841d2aa73770c6b07b82dc26bd0cdb92c7f3bd",
             "references/known-failures.md": "fa595164adf25da421eb54a9615e53cde6d7232833820e69f85ed891a179e74c",
             "scripts/console_add_redirect.py": "96776d8d1ea26e54277327cdd60c4bedf1bcaa555de823e22e1ffaf40b5841e0",
             "scripts/control_redirect_uri.py": "bb3e971f9a236203154d5064acbb66da4c993a115e8b55d9da5affdbf9606e2c",
             "scripts/gen_redirect_handoff.py": "73f71d691b44d60561f69e08401ec4f2dbee5c92935a0672f14337db3985ead6",
             "scripts/inventory.json": "6a14f1c5d34b7af1c445ad5d864c402058474118195b0a8ffd974074852d112b",
             "scripts/probe_redirect_uri.py": "f2e2a892e5de7e7e39bdffe6efccb9e824211262f276c50e2686d919a1734610",
-            "scripts/redirect_uri_fix_handoff.md": "e0fbd6f9d7474cafe1e376a27a04ed15e3265f64a3482c4b351b9b883ac5df40",
-            "scripts/redirect_uri_state.json": "47f4d735b242313ded9807e5138da51e75dabb3eb75b66308b79f9c6ab95e86b",
+            "scripts/redirect_uri_fix_handoff.md": "eebde5add450a312fe295a4fb20ca7a8aba3e1a0aa1a3c395b558e79e55fe342",
+            "scripts/redirect_uri_state.json": "5aee1a8811232bfd0c64b74b89c6de0623bb2e2a7302a10660095627d8a12cd4",
             "scripts/test_redirect_uri.py": "d37e8d3cbd3d5888aca64db7a26fe92b66ec993963c68bdaad739fa8754c2887"
           }
         },
@@ -960,5 +960,5 @@
       ]
     }
   },
-  "union_sha": "5178964025ec8eee"
+  "union_sha": "e55cf7677fc4be20"
 }

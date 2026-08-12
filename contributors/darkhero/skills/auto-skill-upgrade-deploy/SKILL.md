@@ -1,8 +1,8 @@
 ---
-name: auto-skill-upgrade-deploy
+name: adus-auto-deploy-upgrading-skill
 description: >-
-  Auto-skill-upgrade-deploy (ASU): detect reusable patterns, draft seat skills,
-  verify, promote to fleet canonical, deploy. Use after fixing something reusable.
+  ADUS (auto-deploy-upgrading-skill): 自動部署型自我進化技能 — detect, variable-ize,
+  verify, promote fleet skill, deploy. Legacy alias ASU / auto-skill-upgrade-deploy.
 metadata:
   fleet:
     lane: zero-token-mechanism
@@ -10,90 +10,84 @@ metadata:
     scheduler: session
     token_budget: zero
     required: true
-    engine: _skill/engines/asu-deploy.py
-    registry: _registry/asu-protocol.json
+    concept_id: ADUS
+    engine: _skill/engines/adus-deploy.py
+    registry: _registry/adus-protocol.json
+    lexicon: _registry/fleet-lexicon.json
+ladder_ref: _registry/fleet-token-ladder.json
+parent_skill: aex-agent-evolution
 ---
 
-# auto-skill-upgrade-deploy (ASU) — seat skill → fleet canonical
+# ADUS — 自動部署型自我進化技能
 
-> SSOT: `_registry/asu-protocol.json` · Curator: `ai_darkhero`
+> **Concept id:** `ADUS` · SSOT: `_registry/fleet-lexicon.json` + `_registry/adus-protocol.json`  
+> **Legacy aliases:** ASU · `auto-skill-upgrade-deploy`（deploy 仍同步，詞彙不斷裂）
 
 ## When to use
 
-- You solved a problem with a **reusable, verify-able** workflow (not one-off prompt)
-- Same engine/command sequence repeated 3+ times in session
-- Seat-local `.cursor/skills/` not yet in fleet canonical
-- MTM waste scan flags a skill gap
+- 解決可重用、可驗證 workflow（非一次性 prompt）
+- 同引擎/命令序列 session 內重複 3+ 次
+- Seat 本地 skill 尚未進 fleet canonical
+- MTM waste scan 標 skill gap
 
-**Do NOT** duplicate fleet REQUIRED skills locally — **upgrade via ASU promote**.
+**禁止**複製 REQUIRED fleet skill 到 seat — 用 **ADUS promote** 升級 canonical。
+
+## 概念查詢（ZT）
+
+```powershell
+python %AI_WORKSPACE%\_skill\engines\lexicon-resolve.py ADUS --json
+python %AI_WORKSPACE%\_skill\engines\lexicon-resolve.py --alias ASU
+```
 
 ## Agent workflow (TR0)
 
 ### 1 Detect
 
 ```powershell
-python %AI_WORKSPACE%\_skill\engines\asu-detect.py --agent {{agent}} --write
+python %AI_WORKSPACE%\_skill\engines\adus-detect.py --agent {{agent}} --write
 ```
 
-### 2 Draft (generalize + variable-ize)
+### 2 Draft
 
 ```powershell
-python %AI_WORKSPACE%\_skill\engines\asu-generalize.py --agent {{agent}} --item-id <id>
-# or from SUBMIT:
-python %AI_WORKSPACE%\_skill\engines\asu-generalize.py --from-submit _inbox/from_projects/{{agent}}/topic.md --agent {{agent}}
+python %AI_WORKSPACE%\_skill\engines\adus-generalize.py --agent {{agent}} --item-id <id>
 ```
-
-Draft lands in `_registry/asu-drafts/{{agent}}/<skill>/SKILL.md`.
 
 ### 3 Verify
 
 ```powershell
-python %AI_WORKSPACE%\_skill\engines\asu-verify.py --agent {{agent}} --skill <skill-name>
+python %AI_WORKSPACE%\_skill\engines\adus-verify.py --agent {{agent}} --skill <skill-name>
 ```
 
-### 4 Promote
-
-- **Non-curator seats:** draft only → `_registry/asu-pending/` (curator promotes)
-- **Curator (`ai_darkhero` cwd):**
+### 4 Promote（curator cwd = ai_darkhero）
 
 ```powershell
-python %AI_WORKSPACE%\_skill\engines\asu-promote.py --agent {{agent}} --skill <skill-name>
+python %AI_WORKSPACE%\_skill\engines\adus-promote.py --agent {{agent}} --skill <skill-name>
 ```
 
-### 5 One-shot orchestrator
+### 5 Orchestrator
 
 ```powershell
-python %AI_WORKSPACE%\_skill\engines\asu-deploy.py --agent {{agent}} --max-items 3 --auto-promote
+python %AI_WORKSPACE%\_skill\engines\adus-deploy.py --agent {{agent}} --max-items 3 --auto-promote
 ```
 
-## Variable template rules
+## Variable template（lexicon stable）
 
 | Pattern | Placeholder |
 |---------|-------------|
 | Seat id | `{{agent}}` |
 | Seat cwd | `{{seat_root}}` |
-| Hub root | `%AI_WORKSPACE%` (never hardcode `C:\ai_workspace`) |
-| Secrets | **forbidden** in body — schema-only refs |
+| Concept | `{{concept_id}}` → ADUS |
+| Hub root | `%AI_WORKSPACE%` |
 
 ## Cross-links
 
 | Skill | Role |
 |-------|------|
-| `ztm-skill-submit` | Manual SUBMIT format when ASU not enough |
-| `mtm-mto-first` | prework before broad reads |
+| `ztm-skill-submit` | 手動 SUBMIT（ADUS 補充） |
+| `mtm-mto-first` | prework |
 | `pfkt-auto-unblock` | gate remediation |
-| `ztm-verify-before-done` | evidence before done |
-
-## Curator converge
-
-```powershell
-python %AI_WORKSPACE%\_skill\engines\asu-converge.py --max-rounds 4
-python %AI_WORKSPACE%\_skill\engines\fleet-skill-sync.py deploy --seats-only
-python %AI_WORKSPACE%\_skill\engines\sync-cursor-hooks.py
-python %AI_WORKSPACE%\_skill\engines\cursor_bootstrap_pack.py
-python %AI_WORKSPACE%\_skill\engines\agc-hot-apply.py
-```
 
 ## CITE
 
-`_registry/asu-protocol.json` · `fleet-skill-sync.py` · `asu-detect.py`
+`_registry/fleet-lexicon.json` · `_registry/adus-protocol.json` · `adus-deploy.py`
