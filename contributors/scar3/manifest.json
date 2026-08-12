@@ -5,8 +5,8 @@
   "role": "downstream_curator",
   "machine": "scar3",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-12T14:07:06Z",
-  "manifest_sha": "b202dff96bf69410",
+  "generated_at": "2026-08-12T20:03:33Z",
+  "manifest_sha": "c39bc4c6866f4b74",
   "required": [
     "fames",
     "aex-agent-evolution",
@@ -20,10 +20,9 @@
     "mtm-mto-first",
     "adus-auto-deploy-upgrading-skill",
     "ztm-fleet-intelligence",
-    "token-preflight",
-    "cca-token-governance"
+    "token-preflight"
   ],
-  "skill_count": 40,
+  "skill_count": 39,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -86,18 +85,6 @@
       }
     },
     {
-      "name": "cca-token-governance",
-      "sha": "80c81f5cf0b4206f",
-      "required": true,
-      "lane": "MTD",
-      "package_sha": "d3e5924360d23bd5bfadb9ae5da4d348ab4b2103483abc5e04ac2dd780adc97b",
-      "files": {
-        "SKILL.md": "80c81f5cf0b4206fc732ba08a85c7be01188a41f91ea24a769919b4cf107aab9",
-        "agents/openai.yaml": "e93bccd61d913fd236b112e65933a3d52e1b44fac2520a3918a314726fd29d9b",
-        "references/policy.md": "eaeeb7c2309216de248c47eb15f3d63a58e347a571508f14871fa92bbc21fcfe"
-      }
-    },
-    {
       "name": "deploy-nextjs-cloudflare",
       "sha": "432f1935711417b7",
       "required": false,
@@ -120,7 +107,7 @@
     },
     {
       "name": "fames",
-      "sha": "3d28d8651a10d576",
+      "sha": "c1334c46e9c5580c",
       "required": true,
       "lane": null,
       "package_sha": "90ac8168dac05cefd5b7f93cb4e72cba27a07c70c83994ba36b450f26564965c",
