@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-08-13T02:07:22",
+  "generated": "2026-08-13T04:03:46",
   "required": [
     "fames",
     "aex-agent-evolution",
@@ -14,8 +14,7 @@
     "mtm-mto-first",
     "adus-auto-deploy-upgrading-skill",
     "ztm-fleet-intelligence",
-    "token-preflight",
-    "cca-token-governance"
+    "token-preflight"
   ],
   "optional": [
     "accountability-unblock",

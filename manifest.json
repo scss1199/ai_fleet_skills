@@ -1,13 +1,13 @@
 {
   "schema": 1,
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-12T20:03:33Z",
+  "generated_at": "2026-08-12T20:15:20Z",
   "contributors": [
     "darkhero",
     "scar3"
   ],
   "manifests": {
-    "darkhero": "e1e99966b725a4e2",
+    "darkhero": "24158c3da12c44d5",
     "scar3": "c39bc4c6866f4b74"
   },
   "detail": {
@@ -18,8 +18,8 @@
       "role": "upstream_curator",
       "machine": "darkhero",
       "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-      "generated_at": "2026-08-12T19:23:03Z",
-      "manifest_sha": "e1e99966b725a4e2",
+      "generated_at": "2026-08-12T20:15:20Z",
+      "manifest_sha": "24158c3da12c44d5",
       "required": [
         "fames",
         "aex-agent-evolution",
@@ -33,10 +33,9 @@
         "mtm-mto-first",
         "adus-auto-deploy-upgrading-skill",
         "ztm-fleet-intelligence",
-        "token-preflight",
-        "cca-token-governance"
+        "token-preflight"
       ],
-      "skill_count": 40,
+      "skill_count": 39,
       "skills": [
         {
           "name": "accountability-unblock",
@@ -99,28 +98,15 @@
           }
         },
         {
-          "name": "cca-token-governance",
-          "sha": "ea883446aea209af",
-          "required": true,
-          "lane": "MTD",
-          "package_sha": "b2e123c3a062dd0cbfd18f5ffb9eab843ecfdcfb87a013774a7ebeabf164a389",
-          "files": {
-            "SKILL.md": "233cbb0d3b19d5f409580475d0bb3b2852305872dc6abaac2ba2e09d61df3c60",
-            "agents/openai.yaml": "e93bccd61d913fd236b112e65933a3d52e1b44fac2520a3918a314726fd29d9b",
-            "references/known-failures.md": "f3b70aaf15d04c16de45356bc524015df89672777394a009c46b3400827d5e21",
-            "references/policy.md": "eaeeb7c2309216de248c47eb15f3d63a58e347a571508f14871fa92bbc21fcfe"
-          }
-        },
-        {
           "name": "deploy-nextjs-cloudflare",
           "sha": "432f1935711417b7",
           "required": false,
           "lane": "zero-token-mechanism",
-          "package_sha": "a2ed71c89ebd64d1c91c0db9337d38d63363fc7585fa4f3920a6cda1775c08ea",
+          "package_sha": "fc431fda72e1a930d10a27ce7a0f5f33594860ec9fd76d496779e0b3ab73f690",
           "files": {
             "SKILL.md": "432f1935711417b7782d6498e16b25225bbd251489442467c00bb5aab33d5979",
             "agents/openai.yaml": "138a80cd1780892c6b4f1f1b9395e3a601f80790782a4b8681deae98eadf5f39",
-            "assets/claude-cloudflare-migration-prompt.md": "5797029cef1900825fdcca1eaa5119f272bacc784e0bed46f9839f46fdef04c2",
+            "assets/claude-cloudflare-migration-prompt.md": "7b1ae8438ea664637a75f107c1797f2a0b5af89c710493bf572d2e35873dd5a9",
             "references/known-failures.md": "1f495b0051598336b714d7efd0e17d26d5ec0d8e715e2bbacd0a0b2ce76e5687",
             "scripts/cf_secret_push.py": "c584ab31e54a8ce5a37ffb67c8715d6f44702f0698f726e6155c6ccf9cdb49de",
             "scripts/local_smoke.py": "2bfd81c2c7c8a3940083b21a39cd850fd957111800afa34e6c527c4684155320",
@@ -163,15 +149,15 @@
         },
         {
           "name": "line-oa-ingest",
-          "sha": "7f5e7d4088d0381b",
+          "sha": "fef4ef90e7207cda",
           "required": false,
           "lane": null,
-          "package_sha": "2e45ece395032d5ba2db2929476b5de9f001246f7d0af03bc0b27a45409e4ae6",
+          "package_sha": "f0322839b86587f6d0d117548c44d7ad2616b7a68bdc4b1bb1828e90fe99d0b3",
           "files": {
-            "SKILL.md": "7f5e7d4088d0381b870b992898e56b7f739644f665ac2cc51d40ed8870dbf6c4",
+            "SKILL.md": "fef4ef90e7207cdab2a94fdd84d2733a3f36cc71bff3835009429b33010714ac",
             "agents/openai.yaml": "3b3a5bb4f3fc5b43bd8242ef17dec4e8503111acc39ca46ef8c6019f83342002",
             "references/line-api-boundaries.md": "c5f8bb100756aa34dd2266601caf25bd16bcd339dbc96858602f000895e4d516",
-            "scripts/fetch_public_social.mjs": "2c1a76c0ab02d816f9bd98f2a7e3d653ab0cea615b7fa0b7cf04e761eb52d087",
+            "scripts/fetch_public_social.mjs": "00181a1a3e0a2d2020990ff9fd6ae2a0a14e64b189aa75dd3b22d94323374e0a",
             "scripts/inspect_line_inbox.py": "460168215f3ecf231dbd202d87922dd1a234530deaf14937b7df23c0c6f10fa1",
             "scripts/test_inspect_line_inbox.py": "de695f9296a1d47af6721aa16b8aff95d6fb4642719db8a9ce771ec1d34f36e8"
           }
@@ -309,12 +295,12 @@
         },
         {
           "name": "token-preflight",
-          "sha": "a24cf9ca39487740",
+          "sha": "c3ae761bc4edee8d",
           "required": true,
           "lane": "zero-token-mechanism",
-          "package_sha": "de8c81d3b47751245ee0f1080719c953d7ff7b908cde75c74c140e5e2da843b2",
+          "package_sha": "ff89019a761ea676b213cd4b4a7f1a0f3ad90be946e0651bf284aa5e1606be5f",
           "files": {
-            "SKILL.md": "a24cf9ca3948774067082884500797131a78ac5dbbf7b6f27f4b3afa42ca81a0",
+            "SKILL.md": "c3ae761bc4edee8d1431f12166b972f41baa8e37265671ca008741db44219fe2",
             "agents/openai.yaml": "3e6775a97aeefe019b1c41ea53d1801934988be12922960e7eb2a345b6c92265",
             "references/concept-map.md": "889f919398e94745d31314ca9835ed21758d193e6c351e0e4fc512ade6499044",
             "scripts/claude_session_hook.py": "9a89630622943843eb2756839d4297cab0a373c5007136c74b3a617d4711dacf",
@@ -948,5 +934,5 @@
       ]
     }
   },
-  "union_sha": "10361c71adebc504"
+  "union_sha": "07f5694971b03dc5"
 }
