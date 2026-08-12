@@ -9,6 +9,18 @@ Treat FAMES as one completion contract, not as a label or permission grant. Read
 
 Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` from this skill directory. The verifier must pass without reading any workspace file; this is the cold-load proof that GitHub delivered a complete skill rather than a pointer to one machine's registry.
 
+## Freshness — resolve at run time, never from memory
+
+FAMES-GEN: 2026-08-12.1
+
+A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
+
+```
+python scripts/fames_fleet.py status --json --workspace %AI_WORKSPACE%
+```
+
+It reads SKILL.md, the bundled protocols, and the registry from disk at that moment and prints `skill_gen`, `package_sha`, and per-phase parity. If `skill_gen` differs from the `FAMES-GEN` line in the text you are holding, your copy is stale: re-read this file and the bundled protocols from disk before judging any phase, and treat anything already judged with the stale copy as `UNKNOWN`. `parity_ok: false` means the bundle and the registry describe different protocol generations, which is `UNKNOWN` by the rule above and fails closed. Never answer this from memory of a previous run; the whole point of the command is that it is executed, not recalled.
+
 ## Execute the contract
 
 1. **FP** - State Outcome, Verification, Constraints, and a semantic goal hash before implementation.

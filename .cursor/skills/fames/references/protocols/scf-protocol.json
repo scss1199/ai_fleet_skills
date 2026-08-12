@@ -1,15 +1,22 @@
 {
-  "schema": 1,
-  "version": "scf-v1",
-  "updated": "2026-06-24",
-  "purpose": "Self-Consistent Field (SCF) over the hub: ψ (field state), g (goal vector), r (result vector), residual R, convergence κ. Complements per-session PKT snapshot with cross-session evolution direction.",
+  "schema": 2,
+  "version": "scf-v2",
+  "updated": "2026-07-05",
+  "purpose": "Self-Consistent Field (SCF) over the hub: ψ, g, r, R, κ. PFKT is upper-level orchestration before full PKT tuning. AEX closed cycle (EXEC…GUARD) drives ψ updates with Krylov CG/BiCGStab/GMRES acceleration — see fleet-token-ladder.json (fleet-aex). ZTM/ZAT/MTD glossary: fleet-skill-lanes.json.",
+  "aex_ref": "_registry/fleet-token-ladder.json",
+  "aex_engine": "_skill/engines/fleet-token-ladder.py aex iterate",
+  "taxonomy_ref": "_skill/technique_output/50-techniques/zero-token-mechanism-pfkt-mtd.md",
+  "parameters_ref": "_registry/pfkt-parameters.json",
   "aliases": {
-    "PKT": "Primary name for P/(K·T); PPTT is deprecated alias (same formula)",
-    "P": "Numerator: alignment P_dot from goal·result + goal-compact quality gate",
+    "PKT": "Primary name for P/(K·T); PPTT is deprecated alias",
+    "P": "PKT outcome numerator: P_align · P_compact (NOT PFKT P_par)",
+    "P_par": "PFKT parallel score — see pfkt-protocol.json",
     "ψ": "Field state: spec + rules hash + KB version + promoted canon snapshot",
-    "g": "Goal vector (sparse checklist dims); MTD mint at task start",
-    "r": "Result vector (ZCT-verified dims at session end)",
-    "R": "Residual g − proj_g(r); evolution metric, not optional"
+    "g": "Goal vector; mint via goal-field.py (MTD or ZTM)",
+    "r": "Result vector; ZAT-verified dims at session end via result-field.py",
+    "R": "Residual g − proj_g(r); evolution metric, not optional",
+    "ZTM": "zero-token-mechanism layer (whole)",
+    "ZAT": "zero-agent-token atomic deliverable per fragment"
   },
   "pkt": {
     "canon_formula": "PKT = P / (K_billable_ktok · T_total_min)",
@@ -23,12 +30,16 @@
   },
   "scf_loop": {
     "steps": [
-      {"id": "goal_mint", "lane": "MTD", "output": "<stamp>.goal.json"},
-      {"id": "parallel_execute", "lane": "ZCT|ZTM|MTD", "ref": "_registry/parallel-gates.json"},
-      {"id": "result_verify", "lane": "ZCT", "output": "<stamp>.result.json"},
-      {"id": "residual", "lane": "ZCT", "engine": "scf-residual.py"},
-      {"id": "field_update", "lane": "ZCT|MTD", "output": "ψ bump via promote/spec_set/SUBMIT"},
-      {"id": "pkt_ledger", "lane": "ZCT", "engine": "token-ledger.py"}
+      {"id": "goal_mint", "lane": "MTD|ZTM", "engine": "goal-field.py", "output": "<stamp>.goal.json"},
+      {"id": "pfkt_bind", "layer": "PFKT", "engine": "pfkt-scf-bridge.py bind", "output": "pfkt-session-<stamp>.json", "requires": "goal_mint"},
+      {"id": "pfkt_split", "layer": "PFKT", "engine": "pfkt-fragment.py", "output": "fragments-<stamp>.json", "note": "MTD if split strategy ambiguous"},
+      {"id": "pfkt_wave", "layer": "PFKT", "engine": "pfkt-wave.py", "output": "pf-wave-<stamp>.json", "when": "parallel fan-out"},
+      {"id": "ztm_execute", "lane": "ZTM", "unit": "ZAT", "ref": "_registry/parallel-gates.json"},
+      {"id": "result_verify", "lane": "ZTM", "engine": "result-field.py + zat-verify-gate.py", "output": "<stamp>.result.json"},
+      {"id": "pfkt_close", "layer": "PFKT", "engine": "pfkt-scf-bridge.py close", "when": "F=100 and P_par=100 or operator lift"},
+      {"id": "residual", "lane": "ZTM", "engine": "scf-residual.py"},
+      {"id": "field_update", "lane": "ZTM|MTD", "output": "ψ bump via promote/spec_set/SUBMIT"},
+      {"id": "pkt_ledger", "lane": "ZTM", "engine": "token-ledger.py"}
     ],
     "converged_when": {
       "R_norm_lt": 0.05,
@@ -54,7 +65,7 @@
   },
   "portal_tracks": [
     "PKT ledger canon (token-ledger)",
-    "PFKT F/P numerators (pfkt-protocol.json — KT frozen mode)",
+    "PFKT F/P_par numerators (pfkt-protocol.json — KT frozen mode)",
     "SCF residual strip (scf-state)",
     "Policy W* sim (portal JS — not KPI)"
   ],
@@ -84,8 +95,15 @@
       "kappa_anderson": {
         "formula": "kappa_aa = R_predict / R_{n-1}",
         "use_in_converged_when": true
+      },
+      "periodic_pulay": {
+        "formula": "every k steps: Anderson/DIIS; else linear mix",
+        "k_default": 3,
+        "engine": "scf_numerics.periodic_pulay_mix",
+        "ref": "Pratapa & Suryanarayana Periodic Pulay; DIIS ≡ Anderson"
       }
     },
-    "note": "Orthogonal to PKT denominator; augments hub roll in scf-residual.py"
+    "aware_ref": "_registry/aware-protocol.json",
+    "note": "Orthogonal to PKT denominator; augments hub roll in scf-residual.py; AWARE aggregates seat R → R_hub"
   }
 }
