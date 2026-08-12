@@ -1,6 +1,6 @@
 ---
 name: line-oa-ingest
-description: Inspect and filter LINE Official Account inbound webhook events that were already persisted to a Google Drive inbox, distinguish saved group or 1:1 events from unavailable LINE chat history, verify the configured bot identity without exposing credentials, and route captured social URLs through the shared zero-Codex-token acquisition engine. Use for LINE OA inbox audits, group or direct-message retrieval, webhook-storage checks, saved-event exports, and LINE-to-social-content ingestion.
+description: Inspect and filter LINE Official Account inbound webhook events that were already persisted to a Google Drive inbox, distinguish saved group or 1:1 events from unavailable LINE chat history, verify the configured bot identity without exposing credentials, and route captured social URLs through the shared zero-model-token acquisition engine. Use for LINE OA inbox audits, group or direct-message retrieval, webhook-storage checks, saved-event exports, and LINE-to-social-content ingestion.
 ---
 
 # LINE OA Ingest
@@ -69,7 +69,7 @@ is a terminal evidence state; never reconstruct missing body text from a title o
 thumbnail.
 
 The acquisition route uses platform/free providers and the hub free model pool,
-so it consumes no Codex or Claude API tokens. External free-provider quotas and
+so it consumes no paid model API tokens. External free-provider quotas and
 the current agent's reasoning tokens are separate and must not be described as
 zero total compute.
 
@@ -88,5 +88,13 @@ zero total compute.
 
 ```powershell
 python -m unittest discover -s scripts -p "test_*.py"
-python C:\Users\sc\.codex\skills\.system\skill-creator\scripts\quick_validate.py .
+python C:\ai_workspace\_skill\engines\fleet-skill-sync.py verify
 ```
+
+<!-- 2026-08-13: the second line used to be the skill-creator front-matter validator at
+     C:\Users\sc\.codex\skills\.system\skill-creator\scripts\quick_validate.py. It lived inside the
+     Codex user profile, which operator instruction removed from this machine; the only copy is now
+     _delete/2026-08-13-codex-purge/userprofile/.codex/skills/.system/skill-creator/scripts/quick_validate.py.
+     fleet-skill-sync.py verify checks that this skill still resolves on every surface, which is the
+     part that can actually break. -->
+

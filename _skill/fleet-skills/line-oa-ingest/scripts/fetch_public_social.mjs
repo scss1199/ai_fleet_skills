@@ -12,18 +12,16 @@ function normalizeUrl(url) {
   return [url, "generic"];
 }
 
+// 2026-08-13: this used to resolve playwright out of the Codex runtime cache
+// (CODEX_NODE_MODULES, then ~/.cache/codex-runtimes/codex-primary-runtime/...). That runtime was
+// the ONLY playwright install on this machine and operator instruction removed everything Codex
+// from it, so playwright 1.62.0 was copied to the neutral cache below before the runtime was
+// quarantined. The browsers it drives live in ~/AppData/Local/ms-playwright and were never part
+// of the Codex install. Override with HUB_NODE_MODULES.
 function playwrightModule() {
   const candidates = [
-    process.env.CODEX_NODE_MODULES,
-    path.join(
-      os.homedir(),
-      ".cache",
-      "codex-runtimes",
-      "codex-primary-runtime",
-      "dependencies",
-      "node",
-      "node_modules",
-    ),
+    process.env.HUB_NODE_MODULES,
+    path.join(os.homedir(), ".cache", "hub-node", "node_modules"),
   ].filter(Boolean);
   for (const root of candidates) {
     if (!fs.existsSync(path.join(root, "playwright"))) continue;
