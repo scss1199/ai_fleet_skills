@@ -1,13 +1,13 @@
 {
   "schema": 1,
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-12T04:53:47Z",
+  "generated_at": "2026-08-12T08:25:26Z",
   "contributors": [
     "darkhero",
     "scar3"
   ],
   "manifests": {
-    "darkhero": "5bc9c47f6a7b6ef7",
+    "darkhero": "ac001c86746a75ed",
     "scar3": "ff8b6ef6d72f6229"
   },
   "detail": {
@@ -18,8 +18,8 @@
       "role": "upstream_curator",
       "machine": "darkhero",
       "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-      "generated_at": "2026-08-12T04:53:47Z",
-      "manifest_sha": "5bc9c47f6a7b6ef7",
+      "generated_at": "2026-08-12T08:25:26Z",
+      "manifest_sha": "ac001c86746a75ed",
       "required": [
         "fames",
         "aex-agent-evolution",
@@ -392,19 +392,20 @@
         },
         {
           "name": "ztm-oauth-redirect-fleet",
-          "sha": "ae0317e0d3eaab01",
+          "sha": "23f5a52d9aeefd0a",
           "required": false,
           "lane": "zero-token-mechanism",
-          "package_sha": "41ec604e29136052ab8331483b2255c7783bd15bbd985c13a1344b8926d37485",
+          "package_sha": "f4e547098fe6adb07939cc935d4739f2e2111e352ba17438e5ae42dbd445232b",
           "files": {
-            "SKILL.md": "ae0317e0d3eaab015dc074b2f055f8b339269575ba111a812befc35c686582e9",
-            "references/known-failures.md": "069351280ad26bb9b317f8e2afa8e19e87a29ab2109dfceccec5c0f59cbb80d9",
+            "SKILL.md": "23f5a52d9aeefd0af8f7c04ed3d8442c07f4ada422f4b7ecf5909556b6f2d490",
+            "references/known-failures.md": "fa595164adf25da421eb54a9615e53cde6d7232833820e69f85ed891a179e74c",
+            "scripts/console_add_redirect.py": "96776d8d1ea26e54277327cdd60c4bedf1bcaa555de823e22e1ffaf40b5841e0",
             "scripts/control_redirect_uri.py": "bb3e971f9a236203154d5064acbb66da4c993a115e8b55d9da5affdbf9606e2c",
             "scripts/gen_redirect_handoff.py": "73f71d691b44d60561f69e08401ec4f2dbee5c92935a0672f14337db3985ead6",
             "scripts/inventory.json": "6a14f1c5d34b7af1c445ad5d864c402058474118195b0a8ffd974074852d112b",
             "scripts/probe_redirect_uri.py": "f2e2a892e5de7e7e39bdffe6efccb9e824211262f276c50e2686d919a1734610",
             "scripts/redirect_uri_fix_handoff.md": "e0fbd6f9d7474cafe1e376a27a04ed15e3265f64a3482c4b351b9b883ac5df40",
-            "scripts/redirect_uri_state.json": "15d56e07d01fa05a22e63f1f7e8550ad9c6a174d99194747f15cb3338cd0b76a",
+            "scripts/redirect_uri_state.json": "47f4d735b242313ded9807e5138da51e75dabb3eb75b66308b79f9c6ab95e86b",
             "scripts/test_redirect_uri.py": "d37e8d3cbd3d5888aca64db7a26fe92b66ec993963c68bdaad739fa8754c2887"
           }
         },
@@ -958,5 +959,5 @@
       ]
     }
   },
-  "union_sha": "6accb2a564f33fc9"
+  "union_sha": "fe4f505d21f500cb"
 }
