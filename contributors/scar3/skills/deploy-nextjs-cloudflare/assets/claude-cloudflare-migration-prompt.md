@@ -10,7 +10,7 @@
   - `ai_busker` → `ai-busker` → `https://ai-busker.kyloren.workers.dev/`
   - `jci_taipei` → `ai-jci-taipei` → `https://ai-jci-taipei.kyloren.workers.dev/`
 - `ai_eatery` 已完成，跳過：`https://ai-eatery.kyloren.workers.dev/`
-- `fracdigi` 由 Codex 另行處理，完全跳過，不可部署、改 DNS、改 webhook 或改 OAuth。
+- `fracdigi` 為 T1 凍結、本座位不承辦，完全跳過，不可部署、改 DNS、改 webhook 或改 OAuth。
 - 優先順序：先 `C:\ai_workspace\jci_taipei`，再處理其餘最小、相依最少的網站。
 
 ## 必須採用的流程
