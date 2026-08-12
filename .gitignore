@@ -1,0 +1,10 @@
+# ai_fleet_skills — publish surface hygiene.
+# Rationale: this repo publishes skill TEXT + runtime. Build artefacts and editor
+# backups are not skills; when committed they inflate the manifest fingerprint and
+# make package_sha churn without any contract change.
+__pycache__/
+*.pyc
+*.pyo
+
+# AGENTS.md.<timestamp>.bak — produced by the AGENTS rewrite path, never consumed.
+*.bak
