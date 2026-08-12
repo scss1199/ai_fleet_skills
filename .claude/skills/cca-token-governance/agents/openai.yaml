@@ -1,4 +1,0 @@
-interface:
-  display_name: "CCA Token Governance"
-  short_description: "Budgeted deterministic review routing"
-  default_prompt: "Use $cca-token-governance to audit and route this review within a bounded token budget."

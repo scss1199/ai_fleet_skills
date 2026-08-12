@@ -4,7 +4,7 @@
 # ai_fleet_skills — Cursor bootstrap (≤5120B)
 
 > Identity + mandate load only when **cwd = `C:/ai_workspace/_skill/ai_fleet_skills`**. Hub root `C:\ai_workspace` silently makes you `ai_master`.
-> **THIS file is the seat charter.** `CLAUDE.md` starts with `@AGENTS.md`, so Claude and Codex read the same bytes.
+> **THIS file is the seat charter.** `CLAUDE.md` starts with `@AGENTS.md`, so every engine reads the same bytes.
 > (Kept high in the file on purpose: the bootstrap is truncated at 5120 bytes if it ever grows past it.)
 
 ## Session open (ZTM — SessionStart 三層 hook)
