@@ -288,6 +288,14 @@ subcommand.**
 | `messages-fracdigi-com` | 786327629029 | fracdigi | OK |
 | *(unnamed)* | 178918414586 | heartlink | **NO_ACCESS** |
 
+**Applied 2026-08-12 (`sync --from-state --apply`):** six clients took one ADD each —
+busker, career, darkhero, search, ut, ziyaoastro — every row `lost_existing: []` and
+`jso_untouched: true`. Fleet moved `OK=3 BLOCKED=7` → **`OK=9 BLOCKED=1 N/A=2`**,
+control exit 0, and all six live `/api/auth/login` replays reach Google
+consent/signin with no `authError`. `ai-eatery` and `ai-ut` are **different sites
+sharing one client** (`433379372607-ra924imb7vsm…`): eatery's line was already on it
+and stayed untouched, which is what the `lost_existing` audit exists to prove.
+
 `ai-heartlink` is a **declared exception, not a bug in this skill**: the console
 answers 「您必須取得「專案」的其他存取權：178918414586」 and `gcloud projects list`
 for this account returns five projects that do not include it — the project belongs
