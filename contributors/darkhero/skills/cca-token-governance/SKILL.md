@@ -24,3 +24,5 @@ Use:
 - Add `--allow-paid-review` only when the task explicitly authorizes a paid review and the configured policy admits it.
 
 Read [references/policy.md](references/policy.md) only when changing policy values, replaying historical reviews, or interpreting token buckets.
+
+Read [references/known-failures.md](references/known-failures.md) when a review is refused, when the free pre-screen returns no voters, or before changing a budget knob to admit a review.

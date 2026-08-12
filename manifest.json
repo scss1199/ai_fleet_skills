@@ -1,13 +1,13 @@
 {
   "schema": 1,
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-12T14:07:06Z",
+  "generated_at": "2026-08-12T19:23:03Z",
   "contributors": [
     "darkhero",
     "scar3"
   ],
   "manifests": {
-    "darkhero": "ca05a6effb459aee",
+    "darkhero": "e1e99966b725a4e2",
     "scar3": "b202dff96bf69410"
   },
   "detail": {
@@ -18,8 +18,8 @@
       "role": "upstream_curator",
       "machine": "darkhero",
       "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-      "generated_at": "2026-08-12T13:09:02Z",
-      "manifest_sha": "ca05a6effb459aee",
+      "generated_at": "2026-08-12T19:23:03Z",
+      "manifest_sha": "e1e99966b725a4e2",
       "required": [
         "fames",
         "aex-agent-evolution",
@@ -100,13 +100,14 @@
         },
         {
           "name": "cca-token-governance",
-          "sha": "80c81f5cf0b4206f",
+          "sha": "ea883446aea209af",
           "required": true,
           "lane": "MTD",
-          "package_sha": "d3e5924360d23bd5bfadb9ae5da4d348ab4b2103483abc5e04ac2dd780adc97b",
+          "package_sha": "b2e123c3a062dd0cbfd18f5ffb9eab843ecfdcfb87a013774a7ebeabf164a389",
           "files": {
-            "SKILL.md": "80c81f5cf0b4206fc732ba08a85c7be01188a41f91ea24a769919b4cf107aab9",
+            "SKILL.md": "233cbb0d3b19d5f409580475d0bb3b2852305872dc6abaac2ba2e09d61df3c60",
             "agents/openai.yaml": "e93bccd61d913fd236b112e65933a3d52e1b44fac2520a3918a314726fd29d9b",
+            "references/known-failures.md": "f3b70aaf15d04c16de45356bc524015df89672777394a009c46b3400827d5e21",
             "references/policy.md": "eaeeb7c2309216de248c47eb15f3d63a58e347a571508f14871fa92bbc21fcfe"
           }
         },
@@ -133,7 +134,7 @@
         },
         {
           "name": "fames",
-          "sha": "3d28d8651a10d576",
+          "sha": "c1334c46e9c5580c",
           "required": true,
           "lane": null,
           "package_sha": "90ac8168dac05cefd5b7f93cb4e72cba27a07c70c83994ba36b450f26564965c",
@@ -960,5 +961,5 @@
       ]
     }
   },
-  "union_sha": "baac70f6fb10078e"
+  "union_sha": "93340107c06af8e0"
 }
