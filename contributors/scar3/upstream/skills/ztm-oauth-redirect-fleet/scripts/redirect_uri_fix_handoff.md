@@ -1,6 +1,6 @@
 # redirect_uri — console fix list
 
-Source of truth: `redirect_uri_state.json` schema 2, probed 2026-08-10T05:46:41+0800.
+Source of truth: `redirect_uri_state.json` schema 2, probed 2026-08-12T12:43:48+0800.
 8 site(s) need a console ADD across 8 OAuth client(s); 0 blocked site(s) cannot be fixed in the console.
 
 Rule: in the **Authorised redirect URIs** section (NOT JavaScript origins), click **+ Add URI**, paste the line, Save. **Only add** — never edit or delete an existing line; several of these clients are shared with live sites.

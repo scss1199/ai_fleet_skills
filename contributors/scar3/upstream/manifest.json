@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-10T12:03:38Z",
-  "manifest_sha": "ea082948a765393b",
+  "generated_at": "2026-08-12T08:25:26Z",
+  "manifest_sha": "ac001c86746a75ed",
   "required": [
     "fames",
     "aex-agent-evolution",
@@ -120,21 +120,21 @@
     },
     {
       "name": "fames",
-      "sha": "2dc881cfef4cba9d",
+      "sha": "3d28d8651a10d576",
       "required": true,
       "lane": null,
-      "package_sha": "e01f813082d943555c0dd673cbdaee7e65e921815c4f4a842781ee9b1cc67bb8",
+      "package_sha": "90ac8168dac05cefd5b7f93cb4e72cba27a07c70c83994ba36b450f26564965c",
       "files": {
-        "SKILL.md": "2dc881cfef4cba9d99e5b2730099c64a71cfae905e31c7894a233c8d8e4940d7",
-        "bundle-manifest.json": "604c5d75cd1d0b8b3cb5c9235f6283360028cc67abd57164f9ce4f93d654a04c",
+        "SKILL.md": "3d28d8651a10d576634464ba2c887f512916a2478a149969d8dececb01e79d37",
+        "bundle-manifest.json": "2a38b8fc506070fa04c15d6636377d73b77d83df6d7150674a58f4b6c2db7668",
         "agents/openai.yaml": "0e2fc04d4ebbb939f4e51f0c45964134c830972017188a3bf0be385cd219eac1",
-        "references/protocols/fames-protocol.json": "dcfe14f1386e7e560151b9df42b52605eb7b357bebac81247ff077ee2a7f1e00",
+        "references/protocols/fames-protocol.json": "dd8ed2fe44aeda13ad2cf12b789e040bf2dd586efe7514dd50835d0a876c6192",
         "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
         "references/protocols/goal-vector-protocol.json": "204f845523bb75294895a384d14019eef583400323b1a5d6472ead778413e45a",
         "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
-        "references/protocols/scf-protocol.json": "030e10038fc0d2585553f21aaf2d5d9ba04dedff1b45039292df5804bb0dc82b",
+        "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
         "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-        "scripts/fames_fleet.py": "c1ca31e57a197b77ee8eb6ce2b8b32d0ebb91a35bb4af76dcbd790a385d7a6f0"
+        "scripts/fames_fleet.py": "dbd9b1fd53c394d526de08e4b69808d8d6abcf64852f13bf14fa1ad496a886df"
       }
     },
     {
@@ -379,19 +379,20 @@
     },
     {
       "name": "ztm-oauth-redirect-fleet",
-      "sha": "ae0317e0d3eaab01",
+      "sha": "23f5a52d9aeefd0a",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "da1f3edc2ea6d8537551eee2814ac7b881c5deff4feb5313d2f6d55cf5e7cbf6",
+      "package_sha": "f4e547098fe6adb07939cc935d4739f2e2111e352ba17438e5ae42dbd445232b",
       "files": {
-        "SKILL.md": "ae0317e0d3eaab015dc074b2f055f8b339269575ba111a812befc35c686582e9",
-        "references/known-failures.md": "069351280ad26bb9b317f8e2afa8e19e87a29ab2109dfceccec5c0f59cbb80d9",
+        "SKILL.md": "23f5a52d9aeefd0af8f7c04ed3d8442c07f4ada422f4b7ecf5909556b6f2d490",
+        "references/known-failures.md": "fa595164adf25da421eb54a9615e53cde6d7232833820e69f85ed891a179e74c",
+        "scripts/console_add_redirect.py": "96776d8d1ea26e54277327cdd60c4bedf1bcaa555de823e22e1ffaf40b5841e0",
         "scripts/control_redirect_uri.py": "bb3e971f9a236203154d5064acbb66da4c993a115e8b55d9da5affdbf9606e2c",
         "scripts/gen_redirect_handoff.py": "73f71d691b44d60561f69e08401ec4f2dbee5c92935a0672f14337db3985ead6",
         "scripts/inventory.json": "6a14f1c5d34b7af1c445ad5d864c402058474118195b0a8ffd974074852d112b",
         "scripts/probe_redirect_uri.py": "f2e2a892e5de7e7e39bdffe6efccb9e824211262f276c50e2686d919a1734610",
-        "scripts/redirect_uri_fix_handoff.md": "2b67fea328895347c60bc57c314511d7c7c66e1b93b39b42f17e8cf77f2e1778",
-        "scripts/redirect_uri_state.json": "290ec0c9bbc6b1e9044a55dd6ba9f6f225c724f6dbdb16b57116ee7d14e435f4",
+        "scripts/redirect_uri_fix_handoff.md": "e0fbd6f9d7474cafe1e376a27a04ed15e3265f64a3482c4b351b9b883ac5df40",
+        "scripts/redirect_uri_state.json": "47f4d735b242313ded9807e5138da51e75dabb3eb75b66308b79f9c6ab95e86b",
         "scripts/test_redirect_uri.py": "d37e8d3cbd3d5888aca64db7a26fe92b66ec993963c68bdaad739fa8754c2887"
       }
     },

@@ -29,6 +29,7 @@ PROTOCOL_TARGETS = {
     for key, source in PROTOCOL_SOURCES.items()
 }
 MANIFEST_NAME = "bundle-manifest.json"
+GENERATION_PREFIX = "FAMES-GEN: "
 TEXT_SUFFIXES = {
     ".json",
     ".md",
@@ -211,6 +212,110 @@ def verify_package(package_root: Path = PACKAGE_ROOT) -> dict:
     }
 
 
+def _skill_generation(package_root: Path = PACKAGE_ROOT) -> str:
+    """Read the contract generation stamp from SKILL.md on disk, right now."""
+    try:
+        for line in (package_root / "SKILL.md").read_text(encoding="utf-8-sig").splitlines():
+            if line.startswith(GENERATION_PREFIX):
+                return line[len(GENERATION_PREFIX):].strip().strip("`")
+    except OSError:
+        return ""
+    return ""
+
+
+def parity(workspace: Path, package_root: Path = PACKAGE_ROOT) -> dict:
+    """Compare every bundled protocol against the workspace registry SSOT.
+
+    A machine without the registry is a legitimate cold load, so the whole check is
+    NOT_APPLICABLE there. A registry that exists and disagrees is drift, and drift is
+    UNKNOWN: the bundle would otherwise ship a protocol generation the hub has replaced.
+    Hashes come from _sha256, which normalizes line endings, so a CRLF registry and an
+    LF bundle do not fake a mismatch.
+    """
+    workspace = workspace.resolve()
+    package_root = package_root.resolve()
+    rows: list[dict] = []
+    errors: list[str] = []
+    for phase in EXECUTION_ORDER + ["FAMES"]:
+        source_rel = PROTOCOL_SOURCES[phase]
+        source = workspace / source_rel
+        target = package_root / PROTOCOL_TARGETS[phase]
+        row = {"phase": phase, "source": source_rel}
+        if not source.is_file():
+            row["state"] = "NOT_APPLICABLE"
+            row["why"] = "registry absent; bundle is the portable authority"
+            rows.append(row)
+            continue
+        if not target.is_file():
+            row["state"] = "UNKNOWN"
+            errors.append(f"{phase}: bundled protocol missing")
+            rows.append(row)
+            continue
+        try:
+            bundled = _read_json(target)
+            registry = _read_json(source)
+        except (OSError, json.JSONDecodeError) as exc:
+            row["state"] = "UNKNOWN"
+            errors.append(f"{phase}: unreadable protocol: {exc}")
+            rows.append(row)
+            continue
+        row["bundle_version"] = bundled.get("version")
+        row["registry_version"] = registry.get("version")
+        row["content_match"] = _sha256(target) == _sha256(source)
+        if row["bundle_version"] != row["registry_version"]:
+            row["state"] = "UNKNOWN"
+            errors.append(
+                f"{phase}: version drift bundle={row['bundle_version']} registry={row['registry_version']}"
+            )
+        elif not row["content_match"]:
+            row["state"] = "UNKNOWN"
+            errors.append(f"{phase}: content drift at same version {row['bundle_version']}")
+        else:
+            row["state"] = "PASS"
+        if phase == "FAMES" and registry.get("execution_order") != EXECUTION_ORDER:
+            row["state"] = "UNKNOWN"
+            errors.append("FAMES: registry execution order mismatch")
+        rows.append(row)
+    return {
+        "ok": not errors,
+        "workspace": str(workspace),
+        "phases": rows,
+        "errors": errors,
+    }
+
+
+def status(workspace: Path, package_root: Path = PACKAGE_ROOT) -> dict:
+    """The one command a thread runs to prove it is executing the current FAMES.
+
+    Everything here is read from disk at call time, so a conversation that started
+    before an edit gets the new answer the moment it runs this instead of trusting the
+    FAMES text already sitting in its context.
+    """
+    package = verify_package(package_root)
+    drift = parity(workspace, package_root)
+    generation = _skill_generation(package_root)
+    errors = [f"package: {e}" for e in package.get("errors", [])]
+    errors += [f"parity: {e}" for e in drift.get("errors", [])]
+    if not generation:
+        errors.append(f"SKILL.md carries no {GENERATION_PREFIX.strip()} stamp")
+    return {
+        "ok": not errors,
+        "skill_gen": generation,
+        "package_sha": package.get("package_sha"),
+        "version": package.get("version"),
+        "package_ok": package.get("ok"),
+        "parity_ok": drift.get("ok"),
+        "parity": drift.get("phases"),
+        "read_at": datetime.now(timezone.utc).isoformat(),
+        "stale_context_rule": (
+            "If the FAMES text in your context declares a different %s than skill_gen above, "
+            "that copy is stale: re-read SKILL.md and the bundled protocols from disk before "
+            "judging any phase." % GENERATION_PREFIX.strip()
+        ),
+        "errors": errors,
+    }
+
+
 def _copy_package(source: Path, destination: Path) -> None:
     source = source.resolve()
     destination = destination.resolve()
@@ -352,11 +457,11 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "install", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "install", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
-        if name == "verify-package":
+        if name in {"verify-package", "parity", "status"}:
             command.add_argument("--skill-dir", type=Path, default=PACKAGE_ROOT)
         if name == "build-bundle":
             command.add_argument("--protocol-git-ref")
@@ -374,6 +479,10 @@ def main() -> int:
         )
     if args.command == "verify-package":
         return _emit(verify_package(args.skill_dir), args.json)
+    if args.command == "parity":
+        return _emit(parity(args.workspace, args.skill_dir), args.json)
+    if args.command == "status":
+        return _emit(status(args.workspace, args.skill_dir), args.json)
     if args.command == "install":
         return _emit(install(args.workspace, args.host, args.source), args.json)
     if args.command == "verify-host":
