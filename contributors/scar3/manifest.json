@@ -20,7 +20,7 @@
     "ztm-fleet-intelligence",
     "token-preflight"
   ],
-  "generated_at": "2026-08-13T17:52:38Z",
+  "generated_at": "2026-08-13T17:54:52Z",
   "skill_count": 41,
   "skills": [
     {
@@ -301,12 +301,14 @@
     },
     {
       "name": "token-preflight",
-      "sha": "4c135fb42282e75b",
+      "sha": "31d857d860985648",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "4e1c0daf977c4e087d191325301151cc36303485c98535fd702b933cf15566cc",
+      "package_sha": "4bb4eccc257e64a18b167b95971a50828731ede389de4f71709b752db6d6e14e",
       "files": {
+        "agents/openai.yaml": "3e6775a97aeefe019b1c41ea53d1801934988be12922960e7eb2a345b6c92265",
         "references/concept-map.md": "889f919398e94745d31314ca9835ed21758d193e6c351e0e4fc512ade6499044",
+        "scripts/claude_session_hook.py": "9a89630622943843eb2756839d4297cab0a373c5007136c74b3a617d4711dacf",
         "scripts/preflight.py": "151e89d054cf7ff086f51191c82c63e40f780d79238b9bbb1c1389657d1d1c39",
         "SKILL.md": "a24cf9ca3948774067082884500797131a78ac5dbbf7b6f27f4b3afa42ca81a0"
       }
@@ -475,5 +477,5 @@
       }
     }
   ],
-  "manifest_sha": "7d2e0b6681223317"
+  "manifest_sha": "e01aec03f5b1b12d"
 }
