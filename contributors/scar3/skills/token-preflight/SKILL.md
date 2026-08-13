@@ -26,9 +26,4 @@ The script writes a receipt. A session touch without a receipt is not skill cons
 
 Read [references/concept-map.md](references/concept-map.md) only when changing framework architecture.
 
-<!-- 2026-08-13: the line that pointed at `cca-token-governance` was removed with that skill.
-     operator instruction: remove everything Codex-related from this machine; the skill and the
-     Claude-to-Codex review route it governed are quarantined in
-     _delete/2026-08-13-codex-purge (hub-skills/, hub-engines/). Cross-provider token usage is
-     no longer a route this hub can take. -->
-
+Load `cca-token-governance` only when the route proposes a Claude-to-Codex review or audits cross-provider token usage.

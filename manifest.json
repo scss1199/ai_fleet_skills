@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-13T14:03:11Z",
+  "generated_at": "2026-08-13T17:52:38Z",
   "contributors": [
     "darkhero",
     "scar3"
   ],
   "manifests": {
     "darkhero": "e72d8bc0a4ccccb3",
-    "scar3": "4bb5533bcd55eedb"
+    "scar3": "7d2e0b6681223317"
   },
   "detail": {
     "darkhero": {
@@ -499,8 +499,6 @@
       "role": "downstream_curator",
       "machine": "scar3",
       "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-      "generated_at": "2026-08-13T14:03:11Z",
-      "manifest_sha": "4bb5533bcd55eedb",
       "required": [
         "fames",
         "aex-agent-evolution",
@@ -516,6 +514,7 @@
         "ztm-fleet-intelligence",
         "token-preflight"
       ],
+      "generated_at": "2026-08-13T17:52:38Z",
       "skill_count": 41,
       "skills": [
         {
@@ -585,7 +584,6 @@
           "lane": "zero-token-mechanism",
           "package_sha": "fc431fda72e1a930d10a27ce7a0f5f33594860ec9fd76d496779e0b3ab73f690",
           "files": {
-            "SKILL.md": "432f1935711417b7782d6498e16b25225bbd251489442467c00bb5aab33d5979",
             "agents/openai.yaml": "138a80cd1780892c6b4f1f1b9395e3a601f80790782a4b8681deae98eadf5f39",
             "assets/claude-cloudflare-migration-prompt.md": "7b1ae8438ea664637a75f107c1797f2a0b5af89c710493bf572d2e35873dd5a9",
             "references/known-failures.md": "1f495b0051598336b714d7efd0e17d26d5ec0d8e715e2bbacd0a0b2ce76e5687",
@@ -596,26 +594,27 @@
             "scripts/quick_validate.py": "be293b71b766dcade8a380c867a325fed1a1f7a494d88e5fc37c804f5afae96c",
             "scripts/record_failure.py": "87723a5609f6c0ef135da94d6208535c0784a0c2a38663a806f989bfd35a9d11",
             "scripts/selftest_quick_validate.py": "41d345f312b0737b9df9e45fb0acb4eb4233c28c460214cd3810e349cfebd503",
-            "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37"
+            "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37",
+            "SKILL.md": "432f1935711417b7782d6498e16b25225bbd251489442467c00bb5aab33d5979"
           }
         },
         {
           "name": "fames",
-          "sha": "c1334c46e9c5580c",
+          "sha": "319dbb65c018c7e3",
           "required": true,
           "lane": null,
-          "package_sha": "e03945c741dd52f6fb806575c138781354817cb43cafa9645f2add2173cba709",
+          "package_sha": "90ac8168dac05cefd5b7f93cb4e72cba27a07c70c83994ba36b450f26564965c",
           "files": {
-            "SKILL.md": "3d28d8651a10d576634464ba2c887f512916a2478a149969d8dececb01e79d37",
-            "bundle-manifest.json": "90d959f6140bcd93f9ddab793771cb01d9044fbd8446ae795211b214db953b26",
             "agents/openai.yaml": "0e2fc04d4ebbb939f4e51f0c45964134c830972017188a3bf0be385cd219eac1",
+            "bundle-manifest.json": "2a38b8fc506070fa04c15d6636377d73b77d83df6d7150674a58f4b6c2db7668",
             "references/protocols/fames-protocol.json": "dd8ed2fe44aeda13ad2cf12b789e040bf2dd586efe7514dd50835d0a876c6192",
             "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
             "references/protocols/goal-vector-protocol.json": "204f845523bb75294895a384d14019eef583400323b1a5d6472ead778413e45a",
             "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
             "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
             "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-            "scripts/fames_fleet.py": "0d2a3fca1c96b2402f246e7ba0661a41c407f7aeada580fc24dc8da6cbfcbd93"
+            "scripts/fames_fleet.py": "dbd9b1fd53c394d526de08e4b69808d8d6abcf64852f13bf14fa1ad496a886df",
+            "SKILL.md": "3d28d8651a10d576634464ba2c887f512916a2478a149969d8dececb01e79d37"
           }
         },
         {
@@ -645,12 +644,12 @@
           "lane": null,
           "package_sha": "f0322839b86587f6d0d117548c44d7ad2616b7a68bdc4b1bb1828e90fe99d0b3",
           "files": {
-            "SKILL.md": "fef4ef90e7207cdab2a94fdd84d2733a3f36cc71bff3835009429b33010714ac",
             "agents/openai.yaml": "3b3a5bb4f3fc5b43bd8242ef17dec4e8503111acc39ca46ef8c6019f83342002",
             "references/line-api-boundaries.md": "c5f8bb100756aa34dd2266601caf25bd16bcd339dbc96858602f000895e4d516",
             "scripts/fetch_public_social.mjs": "00181a1a3e0a2d2020990ff9fd6ae2a0a14e64b189aa75dd3b22d94323374e0a",
             "scripts/inspect_line_inbox.py": "460168215f3ecf231dbd202d87922dd1a234530deaf14937b7df23c0c6f10fa1",
-            "scripts/test_inspect_line_inbox.py": "de695f9296a1d47af6721aa16b8aff95d6fb4642719db8a9ce771ec1d34f36e8"
+            "scripts/test_inspect_line_inbox.py": "de695f9296a1d47af6721aa16b8aff95d6fb4642719db8a9ce771ec1d34f36e8",
+            "SKILL.md": "fef4ef90e7207cdab2a94fdd84d2733a3f36cc71bff3835009429b33010714ac"
           }
         },
         {
@@ -790,22 +789,20 @@
           "lane": "zero-token-mechanism",
           "package_sha": "6e56b3586f80a38dffa6647c4331dd716d7496f5db6c619d76ee46a402ddbe96",
           "files": {
-            "SKILL.md": "ca55894ff9304f05769f5e705a6e1a542483694d3a757ec51a230d8772cfa1ae",
-            "references/known-failures.md": "e69fe868d4db006fbacd14a46cdb7ef8db84ec1230483c15e5ae086931ffb804"
+            "references/known-failures.md": "e69fe868d4db006fbacd14a46cdb7ef8db84ec1230483c15e5ae086931ffb804",
+            "SKILL.md": "ca55894ff9304f05769f5e705a6e1a542483694d3a757ec51a230d8772cfa1ae"
           }
         },
         {
           "name": "token-preflight",
-          "sha": "c3ae761bc4edee8d",
+          "sha": "4c135fb42282e75b",
           "required": true,
           "lane": "zero-token-mechanism",
-          "package_sha": "ff89019a761ea676b213cd4b4a7f1a0f3ad90be946e0651bf284aa5e1606be5f",
+          "package_sha": "4e1c0daf977c4e087d191325301151cc36303485c98535fd702b933cf15566cc",
           "files": {
-            "SKILL.md": "c3ae761bc4edee8d1431f12166b972f41baa8e37265671ca008741db44219fe2",
-            "agents/openai.yaml": "3e6775a97aeefe019b1c41ea53d1801934988be12922960e7eb2a345b6c92265",
             "references/concept-map.md": "889f919398e94745d31314ca9835ed21758d193e6c351e0e4fc512ade6499044",
-            "scripts/claude_session_hook.py": "9a89630622943843eb2756839d4297cab0a373c5007136c74b3a617d4711dacf",
-            "scripts/preflight.py": "969d214be3867a61d8d58c5ec73d5b9173358d41efbadc9396a8adc090c23437"
+            "scripts/preflight.py": "151e89d054cf7ff086f51191c82c63e40f780d79238b9bbb1c1389657d1d1c39",
+            "SKILL.md": "a24cf9ca3948774067082884500797131a78ac5dbbf7b6f27f4b3afa42ca81a0"
           }
         },
         {
@@ -885,7 +882,6 @@
           "lane": "zero-token-mechanism",
           "package_sha": "1834e93084d103fc853379119612343a2b2f83347e311ad758f2ad037f5c6c83",
           "files": {
-            "SKILL.md": "38482e844475ac22a161e19fc2841d2aa73770c6b07b82dc26bd0cdb92c7f3bd",
             "references/known-failures.md": "fa595164adf25da421eb54a9615e53cde6d7232833820e69f85ed891a179e74c",
             "scripts/console_add_redirect.py": "96776d8d1ea26e54277327cdd60c4bedf1bcaa555de823e22e1ffaf40b5841e0",
             "scripts/control_redirect_uri.py": "bb3e971f9a236203154d5064acbb66da4c993a115e8b55d9da5affdbf9606e2c",
@@ -894,7 +890,8 @@
             "scripts/probe_redirect_uri.py": "f2e2a892e5de7e7e39bdffe6efccb9e824211262f276c50e2686d919a1734610",
             "scripts/redirect_uri_fix_handoff.md": "eebde5add450a312fe295a4fb20ca7a8aba3e1a0aa1a3c395b558e79e55fe342",
             "scripts/redirect_uri_state.json": "5aee1a8811232bfd0c64b74b89c6de0623bb2e2a7302a10660095627d8a12cd4",
-            "scripts/test_redirect_uri.py": "d37e8d3cbd3d5888aca64db7a26fe92b66ec993963c68bdaad739fa8754c2887"
+            "scripts/test_redirect_uri.py": "d37e8d3cbd3d5888aca64db7a26fe92b66ec993963c68bdaad739fa8754c2887",
+            "SKILL.md": "38482e844475ac22a161e19fc2841d2aa73770c6b07b82dc26bd0cdb92c7f3bd"
           }
         },
         {
@@ -914,8 +911,8 @@
           "lane": "zero-token-mechanism",
           "package_sha": "993fb767e37d72273043ac0d3e7672a7c697edfd13802dd1f691351e9256eea1",
           "files": {
-            "SKILL.md": "193c0085e9bc8c4f00f06fe906cad32b13abdd28cb731ebbbc1081d817f37d7f",
-            "references/fleet-metadata.md": "d0247742625fe2d7690778aee529b1f6fb5b030fddee8e95fa0bae1af2d160f2"
+            "references/fleet-metadata.md": "d0247742625fe2d7690778aee529b1f6fb5b030fddee8e95fa0bae1af2d160f2",
+            "SKILL.md": "193c0085e9bc8c4f00f06fe906cad32b13abdd28cb731ebbbc1081d817f37d7f"
           }
         },
         {
@@ -935,9 +932,9 @@
           "lane": "zero-token-mechanism",
           "package_sha": "149dcff2d82dbdd8b317df8c0528e632023576997d5e7db0b66c3ec25273e97c",
           "files": {
-            "SKILL.md": "83a50dd704e4ff4c7b2653272d1fad01da9650f6b4b7498e53e670ce5ce43f83",
             "oauth-verify-ledger.md": "6fde816caf1de47c36abc4b1ac732e29f128fa65479050912157d576413fca1b",
-            "reference.md": "0f890af0f5e9acb38e12f6dcf6ebaaa5be868ce0cda1e0c1b099a044d093a9d6"
+            "reference.md": "0f890af0f5e9acb38e12f6dcf6ebaaa5be868ce0cda1e0c1b099a044d093a9d6",
+            "SKILL.md": "83a50dd704e4ff4c7b2653272d1fad01da9650f6b4b7498e53e670ce5ce43f83"
           }
         },
         {
@@ -947,8 +944,8 @@
           "lane": "zero-token-mechanism",
           "package_sha": "b9cd2f38b064d3c78b969e7d379a21793a3e31963d6242c05b1e202328b97022",
           "files": {
-            "SKILL.md": "0f7a04d70803d4e697d099e771af6f3811a3b88c8309b2899fec6bdd1c005a41",
-            "reference.md": "33ba0add716d94504abf58f5c37f452f9c30b8da6e5059abe88ad6cb53bf87bc"
+            "reference.md": "33ba0add716d94504abf58f5c37f452f9c30b8da6e5059abe88ad6cb53bf87bc",
+            "SKILL.md": "0f7a04d70803d4e697d099e771af6f3811a3b88c8309b2899fec6bdd1c005a41"
           }
         },
         {
@@ -971,8 +968,9 @@
             "SKILL.md": "955ff985c853f040090a42d8a4693c1e9fc489ecd1fefebc91e2e069654b4886"
           }
         }
-      ]
+      ],
+      "manifest_sha": "7d2e0b6681223317"
     }
   },
-  "union_sha": "2f78efb049001c49"
+  "union_sha": "03c0c0bcc4df0fd2"
 }

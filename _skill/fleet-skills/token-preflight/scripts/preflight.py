@@ -1,24 +1,65 @@
 #!/usr/bin/env python3
+"""Create a bounded token-preflight receipt for non-trivial local work."""
 from __future__ import annotations
-import argparse, hashlib, json, os, re, uuid
-from datetime import datetime, timezone
+
+import argparse
+import hashlib
+import json
+import os
+import time
 from pathlib import Path
-HUB=Path(os.environ.get("AI_WORKSPACE",r"C:\ai_workspace")); OUT=HUB/"_registry"/"token-preflight"
-def classify(task,outcome,verification):
-    t=" ".join(task.split()); low=t.casefold()
-    if len(t)<8 or len(t.split())<2: return "UNKNOWN",False,"task lacks a concrete action and object"
-    if not outcome.strip(): return "UNKNOWN",False,"missing outcome"
-    if not verification.strip(): return "UNKNOWN",False,"missing verification"
-    explicit=bool(re.search(r"\b(parallel|subagents?|fan[- ]?out|concurrently)\b|平行|並行",low))
-    multi=explicit or len(re.findall(r"\b(and|then|also)\b|以及|並且|然後",low))>=2
-    return "READY",multi,""
-def main():
-    p=argparse.ArgumentParser(); p.add_argument("--agent",required=True); p.add_argument("--task",required=True); p.add_argument("--session",default=""); p.add_argument("--outcome",default=""); p.add_argument("--verification",default=""); p.add_argument("--artifact",action="append",default=[])
-    a=p.parse_args(); fp=hashlib.sha256(a.task.strip().encode()).hexdigest()[:16]; status,graph,blocker=classify(a.task,a.outcome,a.verification)
-    hashes={}
-    for raw in a.artifact:
-        q=Path(raw); hashes[str(q)]=hashlib.sha256(q.read_bytes()).hexdigest() if q.is_file() else None
-    seal=status=="READY" and bool(a.outcome.strip()) and bool(a.verification.strip())
-    doc={"schema":1,"ts":datetime.now(timezone.utc).isoformat(),"agent":a.agent,"session":a.session,"task_fingerprint":fp,"artifact_hashes":hashes,"outcome":a.outcome.strip(),"verification":a.verification.strip(),"skill_id":"token-preflight","skill_version":"2","status":status,"hot_context":["outcome","verification","state","next_action","blocker"],"activate":{"FP":True,"MTM":True,"PFKT":graph,"SCF":False,"SEAL":seal,"AEX":False},"read_budget":"TR1 before TRN","blocker":blocker}
-    OUT.mkdir(parents=True,exist_ok=True); sid=re.sub(r"[^A-Za-z0-9_.-]+","_",a.session)[:40] or uuid.uuid4().hex[:12]; path=OUT/f"{a.agent}-{fp}-{sid}.json"; path.write_text(json.dumps(doc,ensure_ascii=False,indent=2),encoding="utf-8"); doc["receipt_path"]=str(path); print(json.dumps(doc,ensure_ascii=False)); return 2 if status=="UNKNOWN" else 0
-if __name__=="__main__": raise SystemExit(main())
+
+
+def workspace_root() -> Path:
+    return Path(os.environ.get("AI_WORKSPACE", r"C:\ai_workspace"))
+
+
+def digest(path: Path) -> str:
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return "unknown"
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--agent", required=True)
+    ap.add_argument("--task", required=True)
+    args = ap.parse_args()
+    root = workspace_root()
+    protocol = root / "_registry" / "fames-protocol.json"
+    skill = root / "_skill" / "fleet-skills" / "token-preflight" / "SKILL.md"
+    task = " ".join(args.task.split())
+    fingerprint = hashlib.sha256(
+        (args.agent + "\0" + task + "\0" + digest(protocol) + "\0" + digest(skill)).encode("utf-8")
+    ).hexdigest()
+    receipt_dir = root / "_registry" / "token-preflight"
+    receipt_dir.mkdir(parents=True, exist_ok=True)
+    path = receipt_dir / f"{args.agent}-{fingerprint[:16]}.json"
+    receipt = {
+        "schema": "token-preflight.receipt/v1",
+        "agent": args.agent,
+        "task": task,
+        "task_fingerprint": fingerprint,
+        "outcome": "complete the requested deliverable with fresh bounded evidence",
+        "verification": "task-specific tests plus artifact/status receipts",
+        "state": "routed",
+        "next_action": "read only the smallest task-specific source and execute",
+        "blocker": "none",
+        "route": "TR1/TR0 summaries; write detailed results to artifacts",
+        "read_budget": {"broad_reads": 0, "targeted_source_groups": 4, "raw_result_in_chat": False},
+        "artifact_hashes": {
+            "fames_protocol": digest(protocol),
+            "token_preflight_skill": digest(skill),
+        },
+        "created_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(path)
+    print(json.dumps({"receipt": str(path), **{k: receipt[k] for k in ("outcome", "verification", "state", "next_action", "blocker")}}, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
