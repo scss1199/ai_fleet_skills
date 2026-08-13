@@ -139,7 +139,6 @@
     ]
   },
   "canonical_skill": "fames",
-  "validator": "_skill/engines/validate-fames-stack.py",
   "distribution": {
     "mode": "content-addressed-github-bundle",
     "canonical_package": "_skill/fleet-skills/fames",

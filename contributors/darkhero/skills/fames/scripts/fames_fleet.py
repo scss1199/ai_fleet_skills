@@ -15,11 +15,6 @@ from datetime import datetime, timezone
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 SURFACE_REGISTRY = "_registry/agent-surfaces.json"
-# Cold-load fallback ONLY. The bundle is portable and may run outside a workspace
-# that carries the registry, so it needs a default -- but inside a workspace the
-# registry above is the SSOT and wins. Hard-coding the list here is what left the
-# retired Codex surface (.agents, removed 2026-08-13) in the install target set.
-SURFACES = (".claude", ".cursor")
 EXECUTION_ORDER = ["FP", "MTM", "SCF", "AEX", "SEAL"]
 PROTOCOL_SOURCES = {
     "FAMES": "_registry/fames-protocol.json",
@@ -117,7 +112,6 @@ def build_bundle(
     fames = _read_json(package_root / PROTOCOL_TARGETS["FAMES"])
     expected_files = [
         "SKILL.md",
-        "agents/openai.yaml",
         "scripts/fames_fleet.py",
         *PROTOCOL_TARGETS.values(),
     ]
@@ -367,13 +361,13 @@ def _surfaces(workspace: Path) -> tuple[str, ...]:
     try:
         data = _read_json(workspace / SURFACE_REGISTRY)
     except (OSError, json.JSONDecodeError):
-        return SURFACES
+        return ()
     names = tuple(dict.fromkeys(
         (row.get("path") or [None])[0]
         for row in (data.get("surfaces") or [])
         if (row.get("path") or [None])[0]
     ))
-    return names or SURFACES
+    return names
 
 
 def _install_targets(workspace: Path, host: str) -> list[Path]:
