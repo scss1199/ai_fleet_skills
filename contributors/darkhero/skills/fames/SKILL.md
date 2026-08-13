@@ -40,3 +40,7 @@ FAMES broadens completeness only and does not expand user authority. It never au
 ## Fleet generation rule
 
 Treat `bundle-manifest.json.package_sha` as the FAMES generation identity. A machine has FAMES only when its installed package verifies and its GitHub contributor manifest reports that exact `package_sha`. A missing contributor receipt, stale manifest, hash mismatch, or unreadable bundled protocol is `UNKNOWN`; never infer convergence from a matching folder name.
+
+## Minimal neutral architecture
+
+Keep one provider-neutral canonical skill. Put deterministic work in one reusable script, keep provider discovery paths as data-driven junctions, and add an adapter only when a runtime boundary truly differs. A file or process must have a verified caller or contract role; otherwise merge or remove it. Minimize, in order: physical files, executable code, execution steps, then steady-state resource use.

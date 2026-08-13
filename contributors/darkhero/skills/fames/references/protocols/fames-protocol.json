@@ -139,6 +139,13 @@
     ]
   },
   "canonical_skill": "fames",
+  "architecture_standard": {
+    "provider_neutral": true,
+    "single_canonical_skill": true,
+    "provider_surfaces": "data-driven junctions only",
+    "retention_rule": "Every file and process requires a verified caller or contract role; otherwise merge or remove it.",
+    "minimize_order": ["physical_files", "executable_code", "execution_steps", "steady_state_resources"]
+  },
   "distribution": {
     "mode": "content-addressed-github-bundle",
     "canonical_package": "_skill/fleet-skills/fames",

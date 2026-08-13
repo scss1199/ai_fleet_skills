@@ -19,8 +19,8 @@
   },
   "source_git_commit": null,
   "files": {
-    "SKILL.md": "3d28d8651a10d576634464ba2c887f512916a2478a149969d8dececb01e79d37",
-    "references/protocols/fames-protocol.json": "8ac2c72d69242e8c11e6413690a6523889e31feb6df4f805b55a98d640c22b08",
+    "SKILL.md": "8e32bbf5b95b06f496065700eea77ca925a57efdbccc42763a459599e0061fc0",
+    "references/protocols/fames-protocol.json": "71853ea0a2129e00915d04d07b77e02d4dccf556f669bf7abe29edf233bbf00f",
     "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
     "references/protocols/goal-vector-protocol.json": "204f845523bb75294895a384d14019eef583400323b1a5d6472ead778413e45a",
     "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
@@ -28,5 +28,5 @@
     "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
     "scripts/fames_fleet.py": "26878dcaefdbc7f6e1d99d48095891af21808583df652f41489f05204c992e58"
   },
-  "package_sha": "7f1e118d4567ec6a15415a4edf9bedba91a608b365e664647d274dc14022d61d"
+  "package_sha": "5074221396a29d576a40dfaa32ce36c358098aec0ce7bdf3b77bc32fcd5b4034"
 }
