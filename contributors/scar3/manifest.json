@@ -5,8 +5,8 @@
   "role": "downstream_curator",
   "machine": "scar3",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-13T06:03:28Z",
-  "manifest_sha": "4f9b9a82cf5202ea",
+  "generated_at": "2026-08-13T14:03:11Z",
+  "manifest_sha": "4bb5533bcd55eedb",
   "required": [
     "fames",
     "aex-agent-evolution",
@@ -110,10 +110,10 @@
       "sha": "c1334c46e9c5580c",
       "required": true,
       "lane": null,
-      "package_sha": "90ac8168dac05cefd5b7f93cb4e72cba27a07c70c83994ba36b450f26564965c",
+      "package_sha": "e03945c741dd52f6fb806575c138781354817cb43cafa9645f2add2173cba709",
       "files": {
         "SKILL.md": "3d28d8651a10d576634464ba2c887f512916a2478a149969d8dececb01e79d37",
-        "bundle-manifest.json": "2a38b8fc506070fa04c15d6636377d73b77d83df6d7150674a58f4b6c2db7668",
+        "bundle-manifest.json": "90d959f6140bcd93f9ddab793771cb01d9044fbd8446ae795211b214db953b26",
         "agents/openai.yaml": "0e2fc04d4ebbb939f4e51f0c45964134c830972017188a3bf0be385cd219eac1",
         "references/protocols/fames-protocol.json": "dd8ed2fe44aeda13ad2cf12b789e040bf2dd586efe7514dd50835d0a876c6192",
         "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
@@ -121,7 +121,7 @@
         "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
         "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
         "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-        "scripts/fames_fleet.py": "dbd9b1fd53c394d526de08e4b69808d8d6abcf64852f13bf14fa1ad496a886df"
+        "scripts/fames_fleet.py": "0d2a3fca1c96b2402f246e7ba0661a41c407f7aeada580fc24dc8da6cbfcbd93"
       }
     },
     {
