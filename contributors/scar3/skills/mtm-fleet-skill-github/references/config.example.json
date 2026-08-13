@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "repo": "https://github.com/scss1199/ai_fleet_skills.git",
+  "branch": "main",
+  "checkout": "C:\\ai_workspace\\_skill\\ai_fleet_skills",
+  "host": "darkhero",
+  "seat": "ai_darkhero",
+  "local_contributor": "darkhero",
+  "peers": [
+    "scar3",
+    "darkhero",
+    "altos"
+  ],
+  "policy": {
+    "transport": "github",
+    "merge": "add-or-update-managed",
+    "local_divergence": "preserve-and-report",
+    "missing_peer": "unknown-not-fabricated",
+    "scheduler": "hubclock-only"
+  }
+}

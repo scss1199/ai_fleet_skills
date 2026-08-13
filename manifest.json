@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-13T17:54:52Z",
+  "generated_at": "2026-08-13T18:02:27Z",
   "contributors": [
     "darkhero",
     "scar3"
   ],
   "manifests": {
     "darkhero": "e72d8bc0a4ccccb3",
-    "scar3": "e01aec03f5b1b12d"
+    "scar3": "74f8d6647cc24592"
   },
   "detail": {
     "darkhero": {
@@ -514,7 +514,7 @@
         "ztm-fleet-intelligence",
         "token-preflight"
       ],
-      "generated_at": "2026-08-13T17:54:52Z",
+      "generated_at": "2026-08-13T18:02:27Z",
       "skill_count": 41,
       "skills": [
         {
@@ -704,12 +704,14 @@
         },
         {
           "name": "mtm-fleet-skill-github",
-          "sha": "2a37fc1df5cba610",
+          "sha": "80f3de5f71a73783",
           "required": false,
           "lane": "zero-token-mechanism",
-          "package_sha": "87da8f1d2d8ec680a1623e4fcfdac4c2bb82d467187d816df57f6041d5dc1061",
+          "package_sha": "bafdb3ae56961960cb99c9303557a45ee867cdc9b5db6c85219a3a032684d3c1",
           "files": {
-            "SKILL.md": "2a37fc1df5cba61094a119fea73740a71f3df7e54d703ba74454749369e337e5"
+            "references/config.example.json": "0cb692744258680bd0de8b1034d1ad62031515a9d1e5c2c27922502de4acfed9",
+            "scripts/receiver.py": "0be72e55d4c796cfad90d761e846ab77338ad37ce530500398cca47a3eb99e3d",
+            "SKILL.md": "d7ca08cdd79e4d8d474d2887a1b140ab9d55b82a1559ef0bda5bd4efec9d1eb9"
           }
         },
         {
@@ -971,8 +973,8 @@
           }
         }
       ],
-      "manifest_sha": "e01aec03f5b1b12d"
+      "manifest_sha": "74f8d6647cc24592"
     }
   },
-  "union_sha": "2ea630af3652b9a6"
+  "union_sha": "9da11f1ea5dad1ca"
 }
