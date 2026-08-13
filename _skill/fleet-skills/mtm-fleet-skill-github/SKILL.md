@@ -1,9 +1,9 @@
 ---
 name: mtm-fleet-skill-github
 description: >-
-  Verified fleet-skill and FAMES federation through the ai_fleet_skills GitHub
-  carrier for scar3, darkhero, and altos. Use for content-addressed pull,
-  conflict-preserving install, contributor publication, or parity receipts.
+  MTM fleet skill federation via shared GitHub repo ai_fleet_skills.
+  contributors/darkhero = darkhero uploads; contributors/scar3 = scar3 uploads.
+  HubClock tick for dynamic cross-machine skill sync.
 metadata:
   fleet:
     lane: zero-token-mechanism
@@ -11,69 +11,42 @@ metadata:
     scheduler: hubclock-only
     token_budget: zero
     engine: _skill/engines/mtm-fleet-skill-github.py
-    portable_engine: scripts/receiver.py
     registry: _registry/fleet-skill-github.json
 ladder_ref: _registry/fleet-token-ladder.json
 parent_skill: aex-agent-evolution
 ---
 
-# Verified GitHub fleet-skill federation
+# mtm-fleet-skill-github — 共享 skill repo（雙機分目錄）
 
-GitHub is the transport and contributor evidence carrier. The local
-`_skill/fleet-skills/` directory remains each host's canonical runtime catalog.
+> **Repo:** `github.com/scss1199/ai_fleet_skills`  
+> **SSOT:** `_registry/fleet-skill-github.json`
 
-## Carrier layout
+## 目錄（區分上傳來源）
 
-```text
-ai_fleet_skills/
-  manifest.json
-  _skill/fleet-skills/
+```
+_skill/ai_fleet_skills/
+  manifest.json              # union（darkhero + scar3）
   contributors/
-    scar3/manifest.json
-    darkhero/manifest.json
-    altos/manifest.json       # UNKNOWN until the host publishes it
+    darkhero/skills/...      # darkhero 機 · ai_darkhero 策展
+    scar3/skills/...         # scar3 機 · ai_scar3 策展
 ```
 
-Every installed package must match a contributor's declared per-file hashes.
-A missing contributor receipt remains UNKNOWN. It is never synthesized.
+Commit 訊息：`chore(skills/darkhero): ...` 或 `chore(skills/scar3): ...`
 
-## Host receiver
-
-The workspace-installed engine is preferred:
+## darkhero
 
 ```powershell
-python %AI_WORKSPACE%\_skill\engines\mtm-fleet-skill-github.py sync
+python %AI_WORKSPACE%\_skill\engines\mtm-fleet-skill-github.py push --node ai_darkhero
 ```
 
-A host without the workspace engine can bootstrap from this portable package:
+## scar3
 
 ```powershell
-Copy-Item references\config.example.json C:\ai_workspace\_registry\fleet-skill-github.json
-python scripts\receiver.py sync --config C:\ai_workspace\_registry\fleet-skill-github.json
+python %AI_WORKSPACE%\_skill\engines\mtm-fleet-skill-github.py sync --node ai_scar3
 ```
 
-Set `host`, `seat`, and `local_contributor` for the receiving machine before
-the first run. The file contains no credentials.
+pull 讀 `contributors/darkhero/`；push 只寫 `contributors/scar3/`。
 
-## Safety contract
+## 本機 SSOT
 
-- Validate root-to-contributor manifest references and every declared file hash.
-- Normalize text line endings before hashing; hash binary files as raw bytes.
-- Add missing packages and update only packages recorded as receiver-managed.
-- Preserve local modifications. Add remote-only portability files without
-  overwriting locally changed files.
-- Archive an invalid package without `SKILL.md` before repairing it.
-- Use atomic swaps, singleton/stale-lock recovery, bounded subprocess timeouts,
-  and `CREATE_NO_WINDOW` on Windows.
-- Background receivers only pull. `publish` is an explicit curator action.
-- Schedule recurring execution only through HubClock and `pythonw`.
-
-## Publication
-
-```powershell
-python %AI_WORKSPACE%\_skill\engines\mtm-fleet-skill-github.py publish
-```
-
-Publication writes only the configured contributor namespace and regenerates
-the content-addressed union. Commit and push the carrier after verification.
-
+策展仍在本機 `_skill/fleet-skills/`；GitHub 只做同步與跨機學習。
