@@ -1,0 +1,193 @@
+{
+  "schema": 1,
+  "id": "FAMES",
+  "version": "1.4.0",
+  "updated": "2026-08-14",
+  "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
+  "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
+  "legacy_umbrella_aliases": [
+    "AEX Stack"
+  ],
+  "narrow_terms": {
+    "AEX": "Cross-cycle adaptation only; AEX remains the narrow evolution loop.",
+    "AEX Loop": "The concrete EXEC-INSTR-DISTILL-PROMOTE-OPEN-GUARD evolution cycle."
+  },
+  "letters": {
+    "F": {
+      "concept": "FP",
+      "meaning": "First-principles"
+    },
+    "A": {
+      "concept": "AEX",
+      "meaning": "Adaptive evolution"
+    },
+    "M": {
+      "concept": "MTM",
+      "meaning": "Minimal-token mechanism"
+    },
+    "E": {
+      "concept": "SEAL",
+      "meaning": "Evidence-aligned completion"
+    },
+    "S": {
+      "concept": "SCF",
+      "meaning": "Self-consistent residual"
+    }
+  },
+  "execution_order": [
+    "FP",
+    "MTM",
+    "SCF",
+    "AEX",
+    "SEAL"
+  ],
+  "canonical_protocols": {
+    "FP": "_registry/goal-vector-protocol.json",
+    "MTM": "_registry/mtm-protocol.json",
+    "SCF": "_registry/scf-protocol.json",
+    "AEX": "_registry/fleet-token-ladder.json",
+    "SEAL": "_registry/seal-protocol.json"
+  },
+  "trigger": {
+    "tokens": [
+      "FAMES",
+      "$fames"
+    ],
+    "standalone_means": "Execute and account for the complete five-phase contract.",
+    "does_not_expand_authority": true,
+    "required_phase_states": [
+      "PASS",
+      "NOT_APPLICABLE",
+      "UNKNOWN",
+      "FAIL"
+    ],
+    "not_applicable_rule": "Allowed only when the phase activation predicate is demonstrably false; cite the evidence.",
+    "unknown_rule": "Missing, stale, mismatched, exceptional, or unverifiable evidence is UNKNOWN and fails closed."
+  },
+  "phase_contract": {
+    "FP": {
+      "owns": [
+        "Outcome",
+        "Verification",
+        "Constraints",
+        "semantic_goal_hash"
+      ],
+      "must_not_own": [
+        "execution_loop"
+      ]
+    },
+    "MTM": {
+      "owns": [
+        "bounded_route",
+        "read_budget",
+        "receipt_reuse"
+      ],
+      "must_not_own": [
+        "completion_truth"
+      ]
+    },
+    "SCF": {
+      "activation": "A verified result exists for the current goal identity.",
+      "owns": [
+        "goal_result_residual"
+      ],
+      "must_not_own": [
+        "evidence_collection"
+      ]
+    },
+    "AEX": {
+      "activation": "A verified comparable cross-cycle residual remains.",
+      "owns": [
+        "cross_cycle_adaptation"
+      ],
+      "must_not_own": [
+        "one_shot_execution"
+      ]
+    },
+    "SEAL": {
+      "owns": [
+        "completion_predicate",
+        "evidence_freshness",
+        "identity_alignment",
+        "graph_closure"
+      ],
+      "must_not_own": [
+        "another_evolution_loop"
+      ]
+    }
+  },
+  "completion_predicate": {
+    "goal_hash_matches": true,
+    "required_evidence_is_fresh_and_passing": true,
+    "active_work_graph_is_closed": true,
+    "all_phase_states_are_terminal": true,
+    "accepted_terminal_states": [
+      "PASS",
+      "NOT_APPLICABLE"
+    ]
+  },
+  "freshness": {
+    "rule": "FAMES is resolved at run time from disk, never from the contract text already sitting in a thread's context.",
+    "generation_stamp": "SKILL.md carries a FAMES-GEN line; the runtime command reports the on-disk value.",
+    "runtime_command": "python _skill/fleet-skills/fames/scripts/fames_fleet.py status --json --workspace %AI_WORKSPACE%",
+    "stale_context_rule": "A FAMES-GEN in context that differs from the on-disk skill_gen means the held copy is stale: re-read SKILL.md and the bundled protocols from disk, and treat any phase already judged with the stale copy as UNKNOWN.",
+    "parity_rule": "Bundled protocols must match the registry SSOT by version and by line-ending-normalized content; drift is UNKNOWN and fails closed. A machine with no registry is a legitimate cold load and reports NOT_APPLICABLE.",
+    "parity_engine": "_skill/fleet-skills/fames/scripts/fames_fleet.py",
+    "applies_to": [
+      "threads opened before the contract changed",
+      "threads opened after the contract changed"
+    ]
+  },
+  "canonical_skill": "fames",
+  "architecture_standard": {
+    "provider_neutral": true,
+    "single_canonical_skill": true,
+    "provider_surfaces": "data-driven junctions only",
+    "retention_rule": "Every file and process requires a verified caller or contract role; otherwise merge or remove it.",
+    "minimize_order": ["physical_files", "executable_code", "execution_steps", "steady_state_resources"]
+  },
+  "fleet_topology": {
+    "authority": {
+      "node": "ai_darkhero",
+      "contributor": "darkhero",
+      "owns": ["canonical_generation", "promotion_gate"]
+    },
+    "followers": [
+      {"node": "ai_scar3", "identity": "runtime_receipt"},
+      {"node": "ai_altos", "identity": "runtime_receipt"}
+    ],
+    "follow_command": "python scripts/fames_fleet.py follow --workspace <root> --host <seat> --json",
+    "transition": ["fetch_manifest", "verify_files", "verify_package", "atomic_activate", "write_receipt"],
+    "convergence": {
+      "online_bootstrapped": "one successful invocation",
+      "offline_or_unbootstrapped": "UNKNOWN until first successful invocation",
+      "proof": "local receipt and GitHub contributor manifest package_sha equal authority package_sha",
+      "natural_events": {
+        "boot": "HubClock autostart makes fleet-skill-pulse eligible at the next 15 minute wall-clock boundary",
+        "github_change": "authority manifest_sha or package_sha delta triggers verified atomic activation",
+        "local_skill_change": "content fingerprint delta publishes the node contributor manifest",
+        "network_recovery": "the next HubClock boundary retries after an unreachable GitHub event"
+      },
+      "online_lag_bound": "15m after HubClock is healthy and GitHub is reachable",
+      "model_token_calls": 0,
+      "steady_state_processes_added": 0
+    },
+    "peer_learning": {
+      "followers_publish": ["evidence", "candidate_improvement"],
+      "authority_promotes_after": ["FP", "SCF", "SEAL"],
+      "followers_must_not": ["overwrite_canonical_generation"]
+    }
+  },
+  "distribution": {
+    "mode": "content-addressed-github-bundle",
+    "canonical_package": "_skill/fleet-skills/fames",
+    "bundle_manifest": "_skill/fleet-skills/fames/bundle-manifest.json",
+    "bundled_protocol": "_skill/fleet-skills/fames/references/protocols/fames-protocol.json",
+    "package_verifier": "_skill/fleet-skills/fames/scripts/fames_fleet.py",
+    "carrier_repo": "https://github.com/scss1199/ai_fleet_skills.git",
+    "host_receipt": "contributors/<host>/manifest.json#skills[name=fames].package_sha",
+    "unknown_rule": "A missing receipt, stale carrier manifest, unreadable bundle, or package hash mismatch is UNKNOWN and fails closed.",
+    "event_runner": "existing HubClock fleet-skill-pulse rider -> fleet-skill-sync-tick.py -> mtm-fleet-skill-github.py tick",
+    "no_change_cost": "one authority manifest fetch for followers; package files are not fetched when verified package_sha already matches"
+  }
+}

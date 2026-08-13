@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "id": "FAMES",
+  "version": "1.4.0",
+  "execution_order": [
+    "FP",
+    "MTM",
+    "SCF",
+    "AEX",
+    "SEAL"
+  ],
+  "source_files": {
+    "references/protocols/fames-protocol.json": "_registry/fames-protocol.json",
+    "references/protocols/goal-vector-protocol.json": "_registry/goal-vector-protocol.json",
+    "references/protocols/mtm-protocol.json": "_registry/mtm-protocol.json",
+    "references/protocols/scf-protocol.json": "_registry/scf-protocol.json",
+    "references/protocols/fleet-token-ladder.json": "_registry/fleet-token-ladder.json",
+    "references/protocols/seal-protocol.json": "_registry/seal-protocol.json"
+  },
+  "source_git_commit": null,
+  "files": {
+    "SKILL.md": "1495cf943c28dff2a136d5bf1af86a23b87f111a827e75f12681ddf29e5d1669",
+    "references/protocols/fames-protocol.json": "2d76fff4bf392cccdbe491f6dbc64a7962e9688f4d1171c1bd6d3e194c1cd149",
+    "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
+    "references/protocols/goal-vector-protocol.json": "204f845523bb75294895a384d14019eef583400323b1a5d6472ead778413e45a",
+    "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
+    "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
+    "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
+    "scripts/fames_fleet.py": "fca9be027b824e87ac3e4ef89aa3c40ee7258cf9b95e60adbf9f3265ee2afcd8"
+  },
+  "package_sha": "9c0856b84e1a6cdd1fff3c45e2599238ecae711f10b8fba7dcbb481a94c5270f"
+}
