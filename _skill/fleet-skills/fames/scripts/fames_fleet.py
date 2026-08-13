@@ -10,11 +10,13 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.request
+import uuid
 from datetime import datetime, timezone
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
-SURFACES = (".agents", ".claude", ".cursor")
+SURFACE_REGISTRY = "_registry/agent-surfaces.json"
 EXECUTION_ORDER = ["FP", "MTM", "SCF", "AEX", "SEAL"]
 PROTOCOL_SOURCES = {
     "FAMES": "_registry/fames-protocol.json",
@@ -30,6 +32,7 @@ PROTOCOL_TARGETS = {
 }
 MANIFEST_NAME = "bundle-manifest.json"
 GENERATION_PREFIX = "FAMES-GEN: "
+DEFAULT_AUTHORITY = "https://raw.githubusercontent.com/scss1199/ai_fleet_skills/main/contributors/darkhero"
 TEXT_SUFFIXES = {
     ".json",
     ".md",
@@ -112,7 +115,6 @@ def build_bundle(
     fames = _read_json(package_root / PROTOCOL_TARGETS["FAMES"])
     expected_files = [
         "SKILL.md",
-        "agents/openai.yaml",
         "scripts/fames_fleet.py",
         *PROTOCOL_TARGETS.values(),
     ]
@@ -321,13 +323,24 @@ def _copy_package(source: Path, destination: Path) -> None:
     destination = destination.resolve()
     if source == destination:
         return
-    destination.mkdir(parents=True, exist_ok=True)
-    for item in source.rglob("*"):
-        if not item.is_file() or "__pycache__" in item.parts or item.suffix in {".pyc", ".pyo"}:
-            continue
-        target = destination / item.relative_to(source)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(item, target)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temp = destination.parent / f".{destination.name}.fames-{uuid.uuid4().hex}"
+    backup = destination.parent / f".{destination.name}.previous-{uuid.uuid4().hex}"
+    shutil.copytree(source, temp, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"))
+    try:
+        if destination.exists():
+            destination.replace(backup)
+        temp.replace(destination)
+        if backup.exists():
+            shutil.rmtree(backup)
+    except Exception:
+        if destination.exists() and backup.exists():
+            shutil.rmtree(destination)
+        if backup.exists():
+            backup.replace(destination)
+        if temp.exists():
+            shutil.rmtree(temp)
+        raise
 
 
 def _seat_root(workspace: Path, host: str) -> Path | None:
@@ -341,12 +354,43 @@ def _seat_root(workspace: Path, host: str) -> Path | None:
     return None
 
 
+def _receipt_key(workspace: Path, host: str) -> str:
+    """Receipt filename key = the seat directory the host actually resolves to.
+
+    _seat_root normalises `darkhero` -> `ai_darkhero`, so both spellings install to
+    the SAME targets; keying the receipt on the raw --host wrote two files for one
+    machine and left whichever spelling stopped being used frozen at its old
+    version, claiming verified: true forever.
+    """
+    seat = _seat_root(workspace, host)
+    return seat.name if seat is not None else host
+
+
+def _surfaces(workspace: Path) -> tuple[tuple[str, ...], ...]:
+    """Active agent surfaces, from the fleet SSOT when it is reachable.
+
+    Returns only surfaces[] -- removed_surfaces[] is deliberately excluded, that is
+    the whole point of the registry carrying both.
+    """
+    try:
+        data = _read_json(workspace / SURFACE_REGISTRY)
+    except (OSError, json.JSONDecodeError):
+        return ()
+    paths = []
+    for row in data.get("surfaces") or []:
+        path = tuple(str(part) for part in (row.get("path") or []) if part)
+        if path and path not in paths:
+            paths.append(path)
+    return tuple(paths)
+
+
 def _install_targets(workspace: Path, host: str) -> list[Path]:
     roots = [workspace]
     seat = _seat_root(workspace, host)
     if seat is not None and seat not in roots:
         roots.append(seat)
-    return [root / surface / "skills" / "fames" for root in roots for surface in SURFACES]
+    surfaces = _surfaces(workspace)
+    return [root.joinpath(*surface, "fames") for root in roots for surface in surfaces]
 
 
 def install(workspace: Path, host: str, source: Path = PACKAGE_ROOT) -> dict:
@@ -355,24 +399,76 @@ def install(workspace: Path, host: str, source: Path = PACKAGE_ROOT) -> dict:
     source_check = verify_package(source)
     if not source_check["ok"]:
         return {"ok": False, "host": host, "errors": source_check["errors"]}
+    targets = _install_targets(workspace, host)
+    if not targets:
+        return {"ok": False, "host": host, "errors": ["agent surface registry missing or empty"]}
     canonical = workspace / "_skill" / "fleet-skills" / "fames"
     _copy_package(source, canonical)
-    targets = _install_targets(workspace, host)
     for target in targets:
         _copy_package(canonical, target)
     checks = [verify_package(target) for target in targets]
     errors = [error for check in checks for error in check.get("errors", [])]
+    key = _receipt_key(workspace, host)
     receipt = {
         "schema": 1,
-        "host": host,
+        "host": key,
         "installed_at": datetime.now(timezone.utc).isoformat(),
         "package_sha": source_check["package_sha"],
         "version": source_check["version"],
         "targets": [str(target) for target in targets],
         "verified": not errors,
     }
-    _write_json_atomic(workspace / "_registry" / "fames-fleet-receipts" / f"{host}.json", receipt)
+    if key != host:
+        receipt["host_requested"] = host
+    _write_json_atomic(workspace / "_registry" / "fames-fleet-receipts" / f"{key}.json", receipt)
     return {"ok": not errors, "receipt": receipt, "errors": errors}
+
+
+def _source_bytes(base: str, relative: str) -> bytes:
+    if base.startswith(("https://", "http://")):
+        with urllib.request.urlopen(f"{base.rstrip('/')}/{relative}", timeout=30) as response:
+            return response.read()
+    return (Path(base) / Path(relative)).read_bytes()
+
+
+def follow(workspace: Path, host: str, authority: str = DEFAULT_AUTHORITY) -> dict:
+    """Converge one follower to the authority's content-addressed FAMES generation."""
+    try:
+        manifest = json.loads(_source_bytes(authority, "manifest.json").decode("utf-8-sig"))
+        skill = next(row for row in manifest.get("skills", []) if row.get("name") == "fames")
+        declared = skill.get("files") or {}
+        if not declared:
+            raise ValueError("authority FAMES file manifest is empty")
+        with tempfile.TemporaryDirectory(prefix="fames-follow-") as temp_dir:
+            package = Path(temp_dir) / "fames"
+            for relative, expected in declared.items():
+                parts = Path(relative).parts
+                if Path(relative).is_absolute() or ".." in parts:
+                    raise ValueError(f"unsafe package path: {relative}")
+                target = package.joinpath(*parts)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(_source_bytes(authority, f"skills/fames/{relative}"))
+                if _sha256(target) != expected:
+                    raise ValueError(f"authority hash mismatch: {relative}")
+            package_check = verify_package(package)
+            if not package_check["ok"] or package_check.get("package_sha") != skill.get("package_sha"):
+                raise ValueError("authority package verification failed")
+            result = install(workspace, host, package)
+        if not result.get("ok"):
+            return result
+        receipt = result["receipt"]
+        receipt.update({
+            "authority": "ai_darkhero",
+            "authority_manifest_sha": manifest.get("manifest_sha"),
+            "source": authority,
+        })
+        _write_json_atomic(
+            workspace.resolve() / "_registry" / "fames-fleet-receipts" / f"{receipt['host']}.json",
+            receipt,
+        )
+        return {"ok": True, "package_sha": receipt["package_sha"], "receipt": receipt, "errors": []}
+    except (OSError, ValueError, StopIteration, json.JSONDecodeError) as exc:
+        return {"ok": False, "host": host, "errors": [str(exc)]}
 
 
 def verify_host(workspace: Path, host: str) -> dict:
@@ -389,7 +485,7 @@ def verify_host(workspace: Path, host: str) -> dict:
             errors.append(f"installed generation mismatch: {target}")
     return {
         "ok": canonical.get("ok", False) and not errors and bool(checks),
-        "host": host,
+        "host": _receipt_key(workspace, host),
         "package_sha": canonical.get("package_sha"),
         "surface_count": len(checks),
         "checks": checks,
@@ -457,7 +553,7 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "parity", "status", "install", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "install", "follow", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
@@ -465,10 +561,12 @@ def main() -> int:
             command.add_argument("--skill-dir", type=Path, default=PACKAGE_ROOT)
         if name == "build-bundle":
             command.add_argument("--protocol-git-ref")
-        if name in {"install", "verify-host"}:
+        if name in {"install", "follow", "verify-host"}:
             command.add_argument("--host", required=True)
         if name == "install":
             command.add_argument("--source", type=Path, default=PACKAGE_ROOT)
+        if name == "follow":
+            command.add_argument("--authority", default=DEFAULT_AUTHORITY)
         if name == "verify-fleet":
             command.add_argument("--hosts", nargs="+", required=True)
     args = parser.parse_args()
@@ -485,6 +583,8 @@ def main() -> int:
         return _emit(status(args.workspace, args.skill_dir), args.json)
     if args.command == "install":
         return _emit(install(args.workspace, args.host, args.source), args.json)
+    if args.command == "follow":
+        return _emit(follow(args.workspace, args.host, args.authority), args.json)
     if args.command == "verify-host":
         return _emit(verify_host(args.workspace, args.host), args.json)
     return _emit(verify_fleet(args.workspace, args.hosts), args.json)

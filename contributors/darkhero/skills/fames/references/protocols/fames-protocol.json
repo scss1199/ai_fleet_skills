@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.2.0",
-  "updated": "2026-08-12",
+  "version": "1.3.0",
+  "updated": "2026-08-14",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
   "legacy_umbrella_aliases": [
@@ -145,6 +145,29 @@
     "provider_surfaces": "data-driven junctions only",
     "retention_rule": "Every file and process requires a verified caller or contract role; otherwise merge or remove it.",
     "minimize_order": ["physical_files", "executable_code", "execution_steps", "steady_state_resources"]
+  },
+  "fleet_topology": {
+    "authority": {
+      "node": "ai_darkhero",
+      "contributor": "darkhero",
+      "owns": ["canonical_generation", "promotion_gate"]
+    },
+    "followers": [
+      {"node": "ai_scar3", "identity": "runtime_receipt"},
+      {"node": "ai_altos", "identity": "runtime_receipt"}
+    ],
+    "follow_command": "python scripts/fames_fleet.py follow --workspace <root> --host <seat> --json",
+    "transition": ["fetch_manifest", "verify_files", "verify_package", "atomic_activate", "write_receipt"],
+    "convergence": {
+      "online_bootstrapped": "one successful invocation",
+      "offline_or_unbootstrapped": "UNKNOWN until first successful invocation",
+      "proof": "local receipt package_sha equals authority package_sha"
+    },
+    "peer_learning": {
+      "followers_publish": ["evidence", "candidate_improvement"],
+      "authority_promotes_after": ["FP", "SCF", "SEAL"],
+      "followers_must_not": ["overwrite_canonical_generation"]
+    }
   },
   "distribution": {
     "mode": "content-addressed-github-bundle",
