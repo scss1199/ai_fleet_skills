@@ -14,7 +14,12 @@ from datetime import datetime, timezone
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
-SURFACES = (".agents", ".claude", ".cursor")
+SURFACE_REGISTRY = "_registry/agent-surfaces.json"
+# Cold-load fallback ONLY. The bundle is portable and may run outside a workspace
+# that carries the registry, so it needs a default -- but inside a workspace the
+# registry above is the SSOT and wins. Hard-coding the list here is what left the
+# retired Codex surface (.agents, removed 2026-08-13) in the install target set.
+SURFACES = (".claude", ".cursor")
 EXECUTION_ORDER = ["FP", "MTM", "SCF", "AEX", "SEAL"]
 PROTOCOL_SOURCES = {
     "FAMES": "_registry/fames-protocol.json",
@@ -341,12 +346,43 @@ def _seat_root(workspace: Path, host: str) -> Path | None:
     return None
 
 
+def _receipt_key(workspace: Path, host: str) -> str:
+    """Receipt filename key = the seat directory the host actually resolves to.
+
+    _seat_root normalises `darkhero` -> `ai_darkhero`, so both spellings install to
+    the SAME targets; keying the receipt on the raw --host wrote two files for one
+    machine and left whichever spelling stopped being used frozen at its old
+    version, claiming verified: true forever.
+    """
+    seat = _seat_root(workspace, host)
+    return seat.name if seat is not None else host
+
+
+def _surfaces(workspace: Path) -> tuple[str, ...]:
+    """Active agent surfaces, from the fleet SSOT when it is reachable.
+
+    Returns only surfaces[] -- removed_surfaces[] is deliberately excluded, that is
+    the whole point of the registry carrying both.
+    """
+    try:
+        data = _read_json(workspace / SURFACE_REGISTRY)
+    except (OSError, json.JSONDecodeError):
+        return SURFACES
+    names = tuple(dict.fromkeys(
+        (row.get("path") or [None])[0]
+        for row in (data.get("surfaces") or [])
+        if (row.get("path") or [None])[0]
+    ))
+    return names or SURFACES
+
+
 def _install_targets(workspace: Path, host: str) -> list[Path]:
     roots = [workspace]
     seat = _seat_root(workspace, host)
     if seat is not None and seat not in roots:
         roots.append(seat)
-    return [root / surface / "skills" / "fames" for root in roots for surface in SURFACES]
+    surfaces = _surfaces(workspace)
+    return [root / surface / "skills" / "fames" for root in roots for surface in surfaces]
 
 
 def install(workspace: Path, host: str, source: Path = PACKAGE_ROOT) -> dict:
@@ -362,16 +398,19 @@ def install(workspace: Path, host: str, source: Path = PACKAGE_ROOT) -> dict:
         _copy_package(canonical, target)
     checks = [verify_package(target) for target in targets]
     errors = [error for check in checks for error in check.get("errors", [])]
+    key = _receipt_key(workspace, host)
     receipt = {
         "schema": 1,
-        "host": host,
+        "host": key,
         "installed_at": datetime.now(timezone.utc).isoformat(),
         "package_sha": source_check["package_sha"],
         "version": source_check["version"],
         "targets": [str(target) for target in targets],
         "verified": not errors,
     }
-    _write_json_atomic(workspace / "_registry" / "fames-fleet-receipts" / f"{host}.json", receipt)
+    if key != host:
+        receipt["host_requested"] = host
+    _write_json_atomic(workspace / "_registry" / "fames-fleet-receipts" / f"{key}.json", receipt)
     return {"ok": not errors, "receipt": receipt, "errors": errors}
 
 
@@ -389,7 +428,7 @@ def verify_host(workspace: Path, host: str) -> dict:
             errors.append(f"installed generation mismatch: {target}")
     return {
         "ok": canonical.get("ok", False) and not errors and bool(checks),
-        "host": host,
+        "host": _receipt_key(workspace, host),
         "package_sha": canonical.get("package_sha"),
         "surface_count": len(checks),
         "checks": checks,

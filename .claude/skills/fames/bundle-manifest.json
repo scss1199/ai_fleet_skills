@@ -27,7 +27,7 @@
     "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
     "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
     "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-    "scripts/fames_fleet.py": "dbd9b1fd53c394d526de08e4b69808d8d6abcf64852f13bf14fa1ad496a886df"
+    "scripts/fames_fleet.py": "0d2a3fca1c96b2402f246e7ba0661a41c407f7aeada580fc24dc8da6cbfcbd93"
   },
-  "package_sha": "90ac8168dac05cefd5b7f93cb4e72cba27a07c70c83994ba36b450f26564965c"
+  "package_sha": "e03945c741dd52f6fb806575c138781354817cb43cafa9645f2add2173cba709"
 }
