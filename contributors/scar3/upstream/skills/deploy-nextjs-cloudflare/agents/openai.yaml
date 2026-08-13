@@ -1,4 +1,0 @@
-interface:
-  display_name: "Deploy Next.js to Cloudflare"
-  short_description: "MTM-safe Next.js deployment to Cloudflare Workers"
-  default_prompt: "Use $deploy-nextjs-cloudflare to deploy this Next.js project to Cloudflare Workers and verify its public URL."

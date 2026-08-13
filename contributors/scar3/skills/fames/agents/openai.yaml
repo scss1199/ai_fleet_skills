@@ -1,6 +1,0 @@
-interface:
-  display_name: "FAMES"
-  short_description: "Run the full verified five-phase contract"
-  default_prompt: "Use $fames to execute this task through FP, MTM, SCF, AEX, and SEAL with fail-closed evidence."
-policy:
-  allow_implicit_invocation: true

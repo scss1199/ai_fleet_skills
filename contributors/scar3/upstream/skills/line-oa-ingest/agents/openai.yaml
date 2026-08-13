@@ -1,4 +1,0 @@
-interface:
-  display_name: "LINE OA Ingest"
-  short_description: "Safely inspect and distill saved LINE OA events"
-  default_prompt: "Use $line-oa-ingest to inspect saved LINE OA group or 1:1 events and distill linked content without model-token acquisition."
