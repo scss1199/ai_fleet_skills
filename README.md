@@ -7,7 +7,8 @@ Fleet skill federation — **one GitHub repo**, per-machine contributor director
 | `contributors/darkhero/` | darkhero PC · `ai_darkhero` curator |
 | `contributors/scar3/` | scar3 PC · `ai_scar3` curator |
 
-Root `manifest.json` unions both contributor manifests.
+Each node writes only its own `contributors/<node>/` directory. Fleet receipts
+read the contributor manifests directly, avoiding a multi-writer root manifest.
 
 ## Commands
 
