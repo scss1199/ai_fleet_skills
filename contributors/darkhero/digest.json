@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-08-13T08:03:20",
+  "generated": "2026-08-13T12:03:26",
   "required": [
     "fames",
     "aex-agent-evolution",
@@ -27,6 +27,7 @@
     "mtd-judgment-escalation",
     "mtm-api-pool-offload",
     "mtm-claude-remnant-cleanup",
+    "mtm-everything-find",
     "mtm-fleet-audit",
     "mtm-fleet-skill-github",
     "mtm-github-ops",
