@@ -2,7 +2,31 @@
   "schema": 2,
   "authority": "ai_scar3",
   "contributor": "scar3",
-  "role": "downstream_curator",
+  "role": "peer_contributor",
+  "capabilities": [
+    "develop_new_skill",
+    "improve_existing_skill",
+    "publish_candidate"
+  ],
+  "candidate_policy": {
+    "namespace": "contributors/scar3",
+    "must_not_write": "contributors/darkhero",
+    "required_evidence": ["tests", "manifest", "hash", "source", "change_reason"],
+    "fames_upgrade_requires": ["protocol", "bundle", "tests", "manifest", "receipt"]
+  },
+  "release_evidence": {
+    "fames": {
+      "tests": [
+        "python -m pytest C:\\ai_workspace\\_skill\\tests\\test_fames_stack.py -q",
+        "python C:\\ai_workspace\\_skill\\fleet-skills\\fames\\scripts\\fames_fleet.py verify-package --workspace C:\\ai_workspace --json",
+        "python C:\\ai_workspace\\_skill\\fleet-skills\\fames\\scripts\\fames_fleet.py verify-host --workspace C:\\ai_workspace --host ai_scar3 --json"
+      ],
+      "manifest": "contributors/scar3/manifest.json",
+      "package_sha": "993a891861a06c2dc6ebd6a89a7e139e5a2ef394d0c2be06d057cd3b2bd46041",
+      "source": "contributors/darkhero@34073d951c117eaf",
+      "change_reason": "Converge ai_scar3 to provider-neutral FAMES 1.3.0 and publish follower evidence without overwriting authority."
+    }
+  },
   "machine": "scar3",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
   "required": [
