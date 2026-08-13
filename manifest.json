@@ -4,11 +4,13 @@
   "generated_at": "2026-08-13T18:19:26Z",
   "contributors": [
     "darkhero",
-    "scar3"
+    "scar3",
+    "altos"
   ],
   "manifests": {
     "darkhero": "34073d951c117eaf",
-    "scar3": "74f8d6647cc24592"
+    "scar3": "74f8d6647cc24592",
+    "altos": "20fde04b736907234ca7745f74607998be9ae83a59db363a705a7b6d994b8d6e"
   },
   "detail": {
     "darkhero": {
@@ -973,6 +975,12 @@
         }
       ],
       "manifest_sha": "74f8d6647cc24592"
+    },
+    "altos": {
+      "manifest": "contributors/altos/manifest.json",
+      "required": [
+        "fames"
+      ]
     }
   },
   "union_sha": "a34334a07bed59d0"

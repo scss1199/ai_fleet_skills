@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "contributor": "altos",
+  "source_node": "ai_altos",
+  "role": "downstream_follower / peer contributor",
+  "project_root": "C:\\ai_workspace\\ai_altos",
+  "generated_at": "2026-08-13T18:31:52.256800+00:00",
+  "skills": [
+    {
+      "name": "fames",
+      "purpose": "Verified FAMES follower receipt and candidate improvement baseline.",
+      "source_node": "ai_altos",
+      "tests": [
+        "python C:\\ai_workspace\\_skill\\fleet-skills\\fames\\scripts\\fames_fleet.py verify-package --workspace C:\\ai_workspace --json",
+        "python -m pytest C:\\ai_workspace\\_skill\\tests\\test_fames_stack.py -q"
+      ],
+      "files": {
+        "bundle-manifest.json": "1ca81167609085f89348cf2d3975d078a92d9eef24e41169bc081a6077edb9e0",
+        "references/protocols/fames-protocol.json": "92a136151b55a64850c2f2764d8fff0c1003d1e7d4e766d01d4214ba05e25560",
+        "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
+        "references/protocols/goal-vector-protocol.json": "204f845523bb75294895a384d14019eef583400323b1a5d6472ead778413e45a",
+        "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
+        "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
+        "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
+        "scripts/fames_fleet.py": "1fe269ead77c5319681275f43caeea9f711d02f646fd72219cd023ac048ea6b1",
+        "SKILL.md": "df43d54c78e7ba0c3ddcda05bddc8e07bee75983a91c7418d89b438a46abf37b"
+      },
+      "content_sha": "6d3f7dbdb453ece4f5f8f14b14afef9c2427198129c4e5ef835dbf3837a959cb",
+      "package_sha": "993a891861a06c2dc6ebd6a89a7e139e5a2ef394d0c2be06d057cd3b2bd46041"
+    }
+  ],
+  "policy": {
+    "overwrite_other_contributors": false,
+    "canonical_promotion_requires": [
+      "FP",
+      "MTM",
+      "SCF",
+      "AEX",
+      "SEAL"
+    ]
+  },
+  "manifest_sha": "20fde04b736907234ca7745f74607998be9ae83a59db363a705a7b6d994b8d6e"
+}
