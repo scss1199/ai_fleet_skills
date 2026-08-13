@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "updated": "2026-08-14",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -161,7 +161,16 @@
     "convergence": {
       "online_bootstrapped": "one successful invocation",
       "offline_or_unbootstrapped": "UNKNOWN until first successful invocation",
-      "proof": "local receipt package_sha equals authority package_sha"
+      "proof": "local receipt and GitHub contributor manifest package_sha equal authority package_sha",
+      "natural_events": {
+        "boot": "HubClock autostart makes fleet-skill-pulse eligible at the next 15 minute wall-clock boundary",
+        "github_change": "authority manifest_sha or package_sha delta triggers verified atomic activation",
+        "local_skill_change": "content fingerprint delta publishes the node contributor manifest",
+        "network_recovery": "the next HubClock boundary retries after an unreachable GitHub event"
+      },
+      "online_lag_bound": "15m after HubClock is healthy and GitHub is reachable",
+      "model_token_calls": 0,
+      "steady_state_processes_added": 0
     },
     "peer_learning": {
       "followers_publish": ["evidence", "candidate_improvement"],
@@ -177,6 +186,8 @@
     "package_verifier": "_skill/fleet-skills/fames/scripts/fames_fleet.py",
     "carrier_repo": "https://github.com/scss1199/ai_fleet_skills.git",
     "host_receipt": "contributors/<host>/manifest.json#skills[name=fames].package_sha",
-    "unknown_rule": "A missing receipt, stale carrier manifest, unreadable bundle, or package hash mismatch is UNKNOWN and fails closed."
+    "unknown_rule": "A missing receipt, stale carrier manifest, unreadable bundle, or package hash mismatch is UNKNOWN and fails closed.",
+    "event_runner": "existing HubClock fleet-skill-pulse rider -> fleet-skill-sync-tick.py -> mtm-fleet-skill-github.py tick",
+    "no_change_cost": "one authority manifest fetch for followers; package files are not fetched when verified package_sha already matches"
   }
 }

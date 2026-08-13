@@ -439,6 +439,38 @@ def follow(workspace: Path, host: str, authority: str = DEFAULT_AUTHORITY) -> di
         declared = skill.get("files") or {}
         if not declared:
             raise ValueError("authority FAMES file manifest is empty")
+        remote_sha = skill.get("package_sha")
+        local = verify_host(workspace, host)
+        if remote_sha and local.get("ok") and local.get("package_sha") == remote_sha:
+            key = _receipt_key(workspace.resolve(), host)
+            receipt_path = (
+                workspace.resolve() / "_registry" / "fames-fleet-receipts" / f"{key}.json"
+            )
+            try:
+                receipt = _read_json(receipt_path)
+            except (OSError, json.JSONDecodeError):
+                receipt = {}
+            previous_receipt = dict(receipt)
+            receipt.update({
+                "schema": 1,
+                "host": key,
+                "package_sha": remote_sha,
+                "version": skill.get("version") or local.get("version"),
+                "verified": True,
+                "authority": "ai_darkhero",
+                "authority_manifest_sha": manifest.get("manifest_sha"),
+                "source": authority,
+            })
+            if receipt != previous_receipt:
+                _write_json_atomic(receipt_path, receipt)
+            return {
+                "ok": True,
+                "changed": False,
+                "package_sha": remote_sha,
+                "receipt": receipt,
+                "fetched_files": 1,
+                "errors": [],
+            }
         with tempfile.TemporaryDirectory(prefix="fames-follow-") as temp_dir:
             package = Path(temp_dir) / "fames"
             for relative, expected in declared.items():
@@ -466,7 +498,14 @@ def follow(workspace: Path, host: str, authority: str = DEFAULT_AUTHORITY) -> di
             workspace.resolve() / "_registry" / "fames-fleet-receipts" / f"{receipt['host']}.json",
             receipt,
         )
-        return {"ok": True, "package_sha": receipt["package_sha"], "receipt": receipt, "errors": []}
+        return {
+            "ok": True,
+            "changed": True,
+            "package_sha": receipt["package_sha"],
+            "receipt": receipt,
+            "fetched_files": len(declared) + 1,
+            "errors": [],
+        }
     except (OSError, ValueError, StopIteration, json.JSONDecodeError) as exc:
         return {"ok": False, "host": host, "errors": [str(exc)]}
 

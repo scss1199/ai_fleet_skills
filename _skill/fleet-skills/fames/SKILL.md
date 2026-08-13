@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-14.1
+FAMES-GEN: 2026-08-14.2
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -50,3 +50,7 @@ Keep one provider-neutral canonical skill. Put deterministic work in one reusabl
 `ai_darkhero` publishes the canonical generation. `ai_scar3` and `ai_altos` follow it with one idempotent transition: `fames_fleet.py follow --workspace <root> --host <seat>`. The command downloads the authority manifest, verifies every file and the package identity, atomically activates the package, and writes a local receipt. An online bootstrapped follower converges in one invocation; an offline or unbootstrapped machine remains `UNKNOWN` until its first successful invocation.
 
 Followers may publish evidence and candidate improvements, but only the authority promotes a new canonical generation after FP, SCF, and SEAL. This keeps learning bidirectional without multi-writer drift.
+
+## Zero-token natural convergence
+
+Use the existing HubClock `fleet-skill-pulse` rider as the only event runner. Windows logon starts HubClock; the next 15-minute wall-clock boundary performs a provider-neutral GitHub manifest probe. A changed FAMES package is hash-verified and atomically activated, while a verified matching generation fetches no package files. The same event publishes content-changed contributor manifests. Network failures retry at the next boundary. This path calls no model and adds no resident process.
