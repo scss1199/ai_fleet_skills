@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-12T20:15:20Z",
-  "manifest_sha": "24158c3da12c44d5",
+  "generated_at": "2026-08-13T00:09:04Z",
+  "manifest_sha": "4e8f54121cfa4136",
   "required": [
     "fames",
     "aex-agent-evolution",
@@ -22,7 +22,7 @@
     "ztm-fleet-intelligence",
     "token-preflight"
   ],
-  "skill_count": 39,
+  "skill_count": 40,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -132,6 +132,16 @@
       "package_sha": "bb03c86a5b0fba6a8f4ae01ff73fe0a5cdc07474f4e385c697634a76624d1546",
       "files": {
         "SKILL.md": "aa656b74fed9cecccfef7779bd837cbea9b1263147550c47445766b0bcc80700"
+      }
+    },
+    {
+      "name": "library-bookmark-coverage",
+      "sha": "d71a4834c86636d3",
+      "required": false,
+      "lane": "zero-token-mechanism",
+      "package_sha": "222a136a2ea2b7d6d9a2b3c5fc386973cb902a691c2ddcbf9eced3177d94c4e1",
+      "files": {
+        "SKILL.md": "d71a4834c86636d3ac00b734e1e8d3cb4cc72955ab3be9e33ca9850e7779889e"
       }
     },
     {
