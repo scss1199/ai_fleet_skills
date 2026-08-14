@@ -42,6 +42,38 @@ TEXT_SUFFIXES = {
     ".yaml",
     ".yml",
 }
+PHASE_STATES = {"PASS", "NOT_APPLICABLE", "UNKNOWN", "FAIL"}
+TASK_PROFILES = {
+    "read-only explanation": "R0",
+    "diagnosis": "R0",
+    "one-shot deterministic edit": "R1",
+    "multi-file implementation": "R1",
+    "live-device mutation": "R2",
+    "deployment/external write": "R2",
+    "recurring autonomous control": "R2",
+    "safety-critical operation": "R3",
+    "cross-cycle optimization": "R1",
+    "distributed/fleet promotion": "R2",
+}
+RISK_ORDER = {"R0": 0, "R1": 1, "R2": 2, "R3": 3}
+RESIDUAL_KEYS = (
+    "R_outcome", "R_safety", "R_evidence", "R_complexity",
+    "R_portability", "R_authority", "R_operability",
+)
+GOAL_FIELDS = (
+    "outcome", "verification", "constraints", "authority_scope", "non_goals",
+    "irreversible_boundary", "success_horizon", "task_profile",
+    "required_evidence_classes",
+)
+EVIDENCE_FIELDS = (
+    "goal_identity", "result_identity", "timestamp", "freshness_seconds", "source",
+    "method", "authority", "state_before", "state_after", "exit_status",
+    "error_category", "diagnostic",
+)
+COMPLEXITY_FIELDS = (
+    "new_files", "new_dependencies", "new_resident_processes",
+    "new_abstractions", "duplicated_authorities",
+)
 
 
 def _sha256(path: Path) -> str:
@@ -54,6 +86,170 @@ def _sha256(path: Path) -> str:
 def _stable_sha(payload: object) -> str:
     body = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(body.encode("utf-8")).hexdigest()
+
+
+def semantic_goal_hash(goal: dict) -> str:
+    """Provider-neutral identity over only the canonical FP goal fields."""
+    return _stable_sha({key: goal.get(key) for key in GOAL_FIELDS})
+
+
+def _parse_time(value: object) -> datetime | None:
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return None
+
+
+def validate_run(run: dict) -> dict:
+    """Validate one FAMES phase ledger without executing or expanding authority."""
+    errors: list[str] = []
+    goal = run.get("goal") if isinstance(run.get("goal"), dict) else {}
+    missing_goal = [field for field in GOAL_FIELDS if field not in goal]
+    if missing_goal:
+        errors.append("goal fields missing: " + ", ".join(missing_goal))
+    expected_hash = semantic_goal_hash(goal)
+    if goal.get("semantic_goal_hash") != expected_hash:
+        errors.append("semantic goal hash mismatch")
+    result = run.get("result") if isinstance(run.get("result"), dict) else {}
+    if result.get("goal_hash") != expected_hash:
+        errors.append("result goal hash mismatch")
+
+    profile = goal.get("task_profile")
+    risk = run.get("risk_class")
+    minimum_risk = TASK_PROFILES.get(profile)
+    if minimum_risk is None:
+        errors.append("unknown task profile")
+    if risk not in RISK_ORDER:
+        errors.append("unknown risk class")
+    elif minimum_risk and RISK_ORDER[risk] < RISK_ORDER[minimum_risk]:
+        errors.append(f"risk class {risk} is below task profile minimum {minimum_risk}")
+
+    ledger = run.get("phase_ledger") if isinstance(run.get("phase_ledger"), list) else []
+    if [row.get("phase") for row in ledger if isinstance(row, dict)] != EXECUTION_ORDER:
+        errors.append("phase ledger execution order mismatch")
+    phase_map = {row.get("phase"): row for row in ledger if isinstance(row, dict)}
+    for phase in EXECUTION_ORDER:
+        row = phase_map.get(phase, {})
+        state = row.get("state")
+        if state not in PHASE_STATES:
+            errors.append(f"{phase}: invalid or missing state")
+        elif state in {"UNKNOWN", "FAIL"}:
+            errors.append(f"{phase}: {state} fails closed")
+        elif state == "NOT_APPLICABLE" and not (
+            row.get("activation_predicate") is False and row.get("why")
+        ):
+            errors.append(f"{phase}: NOT_APPLICABLE requires a false predicate and reason")
+
+    residual = phase_map.get("SCF", {}).get("residual")
+    if not isinstance(residual, dict) or any(key not in residual for key in RESIDUAL_KEYS):
+        errors.append("SCF residual vector incomplete")
+        residual = {}
+    for hard_key in ("R_safety", "R_evidence", "R_authority"):
+        if residual.get(hard_key) not in (0, 0.0):
+            errors.append(f"{hard_key} is not converged")
+    cross_cycle = goal.get("success_horizon") == "cross-cycle" or profile == "cross-cycle optimization"
+    comparable_residual = any(residual.get(key) not in (None, 0, 0.0) for key in RESIDUAL_KEYS)
+    aex = phase_map.get("AEX", {})
+    aex_required = cross_cycle and comparable_residual
+    if aex_required:
+        if aex.get("state") != "PASS" or aex.get("activation_predicate") is not True:
+            errors.append("AEX must activate for a verified comparable cross-cycle residual")
+        elif aex.get("target_residual") not in RESIDUAL_KEYS:
+            errors.append("AEX must name the residual it targets")
+    elif aex.get("state") != "NOT_APPLICABLE" or aex.get("activation_predicate") is not False:
+        errors.append("AEX must not activate without a cross-cycle residual")
+
+    complexity = run.get("complexity") if isinstance(run.get("complexity"), dict) else {}
+    budget = complexity.get("budget") if isinstance(complexity.get("budget"), dict) else {}
+    actual = complexity.get("actual") if isinstance(complexity.get("actual"), dict) else {}
+    for field in COMPLEXITY_FIELDS:
+        if field not in budget or field not in actual:
+            errors.append(f"complexity field missing: {field}")
+            continue
+        if actual[field] > budget[field] and not complexity.get("justification_evidence"):
+            errors.append(f"complexity budget exceeded: {field}")
+
+    architecture = run.get("architecture") if isinstance(run.get("architecture"), dict) else {}
+    for component in architecture.get("components") or []:
+        if not component.get("caller") or not component.get("contract_role"):
+            errors.append(f"component lacks caller or contract role: {component.get('name', 'unknown')}")
+        if component.get("layer") == "core" and component.get("provider_specific"):
+            errors.append(f"provider-specific component leaked into core: {component.get('name', 'unknown')}")
+    canonical_writers: dict[str, list[str]] = {}
+    for writer in architecture.get("writers") or []:
+        if writer.get("enabled") and writer.get("canonical"):
+            canonical_writers.setdefault(str(writer.get("target")), []).append(str(writer.get("name")))
+    for target, writers in canonical_writers.items():
+        if len(writers) != 1:
+            errors.append(f"duplicate canonical writers for {target}: {', '.join(writers)}")
+
+    validated_at = _parse_time(run.get("validated_at")) or datetime.now(timezone.utc)
+    evidence_rows = run.get("evidence") if isinstance(run.get("evidence"), list) else []
+    if not evidence_rows:
+        errors.append("evidence is missing")
+    for index, evidence in enumerate(evidence_rows):
+        missing = [field for field in EVIDENCE_FIELDS if field not in evidence]
+        if missing:
+            errors.append(f"evidence[{index}] fields missing: {', '.join(missing)}")
+            continue
+        if evidence.get("goal_identity") != expected_hash:
+            errors.append(f"evidence[{index}] goal identity mismatch")
+        if evidence.get("result_identity") != result.get("identity"):
+            errors.append(f"evidence[{index}] result identity mismatch")
+        if evidence.get("authority") != goal.get("authority_scope"):
+            errors.append(f"evidence[{index}] authority mismatch")
+        timestamp = _parse_time(evidence.get("timestamp"))
+        freshness = evidence.get("freshness_seconds")
+        if timestamp is None or not isinstance(freshness, (int, float)):
+            errors.append(f"evidence[{index}] freshness is unverifiable")
+        elif (validated_at - timestamp).total_seconds() > freshness:
+            errors.append(f"evidence[{index}] is stale")
+        if evidence.get("exit_status") != 0:
+            errors.append(f"evidence[{index}] verification exit status failed")
+        diagnostic = str(evidence.get("diagnostic") or "").lower()
+        if any(marker in diagnostic for marker in (
+            "token=", "cookie=", "authorization:", "scram", "password=", "https://user:"
+        )):
+            errors.append(f"evidence[{index}] diagnostic may contain secret material")
+
+    if risk in {"R2", "R3"}:
+        transaction = run.get("transaction") if isinstance(run.get("transaction"), dict) else {}
+        required = (
+            "before_state", "rollback", "intended_mutation_identity", "read_back",
+            "authority_verified", "journal_state", "recovery",
+        )
+        missing = [field for field in required if field not in transaction]
+        if missing:
+            errors.append("transaction fields missing: " + ", ".join(missing))
+        if transaction.get("authority_verified") is not True:
+            errors.append("transaction authority is not verified")
+        if transaction.get("journal_state") not in {"COMMITTED", "RECOVERED"}:
+            errors.append("interrupted transaction is not recovered")
+        if risk == "R3" and transaction.get("recovery_drill") != "PASS":
+            errors.append("R3 recovery drill is not passing")
+
+    if profile == "distributed/fleet promotion":
+        promotion = run.get("promotion") if isinstance(run.get("promotion"), dict) else {}
+        required = (
+            "actor", "authority", "generation", "migration_path", "rollback_path",
+            "compatibility_proof",
+        )
+        missing = [field for field in required if not promotion.get(field)]
+        if missing:
+            errors.append("promotion fields missing: " + ", ".join(missing))
+        if promotion.get("actor") != promotion.get("authority"):
+            errors.append("follower cannot promote the canonical generation")
+
+    return {
+        "ok": not errors,
+        "state": "PASS" if not errors else "FAIL",
+        "semantic_goal_hash": expected_hash,
+        "risk_class": risk,
+        "task_profile": profile,
+        "aex_required": aex_required,
+        "errors": errors,
+    }
 
 
 def _read_json(path: Path) -> dict:
@@ -592,12 +788,14 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "parity", "status", "install", "follow", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "validate-run", "install", "follow", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
         if name in {"verify-package", "parity", "status"}:
             command.add_argument("--skill-dir", type=Path, default=PACKAGE_ROOT)
+        if name == "validate-run":
+            command.add_argument("--input", type=Path, required=True)
         if name == "build-bundle":
             command.add_argument("--protocol-git-ref")
         if name in {"install", "follow", "verify-host"}:
@@ -620,6 +818,13 @@ def main() -> int:
         return _emit(parity(args.workspace, args.skill_dir), args.json)
     if args.command == "status":
         return _emit(status(args.workspace, args.skill_dir), args.json)
+    if args.command == "validate-run":
+        try:
+            payload = _read_json(args.input)
+        except (OSError, json.JSONDecodeError) as exc:
+            payload = {"ok": False, "state": "UNKNOWN", "errors": [f"run input unreadable: {exc}"]}
+            return _emit(payload, args.json)
+        return _emit(validate_run(payload), args.json)
     if args.command == "install":
         return _emit(install(args.workspace, args.host, args.source), args.json)
     if args.command == "follow":
