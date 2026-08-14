@@ -5,8 +5,8 @@
   "role": "downstream_curator",
   "machine": "scar3",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-14T02:45:03Z",
-  "manifest_sha": "bd595bbbda79b80f",
+  "generated_at": "2026-08-14T06:15:03Z",
+  "manifest_sha": "8df62be2896af105",
   "required": [
     "fames",
     "aex-agent-evolution",
@@ -107,7 +107,7 @@
     },
     {
       "name": "fames",
-      "sha": "f0a2e5cd8e6e22b5",
+      "sha": "a62c68ebf675ccb4",
       "required": true,
       "lane": null,
       "package_sha": "d470181e01a9ca3398c4b82f269c092232b290a8ed7c06ed6f0663de6f6ae5f1",
