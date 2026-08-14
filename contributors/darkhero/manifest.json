@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-14T06:09:05Z",
-  "manifest_sha": "128f9f62517554d2",
+  "generated_at": "2026-08-14T12:27:07Z",
+  "manifest_sha": "025f4c47937d8fff",
   "required": [
     "fames",
     "aex-agent-evolution",
@@ -315,12 +315,13 @@
     },
     {
       "name": "ztm-cursor-edge-auth",
-      "sha": "4fb7443dd6c99b51",
+      "sha": "7ab227a7a294ac38",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "f10ac0f6b8503760b834a0ef62754c6156e51d1a1546bad57371cb80d7e66b2d",
+      "package_sha": "4aed6ae953b732859f61c3f53ec1bfcced9588173312f526409fc2a4ba9f829b",
       "files": {
-        "SKILL.md": "88fa2eb3dc141c9917e868c59e6748923e277a5de2d9474cac070e22de97d18d"
+        "SKILL.md": "c1477fe15ed84a7b80225b4492376be74a6a58f1dd82363e53674493853f3ced",
+        "inapp-browser-secret-transfer.md": "a1f9b6a1f4f0a6283b296dc64e36a253e8528c796338477cbd44090336682af8"
       }
     },
     {
@@ -435,13 +436,13 @@
     },
     {
       "name": "ztm-web-auth-ops",
-      "sha": "c1cb827bf65f41ca",
+      "sha": "cfe103c127cd7733",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "149dcff2d82dbdd8b317df8c0528e632023576997d5e7db0b66c3ec25273e97c",
+      "package_sha": "5a84a238a8754e5eb7604c1a7a47baee92fa36ca2f6dc4810a7996a20156ad32",
       "files": {
-        "SKILL.md": "83a50dd704e4ff4c7b2653272d1fad01da9650f6b4b7498e53e670ce5ce43f83",
-        "oauth-verify-ledger.md": "6fde816caf1de47c36abc4b1ac732e29f128fa65479050912157d576413fca1b",
+        "SKILL.md": "400baad5495ded5a0331fa8b68f4f98be56be4efd68d591eb8d0f1760a5fe9a3",
+        "oauth-verify-ledger.md": "00b3e5aa744e3fbcf1f622b125af4524982e9282906e598d2a561afa356f2302",
         "reference.md": "0f890af0f5e9acb38e12f6dcf6ebaaa5be868ce0cda1e0c1b099a044d093a9d6"
       }
     },
