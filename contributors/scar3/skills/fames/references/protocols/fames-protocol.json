@@ -1,7 +1,7 @@
 {
-  "schema": 1,
+  "schema": 2,
   "id": "FAMES",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "updated": "2026-08-14",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -63,6 +63,68 @@
     ],
     "not_applicable_rule": "Allowed only when the phase activation predicate is demonstrably false; cite the evidence.",
     "unknown_rule": "Missing, stale, mismatched, exceptional, or unverifiable evidence is UNKNOWN and fails closed."
+  },
+  "task_adaptation": {
+    "profiles": {
+      "read-only explanation": "R0",
+      "diagnosis": "R0",
+      "one-shot deterministic edit": "R1",
+      "multi-file implementation": "R1",
+      "live-device mutation": "R2",
+      "deployment/external write": "R2",
+      "recurring autonomous control": "R2",
+      "safety-critical operation": "R3",
+      "cross-cycle optimization": "R1",
+      "distributed/fleet promotion": "R2"
+    },
+    "rule": "A profile changes phase depth, evidence classes, and tool budgets only; it never expands user authority.",
+    "risk_classes": {
+      "R0": ["read_only", "no_external_state", "no_secret", "no_live_mutation"],
+      "R1": ["reversible_local_edit", "deterministic_tests", "no_privileged_or_external_write"],
+      "R2": ["fresh_state", "rollback", "read_back", "authority_verification"],
+      "R3": ["fail_closed", "explicit_authorization", "transaction_journal", "recovery_drill"]
+    }
+  },
+  "goal_identity": {
+    "fields": ["outcome", "verification", "constraints", "authority_scope", "non_goals", "irreversible_boundary", "success_horizon", "task_profile", "required_evidence_classes"],
+    "semantic_hash": "sha256 of canonical UTF-8 JSON with sorted keys and compact separators",
+    "success_horizons": ["one-shot", "session", "recurring", "cross-cycle"]
+  },
+  "complexity_budget": {
+    "fields": ["new_files", "new_dependencies", "new_resident_processes", "new_abstractions", "duplicated_authorities"],
+    "over_budget_rule": "Evidence-backed justification is mandatory; otherwise convergence fails."
+  },
+  "residual_vector": {
+    "fields": ["R_outcome", "R_safety", "R_evidence", "R_complexity", "R_portability", "R_authority", "R_operability"],
+    "non_compensable": ["R_safety", "R_evidence", "R_authority"]
+  },
+  "authority_discipline": {
+    "canonical_writer_count": 1,
+    "legacy_writer_states": ["disabled", "diet-refused", "read-only", "mechanically-gated"],
+    "lock_is_not_authority": true,
+    "adapter_must_not_decide_policy": true,
+    "traceable_roles": ["policy", "apply", "measure", "promote", "restore"]
+  },
+  "transaction_contract": {
+    "activation": ["R2", "R3"],
+    "states": ["PREPARE", "APPLY", "VERIFY", "COMMITTED", "RECOVERED", "UNKNOWN"],
+    "required_fields": ["before_state", "rollback", "intended_mutation_identity", "read_back", "authority_verified", "journal_state", "recovery"],
+    "r3_extra": "recovery_drill must PASS",
+    "interruption_rule": "A transaction not COMMITTED or RECOVERED is UNKNOWN and fails closed."
+  },
+  "evidence_contract": {
+    "required_fields": ["goal_identity", "result_identity", "timestamp", "freshness_seconds", "source", "method", "authority", "state_before", "state_after", "exit_status", "error_category", "diagnostic"],
+    "forbidden_material": ["raw credential", "token", "cookie", "SCRAM material", "URL credential", "unbounded exception dump"],
+    "retention": "bounded by producer policy or janitor",
+    "live_state_rule": "stale evidence cannot support a live-state claim"
+  },
+  "machine_validation": {
+    "command": "python scripts/fames_fleet.py validate-run --input <run.json> --json",
+    "input": "provider-neutral JSON phase ledger",
+    "output": "JSON plus deterministic exit code",
+    "phase_order": ["FP", "MTM", "SCF", "AEX", "SEAL"],
+    "aex_activation": "Only a verified comparable cross-cycle residual activates AEX.",
+    "unknown_exit": "non-zero"
   },
   "phase_contract": {
     "FP": {
