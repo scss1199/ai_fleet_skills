@@ -219,7 +219,9 @@ python %AI_WORKSPACE%\_skill\engines\zct-task-router.py "<keywords>"
 10. **GAS 先用 Browser MCP** → curl/`?op=login-diag` 先  
 11. **重複問已 AUTHORIZED 服務** → 讀 `auth-inventory.json`  
 12. **Meta/FB 用 Windows Chrome** → 僅 Cursor in-IDE Edge  
-13. **OAuth 權限 UI 不記 ledger** → 禁止宣稱完成
+13. **OAuth 權限 UI 不記 ledger** → 禁止宣稱完成  
+14. **在 in-app/內建瀏覽器面板按「Create API key」** → 值出不來（2026-08-14 五條出口全實測撞牆）；
+    UI 前置 agent 做完後停在 Create 前 HANDOFF，見 `ztm-cursor-edge-auth` §5
 
 ---
 
@@ -230,7 +232,7 @@ python %AI_WORKSPACE%\_skill\engines\zct-task-router.py "<keywords>"
 | [reference.md](reference.md) | 各 seat 路徑與腳本對照表（canonical：`%AI_WORKSPACE%/_skill/fleet-skills/ztm-web-auth-ops/reference.md`） |
 | [oauth-verify-ledger.md](oauth-verify-ledger.md) | Cursor Edge OAuth 每次嘗試的 SUMMARY + 密碼邊界（fracdigi absorb） |
 | `ztm-meta-oauth-console` | Meta App Domains / Redirect URI / meta-pool 步驟 |
-| `ztm-cursor-edge-auth` | **必讀** — Cursor in-IDE browser MCP 工作流 |
+| `ztm-cursor-edge-auth` | **必讀** — Cursor in-IDE browser MCP 工作流 · §5 一次性 secret 取不出來 |
 | `sso-browser-session` | cookie_jar / 隔離 profile（**非** OAuth UI 首選） |
 | `gas-google-sso-webapp` | GAS `/exec` SSO 故障 |
 | `ztm-webapp-verify` | 本地 UI smoke |
