@@ -83,6 +83,26 @@ gh auth status
 
 編輯 `_registry/auth-variants.json` — 不複製整份 skill。
 
+### 5 API key 簽發／輪替 — **一律走 download route**
+
+> **未來所有新簽發或輪替的 API key 都跑這一段。** 2026-08-14 console.x.ai 實測成功。
+> 完整六步流程、JS、PowerShell、判讀表：
+> [inapp-browser-secret-transfer.md](inapp-browser-secret-transfer.md) ← **執行前必讀**
+
+剪貼簿在面板裡是死的（五種量法全撞牆，**含 operator 本人手動複製**）。
+但**瀏覽器下載是活的**：頁面自己造 `Blob` + `<a download>`，檔案落到 `Downloads`，
+再用純檔案 API 搬進 `_secrets/token-inbox.txt`。值走 **頁面 → 磁碟 → drop 檔**，
+不進 chat、不進 argv、不進 commit。
+
+| 面板做得到（agent 自理） | 永遠禁止 |
+|------|------|
+| 建 team / 選方案（確認 Free 已 `checked`，不碰付款）/ expiry / 命名 / 刪除 / **download route 取值** | 註冊帳號、輸入密碼、`read_page`/`get_page_text`/截圖讀值、secret 進 URL、改寫 JS 躲 classifier |
+
+JS 一律寫成**本來就不回傳值**（用 regex 定位、只回長度與頭尾形狀）。
+**ingest 前先做形狀檢查**（前綴＋長度）—— `capture` 讀的是 OS 剪貼簿，面板沒橋接，
+盲存會把上一輪的殘留字串當成金鑰存進 api-matrix。
+verify 回 **400 = 值錯**，**403 no credits = 金鑰有效、帳號沒額度**，重簽無用。
+
 ## Cross-links
 
 | Skill | Role |
@@ -90,6 +110,8 @@ gh auth status
 | `ztm-web-auth-ops` | 母決策樹 + 場景速查 |
 | `ztm-meta-oauth-console` | Meta pool |
 | `ztm-portal-google-sso-edge` | ai-darkhero Google SSO |
+| [inapp-browser-secret-transfer.md](inapp-browser-secret-transfer.md) | **API key 簽發／輪替 SOP**（download route 六步 + 牆表 + 判讀） |
+| `token-preflight` | 開工前的金鑰盤點 |
 
 ## CITE
 
