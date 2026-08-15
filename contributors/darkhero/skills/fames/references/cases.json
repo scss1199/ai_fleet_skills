@@ -155,7 +155,8 @@
       "path": "_secrets/token-inbox.txt",
       "max_bytes": 0,
       "missing_ok": true,
-      "why": "the inbox is a transfer buffer, not storage: material at rest there has outlived its ingest. Size is measured; content is never read, by this case or by anything else."
+      "ignore_comment_lines": true,
+      "why": "the inbox is a transfer buffer, not storage: material at rest there has outlived its ingest. An armed-but-unused drop file still carries its instruction scaffold, so the payload -- non-blank, non-comment bytes, the same predicate token-onboard.py ingests on -- is what is measured. No line is ever emitted."
     },
     {
       "id": "C-CAPABILITY-DECLARED",

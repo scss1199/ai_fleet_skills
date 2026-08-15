@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-15T03:00:01Z",
-  "manifest_sha": "06c6e7b99905ca86",
+  "generated_at": "2026-08-15T03:02:39Z",
+  "manifest_sha": "14b3c3b90f58bc4b",
   "required": [
     "fames",
     "aex-agent-evolution",
@@ -22,7 +22,7 @@
     "ztm-fleet-intelligence",
     "token-preflight"
   ],
-  "skill_count": 40,
+  "skill_count": 41,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -103,6 +103,25 @@
         "scripts/record_failure.py": "87723a5609f6c0ef135da94d6208535c0784a0c2a38663a806f989bfd35a9d11",
         "scripts/selftest_quick_validate.py": "41d345f312b0737b9df9e45fb0acb4eb4233c28c460214cd3810e349cfebd503",
         "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37"
+      }
+    },
+    {
+      "name": "fames",
+      "sha": "2b83955b762d6a8d",
+      "required": true,
+      "lane": null,
+      "package_sha": "54bb21fee617baa1c84d285788fb4669d81c018f03de3c41cdf889e6d36640c4",
+      "files": {
+        "SKILL.md": "e7022c0f37a1ea80cd77ca8acd519ac12f8773b53238a7d84a628b7a2ca7833e",
+        "bundle-manifest.json": "3cb762c238da6859d4a10acd8f58b2cfbd344ab7cb25a58a7ebeadcbc0dd6f1a",
+        "references/cases.json": "70d26a295dfd37568363022acb717d18e01dfccf043142bfa2ab36b451db17d0",
+        "references/protocols/fames-protocol.json": "59509ba460ff88b928d3e3776ce0c20a610b7e2a8842abd4882c3f61fa9d2000",
+        "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
+        "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
+        "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
+        "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
+        "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
+        "scripts/fames_fleet.py": "9f433c425a120635f83d951285f3fdc23ff7a6fa82f54e51ce79955ee2c4ba87"
       }
     },
     {
