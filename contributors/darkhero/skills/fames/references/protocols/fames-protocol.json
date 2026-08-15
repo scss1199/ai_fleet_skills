@@ -1,8 +1,8 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.5.0",
-  "updated": "2026-08-14",
+  "version": "1.6.0",
+  "updated": "2026-08-15",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
   "legacy_umbrella_aliases": [
@@ -239,6 +239,60 @@
       "authority_promotes_after": ["FP", "SCF", "SEAL"],
       "followers_must_not": ["overwrite_canonical_generation"]
     }
+  },
+  "external_learning": {
+    "purpose": "Governs information acquired from OUTSIDE the fleet that proposes an improvement to the fleet. Turns 'I read something useful' into work with the same completion truth as any other FAMES work.",
+    "is_phase": false,
+    "lane_rule": "This is a lane that feeds AEX, not a sixth phase. execution_order is unchanged. A promoted candidate is an adaptation and is judged by AEX, SCF and SEAL like any other adaptation.",
+    "activation_predicate": "material originating outside the fleet is used to justify a change to fleet canon, tooling or routing",
+    "stages": ["ACQUIRE", "UNDERSTAND", "CLAIM", "TRIAL", "PROMOTE"],
+    "stage_contract": {
+      "ACQUIRE": {
+        "owns": ["retrieval of bits from a channel", "provenance", "content identity"],
+        "must_not_own": ["interpretation"],
+        "cost_rule": "route order is cost order: publisher-supplied text (0 quota) -> local model (0 quota, material never leaves the machine) -> metered API",
+        "authority_rule": "A login wall, paywall, bot check or rate block is a named blocker reported to the operator, never a puzzle to solve. Acquisition never creates an account and never enters a credential."
+      },
+      "UNDERSTAND": {
+        "owns": ["bits -> facts by declared capability"],
+        "must_not_own": ["the artifact", "the verdict"],
+        "capability_rule": "A stage declares a capability (asr.*, vision.*, text.*), never a vendor; the vendor is a data-driven junction chosen by scheduling and rotation.",
+        "separation_rule": "The model supplies language, not facts. A fact is measured by a deterministic instrument or it is not a fact."
+      },
+      "CLAIM": {
+        "owns": ["what the source asserts, attributed to the source"],
+        "must_not_own": ["truth"],
+        "rule": "A source assertion is recorded as a claim with its trust class and its own wording bounded to the minimum needed to test it. Restating a claim never promotes it to fact."
+      },
+      "TRIAL": {
+        "owns": ["a bounded local test of the claim against this fleet"],
+        "must_not_own": ["canon"],
+        "rule": "The trial's Verification is written before the trial runs, exactly as in FP. A claim that cannot be given a Verification is rejected as untestable, not adopted on plausibility.",
+        "already_covered_rule": "Before trialling, check whether existing canon already implements the claim; already_covered is a first-class verdict and costs nothing."
+      },
+      "PROMOTE": {
+        "owns": ["canon change"],
+        "must_not_own": ["silent adoption"],
+        "gate": "authority node only, after FP, SCF and SEAL — the same gate as fleet_topology.peer_learning; followers may publish an ingest record as candidate_improvement but must not promote it."
+      }
+    },
+    "trust_classes": {
+      "measured": "produced by a deterministic local instrument (ffprobe duration, sha256, exit status, HTTP status). Admissible as fact.",
+      "modelled": "produced by a model reading the material (ASR, OCR, translation, summary). Admissible as a rendering of the source, never as a fact about the world.",
+      "asserted": "the source's own statement. Admissible only as a claim attributed to that source."
+    },
+    "admissibility_rule": "Only measured items may be cited as SEAL evidence. A modelled or asserted item enters as a candidate and requires a measured verification of its own before any phase may go PASS on it.",
+    "record": {
+      "path": "_registry/fames-evidence/ingest-<stamp>-<slug>.json",
+      "required_fields": ["source_uri", "acquired_at", "acquisition_route", "quota_cost", "content_identity", "trust_class_map", "claims", "verdict", "promoted"],
+      "claim_fields": ["id", "claim", "trust_class", "verdict", "why"],
+      "verdict_values": ["adopt", "adapt", "reject", "already_covered", "UNKNOWN"],
+      "forbidden_material": ["raw credential", "token", "cookie", "session material", "reproduced copyrighted body"],
+      "unknown_rule": "A record missing provenance, content identity, route or a per-claim verdict is UNKNOWN and fails closed; UNKNOWN never promotes."
+    },
+    "validator": "python scripts/fames_fleet.py validate-ingest --input <ingest.json> --json",
+    "non_goals": ["autonomous crawling", "account creation", "bypassing an access control", "retaining material the source licenses against"],
+    "does_not_expand_authority": true
   },
   "distribution": {
     "mode": "content-addressed-github-bundle",

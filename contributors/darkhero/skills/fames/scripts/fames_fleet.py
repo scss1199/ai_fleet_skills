@@ -74,6 +74,18 @@ COMPLEXITY_FIELDS = (
     "new_files", "new_dependencies", "new_resident_processes",
     "new_abstractions", "duplicated_authorities",
 )
+# external_learning lane: an ingest record is outside material proposing a canon change.
+INGEST_FIELDS = (
+    "source_uri", "acquired_at", "acquisition_route", "quota_cost",
+    "content_identity", "trust_class_map", "claims", "verdict", "promoted",
+)
+INGEST_CLAIM_FIELDS = ("id", "claim", "trust_class", "verdict", "why")
+TRUST_CLASSES = {"measured", "modelled", "asserted"}
+INGEST_VERDICTS = {"adopt", "adapt", "reject", "already_covered", "UNKNOWN"}
+INGEST_FORBIDDEN_KEYS = (
+    "token", "cookie", "credential", "api_key", "apikey", "password",
+    "secret", "authorization", "session_id",
+)
 
 
 def _sha256(path: Path) -> str:
@@ -86,6 +98,69 @@ def _sha256(path: Path) -> str:
 def _stable_sha(payload: object) -> str:
     body = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(body.encode("utf-8")).hexdigest()
+
+
+def _version_tuple(value: object) -> tuple[int, ...] | None:
+    """Ordered generation number, or None when the version cannot be ordered."""
+    parts = str(value or "").strip().split(".")
+    if not parts or not all(part.isdigit() for part in parts):
+        return None
+    return tuple(int(part) for part in parts)
+
+
+def _package_generation(package_dir: Path) -> dict:
+    """Generation a package declares about itself, independent of its health.
+
+    Deliberately reads the manifest instead of calling verify_package: the package a
+    follow is about to overwrite must be compared even when it fails verification,
+    because a broken canonical is a reason to stop, not a licence to regress.
+    """
+    try:
+        payload = json.loads((package_dir / MANIFEST_NAME).read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return {"version": payload.get("version"), "package_sha": payload.get("package_sha")}
+
+
+def _canonical_identity(workspace: Path) -> dict:
+    return _package_generation(workspace.resolve() / "_skill" / "fleet-skills" / "fames")
+
+
+def _regression_guard(canonical: dict, remote_skill: dict, allow_rollback: bool = False) -> list[str]:
+    """Canon never moves backwards. A follow may only activate a newer generation.
+
+    On a hub-shared tree every install target resolves through the seat surfaces into
+    ONE canonical package, so a follow run for ANY seat rewrites canon. Three times, at
+    2026-08-14T19:30:06Z, 2026-08-15T02:00:06Z and 2026-08-15T02:07Z, a
+    `follow --host ai_scar3` on the authority machine activated the published 1.5.0
+    package over canonical 1.6.0 and silently deleted a shipped lane. The comparison
+    below is the fix, and it needs no machine identity: an older or unorderable remote
+    generation is refused, and an equal version carrying a different package_sha is
+    UNKNOWN, which fails closed. An absent canonical package is a genuine bootstrap and
+    is allowed.
+    """
+    if allow_rollback or not canonical:
+        return []
+    local_version = _version_tuple(canonical.get("version"))
+    if local_version is None:
+        return []
+    remote_version = _version_tuple(remote_skill.get("version"))
+    if remote_version is None:
+        return [
+            "remote generation is unversioned; refusing to overwrite canonical "
+            f"{canonical.get('version')} on an unorderable identity (--allow-rollback forces)"
+        ]
+    if remote_version < local_version:
+        return [
+            f"refusing to regress canonical {canonical.get('version')} to "
+            f"{remote_skill.get('version')} (--allow-rollback forces)"
+        ]
+    if remote_version == local_version and remote_skill.get("package_sha") != canonical.get("package_sha"):
+        return [
+            f"same version {canonical.get('version')} with a different package_sha is UNKNOWN "
+            "drift; the authority must bump the generation (--allow-rollback forces)"
+        ]
+    return []
 
 
 def semantic_goal_hash(goal: dict) -> str:
@@ -248,6 +323,119 @@ def validate_run(run: dict) -> dict:
         "risk_class": risk,
         "task_profile": profile,
         "aex_required": aex_required,
+        "errors": errors,
+    }
+
+
+def _is_counted(value: object) -> bool:
+    """A number, flag, or absence cannot carry material; MTM cost fields are counts."""
+    return value is None or isinstance(value, bool) or isinstance(value, (int, float))
+
+
+def _forbidden_key_paths(node: object, trail: str = "") -> list[str]:
+    """Report only the JSON path of a forbidden-material key, never its value."""
+    found: list[str] = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            here = f"{trail}/{key}" if trail else str(key)
+            if any(marker in str(key).lower() for marker in INGEST_FORBIDDEN_KEYS) and not _is_counted(value):
+                found.append(here)
+            found.extend(_forbidden_key_paths(value, here))
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            found.extend(_forbidden_key_paths(value, f"{trail}[{index}]"))
+    return found
+
+
+def validate_ingest(record: dict) -> dict:
+    """Validate one external_learning ingest record. UNKNOWN fails closed."""
+    errors: list[str] = []
+    for field in INGEST_FIELDS:
+        if field not in record:
+            errors.append(f"ingest field missing: {field}")
+
+    if _parse_time(record.get("acquired_at")) is None:
+        errors.append("acquired_at is not a parseable timestamp")
+    if not str(record.get("source_uri") or "").strip():
+        errors.append("source_uri is empty")
+    if not str(record.get("acquisition_route") or "").strip():
+        errors.append("acquisition_route is empty: route order is cost order and must be stated")
+    quota = record.get("quota_cost")
+    if not isinstance(quota, dict) or "metered_calls" not in quota:
+        errors.append("quota_cost must declare metered_calls")
+    elif not isinstance(quota["metered_calls"], int) or quota["metered_calls"] < 0:
+        errors.append("quota_cost.metered_calls must be a non-negative integer")
+
+    identity = record.get("content_identity")
+    if not isinstance(identity, dict) or not any(str(value or "").strip() for value in identity.values()):
+        errors.append("content_identity is empty: acquisition without identity is UNKNOWN")
+
+    trust_map = record.get("trust_class_map")
+    if not isinstance(trust_map, dict) or not trust_map:
+        errors.append("trust_class_map is missing")
+    else:
+        for item, klass in trust_map.items():
+            if klass not in TRUST_CLASSES:
+                errors.append(f"trust_class_map[{item}] is not a declared trust class")
+
+    claims = record.get("claims")
+    adopted = 0
+    if not isinstance(claims, list) or not claims:
+        errors.append("claims is empty: an ingest with no claim proposes nothing")
+        claims = []
+    for index, claim in enumerate(claims):
+        label = claim.get("id") if isinstance(claim, dict) else index
+        if not isinstance(claim, dict):
+            errors.append(f"claim {index} is not an object")
+            continue
+        for field in INGEST_CLAIM_FIELDS:
+            if not str(claim.get(field) or "").strip():
+                errors.append(f"claim {label}: {field} missing")
+        if claim.get("trust_class") not in TRUST_CLASSES:
+            errors.append(f"claim {label}: undeclared trust class")
+        verdict = claim.get("verdict")
+        if verdict not in INGEST_VERDICTS:
+            errors.append(f"claim {label}: verdict is not a declared value")
+        elif verdict == "UNKNOWN":
+            errors.append(f"claim {label}: UNKNOWN fails closed")
+        elif verdict in {"adopt", "adapt"}:
+            adopted += 1
+            trial = claim.get("trial") if isinstance(claim.get("trial"), dict) else {}
+            if not str(trial.get("verification") or "").strip():
+                errors.append(f"claim {label}: adopted without a Verification written before the trial")
+            if not str(trial.get("result") or "").strip():
+                errors.append(f"claim {label}: adopted without a trial result")
+            if trial.get("evidence_class") != "measured":
+                errors.append(
+                    f"claim {label}: adopted on non-measured evidence; only measured items are admissible"
+                )
+            if not str(claim.get("lands_in") or "").strip():
+                errors.append(f"claim {label}: adopted without naming the canon file it lands in")
+
+    if record.get("verdict") not in INGEST_VERDICTS:
+        errors.append("record verdict is not a declared value")
+    elif record.get("verdict") == "UNKNOWN":
+        errors.append("record verdict UNKNOWN fails closed")
+
+    if record.get("promoted") is True:
+        promotion = record.get("promotion") if isinstance(record.get("promotion"), dict) else {}
+        if promotion.get("actor") != promotion.get("authority"):
+            errors.append("only the authority node promotes an external claim into canon")
+        for phase in ("FP", "SCF", "SEAL"):
+            if promotion.get("phases", {}).get(phase) != "PASS":
+                errors.append(f"promotion requires {phase} PASS")
+        if adopted == 0:
+            errors.append("promoted with no adopted claim")
+
+    for path in _forbidden_key_paths(record):
+        errors.append(f"forbidden material key at {path}")
+
+    return {
+        "ok": not errors,
+        "state": "PASS" if not errors else "FAIL",
+        "claims": len(claims),
+        "adopted": adopted,
+        "promoted": record.get("promoted") is True,
         "errors": errors,
     }
 
@@ -627,7 +815,12 @@ def _source_bytes(base: str, relative: str) -> bytes:
     return (Path(base) / Path(relative)).read_bytes()
 
 
-def follow(workspace: Path, host: str, authority: str = DEFAULT_AUTHORITY) -> dict:
+def follow(
+    workspace: Path,
+    host: str,
+    authority: str = DEFAULT_AUTHORITY,
+    allow_rollback: bool = False,
+) -> dict:
     """Converge one follower to the authority's content-addressed FAMES generation."""
     try:
         manifest = json.loads(_source_bytes(authority, "manifest.json").decode("utf-8-sig"))
@@ -667,6 +860,7 @@ def follow(workspace: Path, host: str, authority: str = DEFAULT_AUTHORITY) -> di
                 "fetched_files": 1,
                 "errors": [],
             }
+        canonical_state = _canonical_identity(workspace)
         with tempfile.TemporaryDirectory(prefix="fames-follow-") as temp_dir:
             package = Path(temp_dir) / "fames"
             for relative, expected in declared.items():
@@ -681,6 +875,24 @@ def follow(workspace: Path, host: str, authority: str = DEFAULT_AUTHORITY) -> di
             package_check = verify_package(package)
             if not package_check["ok"] or package_check.get("package_sha") != skill.get("package_sha"):
                 raise ValueError("authority package verification failed")
+            # The manifest index row carries no version, so the generation to compare is
+            # the one the downloaded package declares about itself. The download is free
+            # of side effects and already hash-verified, so guarding here costs one
+            # discarded temp directory and never a rewritten canon.
+            remote_identity = {
+                "version": _package_generation(package).get("version") or skill.get("version"),
+                "package_sha": package_check.get("package_sha"),
+            }
+            regressions = _regression_guard(canonical_state, remote_identity, allow_rollback)
+            if regressions:
+                return {
+                    "ok": False,
+                    "changed": False,
+                    "host": host,
+                    "canonical_version": canonical_state.get("version"),
+                    "remote_version": remote_identity.get("version"),
+                    "errors": regressions,
+                }
             result = install(workspace, host, package)
         if not result.get("ok"):
             return result
@@ -788,13 +1000,13 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "parity", "status", "validate-run", "install", "follow", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "validate-run", "validate-ingest", "install", "follow", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
         if name in {"verify-package", "parity", "status"}:
             command.add_argument("--skill-dir", type=Path, default=PACKAGE_ROOT)
-        if name == "validate-run":
+        if name in {"validate-run", "validate-ingest"}:
             command.add_argument("--input", type=Path, required=True)
         if name == "build-bundle":
             command.add_argument("--protocol-git-ref")
@@ -804,6 +1016,7 @@ def main() -> int:
             command.add_argument("--source", type=Path, default=PACKAGE_ROOT)
         if name == "follow":
             command.add_argument("--authority", default=DEFAULT_AUTHORITY)
+            command.add_argument("--allow-rollback", action="store_true")
         if name == "verify-fleet":
             command.add_argument("--hosts", nargs="+", required=True)
     args = parser.parse_args()
@@ -825,10 +1038,20 @@ def main() -> int:
             payload = {"ok": False, "state": "UNKNOWN", "errors": [f"run input unreadable: {exc}"]}
             return _emit(payload, args.json)
         return _emit(validate_run(payload), args.json)
+    if args.command == "validate-ingest":
+        try:
+            payload = _read_json(args.input)
+        except (OSError, json.JSONDecodeError) as exc:
+            payload = {"ok": False, "state": "UNKNOWN", "errors": [f"ingest input unreadable: {exc}"]}
+            return _emit(payload, args.json)
+        return _emit(validate_ingest(payload), args.json)
     if args.command == "install":
         return _emit(install(args.workspace, args.host, args.source), args.json)
     if args.command == "follow":
-        return _emit(follow(args.workspace, args.host, args.authority), args.json)
+        return _emit(
+            follow(args.workspace, args.host, args.authority, args.allow_rollback),
+            args.json,
+        )
     if args.command == "verify-host":
         return _emit(verify_host(args.workspace, args.host), args.json)
     return _emit(verify_fleet(args.workspace, args.hosts), args.json)

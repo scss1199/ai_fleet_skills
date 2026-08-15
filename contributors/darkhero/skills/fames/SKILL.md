@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-14.3
+FAMES-GEN: 2026-08-15.1
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -42,6 +42,14 @@ FAMES broadens completeness only and does not expand user authority. It never au
 ## Fleet generation rule
 
 Treat `bundle-manifest.json.package_sha` as the FAMES generation identity. A machine has FAMES only when its installed package verifies and its GitHub contributor manifest reports that exact `package_sha`. A missing contributor receipt, stale manifest, hash mismatch, or unreadable bundled protocol is `UNKNOWN`; never infer convergence from a matching folder name.
+
+## External learning — outside material that proposes a change
+
+When material from outside the fleet is used to justify a change to canon, tooling, or routing, run the `external_learning` lane in the bundled protocol: `ACQUIRE -> UNDERSTAND -> CLAIM -> TRIAL -> PROMOTE`. It is a lane feeding AEX, not a sixth phase; `execution_order` is unchanged.
+
+Acquire by cost order — publisher-supplied text, then a local model whose input never leaves the machine, then a metered API — and treat a login wall, paywall, or bot check as a named blocker for the operator, never a puzzle. Classify every item as `measured` (a deterministic local instrument), `modelled` (ASR, OCR, summary), or `asserted` (the source's own words). **Only `measured` items are admissible as SEAL evidence.** A modelled or asserted item is a candidate that needs a measured verification of its own, whose Verification is written before the trial runs. `already_covered` is a first-class verdict and costs nothing.
+
+Record the ingest at `_registry/fames-evidence/ingest-<stamp>-<slug>.json` and validate it with `python scripts/fames_fleet.py validate-ingest --input <file> --json`. A record missing provenance, content identity, route, or a per-claim verdict is `UNKNOWN` and fails closed; `UNKNOWN` never promotes. Followers may publish an ingest record as a candidate improvement; only the authority promotes, after FP, SCF, and SEAL.
 
 ## Minimal neutral architecture
 
