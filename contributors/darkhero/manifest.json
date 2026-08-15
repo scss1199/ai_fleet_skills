@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-15T02:39:12Z",
-  "manifest_sha": "65c0483c9f67f6cc",
+  "generated_at": "2026-08-15T02:45:01Z",
+  "manifest_sha": "176525fbf32b2cc1",
   "required": [
     "fames",
     "aex-agent-evolution",
@@ -22,7 +22,7 @@
     "ztm-fleet-intelligence",
     "token-preflight"
   ],
-  "skill_count": 41,
+  "skill_count": 40,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -103,24 +103,6 @@
         "scripts/record_failure.py": "87723a5609f6c0ef135da94d6208535c0784a0c2a38663a806f989bfd35a9d11",
         "scripts/selftest_quick_validate.py": "41d345f312b0737b9df9e45fb0acb4eb4233c28c460214cd3810e349cfebd503",
         "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37"
-      }
-    },
-    {
-      "name": "fames",
-      "sha": "ac1a0c5ec510d026",
-      "required": true,
-      "lane": null,
-      "package_sha": "e46688dc9b8c7a495c20f89979ca99554dafa571b1e3a894298e1953df33b60f",
-      "files": {
-        "SKILL.md": "3f541d135ee9f2828734d53155c3d6b27a40a0d1f38507db1f4863fa7f0dd93c",
-        "bundle-manifest.json": "a94d9b4440f23258ebac644389d3f5e25ee80ded1224dab2a7a1900ba83f5cc4",
-        "references/protocols/fames-protocol.json": "1771c22a16f0d30f698cb57a4989aad2e5b7eb4221089f13d56ce2d4ff593fde",
-        "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
-        "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
-        "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
-        "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
-        "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-        "scripts/fames_fleet.py": "cff027cb5e0fc3887d063f4aa172b0d9312813cd98093cb766faf1ee078f2221"
       }
     },
     {

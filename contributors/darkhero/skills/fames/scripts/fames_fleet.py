@@ -30,6 +30,26 @@ PROTOCOL_TARGETS = {
     key: f"references/protocols/{Path(source).name}"
     for key, source in PROTOCOL_SOURCES.items()
 }
+CASES_SOURCE = "_registry/fames-cases.json"
+CASES_TARGET = "references/cases.json"
+SELF_EVIDENCE_DIR = "_registry/fames-evidence/self"
+RESIDUAL_DIMENSIONS = (
+    "R_CONTRACT",
+    "R_SEMANTICS",
+    "R_FLEET",
+    "R_CAPABILITY",
+    "R_HYGIENE",
+    "R_FRESHNESS",
+)
+CASE_KINDS = {
+    "path_exists",
+    "file_size_max",
+    "json_probe",
+    "validator_probe",
+    "parity",
+    "newest_age_max",
+}
+FAIL_MODES = {"closed", "degraded"}
 MANIFEST_NAME = "bundle-manifest.json"
 GENERATION_PREFIX = "FAMES-GEN: "
 DEFAULT_AUTHORITY = "https://raw.githubusercontent.com/scss1199/ai_fleet_skills/main/contributors/darkhero"
@@ -479,9 +499,14 @@ def build_bundle(
     workspace: Path,
     package_root: Path = PACKAGE_ROOT,
     protocol_git_ref: str | None = None,
+    allow_same_gen: bool = False,
 ) -> dict:
     workspace = workspace.resolve()
     package_root = package_root.resolve()
+    try:
+        previous = _read_json(package_root / MANIFEST_NAME)
+    except (OSError, json.JSONDecodeError):
+        previous = {}
     copied: dict[str, str] = {}
     for phase, source_rel in PROTOCOL_SOURCES.items():
         source = workspace / source_rel
@@ -496,18 +521,45 @@ def build_bundle(
             shutil.copy2(source, target)
         copied[target_rel] = source_rel
 
+    cases_source = workspace / CASES_SOURCE
+    cases_target = package_root / CASES_TARGET
+    cases_target.parent.mkdir(parents=True, exist_ok=True)
+    if protocol_git_ref:
+        cases_target.write_bytes(_git_protocol_blob(workspace, protocol_git_ref, CASES_SOURCE))
+    elif cases_source.is_file():
+        shutil.copy2(cases_source, cases_target)
+    elif not cases_target.is_file():
+        raise FileNotFoundError(f"missing source cases: {cases_source}")
+    copied[CASES_TARGET] = CASES_SOURCE
+
     fames = _read_json(package_root / PROTOCOL_TARGETS["FAMES"])
     expected_files = [
         "SKILL.md",
         "scripts/fames_fleet.py",
+        CASES_TARGET,
         *PROTOCOL_TARGETS.values(),
     ]
     files = {rel: _sha256(package_root / rel) for rel in sorted(set(expected_files))}
     version = str(fames.get("version") or "")
+    generation = _skill_generation(package_root)
+    if (
+        previous
+        and not allow_same_gen
+        and previous.get("files") != files
+        and previous.get("version") == version
+        and previous.get("skill_gen") == generation
+    ):
+        raise RuntimeError(
+            "package contents changed but the generation did not: version "
+            f"{version} and FAMES-GEN {generation} already name a different package. "
+            "Bump the protocol version or the SKILL.md stamp so followers can order "
+            "the two (--allow-same-gen forces)."
+        )
     manifest = {
         "schema": 1,
         "id": "FAMES",
         "version": version,
+        "skill_gen": generation,
         "execution_order": EXECUTION_ORDER,
         "source_files": copied,
         "source_git_commit": (
