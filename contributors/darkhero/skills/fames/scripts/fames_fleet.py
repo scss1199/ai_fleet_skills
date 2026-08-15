@@ -1192,8 +1192,24 @@ def _evaluate_case(
         target = workspace / str(case.get("path"))
         if not target.is_file():
             return ("PASS" if missing_ok else "FAIL"), "absent"
-        size = target.stat().st_size
         limit = int(case.get("max_bytes", 0))
+        if case.get("ignore_comment_lines"):
+            # A drop file that is armed but unused still carries its instruction
+            # scaffold, so raw size answers "is this file non-empty" when the real
+            # question is "does it hold a payload". Count only the bytes of lines
+            # that are neither blank nor comments -- the same predicate the consuming
+            # tool applies. Lines are measured, never emitted.
+            try:
+                text = target.read_text(encoding="utf-8-sig")
+            except (OSError, UnicodeDecodeError):
+                return "UNKNOWN", "unreadable as text"
+            size = sum(
+                len(line.strip().encode("utf-8"))
+                for line in text.splitlines()
+                if line.strip() and not line.strip().startswith("#")
+            )
+            return ("PASS" if size <= limit else "FAIL"), f"{size} payload bytes > {limit}"
+        size = target.stat().st_size
         # Size only. The content of a probed file is never read, here or anywhere.
         return ("PASS" if size <= limit else "FAIL"), f"{size} bytes > {limit}"
 
