@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "updated": "2026-08-15",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -125,6 +125,23 @@
     "phase_order": ["FP", "MTM", "SCF", "AEX", "SEAL"],
     "aex_activation": "Only a verified comparable cross-cycle residual activates AEX.",
     "unknown_exit": "non-zero"
+  },
+  "self_check": {
+    "purpose": "FAMES run against FAMES. Each case states its expectation before it runs (FP), costs one in-process call and zero model tokens (MTM), its failure count IS the residual (SCF), a non-zero dimension is the only thing that activates a change (AEX), and the written record cites package_sha and replays (SEAL).",
+    "command": "python scripts/fames_fleet.py self-check --workspace <root> --json",
+    "cases_ssot": "_registry/fames-cases.json",
+    "cases_bundled": "references/cases.json",
+    "evidence_dir": "_registry/fames-evidence/self",
+    "residual_keys": ["R_CONTRACT", "R_SEMANTICS", "R_FLEET", "R_CAPABILITY", "R_HYGIENE", "R_FRESHNESS"],
+    "fail_modes": {
+      "closed": "blocks; the run is not ok",
+      "degraded": "counted into the residual and reported, but does not block"
+    },
+    "unknown_rule": "UNKNOWN blocks regardless of the declared fail_mode, including an unknown case kind, residual dimension, or fail mode. Data cannot introduce behaviour.",
+    "extension_rule": "Adding a check means adding a case to the SSOT, not writing code. Cases are evaluated in-process by declared kind; no case may name a command to execute.",
+    "honesty_rule": "A real residual stays red until it is fixed. Silencing or deleting a case to make a run green is a contract violation, not a fix.",
+    "quota_cost": {"metered_calls": 0, "model_tokens_external": 0},
+    "trust_class": "measured"
   },
   "phase_contract": {
     "FP": {

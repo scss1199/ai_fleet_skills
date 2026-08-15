@@ -1041,6 +1041,385 @@ def verify_fleet(workspace: Path, hosts: list[str]) -> dict:
     }
 
 
+def _pointer_get(node: object, pointer: str) -> list:
+    """Resolve a slash pointer, '*' matching every dict value or list item.
+
+    Returns every resolved value, so an unresolvable pointer is an empty list rather
+    than a None that a probe could mistake for a real value.
+    """
+    current = [node]
+    for part in [p for p in str(pointer).split("/") if p]:
+        following: list = []
+        for item in current:
+            if part == "*":
+                if isinstance(item, dict):
+                    following.extend(item.values())
+                elif isinstance(item, list):
+                    following.extend(item)
+                continue
+            if isinstance(item, dict):
+                if part in item:
+                    following.append(item[part])
+            elif isinstance(item, list):
+                try:
+                    following.append(item[int(part)])
+                except (ValueError, IndexError):
+                    continue
+        current = following
+    return current
+
+
+def _pointer_walk(node: object, pointer: str) -> tuple[object, str] | None:
+    parts = [p for p in str(pointer).split("/") if p]
+    if not parts:
+        return None
+    current = node
+    for part in parts[:-1]:
+        if isinstance(current, list):
+            try:
+                current = current[int(part)]
+            except (ValueError, IndexError):
+                return None
+        elif isinstance(current, dict):
+            if part not in current or not isinstance(current[part], (dict, list)):
+                current.setdefault(part, {})
+            current = current[part]
+        else:
+            return None
+    return current, parts[-1]
+
+
+def _pointer_set(node: object, pointer: str, value: object) -> bool:
+    walked = _pointer_walk(node, pointer)
+    if walked is None:
+        return False
+    parent, last = walked
+    if isinstance(parent, list):
+        try:
+            parent[int(last)] = value
+        except (ValueError, IndexError):
+            return False
+        return True
+    if isinstance(parent, dict):
+        parent[last] = value
+        return True
+    return False
+
+
+def _pointer_del(node: object, pointer: str) -> bool:
+    walked = _pointer_walk(node, pointer)
+    if walked is None:
+        return False
+    parent, last = walked
+    if isinstance(parent, list):
+        try:
+            del parent[int(last)]
+        except (ValueError, IndexError):
+            return False
+        return True
+    if isinstance(parent, dict):
+        return parent.pop(last, _pointer_del) is not _pointer_del
+    return False
+
+
+def _select_paths(workspace: Path, patterns: object) -> list[Path]:
+    found: list[Path] = []
+    for pattern in patterns if isinstance(patterns, list) else [patterns]:
+        for path in sorted(workspace.glob(str(pattern))):
+            if path.is_file() and path not in found:
+                found.append(path)
+    return found
+
+
+def _brief(value: object, redact: bool) -> str:
+    if redact:
+        return "<redacted>"
+    text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+    return text if len(text) <= 32 else text[:29] + "..."
+
+
+def _inject_goal_hash(record: dict) -> None:
+    """Make a fixture test the rules instead of the hash function of the day."""
+    goal = record.get("goal")
+    if not isinstance(goal, dict):
+        return
+    digest = semantic_goal_hash(goal)
+    goal["semantic_goal_hash"] = digest
+    if isinstance(record.get("result"), dict):
+        record["result"]["goal_hash"] = digest
+    for row in record.get("evidence") or []:
+        if isinstance(row, dict):
+            row["goal_identity"] = digest
+
+
+def _prepare_input(fixtures: dict, case: dict) -> tuple[object, str]:
+    ref = case.get("input_ref")
+    if ref not in fixtures:
+        return None, f"unknown input_ref {ref!r}"
+    record = json.loads(json.dumps(fixtures[ref]))
+    auto = record.pop("auto_goal_hash", False) if isinstance(record, dict) else False
+    for pointer in case.get("remove") or []:
+        _pointer_del(record, pointer)
+    for pointer, value in (case.get("patch") or {}).items():
+        _pointer_set(record, pointer, value)
+    if case.get("auto_goal_hash", auto) and isinstance(record, dict):
+        _inject_goal_hash(record)
+    return record, ""
+
+
+def _evaluate_case(
+    case: dict,
+    workspace: Path,
+    package_root: Path,
+    fixtures: dict,
+    refs: dict,
+) -> tuple[str, str]:
+    kind = case.get("kind")
+    redact = bool(case.get("redact"))
+    missing_ok = bool(case.get("missing_ok"))
+
+    if kind == "parity":
+        drift = parity(workspace, package_root)
+        return ("PASS" if drift.get("ok") else "FAIL"), "; ".join(drift.get("errors") or [])[:200]
+
+    if kind == "path_exists":
+        target = workspace / str(case.get("path"))
+        present = target.exists()
+        want = case.get("expect", "present") == "present"
+        return ("PASS" if present == want else "FAIL"), f"present={present}"
+
+    if kind == "file_size_max":
+        target = workspace / str(case.get("path"))
+        if not target.is_file():
+            return ("PASS" if missing_ok else "FAIL"), "absent"
+        size = target.stat().st_size
+        limit = int(case.get("max_bytes", 0))
+        # Size only. The content of a probed file is never read, here or anywhere.
+        return ("PASS" if size <= limit else "FAIL"), f"{size} bytes > {limit}"
+
+    if kind == "newest_age_max":
+        paths = _select_paths(workspace, case.get("select") or [])
+        if not paths:
+            return ("NOT_APPLICABLE" if missing_ok else "FAIL"), "no match"
+        newest = max(path.stat().st_mtime for path in paths)
+        age_h = (datetime.now(timezone.utc).timestamp() - newest) / 3600.0
+        limit = float(case.get("max_age_h", 24))
+        return ("PASS" if age_h <= limit else "FAIL"), f"newest is {age_h:.1f}h old, ceiling {limit}h"
+
+    if kind == "json_probe":
+        paths = _select_paths(workspace, case.get("select") or [])
+        if not paths:
+            return ("NOT_APPLICABLE" if missing_ok else "FAIL"), "no file matched select"
+        expect = case.get("expect")
+        observed: list[tuple[str, object]] = []
+        problems: list[str] = []
+        for path in paths:
+            rel = path.relative_to(workspace).as_posix()
+            try:
+                document = _read_json(path)
+            except (OSError, json.JSONDecodeError) as exc:
+                problems.append(f"{rel}: unreadable ({exc.__class__.__name__})")
+                continue
+            values = _pointer_get(document, case.get("pointer", ""))
+            if not values:
+                if not missing_ok:
+                    problems.append(f"{rel}: pointer unresolved")
+                continue
+            observed.extend((rel, value) for value in values)
+        if problems:
+            return "FAIL", "; ".join(problems)[:200]
+        if not observed:
+            return ("NOT_APPLICABLE" if missing_ok else "FAIL"), "pointer resolved nowhere"
+        if expect == "all_equal_ref":
+            reference = refs.get(case.get("ref"))
+            if reference is None:
+                return "UNKNOWN", f"reference {case.get('ref')!r} unavailable"
+            bad = [f"{rel}={_brief(value, redact)}" for rel, value in observed if value != reference]
+            return ("PASS" if not bad else "FAIL"), (
+                f"expected {_brief(reference, redact)}; " + ", ".join(bad)
+            )[:200] if bad else f"{len(observed)} match {_brief(reference, redact)}"
+        if expect == "all_equal":
+            first = observed[0][1]
+            bad = [f"{rel}={_brief(value, redact)}" for rel, value in observed if value != first]
+            return ("PASS" if not bad else "FAIL"), ", ".join(bad)[:200] or f"{len(observed)} agree"
+        if expect == "all_in":
+            allowed = case.get("values") or []
+            bad = [f"{rel}={_brief(value, redact)}" for rel, value in observed if value not in allowed]
+            return ("PASS" if not bad else "FAIL"), ", ".join(bad)[:200] or f"{len(observed)} in range"
+        return "UNKNOWN", f"unknown expect {expect!r}"
+
+    if kind == "validator_probe":
+        record, problem = _prepare_input(fixtures, case)
+        if problem:
+            return "UNKNOWN", problem
+        validator = case.get("validator")
+        if validator == "validate_run":
+            outcome = validate_run(record)
+            ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
+        elif validator == "validate_ingest":
+            outcome = validate_ingest(record)
+            ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
+        elif validator == "regression_guard":
+            errors = _regression_guard(
+                record.get("canonical") or {},
+                record.get("remote") or {},
+                bool(record.get("allow_rollback")),
+            )
+            ok = not errors
+        else:
+            return "UNKNOWN", f"unknown validator {validator!r}"
+        want = bool(case.get("expect_ok"))
+        if ok == want:
+            return "PASS", ("accepted" if ok else f"refused ({len(errors)})")
+        if want:
+            # Only echo rule messages when a case that should have passed did not.
+            return "FAIL", "; ".join(str(e) for e in errors[:5])[:200]
+        return "FAIL", "accepted a record the rule must refuse"
+
+    return "UNKNOWN", f"unknown case kind {kind!r}"
+
+
+def _load_cases(workspace: Path, package_root: Path) -> tuple[dict, str]:
+    """The bundled cases are the portable authority; the registry is the SSOT."""
+    bundled = package_root / CASES_TARGET
+    source = workspace / CASES_SOURCE
+    for path in (bundled, source):
+        if path.is_file():
+            try:
+                return _read_json(path), ""
+            except (OSError, json.JSONDecodeError) as exc:
+                return {}, f"cases unreadable at {path.name}: {exc}"
+    return {}, "no cases file in the package or the registry"
+
+
+def run_cases(
+    workspace: Path,
+    package_root: Path = PACKAGE_ROOT,
+    only: list[str] | None = None,
+) -> dict:
+    """Run every declared case and charge each failure to a residual dimension.
+
+    This is FAMES applied to FAMES with no model in the loop: each case states its
+    expectation before it runs (FP), costs one in-process call and zero tokens (MTM),
+    and its failure count is the residual (SCF) that alone justifies a change (AEX).
+    """
+    workspace = workspace.resolve()
+    package_root = package_root.resolve()
+    document, problem = _load_cases(workspace, package_root)
+    if problem:
+        return {"ok": False, "workspace": str(workspace), "cases": [], "errors": [problem]}
+
+    fixtures = document.get("fixtures") or {}
+    refs = {}
+    try:
+        manifest = _read_json(package_root / MANIFEST_NAME)
+        refs = {
+            "canonical_package_sha": manifest.get("package_sha"),
+            "canonical_version": manifest.get("version"),
+        }
+    except (OSError, json.JSONDecodeError):
+        refs = {}
+    authority = (workspace / CASES_SOURCE).is_file()
+
+    rows: list[dict] = []
+    residual = {key: 0 for key in RESIDUAL_DIMENSIONS}
+    blocking: list[str] = []
+    degraded: list[str] = []
+    errors: list[str] = []
+    for case in document.get("cases") or []:
+        case_id = str(case.get("id") or "?")
+        if only and case_id not in only:
+            continue
+        charges = case.get("charges")
+        fail_mode = case.get("fail_mode", "closed")
+        row = {"id": case_id, "kind": case.get("kind"), "charges": charges, "fail_mode": fail_mode}
+        if case.get("kind") not in CASE_KINDS:
+            state, detail = "UNKNOWN", f"unknown case kind {case.get('kind')!r}"
+        elif charges not in RESIDUAL_DIMENSIONS:
+            state, detail = "UNKNOWN", f"unknown residual dimension {charges!r}"
+        elif fail_mode not in FAIL_MODES:
+            state, detail = "UNKNOWN", f"unknown fail_mode {fail_mode!r}"
+        elif case.get("scope") == "authority" and not authority:
+            state, detail = "NOT_APPLICABLE", "authority-only case on a follower"
+        else:
+            try:
+                state, detail = _evaluate_case(case, workspace, package_root, fixtures, refs)
+            except Exception as exc:  # a case that cannot be evaluated is UNKNOWN, not green
+                state, detail = "UNKNOWN", f"{exc.__class__.__name__}: {exc}"[:200]
+        row["state"] = state
+        row["detail"] = detail
+        rows.append(row)
+        if state in {"FAIL", "UNKNOWN"}:
+            if charges in residual:
+                residual[charges] += 1
+            note = f"{case_id} [{charges}] {state}: {detail}"
+            # UNKNOWN fails closed regardless of the declared mode.
+            if fail_mode == "closed" or state == "UNKNOWN":
+                blocking.append(note)
+            else:
+                degraded.append(note)
+    errors.extend(blocking)
+    return {
+        "ok": not blocking,
+        "workspace": str(workspace),
+        "scope": "authority" if authority else "follower",
+        "counted": len(rows),
+        "residual": residual,
+        "residual_total": sum(residual.values()),
+        "blocking": blocking,
+        "degraded": degraded,
+        "cases": rows,
+        "errors": errors,
+    }
+
+
+def self_check(
+    workspace: Path,
+    package_root: Path = PACKAGE_ROOT,
+    write: bool = True,
+) -> dict:
+    """One zero-token command that proves the package still is what it claims.
+
+    status() answers "is this generation intact and current"; run_cases() answers
+    "do the rules still hold and is the residual still what it was". The record it
+    writes is the replayable SEAL evidence, and its own age is a case.
+    """
+    state = status(workspace, package_root)
+    cases = run_cases(workspace, package_root)
+    errors = [f"status: {e}" for e in state.get("errors") or []]
+    errors += [f"case: {e}" for e in cases.get("blocking") or []]
+    record = {
+        "schema": 1,
+        "id": "FAMES-SELF-CHECK",
+        "ok": not errors,
+        "at": datetime.now(timezone.utc).isoformat(),
+        "workspace": str(Path(workspace).resolve()),
+        "scope": cases.get("scope"),
+        "skill_gen": state.get("skill_gen"),
+        "version": state.get("version"),
+        "package_sha": state.get("package_sha"),
+        "package_ok": state.get("package_ok"),
+        "parity_ok": state.get("parity_ok"),
+        "residual": cases.get("residual"),
+        "residual_total": cases.get("residual_total"),
+        "blocking": cases.get("blocking"),
+        "degraded": cases.get("degraded"),
+        "cases": cases.get("cases"),
+        "errors": errors,
+    }
+    if write:
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        target = Path(workspace).resolve() / SELF_EVIDENCE_DIR / f"{stamp}.json"
+        try:
+            _write_json_atomic(target, record)
+            record["evidence_path"] = str(target)
+        except OSError as exc:
+            record["evidence_path"] = None
+            record["errors"] = errors + [f"evidence unwritable: {exc}"]
+            record["ok"] = False
+    return record
+
+
 def _emit(payload: dict, as_json: bool) -> int:
     if as_json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
@@ -1052,16 +1431,21 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "parity", "status", "validate-run", "validate-ingest", "install", "follow", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "install", "follow", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
-        if name in {"verify-package", "parity", "status"}:
+        if name in {"verify-package", "parity", "status", "run-cases", "self-check"}:
             command.add_argument("--skill-dir", type=Path, default=PACKAGE_ROOT)
         if name in {"validate-run", "validate-ingest"}:
             command.add_argument("--input", type=Path, required=True)
+        if name == "run-cases":
+            command.add_argument("--only", nargs="+")
+        if name == "self-check":
+            command.add_argument("--no-write", action="store_true")
         if name == "build-bundle":
             command.add_argument("--protocol-git-ref")
+            command.add_argument("--allow-same-gen", action="store_true")
         if name in {"install", "follow", "verify-host"}:
             command.add_argument("--host", required=True)
         if name == "install":
@@ -1074,7 +1458,11 @@ def main() -> int:
     args = parser.parse_args()
     if args.command == "build-bundle":
         return _emit(
-            build_bundle(args.workspace, protocol_git_ref=args.protocol_git_ref),
+            build_bundle(
+                args.workspace,
+                protocol_git_ref=args.protocol_git_ref,
+                allow_same_gen=args.allow_same_gen,
+            ),
             args.json,
         )
     if args.command == "verify-package":
@@ -1083,6 +1471,13 @@ def main() -> int:
         return _emit(parity(args.workspace, args.skill_dir), args.json)
     if args.command == "status":
         return _emit(status(args.workspace, args.skill_dir), args.json)
+    if args.command == "run-cases":
+        return _emit(run_cases(args.workspace, args.skill_dir, args.only), args.json)
+    if args.command == "self-check":
+        return _emit(
+            self_check(args.workspace, args.skill_dir, write=not args.no_write),
+            args.json,
+        )
     if args.command == "validate-run":
         try:
             payload = _read_json(args.input)
