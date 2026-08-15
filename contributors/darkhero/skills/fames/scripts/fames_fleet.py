@@ -54,6 +54,14 @@ FAIL_MODES = {"closed", "degraded"}
 MANIFEST_NAME = "bundle-manifest.json"
 GENERATION_PREFIX = "FAMES-GEN: "
 DEFAULT_AUTHORITY = "https://raw.githubusercontent.com/scss1199/ai_fleet_skills/main/contributors/darkhero"
+RIDER_REGISTRY = "_registry/hosts.json"
+RIDER_ENGINE = "_skill/engines/register-rider.py"
+CONVERGE_RIDER_ID = "fames-converge"
+CONVERGE_RIDER_HOST = "HubClock"
+CONVERGE_CADENCE = "15m"
+CONVERGE_PRIORITY = 90
+CONVERGE_DESC = "FAMES self-convergence: verified GitHub generation pull + heartbeat"
+CONVERGE_DIR = "_registry/fames-converge"
 TEXT_SUFFIXES = {
     ".json",
     ".md",
@@ -971,6 +979,186 @@ def follow(
         return {"ok": False, "host": host, "errors": [str(exc)]}
 
 
+def _rider_command(workspace: Path, host: str) -> str:
+    """The exact line a seat's own clock must run to converge that seat.
+
+    A windowless interpreter by preference: the rider fires out of session, and a
+    console interpreter would flash a window on every boundary. `--arm` is included
+    so a rider whose command drifts (a moved workspace, a renamed seat) repairs its
+    own registration on the next boundary; a rider that was REMOVED cannot re-add
+    itself, so this never fights an operator who deliberately disarmed it.
+    """
+    exe = Path(sys.executable)
+    quiet = exe.with_name("pythonw.exe")
+    runner = quiet if quiet.is_file() else exe
+    script = workspace / "_skill" / "fleet-skills" / "fames" / "scripts" / "fames_fleet.py"
+    return f"{runner} {script} converge --workspace {workspace} --host {host} --arm"
+
+
+def _norm_command(value: object) -> str:
+    return " ".join(str(value or "").split()).replace("/", "\\").lower()
+
+
+def rider_state(workspace: Path, host: str) -> dict:
+    """Measure this seat's own clock entry. Read-only: never writes the registry."""
+    expected = _rider_command(workspace, host)
+    registry = workspace / RIDER_REGISTRY
+    if not registry.is_file():
+        return {"state": "unavailable", "detail": "no rider registry on this seat", "expected": expected}
+    try:
+        hosts = _read_json(registry).get("hosts") or {}
+    except (OSError, json.JSONDecodeError) as exc:
+        return {
+            "state": "UNKNOWN",
+            "detail": f"rider registry unreadable: {exc.__class__.__name__}",
+            "expected": expected,
+        }
+    riders = (hosts.get(CONVERGE_RIDER_HOST) or {}).get("riders") or []
+    row = next(
+        (r for r in riders if isinstance(r, dict) and r.get("id") == CONVERGE_RIDER_ID),
+        None,
+    )
+    if row is None:
+        return {
+            "state": "absent",
+            "detail": f"{CONVERGE_RIDER_ID} not registered on {CONVERGE_RIDER_HOST}",
+            "expected": expected,
+        }
+    if _norm_command(row.get("command")) != _norm_command(expected):
+        return {
+            "state": "drifted",
+            "detail": "registered command does not run this package",
+            "expected": expected,
+            "found": row.get("command"),
+        }
+    if str(row.get("cadence") or "") != CONVERGE_CADENCE:
+        return {
+            "state": "drifted",
+            "detail": f"cadence {row.get('cadence')!r} is not {CONVERGE_CADENCE}",
+            "expected": expected,
+        }
+    return {"state": "armed", "detail": f"{CONVERGE_RIDER_ID} @{CONVERGE_CADENCE}", "expected": expected}
+
+
+def arm(workspace: Path, host: str, apply: bool = False) -> dict:
+    """Register this seat's own converge rider, idempotently.
+
+    Arming a recurring out-of-turn job is an operator act, so it is never a side
+    effect: it happens only under an explicit `--arm`, and the registration is an
+    upsert keyed by rider id, so repeating it converges instead of accumulating.
+    Without `--arm` this reports the measured rider state and prints the proposal,
+    which is also the answer on a seat that has no rider engine to call.
+    """
+    workspace = workspace.resolve()
+    observed = rider_state(workspace, host)
+    command = observed["expected"]
+    engine = workspace / RIDER_ENGINE
+    argv = [
+        sys.executable,
+        str(engine),
+        "add",
+        CONVERGE_RIDER_HOST,
+        CONVERGE_RIDER_ID,
+        command,
+        "--cadence",
+        CONVERGE_CADENCE,
+        "--priority",
+        str(CONVERGE_PRIORITY),
+        "--desc",
+        CONVERGE_DESC,
+    ]
+    result = {
+        "ok": observed["state"] != "UNKNOWN",
+        "host": _receipt_key(workspace, host),
+        "rider": observed["state"],
+        "detail": observed.get("detail"),
+        "changed": False,
+        "proposal": subprocess.list2cmdline(argv[1:]),
+        "errors": [],
+    }
+    if observed["state"] == "armed" or not apply:
+        return result
+    if " " in str(workspace):
+        result.update(
+            ok=False,
+            errors=["workspace path contains a space; the rider registry splits commands on whitespace"],
+        )
+        return result
+    if not engine.is_file():
+        result.update(
+            ok=False,
+            errors=[f"named blocker: {RIDER_ENGINE} absent -- arm the printed proposal on this seat's own clock"],
+        )
+        return result
+    try:
+        proc = subprocess.run(
+            argv,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        result.update(ok=False, errors=[f"rider registration failed: {exc}"])
+        return result
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "").strip()[:200]
+        result.update(ok=False, errors=[f"rider registration exit {proc.returncode}: {detail}"])
+        return result
+    # A registration that exits 0 is a claim; the rider row is the evidence.
+    after = rider_state(workspace, host)
+    result["rider"] = after["state"]
+    result["detail"] = after.get("detail")
+    result["changed"] = after["state"] != observed["state"]
+    result["ok"] = after["state"] == "armed"
+    if not result["ok"]:
+        result["errors"].append(f"registration exited 0 but the rider is {after['state']}")
+    return result
+
+
+def converge(
+    workspace: Path,
+    host: str,
+    authority: str = DEFAULT_AUTHORITY,
+    arm_rider: bool = False,
+    allow_rollback: bool = False,
+) -> dict:
+    """One in-package hop: pull the authority generation and prove the runner lives.
+
+    `follow` alone converges a seat only when something outside FAMES remembers to
+    call it, which makes convergence depend on hub engines the package does not
+    carry. This command is what a clock runs: it performs the same verified
+    transition, then writes a heartbeat so a runner that stopped firing is a measured
+    residual instead of silence. Nothing here calls a model or spends quota.
+    """
+    workspace = workspace.resolve()
+    started = datetime.now(timezone.utc)
+    outcome = follow(workspace, host, authority, allow_rollback)
+    armed = arm(workspace, host, apply=arm_rider)
+    key = _receipt_key(workspace, host)
+    errors = [str(item) for item in (outcome.get("errors") or [])]
+    heartbeat = {
+        "schema": 1,
+        "host": key,
+        "at": started.isoformat(),
+        "outcome": "updated" if outcome.get("changed") else ("unchanged" if outcome.get("ok") else "error"),
+        "package_sha": outcome.get("package_sha"),
+        "authority": authority,
+        "rider_state": armed.get("rider"),
+        "rider_detail": armed.get("detail"),
+        "errors": errors[:5],
+    }
+    _write_json_atomic(workspace / CONVERGE_DIR / f"{key}.json", heartbeat)
+    return {
+        "ok": bool(outcome.get("ok")),
+        "changed": bool(outcome.get("changed")),
+        "host": key,
+        "heartbeat": heartbeat,
+        "rider": armed,
+        "errors": errors,
+    }
+
+
 def verify_host(workspace: Path, host: str) -> dict:
     workspace = workspace.resolve()
     canonical = verify_package(workspace / "_skill" / "fleet-skills" / "fames")
@@ -1489,7 +1677,7 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "install", "follow", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
@@ -1504,13 +1692,17 @@ def main() -> int:
         if name == "build-bundle":
             command.add_argument("--protocol-git-ref")
             command.add_argument("--allow-same-gen", action="store_true")
-        if name in {"install", "follow", "verify-host"}:
+        if name in {"install", "follow", "converge", "arm", "verify-host"}:
             command.add_argument("--host", required=True)
         if name == "install":
             command.add_argument("--source", type=Path, default=PACKAGE_ROOT)
-        if name == "follow":
+        if name in {"follow", "converge"}:
             command.add_argument("--authority", default=DEFAULT_AUTHORITY)
             command.add_argument("--allow-rollback", action="store_true")
+        if name in {"install", "converge"}:
+            command.add_argument("--arm", action="store_true")
+        if name == "arm":
+            command.add_argument("--apply", action="store_true")
         if name == "verify-fleet":
             command.add_argument("--hosts", nargs="+", required=True)
     args = parser.parse_args()
@@ -1551,12 +1743,22 @@ def main() -> int:
             return _emit(payload, args.json)
         return _emit(validate_ingest(payload), args.json)
     if args.command == "install":
-        return _emit(install(args.workspace, args.host, args.source), args.json)
+        payload = install(args.workspace, args.host, args.source)
+        if args.arm:
+            payload["rider"] = arm(args.workspace, args.host, apply=payload.get("ok", False))
+        return _emit(payload, args.json)
     if args.command == "follow":
         return _emit(
             follow(args.workspace, args.host, args.authority, args.allow_rollback),
             args.json,
         )
+    if args.command == "converge":
+        return _emit(
+            converge(args.workspace, args.host, args.authority, args.arm, args.allow_rollback),
+            args.json,
+        )
+    if args.command == "arm":
+        return _emit(arm(args.workspace, args.host, apply=args.apply), args.json)
     if args.command == "verify-host":
         return _emit(verify_host(args.workspace, args.host), args.json)
     return _emit(verify_fleet(args.workspace, args.hosts), args.json)
