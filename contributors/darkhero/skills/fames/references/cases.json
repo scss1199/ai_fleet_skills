@@ -311,6 +311,12 @@
     {"id": "C-GUARD-BOOTSTRAP", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
      "validator": "regression_guard", "input_ref": "guard_base",
      "patch": {"/canonical": {}, "/remote/version": "1.5.0"}, "expect_ok": true,
-     "why": "an absent canonical package is a genuine bootstrap, not a regression"}
+     "why": "an absent canonical package is a genuine bootstrap, not a regression"},
+    {"id": "C-CONVERGE-HEARTBEAT", "kind": "newest_age_max", "charges": "R_FLEET", "fail_mode": "degraded", "scope": "any",
+     "select": ["_registry/fames-converge/*.json"], "max_age_h": 6, "missing_ok": false,
+     "why": "a convergence path that nobody measures is indistinguishable from a dead one: the seat looks green on its last known generation while its clock has not fired for days. Every converge run stamps this heartbeat, so an absent or stale file IS the residual. Degraded, because a machine that is simply switched off is honestly behind rather than broken, and 6h tolerates sleep while still catching a runner that died within a working day."},
+    {"id": "C-CONVERGE-ARMED", "kind": "json_probe", "charges": "R_FLEET", "fail_mode": "degraded", "scope": "any",
+     "select": ["_registry/fames-converge/*.json"], "pointer": "/rider_state", "expect": "all_in", "values": ["armed"],
+     "why": "the runner must be a registered rider on this seat's own clock, not a command someone remembers to type. The heartbeat records what the seat measured about its own registration, so drift (a moved workspace, a changed cadence) and a seat with no clock at all both surface here instead of silently degrading to manual convergence."}
   ]
 }

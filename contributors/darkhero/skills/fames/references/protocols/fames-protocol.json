@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "updated": "2026-08-15",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -236,13 +236,31 @@
       {"node": "ai_altos", "identity": "runtime_receipt"}
     ],
     "follow_command": "python scripts/fames_fleet.py follow --workspace <root> --host <seat> --json",
+    "converge_command": "python scripts/fames_fleet.py converge --workspace <root> --host <seat> --arm --json",
+    "arm_command": "python scripts/fames_fleet.py arm --workspace <root> --host <seat> --apply --json",
     "transition": ["fetch_manifest", "verify_files", "verify_package", "atomic_activate", "write_receipt"],
+    "self_convergence": {
+      "principle": "A package that needs an external engine to update itself is not portable. The runner is part of the package: converge = follow + heartbeat + rider report, and arm registers the runner on the machine's own clock.",
+      "rider": {
+        "registry": "_registry/hosts.json",
+        "host": "HubClock",
+        "id": "fames-converge",
+        "cadence": "15m",
+        "priority": 90,
+        "arming_engine": "_skill/engines/register-rider.py"
+      },
+      "heartbeat": "_registry/fames-converge/<host>.json",
+      "heartbeat_fields": ["at", "outcome", "package_sha", "authority", "rider_state"],
+      "degraded_path": "Where the arming engine is absent, arm prints the exact registration proposal and reports a named blocker instead of claiming a rider it did not create.",
+      "disarm_respected": "--arm repairs a drifted registration but never re-adds a rider an operator removed.",
+      "measured_by": ["C-CONVERGE-HEARTBEAT", "C-CONVERGE-ARMED"]
+    },
     "convergence": {
       "online_bootstrapped": "one successful invocation",
       "offline_or_unbootstrapped": "UNKNOWN until first successful invocation",
       "proof": "local receipt and GitHub contributor manifest package_sha equal authority package_sha",
       "natural_events": {
-        "boot": "HubClock autostart makes fleet-skill-pulse eligible at the next 15 minute wall-clock boundary",
+        "boot": "HubClock autostart makes the in-package fames-converge rider eligible at the next 15 minute wall-clock boundary",
         "github_change": "authority manifest_sha or package_sha delta triggers verified atomic activation",
         "local_skill_change": "content fingerprint delta publishes the node contributor manifest",
         "network_recovery": "the next HubClock boundary retries after an unreachable GitHub event"
@@ -320,7 +338,8 @@
     "carrier_repo": "https://github.com/scss1199/ai_fleet_skills.git",
     "host_receipt": "contributors/<host>/manifest.json#skills[name=fames].package_sha",
     "unknown_rule": "A missing receipt, stale carrier manifest, unreadable bundle, or package hash mismatch is UNKNOWN and fails closed.",
-    "event_runner": "existing HubClock fleet-skill-pulse rider -> fleet-skill-sync-tick.py -> mtm-fleet-skill-github.py tick",
+    "event_runner": "in-package HubClock rider fames-converge -> scripts/fames_fleet.py converge (self-contained; no hub engine on the update path)",
+  "event_runner_legacy": "hub-only convenience path: fleet-skill-pulse -> fleet-skill-sync-tick.py -> mtm-fleet-skill-github.py tick. Publishes contributor manifests; not required for a follower to update.",
     "no_change_cost": "one authority manifest fetch for followers; package files are not fetched when verified package_sha already matches"
   }
 }

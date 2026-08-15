@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-15.4
+FAMES-GEN: 2026-08-15.5
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -77,10 +77,20 @@ Keep one provider-neutral canonical skill. Put deterministic work in one reusabl
 
 ## Authority, followers, and peer learning
 
-`ai_darkhero` publishes the canonical generation. `ai_scar3` and `ai_altos` follow it with one idempotent transition: `fames_fleet.py follow --workspace <root> --host <seat>`. The command downloads the authority manifest, verifies every file and the package identity, atomically activates the package, and writes a local receipt. An online bootstrapped follower converges in one invocation; an offline or unbootstrapped machine remains `UNKNOWN` until its first successful invocation.
+`ai_darkhero` publishes the canonical generation. `ai_scar3` and `ai_altos` follow it with one idempotent transition: `fames_fleet.py follow --workspace <root> --host <seat>`. The command downloads the authority manifest, verifies every file and the package identity, atomically activates the package, and writes a local receipt. An online bootstrapped follower converges in one invocation; an offline or unbootstrapped machine remains `UNKNOWN` until its first successful invocation. `follow` is the primitive; `converge` below is what a machine actually schedules.
 
 Followers may publish evidence and candidate improvements, but only the authority promotes a new canonical generation after FP, SCF, and SEAL. This keeps learning bidirectional without multi-writer drift.
 
-## Zero-token natural convergence
+## Zero-token natural convergence — the runner is part of the package
 
-Use the existing HubClock `fleet-skill-pulse` rider as the only event runner. Windows logon starts HubClock; the next 15-minute wall-clock boundary performs a provider-neutral GitHub manifest probe. A changed FAMES package is hash-verified and atomically activated, while a verified matching generation fetches no package files. The same event publishes content-changed contributor manifests. Network failures retry at the next boundary. This path calls no model and adds no resident process.
+A package that depends on an external engine to update itself is not portable: a cold-loaded skill on a fresh machine would sit at whatever generation it was cloned at until someone ran `follow` by hand. So FAMES carries its own runner.
+
+```
+python scripts/fames_fleet.py converge --workspace <root> --host <seat> --arm --json
+```
+
+`converge` is `follow` plus two things a scheduled run needs and an interactive one does not: it writes a heartbeat to `_registry/fames-converge/<host>.json` recording the time, outcome, resulting `package_sha`, and rider state, and it reports whether the machine's own clock is still registered to run it. `arm` performs that registration — an idempotent upsert of the rider `fames-converge` on host `HubClock` at 15m through the machine's `register-rider.py`. Windows logon starts HubClock; the next 15-minute boundary runs FAMES's own script against the authority manifest. A verified matching generation fetches no package files.
+
+Three properties matter more than the mechanism. Arming **re-measures** the registry after the engine exits, because an exit code 0 is a claim and the rider row is the evidence. Arming **repairs drift but never re-adds a removed rider**, so it cannot fight an operator who deliberately disarmed it. And where `register-rider.py` does not exist, `arm` prints the exact registration it would have made and reports a named blocker rather than claiming a schedule it did not create.
+
+The heartbeat exists so that liveness is measured rather than assumed: `C-CONVERGE-HEARTBEAT` charges `R_FLEET` when the newest heartbeat is over 6 hours old, and `C-CONVERGE-ARMED` charges it when a heartbeat reports its rider is anything but `armed`. Without them a dead rider, a powered-off machine, and a stale generation are indistinguishable. Both are `degraded`: a machine that is merely off should not block the authority's run. This path calls no model and adds no resident process.
