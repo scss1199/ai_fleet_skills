@@ -185,6 +185,21 @@
       "why": "the honest gap between the declared acquisition pipeline and the code; degraded because the gap is known work, not a breach"
     },
     {
+      "id": "C-CAPABILITY-BACKED",
+      "kind": "claim_backed",
+      "charges": "R_CAPABILITY",
+      "fail_mode": "closed",
+      "scope": "authority",
+      "select": ["_registry/acquire-capabilities.json"],
+      "pointer": "/stages/*",
+      "flag": "implemented",
+      "id_field": "id",
+      "backing": "_skill/engines/acquire.py",
+      "pattern": "status[\"stages\"][\"{id}\"]",
+      "missing_ok": true,
+      "why": "C-CAPABILITY-COMPLETE reads hand-written flags, so it can only count claims, never test them -- X6 read implemented=true for weeks while run() had no caller at all. This case makes the ledger falsifiable: every stage flagged implemented must write its own status row in the engine. Closed, because a ledger that overstates the code is worse than one that admits a gap. NOT_APPLICABLE on a seat that has no acquire.py."
+    },
+    {
       "id": "C-FLEET-REPORT",
       "kind": "path_exists",
       "charges": "R_FLEET",

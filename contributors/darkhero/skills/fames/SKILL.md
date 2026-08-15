@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-15.3
+FAMES-GEN: 2026-08-15.4
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -64,6 +64,8 @@ It runs `status` and then every case declared in [references/cases.json](referen
 A **case** is a deterministic probe that names the residual dimension it charges (`R_CONTRACT`, `R_SEMANTICS`, `R_FLEET`, `R_CAPABILITY`, `R_HYGIENE`, `R_FRESHNESS`) and how it fails: `closed` blocks, `degraded` is recorded and counted but does not block. `UNKNOWN` always blocks regardless of the declared mode. The residual is the count of charges per dimension, so SCF is computed rather than narrated, and AEX activates only where a dimension is non-zero. Cases live in the registry as data: **adding a check means adding a case, not writing code.** A case whose kind, dimension, or fail mode is not one of the declared values is `UNKNOWN` — data cannot smuggle in new behaviour.
 
 A residual that is real must stay red until it is fixed. Do not silence a case to make a run green; a green run bought by deleting its probe is the exact failure this section exists to prevent.
+
+A register of what is built is itself a claim, so it gets a case too. `claim_backed` reads a ledger's rows and requires every row flagged as done to leave a matching trace in the code that would have to exist for the flag to be true. Counting hand-written flags only ever measures the writing; this measures the thing written about, and it is why an over-claim now reddens the run instead of waiting to be noticed by eye.
 
 The one legitimate reason to change a red case is that it measures a different predicate than the tool it stands for. A probe must ask the question its consumer asks — if the ingest tool treats a comment scaffold as empty, a size probe that counts those bytes is reporting an artefact of the probe, not a residual of the system. Correct the measurement and say so in the case's `why`; never lower the threshold to clear a real finding.
 

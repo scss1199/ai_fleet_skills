@@ -48,6 +48,7 @@ CASE_KINDS = {
     "validator_probe",
     "parity",
     "newest_age_max",
+    "claim_backed",
 }
 FAIL_MODES = {"closed", "degraded"}
 MANIFEST_NAME = "bundle-manifest.json"
@@ -1263,6 +1264,47 @@ def _evaluate_case(
             bad = [f"{rel}={_brief(value, redact)}" for rel, value in observed if value not in allowed]
             return ("PASS" if not bad else "FAIL"), ", ".join(bad)[:200] or f"{len(observed)} in range"
         return "UNKNOWN", f"unknown expect {expect!r}"
+
+    if kind == "claim_backed":
+        # A ledger that records what is built can only be trusted if something checks it
+        # against the code. Every row whose `flag` is true must leave a trace matching
+        # `pattern` in the backing source; a row that claims more than the code does is
+        # the failure this kind exists to catch. Deterministic, local, zero model.
+        paths = _select_paths(workspace, case.get("select") or [])
+        if not paths:
+            return ("NOT_APPLICABLE" if missing_ok else "FAIL"), "no file matched select"
+        backing = workspace / str(case.get("backing", ""))
+        if not backing.is_file():
+            return ("NOT_APPLICABLE" if missing_ok else "FAIL"), "backing file absent on this seat"
+        try:
+            source = backing.read_text(encoding="utf-8-sig")
+        except (OSError, UnicodeDecodeError):
+            return "UNKNOWN", "backing file unreadable as text"
+        template = str(case.get("pattern", "{id}"))
+        flag = case.get("flag")
+        id_field = str(case.get("id_field", "id"))
+        checked, unbacked = 0, []
+        for path in paths:
+            try:
+                document = _read_json(path)
+            except (OSError, json.JSONDecodeError) as exc:
+                return "UNKNOWN", f"{path.name}: unreadable ({exc.__class__.__name__})"
+            rows: list = []
+            for value in _pointer_get(document, case.get("pointer", "")):
+                rows.extend(value if isinstance(value, list) else [value])
+            for row in rows:
+                if not isinstance(row, dict) or (flag and not row.get(flag)):
+                    continue
+                checked += 1
+                ident = str(row.get(id_field) or "")
+                if not ident or template.replace("{id}", ident) not in source:
+                    unbacked.append(ident or "<no id>")
+        if not checked:
+            return ("NOT_APPLICABLE" if missing_ok else "FAIL"), "no claim row matched"
+        if unbacked:
+            return "FAIL", (f"{len(unbacked)}/{checked} claimed but unbacked in "
+                            f"{case.get('backing')}: " + ", ".join(unbacked))[:200]
+        return "PASS", f"{checked} claims backed by {case.get('backing')}"
 
     if kind == "validator_probe":
         record, problem = _prepare_input(fixtures, case)
