@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-15T20:11:46Z",
-  "manifest_sha": "b30643925e0d14d5",
+  "generated_at": "2026-08-16T11:00:02Z",
+  "manifest_sha": "4dabb97854e17094",
   "required": [
     "fames",
     "aex-agent-evolution",
@@ -86,21 +86,24 @@
     },
     {
       "name": "deploy-nextjs-cloudflare",
-      "sha": "432f1935711417b7",
+      "sha": "abe8d2baa69402af",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "fc431fda72e1a930d10a27ce7a0f5f33594860ec9fd76d496779e0b3ab73f690",
+      "package_sha": "43728b58235ecaf07b4c9574699a775de6874d3a4159fccd41ee35012816d124",
       "files": {
-        "SKILL.md": "432f1935711417b7782d6498e16b25225bbd251489442467c00bb5aab33d5979",
+        "SKILL.md": "abe8d2baa69402afd9200bcbf36946eaee1fcbd8f519ac41a36358033000a6ab",
         "agents/openai.yaml": "138a80cd1780892c6b4f1f1b9395e3a601f80790782a4b8681deae98eadf5f39",
         "assets/claude-cloudflare-migration-prompt.md": "7b1ae8438ea664637a75f107c1797f2a0b5af89c710493bf572d2e35873dd5a9",
+        "assets/fames-ship-receipt.template.json": "865456a3bd3511c884334446579f1f92bfef78106126830fb25162e0cf91681f",
         "references/known-failures.md": "1f495b0051598336b714d7efd0e17d26d5ec0d8e715e2bbacd0a0b2ce76e5687",
         "scripts/cf_secret_push.py": "c584ab31e54a8ce5a37ffb67c8715d6f44702f0698f726e6155c6ccf9cdb49de",
+        "scripts/fames_ship_gate.py": "3db4fea25ee0d178cc32a03e90affa7e604074c866ad7e444824df8fa9a769a6",
         "scripts/local_smoke.py": "2bfd81c2c7c8a3940083b21a39cd850fd957111800afa34e6c527c4684155320",
         "scripts/preflight.py": "437740c989ea5b8db53186d9caaecd98d299938890aa2fe53ca2969e58b2ece2",
         "scripts/prepare_project.py": "b7120579ebb77eae3bd8f53a0f314493cf1c4114de5ded92b1328d624f2da2ec",
         "scripts/quick_validate.py": "be293b71b766dcade8a380c867a325fed1a1f7a494d88e5fc37c804f5afae96c",
         "scripts/record_failure.py": "87723a5609f6c0ef135da94d6208535c0784a0c2a38663a806f989bfd35a9d11",
+        "scripts/selftest_fames_ship_gate.py": "4a0f106e00e791ad33e589426f42fd657ef308c0d3a6ff343253122b640e3804",
         "scripts/selftest_quick_validate.py": "41d345f312b0737b9df9e45fb0acb4eb4233c28c460214cd3810e349cfebd503",
         "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37"
       }
