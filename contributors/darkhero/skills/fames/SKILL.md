@@ -1,6 +1,6 @@
 ---
 name: fames
-description: Execute the complete FP, MTM, SCF, AEX, and SEAL contract. Use when the user types FAMES, invokes $fames, asks for the former broad AEX Stack, or requires a task to be first-principles scoped, minimal-token routed, residual-checked, adaptively evolved when warranted, and evidence-sealed without silently skipping a phase.
+description: Execute the complete FP, MTM, SCF, AEX, and SEAL contract. Use when the user types FAMES, invokes $fames, asks for the former broad AEX Stack, or requires first-principles scope, minimal-token routing, residual checks, adaptive evolution, evidence sealing, or a bounded process that auto-absorbs candidate learning, self-reviews, self-drives repairs, and synchronizes verified generations.
 ---
 
 # FAMES
@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-17.10
+FAMES-GEN: 2026-08-17.11
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -86,6 +86,34 @@ with higher-priority policy, safety, or user authority. Measure success by an ac
 instruction, a repaired artifact, or an evidence-backed refusal—not obedience alone.
 Validate these records through `validate-cognitive`; missing evidence, authority, or
 method identity is `UNKNOWN` and fails closed.
+
+## Autonomic lifecycle
+
+Run `SENSE -> ABSORB -> TRIAGE -> DRIVE -> REVIEW -> EVOLVE -> SYNC -> OBSERVE ->
+SENSE` around repeated FAMES runs. This is a control lifecycle, not a sixth phase;
+every mutation still runs `FP -> MTM -> SCF -> AEX -> SEAL`. Automation increases
+persistence, not authority.
+
+- **SENSE/ABSORB:** read fresh identified receipts, handoffs, residuals, and candidate
+  material. Extract only structural claims; retain provenance, IP/disclosure class,
+  hypotheses, contradictions, and negative results. Keep proprietary raw material local.
+- **TRIAGE:** route mechanical work, judgment, and authority separately. Execute only
+  authorized mechanical work with verified isolation. Turn owner-only decisions into
+  evidence-backed handoffs while continuing safe non-conflicting branches.
+- **DRIVE:** freeze goal and validator identity, send structured defects through an
+  available controller, and retry within a bounded budget. A missing controller or
+  three stagnant attempts ends in `HANDOFF` or `UNKNOWN`, never invented progress.
+- **REVIEW/EVOLVE:** review the artifact through the first independent lane and
+  reproduce its evidence. Preserve negative results. Activate AEX only for measured
+  residuals and promote only after measured trial, accepted review, authority check,
+  version/generation change, and non-regression evidence.
+- **SYNC/OBSERVE:** publish the content-addressed bundle, require atomic idempotent
+  read-back, name stale followers `UNKNOWN`, run self-check/liveness probes, and feed
+  remaining residuals into the next discriminating action.
+
+Validate a lifecycle record with `python scripts/fames_fleet.py validate-autonomic
+--input <cycle.json> --json`. A passing record proves contract consistency, not the
+truth of referenced evidence; SEAL still requires independent reproduction.
 
 Classify the task with the bundled profile/risk table. Risk may add evidence and guards but never authority. For a machine-verifiable completion record, pass the provider-neutral JSON ledger to `python scripts/fames_fleet.py validate-run --input <run.json> --json`; a non-zero exit fails closed. R2/R3 records require the bounded PREPARE/APPLY/VERIFY/COMMIT/RECOVER transaction fields, and R3 also requires a passing recovery drill.
 
