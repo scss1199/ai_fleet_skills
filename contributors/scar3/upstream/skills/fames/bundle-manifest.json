@@ -1,7 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.5.0",
+  "version": "1.9.0",
+  "skill_gen": "2026-08-17.2",
   "execution_order": [
     "FP",
     "MTM",
@@ -15,18 +16,20 @@
     "references/protocols/mtm-protocol.json": "_registry/mtm-protocol.json",
     "references/protocols/scf-protocol.json": "_registry/scf-protocol.json",
     "references/protocols/fleet-token-ladder.json": "_registry/fleet-token-ladder.json",
-    "references/protocols/seal-protocol.json": "_registry/seal-protocol.json"
+    "references/protocols/seal-protocol.json": "_registry/seal-protocol.json",
+    "references/cases.json": "_registry/fames-cases.json"
   },
   "source_git_commit": null,
   "files": {
-    "SKILL.md": "a62c68ebf675ccb48ab99304f13c91fdf6d01db823eabbb3b47f7cae52ce5354",
-    "references/protocols/fames-protocol.json": "a7935b02b6dcf45afc36877aad3cd14a9d0e6fe7ca178e99d459879a3e0de491",
+    "SKILL.md": "7b480c550decdd8b636bb14be6035513c17e2b40011c1ed7b64e487e708f92a4",
+    "references/cases.json": "3be3afcceaa998bd26dc48914a003d5b2a739c4296d06754ed827cc07b579ead",
+    "references/protocols/fames-protocol.json": "444d17d6213d375a87ea0d2684697a7f7bb1f5179945ab7a7e4c23a16ee8b3f7",
     "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
-    "references/protocols/goal-vector-protocol.json": "204f845523bb75294895a384d14019eef583400323b1a5d6472ead778413e45a",
+    "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
     "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
     "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
     "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-    "scripts/fames_fleet.py": "8de6348d5b5a8e1c5e295de38bf33f7533c2aee65184f8fc6df1c36d608e82f3"
+    "scripts/fames_fleet.py": "7fb8da3d10bc810aaf99d11cb91fd400413fbe3dda4063106a297603948ae5ce"
   },
-  "package_sha": "d470181e01a9ca3398c4b82f269c092232b290a8ed7c06ed6f0663de6f6ae5f1"
+  "package_sha": "67d694d2f5dd0ba99ca1cff5a676b42de35d24a7e8ae8ede9d736d1c0c133f3d"
 }

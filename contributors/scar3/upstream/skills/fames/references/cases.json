@@ -1,0 +1,482 @@
+{
+  "schema": 1,
+  "id": "FAMES-CASES",
+  "why": "FAMES applied to FAMES. A case is one deterministic, zero-model, re-runnable probe that states its expectation before it runs (FP), costs one script invocation and no tokens (MTM), charges its failure to a named residual dimension (SCF), makes a non-zero residual the only change trigger (AEX), and is replayable from a record citing package_sha (SEAL). Adding a check means adding data here, not adding code.",
+  "execution": "python scripts/fames_fleet.py self-check --workspace <root> --json",
+  "residual_keys": {
+    "R_CONTRACT": "the package's own integrity: parity, surface identity, generation stamp",
+    "R_SEMANTICS": "the validators still enforce the rules they claim to enforce",
+    "R_FLEET": "convergence across hosts: receipts, published reports",
+    "R_CAPABILITY": "declared but unimplemented capability",
+    "R_HYGIENE": "residue at rest that should not exist",
+    "R_FRESHNESS": "evidence age against a machine-enforced ceiling"
+  },
+  "kinds": {
+    "path_exists": "path (workspace-relative), expect present|absent",
+    "file_size_max": "path, max_bytes, missing_ok -- measures size only, never reads content",
+    "json_probe": "select (list of workspace-relative globs), pointer (slash path, * wildcard segment), expect all_equal|all_equal_ref|all_in, ref canonical_package_sha|canonical_version, values, missing_ok",
+    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|regression_guard, input_ref into fixtures, remove, patch, expect_ok",
+    "parity": "bundle and registry describe the same protocol generations",
+    "newest_age_max": "select globs, max_age_h, missing_ok -- newest match must be younger than the ceiling"
+  },
+  "fixture_order": "fixture -> remove -> patch -> auto_goal_hash",
+  "fixtures": {
+    "run_min": {
+      "auto_goal_hash": true,
+      "validated_at": "2026-08-15T00:00:00Z",
+      "risk_class": "R1",
+      "goal": {
+        "outcome": "a case fixture that passes every validate_run rule",
+        "verification": "validate_run returns ok true",
+        "constraints": ["no model call", "no network"],
+        "authority_scope": "fames-cases",
+        "non_goals": ["expanding user authority"],
+        "irreversible_boundary": "none: the fixture is read-only data",
+        "success_horizon": "one-shot",
+        "task_profile": "one-shot deterministic edit",
+        "required_evidence_classes": ["measured"]
+      },
+      "result": {"identity": "fixture-result-0001"},
+      "phase_ledger": [
+        {"phase": "FP", "state": "PASS"},
+        {"phase": "MTM", "state": "PASS"},
+        {"phase": "SCF", "state": "PASS", "residual": {
+          "R_outcome": 0, "R_safety": 0, "R_evidence": 0, "R_complexity": 0,
+          "R_portability": 0, "R_authority": 0, "R_operability": 0
+        }},
+        {"phase": "AEX", "state": "NOT_APPLICABLE", "activation_predicate": false,
+         "why": "no verified residual remains and the horizon is one-shot"},
+        {"phase": "SEAL", "state": "PASS"}
+      ],
+      "complexity": {
+        "budget": {"new_files": 1, "new_dependencies": 0, "new_resident_processes": 0, "new_abstractions": 1, "duplicated_authorities": 0},
+        "actual": {"new_files": 1, "new_dependencies": 0, "new_resident_processes": 0, "new_abstractions": 1, "duplicated_authorities": 0}
+      },
+      "evidence": [{
+        "goal_identity": "auto",
+        "result_identity": "fixture-result-0001",
+        "timestamp": "2026-08-15T00:00:00Z",
+        "freshness_seconds": 315360000,
+        "source": "fames_fleet.py run-cases",
+        "method": "in-process validator call",
+        "authority": "fames-cases",
+        "state_before": "case declared",
+        "state_after": "case evaluated",
+        "exit_status": 0,
+        "error_category": "none",
+        "diagnostic": "deterministic fixture"
+      }]
+    },
+    "ingest_min": {
+      "source_uri": "fixture://fames-cases/ingest-min",
+      "acquired_at": "2026-08-15T00:00:00Z",
+      "acquisition_route": "publisher-supplied text",
+      "quota_cost": {"metered_calls": 0, "model_tokens_external": 0},
+      "content_identity": {"sha256": "0000000000000000000000000000000000000000000000000000000000000000"},
+      "trust_class_map": {"body": "asserted"},
+      "claims": [{
+        "id": "F1",
+        "claim": "the fixture claim, already covered by canon",
+        "trust_class": "asserted",
+        "verdict": "already_covered",
+        "why": "canon already states this; the verdict costs nothing"
+      }],
+      "verdict": "already_covered",
+      "promoted": false
+    },
+    "guard_base": {
+      "canonical": {"version": "1.6.0", "package_sha": "canon-sha-fixture"},
+      "remote": {"version": "1.6.0", "package_sha": "canon-sha-fixture"},
+      "allow_rollback": false
+    },
+    "cognitive_suite": {
+      "traces": [
+        {
+          "task_class": "completion",
+          "evidence_class": "measured",
+          "stages": [
+            {"operator": "Ni", "role": "synthesize_goal_model", "input_ref": "goal+evidence", "output_ref": "falsifiable-model", "model": "one bounded model", "discriminating_test": "one next test", "residual_bounded": true, "stop": {"rule": "model_and_discriminator", "met": true, "evidence": "model and test recorded"}},
+            {"operator": "Te", "role": "apply_and_verify", "input_ref": "falsifiable-model", "output_ref": "verified-state", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "state read back"}}
+          ]
+        },
+        {
+          "task_class": "debugging",
+          "evidence_class": "measured",
+          "stages": [
+            {"operator": "Ne", "role": "generate_failure_hypotheses", "input_ref": "failure-observation", "output_ref": "ranked-hypotheses", "candidates": ["boundary", "state", "timing"], "stop": {"rule": "rank_saturation", "met": true, "evidence": "three additions left ranking unchanged", "stable_rank_additions": 3, "ranking_changed": false}},
+            {"operator": "Ti", "role": "isolate_invariant_violation", "input_ref": "ranked-hypotheses", "output_ref": "minimal-reproduction", "invariants": ["input contract", "state transition"], "counterexample_status": "found_and_resolved", "stop": {"rule": "invariants_and_counterexamples", "met": true, "evidence": "smallest failing contract isolated"}},
+            {"operator": "Te", "role": "reproduce_fix_and_verify", "input_ref": "minimal-reproduction", "output_ref": "passing-reproduction", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "reproduction changed from fail to pass"}}
+          ]
+        },
+        {
+          "task_class": "architecture",
+          "evidence_class": "measured",
+          "stages": [
+            {"operator": "Ne", "role": "enumerate_viable_shapes", "input_ref": "requirements", "output_ref": "ranked-shapes", "candidates": ["modular-core", "event-boundary", "single-process"], "stop": {"rule": "rank_saturation", "met": true, "evidence": "three additions left ranking unchanged", "stable_rank_additions": 3, "ranking_changed": false}},
+            {"operator": "Ti", "role": "define_invariants_and_boundaries", "input_ref": "ranked-shapes", "output_ref": "architecture-contract", "invariants": ["single authority", "bounded interface"], "counterexample_status": "none_within_budget", "stop": {"rule": "invariants_and_counterexamples", "met": true, "evidence": "bounded counterexample search closed"}},
+            {"operator": "Ni", "role": "select_coherent_system_model", "input_ref": "architecture-contract", "output_ref": "selected-model", "model": "one coherent component graph", "discriminating_test": "prototype the highest-risk boundary", "residual_bounded": true, "stop": {"rule": "model_and_discriminator", "met": true, "evidence": "model explains requirements and names probe"}},
+            {"operator": "Te", "role": "prototype_and_measure", "input_ref": "selected-model", "output_ref": "prototype-result", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "boundary prototype passed"}}
+          ]
+        },
+        {
+          "task_class": "foresight",
+          "evidence_class": "measured",
+          "stages": [
+            {"operator": "Ni", "role": "form_forward_model", "input_ref": "current-state", "output_ref": "forward-model", "model": "causal forward model", "discriminating_test": "observe leading indicator", "residual_bounded": true, "stop": {"rule": "model_and_discriminator", "met": true, "evidence": "model and indicator recorded"}},
+            {"operator": "Ne", "role": "branch_counterfactual_failures", "input_ref": "forward-model", "output_ref": "ranked-failure-branches", "candidates": ["capacity", "stale-state", "partial-commit"], "stop": {"rule": "rank_saturation", "met": true, "evidence": "three additions left ranking unchanged", "stable_rank_additions": 3, "ranking_changed": false}},
+            {"operator": "Ti", "role": "reject_inconsistent_branches", "input_ref": "ranked-failure-branches", "output_ref": "viable-risks", "invariants": ["causal ordering", "authority boundary"], "counterexample_status": "none_within_budget", "stop": {"rule": "invariants_and_counterexamples", "met": true, "evidence": "inconsistent branches removed"}},
+            {"operator": "Te", "role": "install_probe_or_guard", "input_ref": "viable-risks", "output_ref": "active-guard", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "guard fired on injected risk"}}
+          ]
+        },
+        {
+          "task_class": "resource_allocation",
+          "evidence_class": "measured",
+          "stages": [
+            {"operator": "Te", "role": "measure_budget_and_capacity", "input_ref": "available-resources", "output_ref": "measured-budget", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "budget receipt written"}},
+            {"operator": "Ne", "role": "enumerate_routes", "input_ref": "measured-budget", "output_ref": "ranked-routes", "candidates": ["reuse", "local-engine", "bounded-model"], "stop": {"rule": "rank_saturation", "met": true, "evidence": "three additions left ranking unchanged", "stable_rank_additions": 3, "ranking_changed": false}},
+            {"operator": "Ti", "role": "enforce_constraints", "input_ref": "ranked-routes", "output_ref": "feasible-routes", "invariants": ["authority", "budget ceiling"], "counterexample_status": "none_within_budget", "stop": {"rule": "invariants_and_counterexamples", "met": true, "evidence": "infeasible routes rejected"}},
+            {"operator": "Ni", "role": "rank_by_goal_value", "input_ref": "feasible-routes", "output_ref": "selected-route", "model": "highest expected goal value per cost", "discriminating_test": "run cheapest decisive probe", "residual_bounded": true, "stop": {"rule": "model_and_discriminator", "met": true, "evidence": "route and probe recorded"}},
+            {"operator": "Te", "role": "apply_route_and_verify_cost", "input_ref": "selected-route", "output_ref": "costed-result", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "result and cost read back"}}
+          ]
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "id": "C-COGNITIVE-BASE",
+      "kind": "validator_probe",
+      "charges": "R_SEMANTICS",
+      "fail_mode": "closed",
+      "scope": "any",
+      "validator": "validate_cognitive",
+      "input_ref": "cognitive_suite",
+      "expect_ok": true,
+      "why": "all five task classes must follow their declared operator sequence and measured stop contracts"
+    },
+    {
+      "id": "C-COGNITIVE-ROUTE",
+      "kind": "validator_probe",
+      "charges": "R_SEMANTICS",
+      "fail_mode": "closed",
+      "scope": "any",
+      "validator": "validate_cognitive",
+      "input_ref": "cognitive_suite",
+      "patch": {"/traces/2/stages/0/operator": "Ni"},
+      "expect_ok": false,
+      "why": "architecture cannot skip option generation by silently replacing Ne with premature Ni convergence"
+    },
+    {
+      "id": "C-COGNITIVE-NE-SATURATION",
+      "kind": "validator_probe",
+      "charges": "R_SEMANTICS",
+      "fail_mode": "closed",
+      "scope": "any",
+      "validator": "validate_cognitive",
+      "input_ref": "cognitive_suite",
+      "patch": {"/traces/1/stages/0/stop/stable_rank_additions": 2},
+      "expect_ok": false,
+      "why": "Ne must not claim saturation before three consecutive additions stop changing the ranking"
+    },
+    {
+      "id": "C-COGNITIVE-TI-INVARIANTS",
+      "kind": "validator_probe",
+      "charges": "R_SEMANTICS",
+      "fail_mode": "closed",
+      "scope": "any",
+      "validator": "validate_cognitive",
+      "input_ref": "cognitive_suite",
+      "patch": {"/traces/1/stages/1/invariants": []},
+      "expect_ok": false,
+      "why": "Ti without explicit invariants is analysis prose, not a falsifiable error model"
+    },
+    {
+      "id": "C-COGNITIVE-NI-DISCRIMINATOR",
+      "kind": "validator_probe",
+      "charges": "R_SEMANTICS",
+      "fail_mode": "closed",
+      "scope": "any",
+      "validator": "validate_cognitive",
+      "input_ref": "cognitive_suite",
+      "patch": {"/traces/3/stages/0/discriminating_test": ""},
+      "expect_ok": false,
+      "why": "Ni may not promote a coherent story that names no observation capable of disproving it"
+    },
+    {
+      "id": "C-COGNITIVE-TE-EXTERNAL",
+      "kind": "validator_probe",
+      "charges": "R_SEMANTICS",
+      "fail_mode": "closed",
+      "scope": "any",
+      "validator": "validate_cognitive",
+      "input_ref": "cognitive_suite",
+      "patch": {"/traces/0/stages/1/external_state_changed": false},
+      "expect_ok": false,
+      "why": "Te completion requires measured external change; understanding or generated text alone cannot pass"
+    },
+    {
+      "id": "C-COGNITIVE-MEASURED",
+      "kind": "validator_probe",
+      "charges": "R_SEMANTICS",
+      "fail_mode": "closed",
+      "scope": "any",
+      "validator": "validate_cognitive",
+      "input_ref": "cognitive_suite",
+      "patch": {"/traces/4/evidence_class": "asserted"},
+      "expect_ok": false,
+      "why": "an asserted resource estimate cannot seal as a measured allocation result"
+    },
+    {
+      "id": "C-PARITY",
+      "kind": "parity",
+      "charges": "R_CONTRACT",
+      "fail_mode": "closed",
+      "scope": "any",
+      "why": "the bundled protocols and the registry must describe one generation; a split is UNKNOWN"
+    },
+    {
+      "id": "C-SURFACE-SHA",
+      "kind": "json_probe",
+      "charges": "R_CONTRACT",
+      "fail_mode": "closed",
+      "scope": "any",
+      "select": [
+        ".cursor/skills/fames/bundle-manifest.json",
+        ".claude/skills/fames/bundle-manifest.json",
+        "*/.claude/skills/fames/bundle-manifest.json",
+        "*/.cursor/skills/fames/bundle-manifest.json"
+      ],
+      "pointer": "/package_sha",
+      "expect": "all_equal_ref",
+      "ref": "canonical_package_sha",
+      "missing_ok": false,
+      "why": "every agent surface resolves to canon; a surface reporting a different package_sha means canon is split or was overwritten backwards. This is the case that catches the 2026-08-15 1.6.0->1.5.0 clobber within one pulse."
+    },
+    {
+      "id": "C-GEN-STAMP",
+      "kind": "json_probe",
+      "charges": "R_CONTRACT",
+      "fail_mode": "closed",
+      "scope": "any",
+      "select": [
+        ".cursor/skills/fames/bundle-manifest.json",
+        ".claude/skills/fames/bundle-manifest.json"
+      ],
+      "pointer": "/version",
+      "expect": "all_equal_ref",
+      "ref": "canonical_version",
+      "missing_ok": false,
+      "why": "a surface stamped with a different version is stale text an agent will read as current"
+    },
+    {
+      "id": "C-RECEIPT-SHA",
+      "kind": "json_probe",
+      "charges": "R_FLEET",
+      "fail_mode": "degraded",
+      "scope": "authority",
+      "select": ["_registry/fames-fleet-receipts/*.json"],
+      "pointer": "/package_sha",
+      "expect": "all_equal_ref",
+      "ref": "canonical_package_sha",
+      "missing_ok": true,
+      "why": "a receipt claiming verified convergence at a package_sha canon does not hold is a false completion claim; degraded because a peer that has not run yet is legitimately behind"
+    },
+    {
+      "id": "C-INBOX-EMPTY",
+      "kind": "file_size_max",
+      "charges": "R_HYGIENE",
+      "fail_mode": "closed",
+      "scope": "any",
+      "path": "_secrets/token-inbox.txt",
+      "max_bytes": 0,
+      "missing_ok": true,
+      "ignore_comment_lines": true,
+      "why": "the inbox is a transfer buffer, not storage: material at rest there has outlived its ingest. An armed-but-unused drop file still carries its instruction scaffold, so the payload -- non-blank, non-comment bytes, the same predicate token-onboard.py ingests on -- is what is measured. No line is ever emitted."
+    },
+    {
+      "id": "C-CAPABILITY-DECLARED",
+      "kind": "json_probe",
+      "charges": "R_CAPABILITY",
+      "fail_mode": "closed",
+      "scope": "authority",
+      "select": ["_registry/acquire-capabilities.json"],
+      "pointer": "/stages/*/implemented",
+      "expect": "all_in",
+      "values": [true, false],
+      "missing_ok": false,
+      "why": "every declared stage must state whether it exists; a stage with no flag is an unfalsifiable claim"
+    },
+    {
+      "id": "C-CAPABILITY-COMPLETE",
+      "kind": "json_probe",
+      "charges": "R_CAPABILITY",
+      "fail_mode": "degraded",
+      "scope": "authority",
+      "select": ["_registry/acquire-capabilities.json"],
+      "pointer": "/stages/*/implemented",
+      "expect": "all_in",
+      "values": [true],
+      "missing_ok": false,
+      "why": "the honest gap between the declared acquisition pipeline and the code; degraded because the gap is known work, not a breach"
+    },
+    {
+      "id": "C-CAPABILITY-BACKED",
+      "kind": "claim_backed",
+      "charges": "R_CAPABILITY",
+      "fail_mode": "closed",
+      "scope": "authority",
+      "select": ["_registry/acquire-capabilities.json"],
+      "pointer": "/stages/*",
+      "flag": "implemented",
+      "id_field": "id",
+      "backing": "_skill/engines/acquire.py",
+      "pattern": "status[\"stages\"][\"{id}\"]",
+      "missing_ok": true,
+      "why": "C-CAPABILITY-COMPLETE reads hand-written flags, so it can only count claims, never test them -- X6 read implemented=true for weeks while run() had no caller at all. This case makes the ledger falsifiable: every stage flagged implemented must write its own status row in the engine. Closed, because a ledger that overstates the code is worse than one that admits a gap. NOT_APPLICABLE on a seat that has no acquire.py."
+    },
+    {
+      "id": "C-ACQUIRE-MODEL-FREE",
+      "kind": "json_probe",
+      "charges": "R_SEMANTICS",
+      "fail_mode": "closed",
+      "scope": "authority",
+      "select": ["_registry/acquire-capabilities.json"],
+      "pointer": "/capabilities/*/needs_model",
+      "expect": "all_in",
+      "values": [false],
+      "missing_ok": false,
+      "why": "acquisition_is_never_a_model_job as a probe instead of as prose. Every row in this file's own capability map is an acquire.* capability -- the model-consuming ones (asr, vision, text) are inherited by reference under one-writer-per-provider-list and are not written here -- so a true value means a model was placed on the path that turns a URL into raw bits, which is exactly what the rule forbids. It is also the enforceable half of model_output_as_query: a model may say WHERE to look only because the fetch that follows is deterministic and measured downstream. Closed, because a model inside acquisition makes every fact after it unmeasured. Known limit, stated rather than hidden: a capability row that omits needs_model entirely is not caught, because a wildcard pointer collects only the values that resolve -- the same gap C-CAPABILITY-DECLARED carries for stages. Catching an absent key needs a new case kind, which is code, so it is recorded as residual instead of being faked here."
+    },
+    {
+      "id": "C-FLEET-REPORT",
+      "kind": "path_exists",
+      "charges": "R_FLEET",
+      "fail_mode": "degraded",
+      "scope": "authority",
+      "path": "_registry/api-availability/ai_altos.json",
+      "expect": "present",
+      "why": "a fleet member that never published a report is UNKNOWN, not healthy"
+    },
+    {
+      "id": "C-SELFCHECK-AGE",
+      "kind": "newest_age_max",
+      "charges": "R_FRESHNESS",
+      "fail_mode": "degraded",
+      "scope": "any",
+      "select": ["_registry/fames-evidence/self/*.json"],
+      "max_age_h": 24,
+      "missing_ok": true,
+      "why": "self-check must itself be fresh or the green it reports is a memory; this is the machine-enforced freshness ceiling and the HubClock hook point"
+    },
+
+    {"id": "C-RUN-BASE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_run", "input_ref": "run_min", "expect_ok": true,
+     "why": "the positive golden case: a fully formed ledger must pass, or every negative case below proves nothing"},
+    {"id": "C-RUN-HASH", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_run", "input_ref": "run_min", "auto_goal_hash": false, "expect_ok": false,
+     "why": "goal identity is load-bearing: without the declared hash the ledger must not validate"},
+    {"id": "C-RUN-GOAL-FIELD", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_run", "input_ref": "run_min", "remove": ["/goal/non_goals"], "expect_ok": false,
+     "why": "an FP goal missing a canonical field is not a goal"},
+    {"id": "C-RUN-RISK-FLOOR", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_run", "input_ref": "run_min", "patch": {"/risk_class": "R0"}, "expect_ok": false,
+     "why": "a task profile sets a risk floor that a ledger cannot declare its way under"},
+    {"id": "C-RUN-PHASE-UNKNOWN", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_run", "input_ref": "run_min", "patch": {"/phase_ledger/4/state": "UNKNOWN"}, "expect_ok": false,
+     "why": "UNKNOWN fails closed, including on the last phase"},
+    {"id": "C-RUN-NA-NO-PREDICATE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_run", "input_ref": "run_min", "remove": ["/phase_ledger/3/why"], "expect_ok": false,
+     "why": "NOT_APPLICABLE without a stated false predicate is an implicit skip"},
+    {"id": "C-RUN-SAFETY-RESIDUAL", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_run", "input_ref": "run_min", "patch": {"/phase_ledger/2/residual/R_safety": 0.5}, "expect_ok": false,
+     "why": "R_safety, R_evidence and R_authority must be converged; a run cannot seal over them"},
+    {"id": "C-RUN-AEX-UNWARRANTED", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_run", "input_ref": "run_min",
+     "patch": {"/phase_ledger/3/state": "PASS", "/phase_ledger/3/activation_predicate": true}, "expect_ok": false,
+     "why": "AEX may not activate without a verified comparable cross-cycle residual"},
+    {"id": "C-RUN-STALE-EVIDENCE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_run", "input_ref": "run_min",
+     "patch": {"/evidence/0/timestamp": "2026-08-14T00:00:00Z", "/evidence/0/freshness_seconds": 60}, "expect_ok": false,
+     "why": "evidence older than its own declared freshness window is stale; the window is a claim the record must live up to, so the case moves the timestamp back rather than only shrinking the window"},
+    {"id": "C-RUN-FRESHNESS-UNVERIFIABLE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_run", "input_ref": "run_min", "patch": {"/evidence/0/freshness_seconds": "recent"}, "expect_ok": false,
+     "why": "a freshness window that is not a number cannot be checked, and unverifiable is UNKNOWN, which fails closed"},
+    {"id": "C-RUN-SECRET-DIAGNOSTIC", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_run", "input_ref": "run_min",
+     "patch": {"/evidence/0/diagnostic": "authorization: <case-vector, not a value>"}, "expect_ok": false,
+     "why": "a diagnostic carrying a credential shape must be refused before it reaches a record"},
+    {"id": "C-RUN-R2-NO-TXN", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_run", "input_ref": "run_min",
+     "patch": {"/risk_class": "R2", "/goal/task_profile": "deployment/external write"}, "expect_ok": false,
+     "why": "R2 requires the bounded transaction fields; raising risk without them must fail"},
+
+    {"id": "C-INGEST-BASE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_ingest", "input_ref": "ingest_min", "expect_ok": true,
+     "why": "the positive golden case for the external_learning lane"},
+    {"id": "C-INGEST-FORBIDDEN-KEY", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_ingest", "input_ref": "ingest_min", "patch": {"/claims/0/credential": "case-vector"}, "expect_ok": false,
+     "why": "material keys never enter an ingest record, at any depth"},
+    {"id": "C-INGEST-UNKNOWN", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_ingest", "input_ref": "ingest_min", "patch": {"/verdict": "UNKNOWN"}, "expect_ok": false,
+     "why": "UNKNOWN never promotes and never seals"},
+    {"id": "C-INGEST-ADOPT-NO-TRIAL", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_ingest", "input_ref": "ingest_min", "patch": {"/claims/0/verdict": "adopt"}, "expect_ok": false,
+     "why": "adoption needs a Verification written before the trial, a result, measured evidence, and a named canon file"},
+    {"id": "C-INGEST-TRUST-CLASS", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_ingest", "input_ref": "ingest_min", "patch": {"/claims/0/trust_class": "guessed"}, "expect_ok": false,
+     "why": "only measured, modelled and asserted exist; an undeclared class is UNKNOWN"},
+    {"id": "C-INGEST-NO-METER", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_ingest", "input_ref": "ingest_min", "remove": ["/quota_cost/metered_calls"], "expect_ok": false,
+     "why": "route order is cost order; an unmetered acquisition cannot be routed"},
+    {"id": "C-INGEST-NO-IDENTITY", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_ingest", "input_ref": "ingest_min", "patch": {"/content_identity": {}}, "expect_ok": false,
+     "why": "acquisition without content identity is unreplayable, therefore UNKNOWN"},
+    {"id": "C-INGEST-FOLLOWER-PROMOTE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "validate_ingest", "input_ref": "ingest_min",
+     "patch": {"/promoted": true, "/promotion": {"actor": "ai_scar3", "authority": "ai_darkhero", "phases": {}}},
+     "expect_ok": false,
+     "why": "only the authority promotes; this is the rule that keeps learning bidirectional without multi-writer drift"},
+
+    {"id": "C-GUARD-EQUAL", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "regression_guard", "input_ref": "guard_base", "expect_ok": true,
+     "why": "an identical generation is a no-op, not a rollback"},
+    {"id": "C-GUARD-FORWARD", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "regression_guard", "input_ref": "guard_base",
+     "patch": {"/remote/version": "1.7.0", "/remote/package_sha": "newer-sha-fixture"}, "expect_ok": true,
+     "why": "a newer generation must be allowed to activate or the fleet cannot converge"},
+    {"id": "C-GUARD-ROLLBACK", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "regression_guard", "input_ref": "guard_base",
+     "patch": {"/remote/version": "1.5.0", "/remote/package_sha": "older-sha-fixture"}, "expect_ok": false,
+     "why": "the 2026-08-15 incident in one line: canon never moves backwards"},
+    {"id": "C-GUARD-SAME-VERSION-DRIFT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "regression_guard", "input_ref": "guard_base",
+     "patch": {"/remote/package_sha": "drifted-sha-fixture"}, "expect_ok": false,
+     "why": "one version naming two packages is unorderable drift; the authority must bump the generation"},
+    {"id": "C-GUARD-UNVERSIONED", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "regression_guard", "input_ref": "guard_base",
+     "remove": ["/remote/version"], "expect_ok": false,
+     "why": "an unorderable incoming identity cannot be proven newer, so it is refused"},
+    {"id": "C-GUARD-BOOTSTRAP", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
+     "validator": "regression_guard", "input_ref": "guard_base",
+     "patch": {"/canonical": {}, "/remote/version": "1.5.0"}, "expect_ok": true,
+     "why": "an absent canonical package is a genuine bootstrap, not a regression"},
+    {"id": "C-CONVERGE-HEARTBEAT", "kind": "newest_age_max", "charges": "R_FLEET", "fail_mode": "degraded", "scope": "any",
+     "select": ["_registry/fames-converge/*.json"], "max_age_h": 6, "missing_ok": false,
+     "why": "a convergence path that nobody measures is indistinguishable from a dead one: the seat looks green on its last known generation while its clock has not fired for days. Every converge run stamps this heartbeat, so an absent or stale file IS the residual. Degraded, because a machine that is simply switched off is honestly behind rather than broken, and 6h tolerates sleep while still catching a runner that died within a working day."},
+    {"id": "C-CONVERGE-ARMED", "kind": "json_probe", "charges": "R_FLEET", "fail_mode": "degraded", "scope": "any",
+     "select": ["_registry/fames-converge/*.json"], "pointer": "/rider_state", "expect": "all_in", "values": ["armed"],
+     "why": "the runner must be a registered rider on this seat's own clock, not a command someone remembers to type. The heartbeat records what the seat measured about its own registration, so drift (a moved workspace, a changed cadence) and a seat with no clock at all both surface here instead of silently degrading to manual convergence."},
+
+    {"id": "C-APPHEALTH-HEARTBEAT", "kind": "newest_age_max", "charges": "R_FLEET", "fail_mode": "degraded", "scope": "any",
+     "select": ["_registry/claude-app-health/*.json"], "max_age_h": 6, "missing_ok": false,
+     "why": "an unmeasured runtime host is assumed healthy, and on 2026-08-17 that assumption cost 48 minutes: an AppX repair finished its Add step, failed its Register step, and left the package Modified/NeedsRemediation while the app still launched, so nothing looked wrong until work started failing. A read-only check already existed and no clock called it. The tick stamps this heartbeat, so an absent or stale file IS the residual -- without it a dead prober and a healthy machine are the same picture. 6h matches C-CONVERGE-HEARTBEAT rather than the 5m cadence, because this ceiling only detects a dead prober; real detection latency for a broken package is the rider's own cadence. Degraded, because a powered-off machine is honestly behind rather than broken."},
+
+    {"id": "C-APPHEALTH-PACKAGE", "kind": "json_probe", "charges": "R_CAPABILITY", "fail_mode": "degraded", "scope": "any",
+     "select": ["_registry/claude-app-health/*.json"], "pointer": "/package_health", "expect": "all_in", "values": ["ok"],
+     "why": "the seat's capacity to execute at all is a capability, and a package carrying no Trust Label after a half-completed repair still starts, still opens a window, and still fails at the first packaged-service call. Health is taken from the repair tool's own -CheckOnly verdict rather than from a predicate reimplemented here, so this probe asks exactly the question its consumer asks; a parse that disagrees with the tool's exit code writes unknown instead of outvoting the instrument, and unknown is not in range so it reddens here too. Degraded rather than closed on purpose: a corrupt host must be loud, but blocking every run would also block the run that repairs it."},
+
+    {"id": "C-APPHEALTH-ARMED", "kind": "json_probe", "charges": "R_FLEET", "fail_mode": "degraded", "scope": "any",
+     "select": ["_registry/claude-app-health/*.json"], "pointer": "/rider_state", "expect": "all_in", "values": ["armed"],
+     "why": "the tick re-reads hosts.json after it runs, so this is the registry's answer and not the engine's exit code. It stays red until the operator arms the rider, which is the correct picture rather than a defect to hide: arming a schedule is the operator's authority, so an agent that proposed one and an operator who accepted one must be distinguishable. It also catches a rider later removed or renamed, where the heartbeat would otherwise keep arriving from a hand-run command and read as an armed clock."}
+  ]
+}

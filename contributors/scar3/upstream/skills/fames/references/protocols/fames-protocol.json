@@ -1,8 +1,8 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.5.0",
-  "updated": "2026-08-14",
+  "version": "1.9.0",
+  "updated": "2026-08-17",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
   "legacy_umbrella_aliases": [
@@ -126,6 +126,23 @@
     "aex_activation": "Only a verified comparable cross-cycle residual activates AEX.",
     "unknown_exit": "non-zero"
   },
+  "self_check": {
+    "purpose": "FAMES run against FAMES. Each case states its expectation before it runs (FP), costs one in-process call and zero model tokens (MTM), its failure count IS the residual (SCF), a non-zero dimension is the only thing that activates a change (AEX), and the written record cites package_sha and replays (SEAL).",
+    "command": "python scripts/fames_fleet.py self-check --workspace <root> --json",
+    "cases_ssot": "_registry/fames-cases.json",
+    "cases_bundled": "references/cases.json",
+    "evidence_dir": "_registry/fames-evidence/self",
+    "residual_keys": ["R_CONTRACT", "R_SEMANTICS", "R_FLEET", "R_CAPABILITY", "R_HYGIENE", "R_FRESHNESS"],
+    "fail_modes": {
+      "closed": "blocks; the run is not ok",
+      "degraded": "counted into the residual and reported, but does not block"
+    },
+    "unknown_rule": "UNKNOWN blocks regardless of the declared fail_mode, including an unknown case kind, residual dimension, or fail mode. Data cannot introduce behaviour.",
+    "extension_rule": "Adding a check means adding a case to the SSOT, not writing code. Cases are evaluated in-process by declared kind; no case may name a command to execute.",
+    "honesty_rule": "A real residual stays red until it is fixed. Silencing or deleting a case to make a run green is a contract violation, not a fix.",
+    "quota_cost": {"metered_calls": 0, "model_tokens_external": 0},
+    "trust_class": "measured"
+  },
   "phase_contract": {
     "FP": {
       "owns": [
@@ -219,13 +236,31 @@
       {"node": "ai_altos", "identity": "runtime_receipt"}
     ],
     "follow_command": "python scripts/fames_fleet.py follow --workspace <root> --host <seat> --json",
+    "converge_command": "python scripts/fames_fleet.py converge --workspace <root> --host <seat> --arm --json",
+    "arm_command": "python scripts/fames_fleet.py arm --workspace <root> --host <seat> --apply --json",
     "transition": ["fetch_manifest", "verify_files", "verify_package", "atomic_activate", "write_receipt"],
+    "self_convergence": {
+      "principle": "A package that needs an external engine to update itself is not portable. The runner is part of the package: converge = follow + heartbeat + rider report, and arm registers the runner on the machine's own clock.",
+      "rider": {
+        "registry": "_registry/hosts.json",
+        "host": "HubClock",
+        "id": "fames-converge",
+        "cadence": "15m",
+        "priority": 90,
+        "arming_engine": "_skill/engines/register-rider.py"
+      },
+      "heartbeat": "_registry/fames-converge/<host>.json",
+      "heartbeat_fields": ["at", "outcome", "package_sha", "authority", "rider_state"],
+      "degraded_path": "Where the arming engine is absent, arm prints the exact registration proposal and reports a named blocker instead of claiming a rider it did not create.",
+      "disarm_respected": "--arm repairs a drifted registration but never re-adds a rider an operator removed.",
+      "measured_by": ["C-CONVERGE-HEARTBEAT", "C-CONVERGE-ARMED"]
+    },
     "convergence": {
       "online_bootstrapped": "one successful invocation",
       "offline_or_unbootstrapped": "UNKNOWN until first successful invocation",
       "proof": "local receipt and GitHub contributor manifest package_sha equal authority package_sha",
       "natural_events": {
-        "boot": "HubClock autostart makes fleet-skill-pulse eligible at the next 15 minute wall-clock boundary",
+        "boot": "HubClock autostart makes the in-package fames-converge rider eligible at the next 15 minute wall-clock boundary",
         "github_change": "authority manifest_sha or package_sha delta triggers verified atomic activation",
         "local_skill_change": "content fingerprint delta publishes the node contributor manifest",
         "network_recovery": "the next HubClock boundary retries after an unreachable GitHub event"
@@ -240,6 +275,131 @@
       "followers_must_not": ["overwrite_canonical_generation"]
     }
   },
+  "cognitive_operator_layer": {
+    "purpose": "A provider-neutral reasoning quality layer for task completion, debugging, architecture, foresight and resource allocation. The labels name operations, never personality diagnoses or evidence.",
+    "is_phase": false,
+    "phase_relationship": "Runs inside task execution between MTM routing and SCF comparison; it does not alter FP -> MTM -> SCF -> AEX -> SEAL.",
+    "selection_rule": "Choose the smallest pipeline matching the task class. Do not invoke every operator by habit.",
+    "operators": {
+      "Ni": {
+        "operation": "Converge heterogeneous evidence into one coherent, falsifiable model and expose the next discriminating test.",
+        "strengthens": ["goal compression", "architecture coherence", "forward modelling", "priority selection"],
+        "required_stop_rule": "model_and_discriminator",
+        "failure_mode": "premature convergence that hides alternatives or treats a narrative as a fact"
+      },
+      "Te": {
+        "operation": "Measure or change external state, then read it back against Verification.",
+        "strengthens": ["task completion", "resource measurement", "reproduction", "deployment and guard installation"],
+        "required_stop_rule": "measured_state_match",
+        "failure_mode": "claiming completion because the work is understood, discussed or written while external state is unchanged"
+      },
+      "Ne": {
+        "operation": "Generate alternative routes, counterexamples and unobserved failure branches that can change the current ranking.",
+        "strengthens": ["error discovery", "architecture option search", "risk anticipation", "route discovery"],
+        "required_stop_rule": "rank_saturation",
+        "saturation_window": 3,
+        "failure_mode": "unbounded ideation that consumes resources without changing a decision"
+      },
+      "Ti": {
+        "operation": "Formalize candidates as invariants, contracts and a bounded counterexample search.",
+        "strengthens": ["root-cause isolation", "interface design", "consistency checking", "constraint enforcement"],
+        "required_stop_rule": "invariants_and_counterexamples",
+        "failure_mode": "internally elegant analysis with no falsifiable contract or stopping budget"
+      }
+    },
+    "pipelines": {
+      "completion": [
+        {"operator": "Ni", "role": "synthesize_goal_model"},
+        {"operator": "Te", "role": "apply_and_verify"}
+      ],
+      "debugging": [
+        {"operator": "Ne", "role": "generate_failure_hypotheses"},
+        {"operator": "Ti", "role": "isolate_invariant_violation"},
+        {"operator": "Te", "role": "reproduce_fix_and_verify"}
+      ],
+      "architecture": [
+        {"operator": "Ne", "role": "enumerate_viable_shapes"},
+        {"operator": "Ti", "role": "define_invariants_and_boundaries"},
+        {"operator": "Ni", "role": "select_coherent_system_model"},
+        {"operator": "Te", "role": "prototype_and_measure"}
+      ],
+      "foresight": [
+        {"operator": "Ni", "role": "form_forward_model"},
+        {"operator": "Ne", "role": "branch_counterfactual_failures"},
+        {"operator": "Ti", "role": "reject_inconsistent_branches"},
+        {"operator": "Te", "role": "install_probe_or_guard"}
+      ],
+      "resource_allocation": [
+        {"operator": "Te", "role": "measure_budget_and_capacity"},
+        {"operator": "Ne", "role": "enumerate_routes"},
+        {"operator": "Ti", "role": "enforce_constraints"},
+        {"operator": "Ni", "role": "rank_by_goal_value"},
+        {"operator": "Te", "role": "apply_route_and_verify_cost"}
+      ]
+    },
+    "trace_contract": {
+      "required_trace_fields": ["task_class", "evidence_class", "stages"],
+      "required_stage_fields": ["operator", "role", "input_ref", "output_ref", "stop"],
+      "seal_admissible_evidence": ["measured"],
+      "prediction_rule": "A forward branch is a hypothesis until Te installs a probe or guard and measured evidence resolves it.",
+      "validator": "python scripts/fames_fleet.py validate-cognitive --input <trace.json> --json",
+      "unknown_rule": "An unknown task class, missing operator, wrong order, unmet stop condition or unreadable policy is UNKNOWN or FAIL and cannot seal."
+    }
+  },
+  "external_learning": {
+    "purpose": "Governs information acquired from OUTSIDE the fleet that proposes an improvement to the fleet. Turns 'I read something useful' into work with the same completion truth as any other FAMES work.",
+    "is_phase": false,
+    "lane_rule": "This is a lane that feeds AEX, not a sixth phase. execution_order is unchanged. A promoted candidate is an adaptation and is judged by AEX, SCF and SEAL like any other adaptation.",
+    "activation_predicate": "material originating outside the fleet is used to justify a change to fleet canon, tooling or routing",
+    "stages": ["ACQUIRE", "UNDERSTAND", "CLAIM", "TRIAL", "PROMOTE"],
+    "stage_contract": {
+      "ACQUIRE": {
+        "owns": ["retrieval of bits from a channel", "provenance", "content identity"],
+        "must_not_own": ["interpretation"],
+        "cost_rule": "route order is cost order: publisher-supplied text (0 quota) -> local model (0 quota, material never leaves the machine) -> metered API",
+        "authority_rule": "A login wall, paywall, bot check or rate block is a named blocker reported to the operator, never a puzzle to solve. Acquisition never creates an account and never enters a credential."
+      },
+      "UNDERSTAND": {
+        "owns": ["bits -> facts by declared capability"],
+        "must_not_own": ["the artifact", "the verdict"],
+        "capability_rule": "A stage declares a capability (asr.*, vision.*, text.*), never a vendor; the vendor is a data-driven junction chosen by scheduling and rotation.",
+        "separation_rule": "The model supplies language, not facts. A fact is measured by a deterministic instrument or it is not a fact."
+      },
+      "CLAIM": {
+        "owns": ["what the source asserts, attributed to the source"],
+        "must_not_own": ["truth"],
+        "rule": "A source assertion is recorded as a claim with its trust class and its own wording bounded to the minimum needed to test it. Restating a claim never promotes it to fact."
+      },
+      "TRIAL": {
+        "owns": ["a bounded local test of the claim against this fleet"],
+        "must_not_own": ["canon"],
+        "rule": "The trial's Verification is written before the trial runs, exactly as in FP. A claim that cannot be given a Verification is rejected as untestable, not adopted on plausibility.",
+        "already_covered_rule": "Before trialling, check whether existing canon already implements the claim; already_covered is a first-class verdict and costs nothing."
+      },
+      "PROMOTE": {
+        "owns": ["canon change"],
+        "must_not_own": ["silent adoption"],
+        "gate": "authority node only, after FP, SCF and SEAL — the same gate as fleet_topology.peer_learning; followers may publish an ingest record as candidate_improvement but must not promote it."
+      }
+    },
+    "trust_classes": {
+      "measured": "produced by a deterministic local instrument (ffprobe duration, sha256, exit status, HTTP status). Admissible as fact.",
+      "modelled": "produced by a model reading the material (ASR, OCR, translation, summary). Admissible as a rendering of the source, never as a fact about the world.",
+      "asserted": "the source's own statement. Admissible only as a claim attributed to that source."
+    },
+    "admissibility_rule": "Only measured items may be cited as SEAL evidence. A modelled or asserted item enters as a candidate and requires a measured verification of its own before any phase may go PASS on it.",
+    "record": {
+      "path": "_registry/fames-evidence/ingest-<stamp>-<slug>.json",
+      "required_fields": ["source_uri", "acquired_at", "acquisition_route", "quota_cost", "content_identity", "trust_class_map", "claims", "verdict", "promoted"],
+      "claim_fields": ["id", "claim", "trust_class", "verdict", "why"],
+      "verdict_values": ["adopt", "adapt", "reject", "already_covered", "UNKNOWN"],
+      "forbidden_material": ["raw credential", "token", "cookie", "session material", "reproduced copyrighted body"],
+      "unknown_rule": "A record missing provenance, content identity, route or a per-claim verdict is UNKNOWN and fails closed; UNKNOWN never promotes."
+    },
+    "validator": "python scripts/fames_fleet.py validate-ingest --input <ingest.json> --json",
+    "non_goals": ["autonomous crawling", "account creation", "bypassing an access control", "retaining material the source licenses against"],
+    "does_not_expand_authority": true
+  },
   "distribution": {
     "mode": "content-addressed-github-bundle",
     "canonical_package": "_skill/fleet-skills/fames",
@@ -249,7 +409,8 @@
     "carrier_repo": "https://github.com/scss1199/ai_fleet_skills.git",
     "host_receipt": "contributors/<host>/manifest.json#skills[name=fames].package_sha",
     "unknown_rule": "A missing receipt, stale carrier manifest, unreadable bundle, or package hash mismatch is UNKNOWN and fails closed.",
-    "event_runner": "existing HubClock fleet-skill-pulse rider -> fleet-skill-sync-tick.py -> mtm-fleet-skill-github.py tick",
+    "event_runner": "in-package HubClock rider fames-converge -> scripts/fames_fleet.py converge (self-contained; no hub engine on the update path)",
+  "event_runner_legacy": "hub-only convenience path: fleet-skill-pulse -> fleet-skill-sync-tick.py -> mtm-fleet-skill-github.py tick. Publishes contributor manifests; not required for a follower to update.",
     "no_change_cost": "one authority manifest fetch for followers; package files are not fetched when verified package_sha already matches"
   }
 }

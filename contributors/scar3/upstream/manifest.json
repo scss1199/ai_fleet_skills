@@ -5,10 +5,11 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-14T12:27:07Z",
-  "manifest_sha": "025f4c47937d8fff",
+  "generated_at": "2026-08-17T07:12:19Z",
+  "manifest_sha": "bd9feea8900e23b5",
   "required": [
     "fames",
+    "independent-review",
     "aex-agent-evolution",
     "ztm-fleet-inbox-absorb",
     "ztm-skill-submit",
@@ -22,7 +23,7 @@
     "ztm-fleet-intelligence",
     "token-preflight"
   ],
-  "skill_count": 41,
+  "skill_count": 42,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -86,41 +87,45 @@
     },
     {
       "name": "deploy-nextjs-cloudflare",
-      "sha": "432f1935711417b7",
+      "sha": "abe8d2baa69402af",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "fc431fda72e1a930d10a27ce7a0f5f33594860ec9fd76d496779e0b3ab73f690",
+      "package_sha": "43728b58235ecaf07b4c9574699a775de6874d3a4159fccd41ee35012816d124",
       "files": {
-        "SKILL.md": "432f1935711417b7782d6498e16b25225bbd251489442467c00bb5aab33d5979",
+        "SKILL.md": "abe8d2baa69402afd9200bcbf36946eaee1fcbd8f519ac41a36358033000a6ab",
         "agents/openai.yaml": "138a80cd1780892c6b4f1f1b9395e3a601f80790782a4b8681deae98eadf5f39",
         "assets/claude-cloudflare-migration-prompt.md": "7b1ae8438ea664637a75f107c1797f2a0b5af89c710493bf572d2e35873dd5a9",
+        "assets/fames-ship-receipt.template.json": "865456a3bd3511c884334446579f1f92bfef78106126830fb25162e0cf91681f",
         "references/known-failures.md": "1f495b0051598336b714d7efd0e17d26d5ec0d8e715e2bbacd0a0b2ce76e5687",
         "scripts/cf_secret_push.py": "c584ab31e54a8ce5a37ffb67c8715d6f44702f0698f726e6155c6ccf9cdb49de",
+        "scripts/fames_ship_gate.py": "3db4fea25ee0d178cc32a03e90affa7e604074c866ad7e444824df8fa9a769a6",
         "scripts/local_smoke.py": "2bfd81c2c7c8a3940083b21a39cd850fd957111800afa34e6c527c4684155320",
         "scripts/preflight.py": "437740c989ea5b8db53186d9caaecd98d299938890aa2fe53ca2969e58b2ece2",
         "scripts/prepare_project.py": "b7120579ebb77eae3bd8f53a0f314493cf1c4114de5ded92b1328d624f2da2ec",
         "scripts/quick_validate.py": "be293b71b766dcade8a380c867a325fed1a1f7a494d88e5fc37c804f5afae96c",
         "scripts/record_failure.py": "87723a5609f6c0ef135da94d6208535c0784a0c2a38663a806f989bfd35a9d11",
+        "scripts/selftest_fames_ship_gate.py": "4a0f106e00e791ad33e589426f42fd657ef308c0d3a6ff343253122b640e3804",
         "scripts/selftest_quick_validate.py": "41d345f312b0737b9df9e45fb0acb4eb4233c28c460214cd3810e349cfebd503",
         "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37"
       }
     },
     {
       "name": "fames",
-      "sha": "a62c68ebf675ccb4",
+      "sha": "7b480c550decdd8b",
       "required": true,
       "lane": null,
-      "package_sha": "d470181e01a9ca3398c4b82f269c092232b290a8ed7c06ed6f0663de6f6ae5f1",
+      "package_sha": "67d694d2f5dd0ba99ca1cff5a676b42de35d24a7e8ae8ede9d736d1c0c133f3d",
       "files": {
-        "SKILL.md": "a62c68ebf675ccb48ab99304f13c91fdf6d01db823eabbb3b47f7cae52ce5354",
-        "bundle-manifest.json": "7b5f6ad71cb246783c12ec9bbd57a19d46d2015ba5720ac44b6ab787a9faa56f",
-        "references/protocols/fames-protocol.json": "a7935b02b6dcf45afc36877aad3cd14a9d0e6fe7ca178e99d459879a3e0de491",
+        "SKILL.md": "7b480c550decdd8b636bb14be6035513c17e2b40011c1ed7b64e487e708f92a4",
+        "bundle-manifest.json": "3f8a18720de0a31b3619dc9064a037c0f82f4fac2206728bd57a9e359b34b62d",
+        "references/cases.json": "3be3afcceaa998bd26dc48914a003d5b2a739c4296d06754ed827cc07b579ead",
+        "references/protocols/fames-protocol.json": "444d17d6213d375a87ea0d2684697a7f7bb1f5179945ab7a7e4c23a16ee8b3f7",
         "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
-        "references/protocols/goal-vector-protocol.json": "204f845523bb75294895a384d14019eef583400323b1a5d6472ead778413e45a",
+        "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
         "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
         "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
         "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-        "scripts/fames_fleet.py": "8de6348d5b5a8e1c5e295de38bf33f7533c2aee65184f8fc6df1c36d608e82f3"
+        "scripts/fames_fleet.py": "7fb8da3d10bc810aaf99d11cb91fd400413fbe3dda4063106a297603948ae5ce"
       }
     },
     {
@@ -131,6 +136,18 @@
       "package_sha": "bb03c86a5b0fba6a8f4ae01ff73fe0a5cdc07474f4e385c697634a76624d1546",
       "files": {
         "SKILL.md": "aa656b74fed9cecccfef7779bd837cbea9b1263147550c47445766b0bcc80700"
+      }
+    },
+    {
+      "name": "independent-review",
+      "sha": "0336c61942106372",
+      "required": true,
+      "lane": null,
+      "package_sha": "e4f7c7ee6358960bda19485634ca158680bc5da92e8547e9e7d66da2463f1c08",
+      "files": {
+        "SKILL.md": "0336c6194210637291760f539ccb94b29894b29d12ead8b4e50ef9ea8affb54f",
+        "scripts/validate_receipt.py": "b2743116c6105a0dc0cfe3f152e9fbc59877a5c69e0e1123dfa132dd01b05991",
+        "scripts/verify_bundle.py": "f4420d52b0e5c62c0734524075ece408d005f6861d5dcd950cc18d252e66c5fe"
       }
     },
     {

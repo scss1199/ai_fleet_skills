@@ -1,8 +1,9 @@
 {
   "schema": 1,
-  "generated": "2026-08-14T20:07:22",
+  "generated": "2026-08-17T14:02:33",
   "required": [
     "fames",
+    "independent-review",
     "aex-agent-evolution",
     "ztm-fleet-inbox-absorb",
     "ztm-skill-submit",

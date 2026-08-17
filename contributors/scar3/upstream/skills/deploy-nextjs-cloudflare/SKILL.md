@@ -1,6 +1,6 @@
 ---
 name: deploy-nextjs-cloudflare
-description: Deploy existing Next.js applications to Cloudflare Workers with OpenNext using a shared, AI_WORKSPACE-only, local-build-first workflow, including workers.dev naming, isolated migration, environment-secret handling, local workerd checks, public smoke tests, and MTM/PFKT evidence. Use when any model or agent moves a Next.js project from Vercel or another host to Cloudflare Workers, creates a free workers.dev deployment, avoids hosted build-minute usage, or repairs and repeats that deployment workflow.
+description: Deploy existing Next.js applications to Cloudflare Workers with OpenNext using a shared, AI_WORKSPACE-only, local-build-first FAMES workflow, including versioned uploads, CPU-tail gates, rollback, workers.dev naming, isolated migration, environment-secret handling, local workerd checks, and public smoke tests. Use when any agent deploys or repairs a Next.js Worker without hosted build minutes.
 metadata:
   fleet:
     lane: ZTM
@@ -36,6 +36,26 @@ Produce a working public URL, not a placeholder page. Preserve the application's
 - If the compressed Worker exceeds the current plan limit, reduce or split the artifact: remove unused dependencies, tree-shake and minify, move static/binary/config data to Workers Static Assets/R2/KV/D1 as appropriate, or split functionality into separately verified Workers with service bindings. Never describe local compilation as a way around an upload-size limit.
 
 ## Workflow
+
+This is an R2 external-write workflow. Execute FAMES in order `FP -> MTM -> SCF -> AEX -> SEAL`; a build-only result is not deployment evidence. Before mutation, copy `fames-ship-receipt.template.json` into the project's evidence directory and bind it to the current semantic goal hash.
+
+### FAMES transaction states
+
+1. **FP / PREPARE** — define outcome, public verification, authority, non-goals, old deployment/version, exact rollback, and Free-plan CPU budget. Run fresh FAMES status/package/parity checks.
+2. **MTM / APPLY** — use an isolated clean worktree; build on local CPU; run local workerd and Wrangler dry-run; commit and push the verified source; then upload a Worker Version with `wrangler versions upload`, never an unversioned blind deploy.
+3. **SCF / VERIFY** — first deploy old version at 100% and new version at 0%. Verify the preview URL, expected auth statuses, immutable assets, and a version-scoped tail. CPU evidence must use Wrangler's millisecond `cpuTime` value without dividing by 1000.
+4. **AEX** — PASS only when comparable prior-run evidence changed the workflow. Otherwise record `NOT_APPLICABLE` with `activation_predicate=false`; iteration inside one deployment is not AEX.
+5. **SEAL / COMMIT** — move the new version to 100% only after VERIFY passes, read the deployment back, re-run public and CPU checks, and validate the completed receipt with `fames_ship_gate.py` plus FAMES `validate-run`.
+6. **RECOVER** — on any post-upload failure, deploy the recorded old version back to 100%, read it back, record recovery evidence, and leave the failed new version at 0%. Never call a rollback command that was not prepared before APPLY.
+
+Run the fleet receipt gate before reporting completion:
+
+```powershell
+python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\fames_ship_gate.py" --input <completed-receipt.json>
+python "%AI_WORKSPACE%\_skill\fleet-skills\fames\scripts\fames_fleet.py" validate-run --workspace "%AI_WORKSPACE%" --input <completed-receipt.json> --json
+```
+
+The first gate verifies deploy-specific evidence; the second verifies the canonical FAMES ledger. Both must exit 0.
 
 1. Run the deterministic preflight:
 
@@ -89,11 +109,13 @@ Produce a working public URL, not a placeholder page. Preserve the application's
 
 6. Authenticate interactively with Cloudflare. Never handle the user's password or OTP. Verify that the account-level workers.dev subdomain is the requested value before deployment.
 
-7. Deploy and verify:
+7. Upload a version, stage it at 0%, then verify and commit traffic:
 
    ```powershell
-   npx wrangler deploy
+   npx wrangler versions upload -c wrangler.jsonc --keep-vars
+   npx wrangler versions deploy <old-version>@100 <new-version>@0 --name <worker> -y
    python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\verify_deployment.py" --url https://<worker>.<account-subdomain>.workers.dev/ --path / --path /api/places --expect /api/private=401
+   npx wrangler versions deploy <new-version>@100 <old-version>@0 --name <worker> -y
    ```
 
    Treat a URL mismatch as failure even if deployment succeeded. Declare expected `401`/`403` statuses for protected routes; never weaken application authorization to make a smoke test pass.
@@ -117,6 +139,7 @@ For every new deployment failure:
 
    ```powershell
    python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\quick_validate.py"
+   python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\selftest_fames_ship_gate.py"
    ```
 
    It checks the frontmatter contract AND that every `.py`/`.md` file named in a SKILL.md code
@@ -140,6 +163,8 @@ For fleet-wide non-fracdigi migrations, start from `%AI_WORKSPACE%\_skill\fleet-
 - A browser inspection showed the actual application UI.
 - If authentication exists, a real signed-in browser returned to the application and remained signed in after reopening the root URL, and `mtm-portal-gate-parity.py` reported `PARITY_BAD=0` — a signed-in browser cannot show that the gate rejects a signed-OUT visitor.
 - `quick_validate.py` exited 0 for this skill, and `selftest_quick_validate.py` reported 8/8.
+- `fames_ship_gate.py` accepted the completed R2 receipt, and `selftest_fames_ship_gate.py` rejected every negative control.
+- The final deployment read-back names the expected version; version-scoped tail has at least one route, zero non-ok outcomes, zero `exceededCpu`, and p99 at or below the prepared budget.
 - The PFKT fragment was completed with the public verification output as evidence.
 
 Do not report completion without the final working URL.

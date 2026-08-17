@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "goal-vector-v1.1",
-  "updated": "2026-08-10",
+  "version": "goal-vector-v1.2",
+  "updated": "2026-08-15",
   "fames_phase": "FP",
   "fames_ref": "_registry/fames-protocol.json",
   "purpose": "Strict P numerator: sparse goal/result vectors, inner-product alignment, goal-compact quality gate.",
@@ -48,7 +48,9 @@
   "session_rules": {
     "default_expect_P100": "user_turns > 1 implies P_final must be 100 or session fail",
     "probe_exempt": "scope=probe allows P < 100 with explicit note",
-    "ask_policy": "questions only at task start (turn 1); mid_task_ask_count > 0 penalizes P_compact"
+    "ask_policy": "questions only at task start (turn 1); mid_task_ask_count > 0 penalizes P_compact",
+    "question_form": "Every question ships with a recommended answer, so silence is a valid and safe reply. A question the agent could answer by reading the repo is not a question but a skipped read; a question with no recommendation transfers the agent's work to the operator.",
+    "question_form_origin": "external_learning: _registry/fames-evidence/ingest-20260814-social-skills.json claim C1 (asserted, trialled, verdict adapt)"
   },
   "goal_compact_link": {
     "projection": "keep chunk iff |⟨ĝ, x_chunk⟩| large; drop ⊥g even if salient",
