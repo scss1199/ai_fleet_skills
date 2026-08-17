@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-17T18:15:02Z",
-  "manifest_sha": "88d570aa86a561a5",
+  "generated_at": "2026-08-17T18:45:02Z",
+  "manifest_sha": "d42e3535226e74ed",
   "required": [
     "fames",
     "independent-review",
@@ -67,12 +67,12 @@
     },
     {
       "name": "api-key-apply",
-      "sha": "485c2eea8dbecea7",
+      "sha": "df0652be7f85bde4",
       "required": false,
       "lane": null,
-      "package_sha": "b91086fa84cd5b921d15b10681866a09fe3f35aad204e5774872cd09da49a5fd",
+      "package_sha": "7b5628a829c008c0fb18ed4399278a156ae7ba5d471fd54c24625e09e3bad267",
       "files": {
-        "SKILL.md": "485c2eea8dbecea75cdf659435595c2cd7e39cd434b45c69807b67c430c40015",
+        "SKILL.md": "1ade5881bf32ae3a040772c03d82c3887c606be5348875bbff6a4e2076d75325",
         "agents/openai.yaml": "ef1d9d6f4ccc3e291101cce0f335140d5fc3db7120651f1e8743b227a88918a8",
         "references/api-matrix-schema.md": "911b0be27961d1bd09b6d16849f7be0cb5b7421d4bf6efef03cee5006e1ee3da",
         "references/current-inventory.md": "18648d13bb39886ddc9117a682c4480fd10740b25479e182eff7672e77dae8ac",
@@ -126,22 +126,22 @@
     },
     {
       "name": "fames",
-      "sha": "2004d5d5fc434e89",
+      "sha": "a7c30a32b2f410dc",
       "required": true,
       "lane": null,
-      "package_sha": "e038c76a710cf4ac3787005993009c77ce9809dd456d56a61999f9d2ff86504c",
+      "package_sha": "15fffbabab50d376991ad76c11eba304d8ecb8d0b53f98465eac9d49472c7bbd",
       "files": {
-        "SKILL.md": "2004d5d5fc434e89b5379e8dbf51e92f4123eb384965b5034ae265a600c554f9",
-        "bundle-manifest.json": "0d1bb456a3837faa84b622c890e16978108398543669f6dc7bd97bdf1d3cb613",
-        "references/cases.json": "8c9cc18730f2ca65cc70c04ee048277f1fa1e211a8d3483ecc23451910010b16",
+        "SKILL.md": "acc13d23bec2cd3f2485a4008e399521ccb19b6cb143367aba46baab2ce2e6f4",
+        "bundle-manifest.json": "f1fa557fc46ca2ace28ef8a52cf68748c600ad92c1ac3c31f641928e92769bb9",
+        "references/cases.json": "632deb91c62115ee2b84e68b404339a769c1a5d63f7db068c35e8471a5a01dbe",
         "references/production-web-delivery.json": "0f8edd3a24f856a4cc1a76ecd4490185bad414735c2bc1787104d619d0f0a251",
-        "references/protocols/fames-protocol.json": "68a2d949eaefb907e441ff24355357ef3aecd6fbe2aaae04ece20979d2205522",
+        "references/protocols/fames-protocol.json": "227c1183f1184e56e75f4d23e1e47d9ef66553ead7a0e13a4733e79612341787",
         "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
         "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
         "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
         "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
         "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-        "scripts/fames_fleet.py": "83c5df454abc51594aebb55eaa6b41c6ad17812d2f14316be11fc9a8835021cf"
+        "scripts/fames_fleet.py": "b0996dcbea6edf4b765a50e13f35c489d81b0effb930afa189f012919d9778b7"
       }
     },
     {
@@ -348,12 +348,12 @@
     },
     {
       "name": "ztm-cursor-edge-auth",
-      "sha": "7ab227a7a294ac38",
+      "sha": "4820658c263577e6",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "4aed6ae953b732859f61c3f53ec1bfcced9588173312f526409fc2a4ba9f829b",
+      "package_sha": "d2623e83fc6f44a07b46f75d2ff3403afbeefdf7e78c9708754216c4b6c057ce",
       "files": {
-        "SKILL.md": "c1477fe15ed84a7b80225b4492376be74a6a58f1dd82363e53674493853f3ced",
+        "SKILL.md": "4820658c263577e62a7a60f41a091260eb51c49ba938f39df701a84ed6ba13fb",
         "inapp-browser-secret-transfer.md": "a1f9b6a1f4f0a6283b296dc64e36a253e8528c796338477cbd44090336682af8"
       }
     },
@@ -471,14 +471,17 @@
     },
     {
       "name": "ztm-web-auth-ops",
-      "sha": "cfe103c127cd7733",
+      "sha": "afde5fe2facfd12f",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "5a84a238a8754e5eb7604c1a7a47baee92fa36ca2f6dc4810a7996a20156ad32",
+      "package_sha": "7967a402968a2b1a8396b633489fda82d13354cae69b826332f6d5c627a7a254",
       "files": {
-        "SKILL.md": "400baad5495ded5a0331fa8b68f4f98be56be4efd68d591eb8d0f1760a5fe9a3",
+        "SKILL.md": "afde5fe2facfd12f9bb6edc157f9445e5b735a5955c795981584babb8cbb9848",
+        "host-adapter-contract.md": "1723252087a9129ee17f87f4222f72743ef11d77f87ae9d809402a88b11728d6",
         "oauth-verify-ledger.md": "00b3e5aa744e3fbcf1f622b125af4524982e9282906e598d2a561afa356f2302",
-        "reference.md": "0f890af0f5e9acb38e12f6dcf6ebaaa5be868ce0cda1e0c1b099a044d093a9d6"
+        "reference.md": "0f890af0f5e9acb38e12f6dcf6ebaaa5be868ce0cda1e0c1b099a044d093a9d6",
+        "scripts/auth-surface-resolver.py": "146c2fc8897df79185cc6ee6fd69fe8400cb9a37f5b33a36b30ee6cf4898dfc2",
+        "tests/test_auth_surface_resolver.py": "4fd45bd99a4885528cd370d85d1c04a276898ceab6faee69059cf9b62070d995"
       }
     },
     {

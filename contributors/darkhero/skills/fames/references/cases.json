@@ -17,7 +17,8 @@
     "json_probe": "select (list of workspace-relative globs), pointer (slash path, * wildcard segment), expect all_equal|all_equal_ref|all_in, ref canonical_package_sha|canonical_version, values, missing_ok",
     "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|validate_autonomic|regression_guard|contributor_id, input_ref into fixtures, remove, patch, expect_ok, optional expect_state",
     "parity": "bundle and registry describe the same protocol generations",
-    "newest_age_max": "select globs, max_age_h, missing_ok -- newest match must be younger than the ceiling"
+    "newest_age_max": "select globs, max_age_h, missing_ok -- newest match must be younger than the ceiling",
+    "forbidden_text": "paths, forbidden strings, and optional expect_clean -- canonical policy files must not contain platform identifiers"
   },
   "fixture_order": "fixture -> remove -> patch -> auto_goal_hash",
   "fixtures": {
@@ -631,6 +632,14 @@
      "validator": "regression_guard", "input_ref": "guard_base",
      "patch": {"/canonical": {}, "/remote/version": "1.5.0"}, "expect_ok": true,
      "why": "an absent canonical package is a genuine bootstrap, not a regression"},
+    {"id": "C-PLATFORM-NEUTRAL-POLICY", "kind": "forbidden_text", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any",
+     "paths": ["_skill/fleet-skills/ztm-web-auth-ops/SKILL.md", "_skill/fleet-skills/ztm-web-auth-ops/host-adapter-contract.md", "_skill/fleet-skills/ztm-web-auth-ops/scripts/auth-surface-resolver.py", "_skill/fleet-skills/api-key-apply/SKILL.md"],
+     "forbidden": ["cursor", "codex", "claude"],
+     "why": "Canonical selection policy must remain invariant under AI-host changes. Platform names belong only in adapter packages, compatibility aliases, tests, or dated evidence."},
+    {"id": "C-PLATFORM-NEUTRAL-REJECTS-HOST-NAME", "kind": "forbidden_text", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any",
+     "paths": ["_skill/fleet-skills/ztm-cursor-edge-auth/SKILL.md"], "forbidden": ["cursor"], "expect_clean": false,
+     "why": "The negative control proves the same validator detects a host identifier when it is present; adapter files may contain it, canonical policy may not."},
+
     {"id": "C-CONVERGE-HEARTBEAT", "kind": "newest_age_max", "charges": "R_FLEET", "fail_mode": "degraded", "scope": "any",
      "select": ["_registry/fames-converge/*.json"], "max_age_h": 6, "missing_ok": false,
      "why": "a convergence path that nobody measures is indistinguishable from a dead one: the seat looks green on its last known generation while its clock has not fired for days. Every converge run stamps this heartbeat, so an absent or stale file IS the residual. Degraded, because a machine that is simply switched off is honestly behind rather than broken, and 6h tolerates sleep while still catching a runner that died within a working day."},

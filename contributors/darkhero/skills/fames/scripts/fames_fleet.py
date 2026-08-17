@@ -51,6 +51,7 @@ CASE_KINDS = {
     "parity",
     "newest_age_max",
     "claim_backed",
+    "forbidden_text",
 }
 FAIL_MODES = {"closed", "degraded"}
 MANIFEST_NAME = "bundle-manifest.json"
@@ -89,6 +90,10 @@ LOCAL_CAPABILITY_CASES = {
         "C-CAPABILITY-SYNC-NO-CALLER",
         "C-CAPABILITY-SYNC-RUNNER",
         "C-CAPABILITY-SYNC-STALE",
+    ),
+    "platform-neutral-execution": (
+        "C-PLATFORM-NEUTRAL-POLICY",
+        "C-PLATFORM-NEUTRAL-REJECTS-HOST-NAME",
     ),
 }
 TEXT_SUFFIXES = {
@@ -2818,6 +2823,40 @@ def _evaluate_case(
             return "FAIL", (f"{len(unbacked)}/{checked} claimed but unbacked in "
                             f"{case.get('backing')}: " + ", ".join(unbacked))[:200]
         return "PASS", f"{checked} claims backed by {case.get('backing')}"
+
+    if kind == "forbidden_text":
+        # Canonical policy must not acquire host-name conditionals. Adapter packages and
+        # dated evidence remain free to name the surfaces they measured; this case scans
+        # only the explicitly declared normative files.
+        declared = case.get("paths") or []
+        forbidden = case.get("forbidden") or []
+        if not isinstance(declared, list) or not declared or any(not isinstance(item, str) for item in declared):
+            return "UNKNOWN", "paths must be a non-empty string list"
+        if not isinstance(forbidden, list) or not forbidden or any(not isinstance(item, str) or not item for item in forbidden):
+            return "UNKNOWN", "forbidden must be a non-empty string list"
+        hits: list[str] = []
+        for relative in declared:
+            path = workspace / relative
+            if not path.is_file():
+                return ("NOT_APPLICABLE" if missing_ok else "FAIL"), f"{relative}: absent"
+            try:
+                source = path.read_text(encoding="utf-8-sig").casefold()
+            except (OSError, UnicodeDecodeError):
+                return "UNKNOWN", f"{relative}: unreadable as text"
+            matched = sorted({token for token in forbidden if token.casefold() in source})
+            if matched:
+                hits.append(f"{relative}: {','.join(matched)}")
+        clean = not hits
+        want_clean = case.get("expect_clean", True)
+        if not isinstance(want_clean, bool):
+            return "UNKNOWN", "expect_clean must be boolean"
+        if clean == want_clean:
+            if clean:
+                return "PASS", f"{len(declared)} canonical files contain no platform identifiers"
+            return "PASS", f"negative control detected identifiers in {len(hits)} file(s)"
+        if hits:
+            return "FAIL", ("platform identifiers in canonical policy: " + "; ".join(hits))[:200]
+        return "FAIL", "negative control did not detect a platform identifier"
 
     if kind == "validator_probe":
         record, problem = _prepare_input(fixtures, case)

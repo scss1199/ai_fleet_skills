@@ -1,8 +1,8 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.14.2",
-  "updated": "2026-08-17",
+  "version": "1.15.0",
+  "updated": "2026-08-18",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
   "legacy_umbrella_aliases": [
@@ -222,6 +222,17 @@
     "provider_neutral": true,
     "single_canonical_skill": true,
     "provider_surfaces": "data-driven junctions only",
+    "platform_neutral_execution": {
+      "rule": "Canonical policy selects execution surfaces only by capability, availability, authority, safety, evidence freshness, and cost. It never branches on an AI host, model, vendor, IDE, browser brand, adapter id, or skill name.",
+      "runtime_discovery": true,
+      "adapter_boundary": "A host-specific adapter may expose measured capabilities and perform actions, but it cannot own policy, weaken validators, change terminal states, or become a prerequisite for the canonical workflow.",
+      "required_terminal_states": ["PASS", "HANDOFF", "UNKNOWN", "FAIL"],
+      "absence_rule": "The absence of one platform integration is not a blocker. After runtime discovery, the named blocker is NO_CAPABLE_ADAPTER with missing capabilities; unknown availability remains UNKNOWN and fails closed.",
+      "identity_invariance": "Renaming an adapter without changing capabilities, state, evidence, risk, cost, or priority must not change its eligibility or score.",
+      "secret_boundary": "Platform adaptation never authorizes password, MFA, CAPTCHA, cookie, profile, payment, recovery data, or secret values to enter agent-visible channels.",
+      "allowed_platform_names": ["adapter inventory", "host adapter implementation", "dated evidence ledger", "compatibility alias"],
+      "forbidden_platform_names": ["canonical selection predicate", "completion prerequisite", "validator exception", "authority expansion"]
+    },
     "retention_rule": "Every file and process requires a verified caller or contract role; otherwise merge or remove it.",
     "minimize_order": ["physical_files", "executable_code", "execution_steps", "steady_state_resources"]
   },

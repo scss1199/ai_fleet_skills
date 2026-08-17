@@ -81,6 +81,12 @@ success unless a newly minted `member` key passes a real `whisper-medium` ASR re
 accepts the value on stdin. Existing Deepgram credentials without `keys:write` are a permission
 block, not a reason to copy a dev key into production.
 
+When the management adapter lacks `keys:write`, invoke `ztm-web-auth-ops` with required
+capabilities `authenticated_session`, `interactive_navigation`, `dom_interaction`, one safe secret
+egress capability, and `provider_state_readback`. Any measured host adapter may satisfy the request.
+If none does, report `HANDOFF / NO_CAPABLE_ADAPTER` with the missing capabilities; never require a
+named AI platform.
+
 Google Cloud has an additional trap: `gcloud services api-keys create` may print the complete key
 inside its operation result even when a restrictive `--format` is requested. Capture that result
 inside a value-safe adapter or process pipeline; never let the create command write directly to an
