@@ -540,8 +540,17 @@ def _validate_cognitive_trace(trace: object, layer: dict, index: int) -> list[st
             candidates = stage.get("candidates")
             if not isinstance(candidates, list) or not candidates:
                 errors.append(f"{here}: Ne produced no alternatives")
-            window = int(policy.get("saturation_window", 3))
-            if stop.get("stable_rank_additions", 0) < window or stop.get("ranking_changed") is not False:
+            window = policy.get("saturation_window", 3)
+            if not isinstance(window, int) or isinstance(window, bool) or window < 1:
+                errors.append(f"{here}: Ne saturation policy is invalid")
+                window = 3
+            observed = stop.get("stable_rank_additions")
+            saturated = (
+                isinstance(observed, (int, float))
+                and not isinstance(observed, bool)
+                and observed >= window
+            )
+            if not saturated or stop.get("ranking_changed") is not False:
                 errors.append(f"{here}: Ne saturation rule not met")
         elif operator == "Ti":
             invariants = stage.get("invariants")

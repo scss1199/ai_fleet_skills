@@ -179,6 +179,18 @@
       "why": "Ne must not claim saturation before three consecutive additions stop changing the ranking"
     },
     {
+      "id": "C-COGNITIVE-NE-TYPE",
+      "kind": "validator_probe",
+      "charges": "R_SEMANTICS",
+      "fail_mode": "closed",
+      "scope": "any",
+      "validator": "validate_cognitive",
+      "input_ref": "cognitive_suite",
+      "patch": {"/traces/1/stages/0/stop/stable_rank_additions": "three"},
+      "expect_ok": false,
+      "why": "an untyped saturation value is unverifiable and must be refused without throwing"
+    },
+    {
       "id": "C-COGNITIVE-TI-INVARIANTS",
       "kind": "validator_probe",
       "charges": "R_SEMANTICS",
