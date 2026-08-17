@@ -1,8 +1,8 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.8.0",
-  "updated": "2026-08-15",
+  "version": "1.9.0",
+  "updated": "2026-08-17",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
   "legacy_umbrella_aliases": [
@@ -273,6 +273,77 @@
       "followers_publish": ["evidence", "candidate_improvement"],
       "authority_promotes_after": ["FP", "SCF", "SEAL"],
       "followers_must_not": ["overwrite_canonical_generation"]
+    }
+  },
+  "cognitive_operator_layer": {
+    "purpose": "A provider-neutral reasoning quality layer for task completion, debugging, architecture, foresight and resource allocation. The labels name operations, never personality diagnoses or evidence.",
+    "is_phase": false,
+    "phase_relationship": "Runs inside task execution between MTM routing and SCF comparison; it does not alter FP -> MTM -> SCF -> AEX -> SEAL.",
+    "selection_rule": "Choose the smallest pipeline matching the task class. Do not invoke every operator by habit.",
+    "operators": {
+      "Ni": {
+        "operation": "Converge heterogeneous evidence into one coherent, falsifiable model and expose the next discriminating test.",
+        "strengthens": ["goal compression", "architecture coherence", "forward modelling", "priority selection"],
+        "required_stop_rule": "model_and_discriminator",
+        "failure_mode": "premature convergence that hides alternatives or treats a narrative as a fact"
+      },
+      "Te": {
+        "operation": "Measure or change external state, then read it back against Verification.",
+        "strengthens": ["task completion", "resource measurement", "reproduction", "deployment and guard installation"],
+        "required_stop_rule": "measured_state_match",
+        "failure_mode": "claiming completion because the work is understood, discussed or written while external state is unchanged"
+      },
+      "Ne": {
+        "operation": "Generate alternative routes, counterexamples and unobserved failure branches that can change the current ranking.",
+        "strengthens": ["error discovery", "architecture option search", "risk anticipation", "route discovery"],
+        "required_stop_rule": "rank_saturation",
+        "saturation_window": 3,
+        "failure_mode": "unbounded ideation that consumes resources without changing a decision"
+      },
+      "Ti": {
+        "operation": "Formalize candidates as invariants, contracts and a bounded counterexample search.",
+        "strengthens": ["root-cause isolation", "interface design", "consistency checking", "constraint enforcement"],
+        "required_stop_rule": "invariants_and_counterexamples",
+        "failure_mode": "internally elegant analysis with no falsifiable contract or stopping budget"
+      }
+    },
+    "pipelines": {
+      "completion": [
+        {"operator": "Ni", "role": "synthesize_goal_model"},
+        {"operator": "Te", "role": "apply_and_verify"}
+      ],
+      "debugging": [
+        {"operator": "Ne", "role": "generate_failure_hypotheses"},
+        {"operator": "Ti", "role": "isolate_invariant_violation"},
+        {"operator": "Te", "role": "reproduce_fix_and_verify"}
+      ],
+      "architecture": [
+        {"operator": "Ne", "role": "enumerate_viable_shapes"},
+        {"operator": "Ti", "role": "define_invariants_and_boundaries"},
+        {"operator": "Ni", "role": "select_coherent_system_model"},
+        {"operator": "Te", "role": "prototype_and_measure"}
+      ],
+      "foresight": [
+        {"operator": "Ni", "role": "form_forward_model"},
+        {"operator": "Ne", "role": "branch_counterfactual_failures"},
+        {"operator": "Ti", "role": "reject_inconsistent_branches"},
+        {"operator": "Te", "role": "install_probe_or_guard"}
+      ],
+      "resource_allocation": [
+        {"operator": "Te", "role": "measure_budget_and_capacity"},
+        {"operator": "Ne", "role": "enumerate_routes"},
+        {"operator": "Ti", "role": "enforce_constraints"},
+        {"operator": "Ni", "role": "rank_by_goal_value"},
+        {"operator": "Te", "role": "apply_route_and_verify_cost"}
+      ]
+    },
+    "trace_contract": {
+      "required_trace_fields": ["task_class", "evidence_class", "stages"],
+      "required_stage_fields": ["operator", "role", "input_ref", "output_ref", "stop"],
+      "seal_admissible_evidence": ["measured"],
+      "prediction_rule": "A forward branch is a hypothesis until Te installs a probe or guard and measured evidence resolves it.",
+      "validator": "python scripts/fames_fleet.py validate-cognitive --input <trace.json> --json",
+      "unknown_rule": "An unknown task class, missing operator, wrong order, unmet stop condition or unreadable policy is UNKNOWN or FAIL and cannot seal."
     }
   },
   "external_learning": {

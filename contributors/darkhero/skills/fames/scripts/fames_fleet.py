@@ -469,6 +469,115 @@ def validate_ingest(record: dict) -> dict:
     }
 
 
+def _cognitive_contract() -> tuple[dict, str]:
+    """Load the provider-neutral cognitive-operator policy from the bundled protocol."""
+    try:
+        protocol = _read_json(PACKAGE_ROOT / PROTOCOL_TARGETS["FAMES"])
+    except (OSError, json.JSONDecodeError) as exc:
+        return {}, f"cognitive contract unreadable ({exc.__class__.__name__})"
+    layer = protocol.get("cognitive_operator_layer")
+    if not isinstance(layer, dict):
+        return {}, "cognitive_operator_layer missing from bundled protocol"
+    if not isinstance(layer.get("operators"), dict) or not isinstance(layer.get("pipelines"), dict):
+        return {}, "cognitive operator or pipeline policy missing"
+    return layer, ""
+
+
+def _validate_cognitive_trace(trace: object, layer: dict, index: int) -> list[str]:
+    """Validate one bounded operator trace; the policy stays in JSON, not code."""
+    prefix = f"trace[{index}]"
+    if not isinstance(trace, dict):
+        return [f"{prefix} is not an object"]
+    errors: list[str] = []
+    task_class = trace.get("task_class")
+    route = layer["pipelines"].get(task_class)
+    if not isinstance(route, list) or not route:
+        return [f"{prefix}: unknown task_class {task_class!r}"]
+    stages = trace.get("stages")
+    if not isinstance(stages, list):
+        return [f"{prefix}: stages missing"]
+    expected = [(row.get("operator"), row.get("role")) for row in route if isinstance(row, dict)]
+    actual = [
+        (row.get("operator"), row.get("role"))
+        for row in stages
+        if isinstance(row, dict)
+    ]
+    if len(actual) != len(stages) or actual != expected:
+        errors.append(f"{prefix}: pipeline order or role mismatch")
+    if trace.get("evidence_class") != "measured":
+        errors.append(f"{prefix}: only measured traces are seal-admissible")
+
+    operators = layer["operators"]
+    for stage_index, stage in enumerate(stages):
+        here = f"{prefix}.stages[{stage_index}]"
+        if not isinstance(stage, dict):
+            errors.append(f"{here}: stage is not an object")
+            continue
+        missing = [field for field in ("operator", "role", "input_ref", "output_ref", "stop") if field not in stage]
+        if missing:
+            errors.append(f"{here}: missing {', '.join(missing)}")
+            continue
+        operator = stage.get("operator")
+        policy = operators.get(operator)
+        if not isinstance(policy, dict):
+            errors.append(f"{here}: unknown operator {operator!r}")
+            continue
+        stop = stage.get("stop")
+        if not isinstance(stop, dict):
+            errors.append(f"{here}: stop contract missing")
+            continue
+        if stop.get("rule") != policy.get("required_stop_rule"):
+            errors.append(f"{here}: stop rule mismatch")
+        if stop.get("met") is not True or not stop.get("evidence"):
+            errors.append(f"{here}: stop condition is not measured as met")
+
+        if operator == "Ni":
+            if not stage.get("model") or not stage.get("discriminating_test"):
+                errors.append(f"{here}: Ni needs a model and discriminating test")
+            if stage.get("residual_bounded") is not True:
+                errors.append(f"{here}: Ni residual is not bounded")
+        elif operator == "Ne":
+            candidates = stage.get("candidates")
+            if not isinstance(candidates, list) or not candidates:
+                errors.append(f"{here}: Ne produced no alternatives")
+            window = int(policy.get("saturation_window", 3))
+            if stop.get("stable_rank_additions", 0) < window or stop.get("ranking_changed") is not False:
+                errors.append(f"{here}: Ne saturation rule not met")
+        elif operator == "Ti":
+            invariants = stage.get("invariants")
+            if not isinstance(invariants, list) or not invariants:
+                errors.append(f"{here}: Ti invariants missing")
+            if stage.get("counterexample_status") not in {"none_within_budget", "found_and_resolved"}:
+                errors.append(f"{here}: Ti counterexample search unresolved")
+        elif operator == "Te":
+            if stage.get("external_state_changed") is not True:
+                errors.append(f"{here}: Te has no measured external state change")
+            if stage.get("verification_met") is not True:
+                errors.append(f"{here}: Te verification is not met")
+    return errors
+
+
+def validate_cognitive(record: dict) -> dict:
+    """Validate one trace or a suite of traces against the bundled operator policy."""
+    layer, problem = _cognitive_contract()
+    if problem:
+        return {"ok": False, "state": "UNKNOWN", "traces": 0, "errors": [problem]}
+    traces = record.get("traces") if isinstance(record, dict) else None
+    if traces is None:
+        traces = [record]
+    if not isinstance(traces, list) or not traces:
+        return {"ok": False, "state": "FAIL", "traces": 0, "errors": ["traces missing"]}
+    errors: list[str] = []
+    for index, trace in enumerate(traces):
+        errors.extend(_validate_cognitive_trace(trace, layer, index))
+    return {
+        "ok": not errors,
+        "state": "PASS" if not errors else "FAIL",
+        "traces": len(traces),
+        "errors": errors,
+    }
+
+
 def _read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
@@ -1505,6 +1614,9 @@ def _evaluate_case(
         elif validator == "validate_ingest":
             outcome = validate_ingest(record)
             ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
+        elif validator == "validate_cognitive":
+            outcome = validate_cognitive(record)
+            ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
         elif validator == "regression_guard":
             errors = _regression_guard(
                 record.get("canonical") or {},
@@ -1677,13 +1789,13 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
         if name in {"verify-package", "parity", "status", "run-cases", "self-check"}:
             command.add_argument("--skill-dir", type=Path, default=PACKAGE_ROOT)
-        if name in {"validate-run", "validate-ingest"}:
+        if name in {"validate-run", "validate-ingest", "validate-cognitive"}:
             command.add_argument("--input", type=Path, required=True)
         if name == "run-cases":
             command.add_argument("--only", nargs="+")
@@ -1742,6 +1854,13 @@ def main() -> int:
             payload = {"ok": False, "state": "UNKNOWN", "errors": [f"ingest input unreadable: {exc}"]}
             return _emit(payload, args.json)
         return _emit(validate_ingest(payload), args.json)
+    if args.command == "validate-cognitive":
+        try:
+            payload = _read_json(args.input)
+        except (OSError, json.JSONDecodeError) as exc:
+            payload = {"ok": False, "state": "UNKNOWN", "errors": [f"cognitive input unreadable: {exc}"]}
+            return _emit(payload, args.json)
+        return _emit(validate_cognitive(payload), args.json)
     if args.command == "install":
         payload = install(args.workspace, args.host, args.source)
         if args.arm:

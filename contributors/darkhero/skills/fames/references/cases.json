@@ -15,7 +15,7 @@
     "path_exists": "path (workspace-relative), expect present|absent",
     "file_size_max": "path, max_bytes, missing_ok -- measures size only, never reads content",
     "json_probe": "select (list of workspace-relative globs), pointer (slash path, * wildcard segment), expect all_equal|all_equal_ref|all_in, ref canonical_package_sha|canonical_version, values, missing_ok",
-    "validator_probe": "validator validate_run|validate_ingest|regression_guard, input_ref into fixtures, remove, patch, expect_ok",
+    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|regression_guard, input_ref into fixtures, remove, patch, expect_ok",
     "parity": "bundle and registry describe the same protocol generations",
     "newest_age_max": "select globs, max_age_h, missing_ok -- newest match must be younger than the ceiling"
   },
@@ -88,9 +88,144 @@
       "canonical": {"version": "1.6.0", "package_sha": "canon-sha-fixture"},
       "remote": {"version": "1.6.0", "package_sha": "canon-sha-fixture"},
       "allow_rollback": false
+    },
+    "cognitive_suite": {
+      "traces": [
+        {
+          "task_class": "completion",
+          "evidence_class": "measured",
+          "stages": [
+            {"operator": "Ni", "role": "synthesize_goal_model", "input_ref": "goal+evidence", "output_ref": "falsifiable-model", "model": "one bounded model", "discriminating_test": "one next test", "residual_bounded": true, "stop": {"rule": "model_and_discriminator", "met": true, "evidence": "model and test recorded"}},
+            {"operator": "Te", "role": "apply_and_verify", "input_ref": "falsifiable-model", "output_ref": "verified-state", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "state read back"}}
+          ]
+        },
+        {
+          "task_class": "debugging",
+          "evidence_class": "measured",
+          "stages": [
+            {"operator": "Ne", "role": "generate_failure_hypotheses", "input_ref": "failure-observation", "output_ref": "ranked-hypotheses", "candidates": ["boundary", "state", "timing"], "stop": {"rule": "rank_saturation", "met": true, "evidence": "three additions left ranking unchanged", "stable_rank_additions": 3, "ranking_changed": false}},
+            {"operator": "Ti", "role": "isolate_invariant_violation", "input_ref": "ranked-hypotheses", "output_ref": "minimal-reproduction", "invariants": ["input contract", "state transition"], "counterexample_status": "found_and_resolved", "stop": {"rule": "invariants_and_counterexamples", "met": true, "evidence": "smallest failing contract isolated"}},
+            {"operator": "Te", "role": "reproduce_fix_and_verify", "input_ref": "minimal-reproduction", "output_ref": "passing-reproduction", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "reproduction changed from fail to pass"}}
+          ]
+        },
+        {
+          "task_class": "architecture",
+          "evidence_class": "measured",
+          "stages": [
+            {"operator": "Ne", "role": "enumerate_viable_shapes", "input_ref": "requirements", "output_ref": "ranked-shapes", "candidates": ["modular-core", "event-boundary", "single-process"], "stop": {"rule": "rank_saturation", "met": true, "evidence": "three additions left ranking unchanged", "stable_rank_additions": 3, "ranking_changed": false}},
+            {"operator": "Ti", "role": "define_invariants_and_boundaries", "input_ref": "ranked-shapes", "output_ref": "architecture-contract", "invariants": ["single authority", "bounded interface"], "counterexample_status": "none_within_budget", "stop": {"rule": "invariants_and_counterexamples", "met": true, "evidence": "bounded counterexample search closed"}},
+            {"operator": "Ni", "role": "select_coherent_system_model", "input_ref": "architecture-contract", "output_ref": "selected-model", "model": "one coherent component graph", "discriminating_test": "prototype the highest-risk boundary", "residual_bounded": true, "stop": {"rule": "model_and_discriminator", "met": true, "evidence": "model explains requirements and names probe"}},
+            {"operator": "Te", "role": "prototype_and_measure", "input_ref": "selected-model", "output_ref": "prototype-result", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "boundary prototype passed"}}
+          ]
+        },
+        {
+          "task_class": "foresight",
+          "evidence_class": "measured",
+          "stages": [
+            {"operator": "Ni", "role": "form_forward_model", "input_ref": "current-state", "output_ref": "forward-model", "model": "causal forward model", "discriminating_test": "observe leading indicator", "residual_bounded": true, "stop": {"rule": "model_and_discriminator", "met": true, "evidence": "model and indicator recorded"}},
+            {"operator": "Ne", "role": "branch_counterfactual_failures", "input_ref": "forward-model", "output_ref": "ranked-failure-branches", "candidates": ["capacity", "stale-state", "partial-commit"], "stop": {"rule": "rank_saturation", "met": true, "evidence": "three additions left ranking unchanged", "stable_rank_additions": 3, "ranking_changed": false}},
+            {"operator": "Ti", "role": "reject_inconsistent_branches", "input_ref": "ranked-failure-branches", "output_ref": "viable-risks", "invariants": ["causal ordering", "authority boundary"], "counterexample_status": "none_within_budget", "stop": {"rule": "invariants_and_counterexamples", "met": true, "evidence": "inconsistent branches removed"}},
+            {"operator": "Te", "role": "install_probe_or_guard", "input_ref": "viable-risks", "output_ref": "active-guard", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "guard fired on injected risk"}}
+          ]
+        },
+        {
+          "task_class": "resource_allocation",
+          "evidence_class": "measured",
+          "stages": [
+            {"operator": "Te", "role": "measure_budget_and_capacity", "input_ref": "available-resources", "output_ref": "measured-budget", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "budget receipt written"}},
+            {"operator": "Ne", "role": "enumerate_routes", "input_ref": "measured-budget", "output_ref": "ranked-routes", "candidates": ["reuse", "local-engine", "bounded-model"], "stop": {"rule": "rank_saturation", "met": true, "evidence": "three additions left ranking unchanged", "stable_rank_additions": 3, "ranking_changed": false}},
+            {"operator": "Ti", "role": "enforce_constraints", "input_ref": "ranked-routes", "output_ref": "feasible-routes", "invariants": ["authority", "budget ceiling"], "counterexample_status": "none_within_budget", "stop": {"rule": "invariants_and_counterexamples", "met": true, "evidence": "infeasible routes rejected"}},
+            {"operator": "Ni", "role": "rank_by_goal_value", "input_ref": "feasible-routes", "output_ref": "selected-route", "model": "highest expected goal value per cost", "discriminating_test": "run cheapest decisive probe", "residual_bounded": true, "stop": {"rule": "model_and_discriminator", "met": true, "evidence": "route and probe recorded"}},
+            {"operator": "Te", "role": "apply_route_and_verify_cost", "input_ref": "selected-route", "output_ref": "costed-result", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "result and cost read back"}}
+          ]
+        }
+      ]
     }
   },
   "cases": [
+    {
+      "id": "C-COGNITIVE-BASE",
+      "kind": "validator_probe",
+      "charges": "R_SEMANTICS",
+      "fail_mode": "closed",
+      "scope": "any",
+      "validator": "validate_cognitive",
+      "input_ref": "cognitive_suite",
+      "expect_ok": true,
+      "why": "all five task classes must follow their declared operator sequence and measured stop contracts"
+    },
+    {
+      "id": "C-COGNITIVE-ROUTE",
+      "kind": "validator_probe",
+      "charges": "R_SEMANTICS",
+      "fail_mode": "closed",
+      "scope": "any",
+      "validator": "validate_cognitive",
+      "input_ref": "cognitive_suite",
+      "patch": {"/traces/2/stages/0/operator": "Ni"},
+      "expect_ok": false,
+      "why": "architecture cannot skip option generation by silently replacing Ne with premature Ni convergence"
+    },
+    {
+      "id": "C-COGNITIVE-NE-SATURATION",
+      "kind": "validator_probe",
+      "charges": "R_SEMANTICS",
+      "fail_mode": "closed",
+      "scope": "any",
+      "validator": "validate_cognitive",
+      "input_ref": "cognitive_suite",
+      "patch": {"/traces/1/stages/0/stop/stable_rank_additions": 2},
+      "expect_ok": false,
+      "why": "Ne must not claim saturation before three consecutive additions stop changing the ranking"
+    },
+    {
+      "id": "C-COGNITIVE-TI-INVARIANTS",
+      "kind": "validator_probe",
+      "charges": "R_SEMANTICS",
+      "fail_mode": "closed",
+      "scope": "any",
+      "validator": "validate_cognitive",
+      "input_ref": "cognitive_suite",
+      "patch": {"/traces/1/stages/1/invariants": []},
+      "expect_ok": false,
+      "why": "Ti without explicit invariants is analysis prose, not a falsifiable error model"
+    },
+    {
+      "id": "C-COGNITIVE-NI-DISCRIMINATOR",
+      "kind": "validator_probe",
+      "charges": "R_SEMANTICS",
+      "fail_mode": "closed",
+      "scope": "any",
+      "validator": "validate_cognitive",
+      "input_ref": "cognitive_suite",
+      "patch": {"/traces/3/stages/0/discriminating_test": ""},
+      "expect_ok": false,
+      "why": "Ni may not promote a coherent story that names no observation capable of disproving it"
+    },
+    {
+      "id": "C-COGNITIVE-TE-EXTERNAL",
+      "kind": "validator_probe",
+      "charges": "R_SEMANTICS",
+      "fail_mode": "closed",
+      "scope": "any",
+      "validator": "validate_cognitive",
+      "input_ref": "cognitive_suite",
+      "patch": {"/traces/0/stages/1/external_state_changed": false},
+      "expect_ok": false,
+      "why": "Te completion requires measured external change; understanding or generated text alone cannot pass"
+    },
+    {
+      "id": "C-COGNITIVE-MEASURED",
+      "kind": "validator_probe",
+      "charges": "R_SEMANTICS",
+      "fail_mode": "closed",
+      "scope": "any",
+      "validator": "validate_cognitive",
+      "input_ref": "cognitive_suite",
+      "patch": {"/traces/4/evidence_class": "asserted"},
+      "expect_ok": false,
+      "why": "an asserted resource estimate cannot seal as a measured allocation result"
+    },
     {
       "id": "C-PARITY",
       "kind": "parity",

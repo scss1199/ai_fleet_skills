@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-17.1
+FAMES-GEN: 2026-08-17.2
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -30,6 +30,17 @@ It reads SKILL.md, the bundled protocols, and the registry from disk at that mom
 5. **SEAL** - Require matching goal identity, fresh passing evidence, closed active work graphs, and no unresolved phase before claiming completion.
 
 Perform the task itself between MTM routing and the SCF result comparison. Preserve the execution order `FP -> MTM -> SCF -> AEX -> SEAL`; the letters in FAMES are mnemonic, not the run order.
+
+## Cognitive operator quality layer
+
+For non-trivial completion, diagnosis, architecture, foresight, or resource-routing work, select the smallest pipeline from `cognitive_operator_layer` in the bundled FAMES protocol. Te, Ti, Ne, and Ni are task operators, not personality labels, user traits, or evidence:
+
+- **Ni** converges evidence into one falsifiable model and names the next discriminating test.
+- **Te** changes or measures external state and stops only when Verification is observably met. Understanding, discussion, and generated text alone are not completion.
+- **Ne** generates alternatives, counterexamples, and unobserved branches. Stop after three consecutive additions do not change the ranking.
+- **Ti** converts candidates into invariants, contracts, and a bounded counterexample search.
+
+Use the declared task pipelines rather than invoking every operator by habit. Record each stage's input, output, role, stop rule, and evidence. A prediction remains a hypothesis until Te installs a probe or guard and measured evidence resolves it. Validate a trace with `python scripts/fames_fleet.py validate-cognitive --input <trace.json> --json`; a missing operator, wrong route, unmet stop rule, or non-measured seal claim fails closed. This layer improves execution quality inside MTM/SCF and does not add a sixth FAMES phase.
 
 Classify the task with the bundled profile/risk table. Risk may add evidence and guards but never authority. For a machine-verifiable completion record, pass the provider-neutral JSON ledger to `python scripts/fames_fleet.py validate-run --input <run.json> --json`; a non-zero exit fails closed. R2/R3 records require the bounded PREPARE/APPLY/VERIFY/COMMIT/RECOVER transaction fields, and R3 also requires a passing recovery drill.
 
