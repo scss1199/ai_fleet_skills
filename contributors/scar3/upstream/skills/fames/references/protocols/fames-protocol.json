@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.10.1",
+  "version": "1.11.0",
   "updated": "2026-08-17",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -280,6 +280,19 @@
     "is_phase": false,
     "phase_relationship": "Runs inside task execution between MTM routing and SCF comparison; it does not alter FP -> MTM -> SCF -> AEX -> SEAL.",
     "selection_rule": "Choose the smallest pipeline matching the task class. Do not invoke every operator by habit.",
+    "ut": {
+      "label": "UT",
+      "expanded_zh": "統一理論",
+      "scope": "The project-internal umbrella for reasoning and engineering mechanisms that FAMES acquires from ai_ut.",
+      "epistemic_boundary": "UT is the name of this internal unification layer, not a claim that it is established scientific truth. Each mechanism remains a hypothesis until its declared measurement passes.",
+      "includes": [
+        "operators.Te",
+        "operators.Ti",
+        "operators.Ne",
+        "operators.Ni",
+        "meticulousness_and_efficiency"
+      ]
+    },
     "operators": {
       "Ni": {
         "operation": "Converge heterogeneous evidence into one coherent, falsifiable model and expose the next discriminating test.",
@@ -346,7 +359,7 @@
       "unknown_rule": "An unknown task class, missing operator, wrong order, unmet stop condition or unreadable policy is UNKNOWN or FAIL and cannot seal."
     },
     "meticulousness_and_efficiency": {
-      "status": "UT-derived engineering hypothesis",
+      "status": "UT project-internal engineering hypothesis",
       "purpose": "Measure early risk, accounting conservation, loop escape, mutation bounds, negative interactions, leading indicators, representation fit, inverse diagnosis, and epistemic admissibility without treating cognitive labels as personality science.",
       "is_phase": false,
       "validator": "python scripts/fames_fleet.py validate-cognitive --input <trace.json> --json",

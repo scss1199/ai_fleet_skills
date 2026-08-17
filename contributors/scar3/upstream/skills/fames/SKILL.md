@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-17.6
+FAMES-GEN: 2026-08-17.7
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -33,6 +33,15 @@ Perform the task itself between MTM routing and the SCF result comparison. Prese
 
 ## Cognitive operator quality layer
 
+### UT（統一理論）
+
+Within this project, **UT** is the canonical umbrella name for every reasoning and
+engineering mechanism that FAMES acquires from `ai_ut`, including Te, Ti, Ne, Ni,
+and the meticulousness/efficiency mechanisms below. This is an internal unification
+name, not a claim of established scientific truth: each mechanism remains a
+hypothesis until its declared measurement passes. UT operates inside FAMES and does
+not add a sixth phase.
+
 For non-trivial completion, diagnosis, architecture, foresight, or resource-routing work, select the smallest pipeline from `cognitive_operator_layer` in the bundled FAMES protocol. Te, Ti, Ne, and Ni are task operators, not personality labels, user traits, or evidence:
 
 - **Ni** converges evidence into one falsifiable model and names the next discriminating test.
@@ -42,9 +51,9 @@ For non-trivial completion, diagnosis, architecture, foresight, or resource-rout
 
 Use the declared task pipelines rather than invoking every operator by habit. Record each stage's input, output, role, stop rule, and evidence. A prediction remains a hypothesis until Te installs a probe or guard and measured evidence resolves it. Validate a trace with `python scripts/fames_fleet.py validate-cognitive --input <trace.json> --json`; a missing operator, wrong route, unmet stop rule, or non-measured seal claim fails closed. This layer improves execution quality inside MTM/SCF and does not add a sixth FAMES phase.
 
-### Meticulousness and efficiency
+### UT meticulousness and efficiency
 
-`cognitive_operator_layer.meticulousness_and_efficiency` contains UT-derived
+`cognitive_operator_layer.meticulousness_and_efficiency` contains UT
 engineering hypotheses, not personality science or original-theory claims. It keeps
 the same provider-neutral validator and adds measured stability margins, conservation
 ledgers, loop escape, bounded-mutation grip guards, destructive-interference probes,
