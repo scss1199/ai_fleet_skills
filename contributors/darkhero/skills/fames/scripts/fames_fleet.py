@@ -758,6 +758,119 @@ def _validate_meticulousness(record: dict, layer: dict) -> tuple[list[str], list
     return errors, unknowns, len(items)
 
 
+def _validate_interaction(record: dict, layer: dict) -> tuple[list[str], list[str], int]:
+    """Validate UT claim integrity and transparent compliance alignment."""
+    policy = layer.get("interaction_integrity")
+    if not isinstance(policy, dict):
+        return [], ["interaction_integrity policy missing"], 0
+    interaction = record.get("interaction_integrity")
+    if not isinstance(interaction, dict):
+        return [], ["interaction_integrity record missing"], 0
+    errors: list[str] = []
+    unknowns: list[str] = []
+    count = 0
+
+    claim_policy = policy.get("claim_integrity") or {}
+    mapping = claim_policy.get("mapping") or {}
+    claims = interaction.get("claim_assessments")
+    if not isinstance(claims, list) or not claims:
+        unknowns.append("claim assessments missing")
+    else:
+        count += len(claims)
+        for index, claim in enumerate(claims):
+            here = f"interaction_integrity.claim_assessments[{index}]"
+            if not isinstance(claim, dict):
+                unknowns.append(f"{here}: assessment is not an object")
+                continue
+            if not claim.get("claim_id") or not claim.get("claim"):
+                unknowns.append(f"{here}: claim identity or text missing")
+            evidence_status = claim.get("evidence_status")
+            expected = mapping.get(evidence_status)
+            if expected is None:
+                unknowns.append(f"{here}: evidence status is unknown")
+            elif claim.get("claim_state") != expected:
+                errors.append(f"{here}: claim state must be {expected}")
+            evidence_refs = claim.get("evidence_refs")
+            if evidence_status in {"matches", "conflicts"} and (
+                not isinstance(evidence_refs, list)
+                or not evidence_refs
+                or any(not isinstance(ref, str) or not ref.strip() for ref in evidence_refs)
+            ):
+                unknowns.append(f"{here}: supported or contradicted claim lacks evidence")
+            deception_state = claim.get("deception_state")
+            if deception_state not in {"SUPPORTED", "UNKNOWN"}:
+                unknowns.append(f"{here}: deception state is unknown")
+            if deception_state == "SUPPORTED":
+                intent_refs = claim.get("direct_intent_evidence_refs")
+                if (
+                    claim.get("claim_state") != "CONTRADICTED"
+                    or claim.get("intent_evidence_class") != "measured"
+                    or not isinstance(intent_refs, list)
+                    or not intent_refs
+                    or any(not isinstance(ref, str) or not ref.strip() for ref in intent_refs)
+                ):
+                    errors.append(f"{here}: deception is asserted without direct measured intent evidence")
+
+    alignment_policy = policy.get("compliance_alignment") or {}
+    allowed = set(alignment_policy.get("allowed_methods") or ())
+    forbidden = set(alignment_policy.get("forbidden_methods") or ())
+    attempts = interaction.get("alignment_attempts")
+    if not isinstance(attempts, list) or not attempts:
+        unknowns.append("alignment attempts missing")
+    else:
+        count += len(attempts)
+        for index, attempt in enumerate(attempts):
+            here = f"interaction_integrity.alignment_attempts[{index}]"
+            if not isinstance(attempt, dict):
+                unknowns.append(f"{here}: attempt is not an object")
+                continue
+            if not isinstance(attempt.get("instruction_id"), str) or not attempt["instruction_id"].strip():
+                unknowns.append(f"{here}: instruction identity missing")
+            methods = attempt.get("methods")
+            if not isinstance(methods, list) or not methods:
+                unknowns.append(f"{here}: alignment methods missing")
+            elif any(method not in allowed for method in methods):
+                errors.append(f"{here}: undeclared or forbidden alignment method")
+            forbidden_used = attempt.get("forbidden_methods_used")
+            if not isinstance(forbidden_used, list):
+                unknowns.append(f"{here}: forbidden-method ledger missing")
+            elif any(method not in forbidden for method in forbidden_used):
+                unknowns.append(f"{here}: forbidden-method vocabulary is unknown")
+            elif set(forbidden_used) & forbidden:
+                errors.append(f"{here}: manipulation or coercion method used")
+            for field in ("authorized", "goal_explicit", "constraints_explicit", "counterparty_choice_preserved"):
+                if not isinstance(attempt.get(field), bool):
+                    unknowns.append(f"{here}: {field} is unmeasured")
+            for field in ("goal_explicit", "constraints_explicit"):
+                if attempt.get(field) is False:
+                    errors.append(f"{here}: {field} must be true for transparent alignment")
+            if (
+                not isinstance(attempt.get("evidence_refs"), list)
+                or not attempt["evidence_refs"]
+                or any(not isinstance(ref, str) or not ref.strip() for ref in attempt["evidence_refs"])
+            ):
+                unknowns.append(f"{here}: evidence references missing")
+            before = attempt.get("authority_before")
+            after = attempt.get("authority_after")
+            if not isinstance(before, list) or not isinstance(after, list):
+                unknowns.append(f"{here}: authority ledger missing")
+            elif not set(after).issubset(set(before)):
+                errors.append(f"{here}: authority expanded during alignment")
+            if attempt.get("counterparty_choice_preserved") is False:
+                errors.append(f"{here}: counterpart choice was not preserved")
+            if not isinstance(attempt.get("higher_priority_conflict"), bool):
+                unknowns.append(f"{here}: higher-priority conflict status is unmeasured")
+            if attempt.get("higher_priority_conflict") is True and attempt.get("result") != "refused":
+                errors.append(f"{here}: higher-priority conflict was not refused")
+            if attempt.get("result") not in {"accepted", "repair_requested", "refused"}:
+                unknowns.append(f"{here}: result is unknown")
+            if attempt.get("authorized") is False and attempt.get("result") != "refused":
+                errors.append(f"{here}: unauthorized instruction was not refused")
+            if not isinstance(attempt.get("why"), str) or not attempt["why"].strip():
+                unknowns.append(f"{here}: outcome reason missing")
+    return errors, unknowns, count
+
+
 def validate_cognitive(record: dict) -> dict:
     """Validate one trace or a suite of traces against the bundled operator policy."""
     layer, problem = _cognitive_contract()
@@ -781,13 +894,19 @@ def validate_cognitive(record: dict) -> dict:
         quality_errors, quality_unknowns, meticulousness_count = _validate_meticulousness(record, layer)
         errors.extend(quality_errors)
         unknowns.extend(quality_unknowns)
-    if traces is None and "meticulousness" not in record:
-        unknowns.append("traces or meticulousness checks missing")
+    interaction_count = 0
+    if "interaction_integrity" in record:
+        interaction_errors, interaction_unknowns, interaction_count = _validate_interaction(record, layer)
+        errors.extend(interaction_errors)
+        unknowns.extend(interaction_unknowns)
+    if traces is None and "meticulousness" not in record and "interaction_integrity" not in record:
+        unknowns.append("traces, meticulousness, or interaction-integrity checks missing")
     return {
         "ok": not errors and not unknowns,
         "state": "UNKNOWN" if unknowns else ("PASS" if not errors else "FAIL"),
         "traces": trace_count,
         "meticulousness": meticulousness_count,
+        "interaction_integrity": interaction_count,
         "errors": errors + unknowns,
     }
 

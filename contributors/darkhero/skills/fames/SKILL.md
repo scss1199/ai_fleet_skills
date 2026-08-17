@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-17.7
+FAMES-GEN: 2026-08-17.10
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -41,6 +41,10 @@ and the meticulousness/efficiency mechanisms below. This is an internal unificat
 name, not a claim of established scientific truth: each mechanism remains a
 hypothesis until its declared measurement passes. UT operates inside FAMES and does
 not add a sixth phase.
+Treat any other `ai_ut` function as a UT candidate, not an active capability. Route
+claim-checking or influence functions to interaction integrity, but keep the function
+`UNKNOWN` until its purpose, inputs, stop rule, evidence class, authority boundary,
+and validator are registered.
 
 For non-trivial completion, diagnosis, architecture, foresight, or resource-routing work, select the smallest pipeline from `cognitive_operator_layer` in the bundled FAMES protocol. Te, Ti, Ne, and Ni are task operators, not personality labels, user traits, or evidence:
 
@@ -62,6 +66,26 @@ task-wide epistemic layers. Undefined units, missing accounting, stale series,
 malformed types, or unknown mechanisms are `UNKNOWN` and fail closed. Forecasts remain
 hypotheses until a Te probe measures the event; only `source/measured` claims are
 SEAL-admissible.
+
+### UT interaction integrity
+
+Use `interaction_integrity.claim_integrity` to assess another actor's claim as
+`SUPPORTED`, `CONTRADICTED`, or `UNKNOWN`. Do not equate contradiction, error,
+missing evidence, or confidence with lying. Mark deception `SUPPORTED` only when
+direct measured evidence shows that the actor knew the claim was false and
+deliberately represented it as true; otherwise intent remains `UNKNOWN`.
+The validator checks the consistency of this ledger, not whether an evidence URI tells
+the truth; independently reproduce every load-bearing reference before SEAL.
+
+Use `interaction_integrity.compliance_alignment` to obtain agent cooperation through
+an explicit shared goal, evidence, constraints, consequences, bounded options, and
+structured repair requests. Preserve the counterpart's choice and the existing
+authority set. Never use deception, coercion, threats, impersonation, hidden pressure,
+vulnerability exploitation, or authority expansion. Refuse instructions that conflict
+with higher-priority policy, safety, or user authority. Measure success by an accepted
+instruction, a repaired artifact, or an evidence-backed refusal—not obedience alone.
+Validate these records through `validate-cognitive`; missing evidence, authority, or
+method identity is `UNKNOWN` and fails closed.
 
 Classify the task with the bundled profile/risk table. Risk may add evidence and guards but never authority. For a machine-verifiable completion record, pass the provider-neutral JSON ledger to `python scripts/fames_fleet.py validate-run --input <run.json> --json`; a non-zero exit fails closed. R2/R3 records require the bounded PREPARE/APPLY/VERIFY/COMMIT/RECOVER transaction fields, and R3 also requires a passing recovery drill.
 

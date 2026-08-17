@@ -163,6 +163,19 @@
         {"kind": "inverse_diagnosis", "symptom": "external_change_missing", "minimal_stage": "Te", "next_test": "read_back_external_state"},
         {"kind": "epistemic_layers", "claims": [{"id": "M1", "layer": "source/measured", "seal_admissible": true}, {"id": "H1", "layer": "model/hypothesis", "seal_admissible": false}, {"id": "D1", "layer": "draft/unverified", "seal_admissible": false}]}
       ]
+    },
+    "interaction_suite": {
+      "interaction_integrity": {
+        "claim_assessments": [
+          {"claim_id": "C1", "claim": "validator passed", "evidence_status": "matches", "evidence_refs": ["receipt://validator/pass"], "claim_state": "SUPPORTED", "deception_state": "UNKNOWN"},
+          {"claim_id": "C2", "claim": "artifact changed", "evidence_status": "conflicts", "evidence_refs": ["receipt://hash/unchanged"], "claim_state": "CONTRADICTED", "deception_state": "UNKNOWN"},
+          {"claim_id": "C3", "claim": "failure was intentional", "evidence_status": "insufficient", "evidence_refs": [], "claim_state": "UNKNOWN", "deception_state": "UNKNOWN"}
+        ],
+        "alignment_attempts": [
+          {"instruction_id": "I1", "authorized": true, "goal_explicit": true, "constraints_explicit": true, "methods": ["shared_goal", "evidence", "structured_repair"], "forbidden_methods_used": [], "evidence_refs": ["receipt://validator/fail"], "authority_before": ["read", "write:artifact"], "authority_after": ["read", "write:artifact"], "counterparty_choice_preserved": true, "higher_priority_conflict": false, "result": "repair_requested", "why": "validator defects identify the bounded repair"},
+          {"instruction_id": "I2", "authorized": false, "goal_explicit": true, "constraints_explicit": true, "methods": ["constraint_explanation"], "forbidden_methods_used": [], "evidence_refs": ["policy://higher-priority"], "authority_before": ["read"], "authority_after": ["read"], "counterparty_choice_preserved": true, "higher_priority_conflict": true, "result": "refused", "why": "higher-priority policy blocks execution"}
+        ]
+      }
     }
   },
   "cases": [
@@ -177,6 +190,16 @@
       "expect_ok": true,
       "why": "all five task classes must follow their declared operator sequence and measured stop contracts"
     },
+    {"id": "C-INTERACTION-BASE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "expect_ok": true, "expect_state": "PASS", "why": "claim states follow evidence while transparent alignment preserves authority and choice"},
+    {"id": "C-INTERACTION-CONTRADICTION-NOT-LIE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "patch": {"/interaction_integrity/claim_assessments/1/deception_state": "SUPPORTED"}, "expect_ok": false, "expect_state": "FAIL", "why": "contradiction alone cannot prove deliberate deception"},
+    {"id": "C-INTERACTION-CLAIM-MAPPING", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "patch": {"/interaction_integrity/claim_assessments/1/claim_state": "SUPPORTED"}, "expect_ok": false, "expect_state": "FAIL", "why": "a claim contradicted by measured evidence cannot be marked supported"},
+    {"id": "C-ALIGNMENT-NO-COERCION", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "patch": {"/interaction_integrity/alignment_attempts/0/forbidden_methods_used": ["coercion"]}, "expect_ok": false, "expect_state": "FAIL", "why": "compliance obtained through coercion is not UT alignment"},
+    {"id": "C-ALIGNMENT-AUTHORITY", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "patch": {"/interaction_integrity/alignment_attempts/0/authority_after": ["read", "write:artifact", "deploy:anywhere"]}, "expect_ok": false, "expect_state": "FAIL", "why": "persuasion cannot expand the authority granted by the user"},
+    {"id": "C-ALIGNMENT-HIGHER-PRIORITY", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "patch": {"/interaction_integrity/alignment_attempts/1/result": "accepted"}, "expect_ok": false, "expect_state": "FAIL", "why": "higher-priority conflicts must be refused rather than persuaded into execution"},
+    {"id": "C-ALIGNMENT-UNAUTHORIZED-REPAIR", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "patch": {"/interaction_integrity/alignment_attempts/1/higher_priority_conflict": false, "/interaction_integrity/alignment_attempts/1/result": "repair_requested"}, "expect_ok": false, "expect_state": "FAIL", "why": "an unauthorized instruction must be refused rather than reframed as a repair"},
+    {"id": "C-ALIGNMENT-UNKNOWN-METHOD", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "patch": {"/interaction_integrity/alignment_attempts/0/forbidden_methods_used": ["social_pressure"]}, "expect_ok": false, "expect_state": "UNKNOWN", "why": "an undeclared influence method is UNKNOWN and cannot bypass the forbidden-method ledger"},
+    {"id": "C-ALIGNMENT-CHOICE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "patch": {"/interaction_integrity/alignment_attempts/0/counterparty_choice_preserved": false}, "expect_ok": false, "expect_state": "FAIL", "why": "compliance is invalid when counterpart choice is not preserved"},
+    {"id": "C-ALIGNMENT-TRANSPARENCY", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "patch": {"/interaction_integrity/alignment_attempts/0/constraints_explicit": false}, "expect_ok": false, "expect_state": "FAIL", "why": "alignment cannot hide the constraints that govern the requested action"},
     {
       "id": "C-COGNITIVE-ROUTE",
       "kind": "validator_probe",

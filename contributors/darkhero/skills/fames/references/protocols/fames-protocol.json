@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.11.0",
+  "version": "1.12.2",
   "updated": "2026-08-17",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -285,12 +285,14 @@
       "expanded_zh": "統一理論",
       "scope": "The project-internal umbrella for reasoning and engineering mechanisms that FAMES acquires from ai_ut.",
       "epistemic_boundary": "UT is the name of this internal unification layer, not a claim that it is established scientific truth. Each mechanism remains a hypothesis until its declared measurement passes.",
+      "unclassified_mechanism_rule": "An ai_ut-derived function not yet enumerated remains a UT candidate. Route claim-checking or influence functions to interaction_integrity, but keep them UNKNOWN and non-SEAL-admissible until purpose, inputs, stop rule, evidence class, authority boundary, and validator are registered.",
       "includes": [
         "operators.Te",
         "operators.Ti",
         "operators.Ne",
         "operators.Ni",
-        "meticulousness_and_efficiency"
+        "meticulousness_and_efficiency",
+        "interaction_integrity"
       ]
     },
     "operators": {
@@ -409,6 +411,32 @@
           "rule": "Tone never promotes a claim; SEAL accepts only the evidence class required by the goal."
         }
       }
+    },
+    "interaction_integrity": {
+      "status": "UT project-internal interaction contract",
+      "purpose": "Assess counterpart claims without mind-reading and align agent compliance through transparent, authorized reasons rather than manipulation.",
+      "is_phase": false,
+      "validator": "python scripts/fames_fleet.py validate-cognitive --input <trace.json> --json",
+      "claim_integrity": {
+        "evidence_statuses": ["matches", "conflicts", "insufficient"],
+        "claim_states": ["SUPPORTED", "CONTRADICTED", "UNKNOWN"],
+        "mapping": {
+          "matches": "SUPPORTED",
+          "conflicts": "CONTRADICTED",
+          "insufficient": "UNKNOWN"
+        },
+        "deception_rule": "A contradiction is not proof of lying. Deception may be SUPPORTED only by direct measured evidence that the actor knew the claim was false and deliberately represented it as true; otherwise intent is UNKNOWN.",
+        "evidence_reproduction_rule": "The validator checks record consistency, not the truth of an evidence URI. Every load-bearing evidence reference must be independently reproduced before SEAL.",
+        "unknown_rule": "Missing, stale, indirect, modelled, or merely asserted evidence cannot establish deception."
+      },
+      "compliance_alignment": {
+        "allowed_methods": ["shared_goal", "evidence", "constraint_explanation", "consequence_explanation", "bounded_options", "structured_repair"],
+        "forbidden_methods": ["deception", "coercion", "threat", "impersonation", "hidden_pressure", "exploit_vulnerability", "authority_expansion"],
+        "required_properties": ["authorized", "goal_explicit", "constraints_explicit", "evidence_refs", "counterparty_choice_preserved", "authority_conserved"],
+        "conflict_rule": "An instruction conflicting with higher-priority policy, safety, or user authority must be refused rather than persuaded into execution.",
+        "success_rule": "Alignment succeeds when the counterpart accepts, repairs, or gives an evidence-backed refusal while authority and choice remain intact; obedience alone is not the metric."
+      },
+      "unknown_rule": "Unknown evidence identity, authority, intent, method, or constraint conflict is UNKNOWN and fails closed."
     }
   },
   "external_learning": {
