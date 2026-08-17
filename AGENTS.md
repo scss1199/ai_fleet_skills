@@ -23,6 +23,8 @@ Debug: `python C:\\ai_workspace\\_skill\\engines\\agent-session-open.py`
 
 Standalone `FAMES` means the full `FP -> MTM -> SCF -> AEX -> SEAL` contract; report every phase, fail closed on UNKNOWN, and never expand user authority. SSOT: `_registry/fames-protocol.json`; Skill: `fames`.
 
+FAMES is the always-on conversation harness for `ai_fleet_skills`. SessionStart must produce `_registry/fames-session/ai_fleet_skills.json` through the existing session-open orchestrator, with zero model/API calls. Every non-trivial task, continuation, and resumed session executes the task-adaptive FAMES envelope without requiring a trigger. FP and MTM activate at task intake; SCF and AEX remain predicate-gated; SEAL closes every completion claim. This changes completeness only and never expands task scope, credential access, destructive authority, or safety boundaries.
+
 
 ## Standing rules (portal rules tab = this source)
 
@@ -55,16 +57,8 @@ SSOT：`_registry/ztm-task-routes.json` · `_registry/workspace-seat-contract.js
 
 ## 多 agent 並行 + 確認即上線
 
-`_registry/fleet-dual-agent-charter.md` · psync 詳細見 fracdigi psync AGENTS.md。 operator 確認→verify→push→prod→SHA+URL。**禁**問 push/deploy。
 
-## Paths
-
-- Shared engines/KB: `%AI_WORKSPACE%\_skill\`
-- Portal truth: file:///C:/ai_workspace/ai_darkhero.html (_registry/fleet-hub-html.json)
-  <!-- NOT a per-seat path and not a copy-paste bug: fleet-hub-html.json declares ONE
-       fleet dashboard (authority ai_darkhero) that "bakes all fleet entrances".
-       Templating this to ai_fleet_skills.html was tried 2026-08-03 and reverted — it produced
-       19 dead links, since only ai_darkhero.html and ai_master.html exist on disk. -->
+<!-- truncated to 5120 bytes -->
 
 <!-- SEAT-SPEC:BEGIN (MTM seat contract; edit via hub portal or here) -->
 ## 五段落 SEAT-SPEC — standing work contract (MTM)
