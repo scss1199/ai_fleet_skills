@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-17T16:45:02Z",
-  "manifest_sha": "ae7c6643e860e9b9",
+  "generated_at": "2026-08-17T18:15:02Z",
+  "manifest_sha": "88d570aa86a561a5",
   "required": [
     "fames",
     "independent-review",
@@ -67,15 +67,17 @@
     },
     {
       "name": "api-key-apply",
-      "sha": "a3464e5ccb57d71f",
+      "sha": "485c2eea8dbecea7",
       "required": false,
       "lane": null,
-      "package_sha": "d48c97584e6e8b873404681b3ff2e8eb53f0d78787e618cd72bc4da8c79a9fac",
+      "package_sha": "b91086fa84cd5b921d15b10681866a09fe3f35aad204e5774872cd09da49a5fd",
       "files": {
-        "SKILL.md": "a3464e5ccb57d71f6e05b8911745664d0d0cb86e1487b19426eea8f041fb32e0",
+        "SKILL.md": "485c2eea8dbecea75cdf659435595c2cd7e39cd434b45c69807b67c430c40015",
         "agents/openai.yaml": "ef1d9d6f4ccc3e291101cce0f335140d5fc3db7120651f1e8743b227a88918a8",
         "references/api-matrix-schema.md": "911b0be27961d1bd09b6d16849f7be0cb5b7421d4bf6efef03cee5006e1ee3da",
-        "references/current-inventory.md": "18648d13bb39886ddc9117a682c4480fd10740b25479e182eff7672e77dae8ac"
+        "references/current-inventory.md": "18648d13bb39886ddc9117a682c4480fd10740b25479e182eff7672e77dae8ac",
+        "scripts/deepgram-provider-secret.py": "ce70b70183f17654aef7888cdf89b235a04494d05817d1d094f24cd7f35a3933",
+        "tests/test_deepgram_provider_secret.py": "cb3c47637a1081f3f61f3da8501b0ea6835d3f546eb748c0677a42190402f829"
       }
     },
     {

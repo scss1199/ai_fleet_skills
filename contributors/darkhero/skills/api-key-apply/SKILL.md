@@ -61,6 +61,31 @@ python %AI_WORKSPACE%\_skill\engines\key-onboard.py <provider> --key-stdin
 
 The operator performs provider-side signup or consent. The engine performs storage and validation.
 
+## Provider-only production keys
+
+Production keys classified as `KEEP_PROVIDER_ONLY` must never pass through the matrix or a dotenv
+file. A provider-specific adapter may hold the newly minted value in process memory long enough to
+run a live probe and feed the deployment provider's secure stdin. It must use create-before-delete,
+revoke an uninstalled candidate, and persist only a names-only receipt.
+
+For a JCI Deepgram Worker binding:
+
+```powershell
+python %AI_WORKSPACE%\_skill\fleet-skills\api-key-apply\scripts\deepgram-provider-secret.py `
+  --worker ai-jci-taipei `
+  --cwd %AI_WORKSPACE%\jci_taipei\jci_taipei_website
+```
+
+Add `--rotate` only after the existing names-only receipt is present. The adapter refuses to claim
+success unless a newly minted `member` key passes a real `whisper-medium` ASR request and Wrangler
+accepts the value on stdin. Existing Deepgram credentials without `keys:write` are a permission
+block, not a reason to copy a dev key into production.
+
+Google Cloud has an additional trap: `gcloud services api-keys create` may print the complete key
+inside its operation result even when a restrictive `--format` is requested. Capture that result
+inside a value-safe adapter or process pipeline; never let the create command write directly to an
+agent-visible terminal. Treat any such output as compromise and rotate immediately.
+
 ## Validate and publish
 
 Read-only probe:
