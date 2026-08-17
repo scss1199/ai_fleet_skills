@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "e038c76a710cf4ac3787005993009c77ce9809dd456d56a61999f9d2ff86504c",
-  "capability_set_sha": "798281bb5b2d5d5d6faeb12dd501f01fc062337b8df675e040dd3514a2a23a90",
-  "validator_set_sha": "ae32de4fdebcf97d17d6d8d5d25d33ffb2e7457e2fa96aeff1bc052d2531899f",
+  "package_sha": "15fffbabab50d376991ad76c11eba304d8ecb8d0b53f98465eac9d49472c7bbd",
+  "capability_set_sha": "e3c162d5ced3b7a57b9e476cf3f874ee0d188cf74fc0f9cb0fb136fc90bd5708",
+  "validator_set_sha": "4d3b52afdf465fb44d9e08b7a326b80bde8c0bfee4e59a07c32829dda79c9a66",
   "runner_state": "armed",
-  "observed_at": "2026-08-17T18:30:00.949589+00:00",
+  "observed_at": "2026-08-17T19:00:00.960230+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -32,6 +32,16 @@
       "capability_id": "capability-convergence",
       "contract_version": "1",
       "validator_identity": "fames-cases:capability-convergence:v1",
+      "required_hosts": [
+        "darkhero",
+        "scar3",
+        "altos"
+      ]
+    },
+    {
+      "capability_id": "platform-neutral-execution",
+      "contract_version": "1",
+      "validator_identity": "fames-cases:platform-neutral-execution:v1",
       "required_hosts": [
         "darkhero",
         "scar3",
@@ -89,6 +99,18 @@
         "case://C-CAPABILITY-SYNC-NO-CALLER",
         "case://C-CAPABILITY-SYNC-RUNNER",
         "case://C-CAPABILITY-SYNC-STALE"
+      ]
+    },
+    {
+      "capability_id": "platform-neutral-execution",
+      "state": "PASS",
+      "validator_exit": 0,
+      "positive_control": true,
+      "negative_control_rejected": true,
+      "caller_backed": true,
+      "evidence_refs": [
+        "case://C-PLATFORM-NEUTRAL-POLICY",
+        "case://C-PLATFORM-NEUTRAL-REJECTS-HOST-NAME"
       ]
     }
   ],
