@@ -5,10 +5,11 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-16T11:00:02Z",
-  "manifest_sha": "4dabb97854e17094",
+  "generated_at": "2026-08-17T03:45:02Z",
+  "manifest_sha": "2fbef3f96e7223d0",
   "required": [
     "fames",
+    "independent-review",
     "aex-agent-evolution",
     "ztm-fleet-inbox-absorb",
     "ztm-skill-submit",
@@ -22,7 +23,7 @@
     "ztm-fleet-intelligence",
     "token-preflight"
   ],
-  "skill_count": 41,
+  "skill_count": 42,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -110,7 +111,7 @@
     },
     {
       "name": "fames",
-      "sha": "dd9f0514a4de5f16",
+      "sha": "7df67648a1ffa1aa",
       "required": true,
       "lane": null,
       "package_sha": "0d74261e83af628848d7488a69e0356032657c8c9c4b63d64c6ae881a13527a0",
@@ -135,6 +136,18 @@
       "package_sha": "bb03c86a5b0fba6a8f4ae01ff73fe0a5cdc07474f4e385c697634a76624d1546",
       "files": {
         "SKILL.md": "aa656b74fed9cecccfef7779bd837cbea9b1263147550c47445766b0bcc80700"
+      }
+    },
+    {
+      "name": "independent-review",
+      "sha": "0336c61942106372",
+      "required": true,
+      "lane": null,
+      "package_sha": "e4f7c7ee6358960bda19485634ca158680bc5da92e8547e9e7d66da2463f1c08",
+      "files": {
+        "SKILL.md": "0336c6194210637291760f539ccb94b29894b29d12ead8b4e50ef9ea8affb54f",
+        "scripts/validate_receipt.py": "b2743116c6105a0dc0cfe3f152e9fbc59877a5c69e0e1123dfa132dd01b05991",
+        "scripts/verify_bundle.py": "f4420d52b0e5c62c0734524075ece408d005f6861d5dcd950cc18d252e66c5fe"
       }
     },
     {
