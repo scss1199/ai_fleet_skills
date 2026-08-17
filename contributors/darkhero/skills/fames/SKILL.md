@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-17.3
+FAMES-GEN: 2026-08-17.4
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -41,6 +41,18 @@ For non-trivial completion, diagnosis, architecture, foresight, or resource-rout
 - **Ti** converts candidates into invariants, contracts, and a bounded counterexample search.
 
 Use the declared task pipelines rather than invoking every operator by habit. Record each stage's input, output, role, stop rule, and evidence. A prediction remains a hypothesis until Te installs a probe or guard and measured evidence resolves it. Validate a trace with `python scripts/fames_fleet.py validate-cognitive --input <trace.json> --json`; a missing operator, wrong route, unmet stop rule, or non-measured seal claim fails closed. This layer improves execution quality inside MTM/SCF and does not add a sixth FAMES phase.
+
+### Meticulousness and efficiency
+
+`cognitive_operator_layer.meticulousness_and_efficiency` contains UT-derived
+engineering hypotheses, not personality science or original-theory claims. It keeps
+the same provider-neutral validator and adds measured stability margins, conservation
+ledgers, loop escape, bounded-mutation grip guards, destructive-interference probes,
+bifurcation forecasts, basis alignment, result-to-stage inverse diagnosis, and
+task-wide epistemic layers. Undefined units, missing accounting, stale series,
+malformed types, or unknown mechanisms are `UNKNOWN` and fail closed. Forecasts remain
+hypotheses until a Te probe measures the event; only `source/measured` claims are
+SEAL-admissible.
 
 Classify the task with the bundled profile/risk table. Risk may add evidence and guards but never authority. For a machine-verifiable completion record, pass the provider-neutral JSON ledger to `python scripts/fames_fleet.py validate-run --input <run.json> --json`; a non-zero exit fails closed. R2/R3 records require the bounded PREPARE/APPLY/VERIFY/COMMIT/RECOVER transaction fields, and R3 also requires a passing recovery drill.
 

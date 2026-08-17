@@ -566,24 +566,229 @@ def _validate_cognitive_trace(trace: object, layer: dict, index: int) -> list[st
     return errors
 
 
+def _number(value: object) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _validate_meticulousness_item(item: object, policy: dict, index: int) -> tuple[list[str], list[str]]:
+    """Validate one UT-derived engineering hypothesis with measured, typed inputs."""
+    prefix = f"meticulousness[{index}]"
+    if not isinstance(item, dict):
+        return [f"{prefix} is not an object"], []
+    kind = item.get("kind")
+    if kind not in (policy.get("mechanisms") or {}):
+        return [], [f"{prefix}: unknown mechanism {kind!r}"]
+    errors: list[str] = []
+    unknowns: list[str] = []
+
+    if kind == "stability_margin":
+        unit = item.get("unit")
+        required = ("margin", "trend", "warning_threshold", "trend_limit")
+        if not isinstance(unit, str) or not unit.strip():
+            unknowns.append(f"{prefix}: margin unit is undefined")
+        if any(not _number(item.get(field)) for field in required):
+            unknowns.append(f"{prefix}: margin or trend is not measurable")
+        if not item.get("measured_at") or not item.get("leading_indicator"):
+            unknowns.append(f"{prefix}: measurement time or leading indicator missing")
+        if not unknowns:
+            warning = (
+                item["margin"] <= item["warning_threshold"]
+                or item["trend"] < -abs(item["trend_limit"])
+            )
+            expected = "warning" if warning else "safe"
+            if item.get("status") != expected:
+                errors.append(f"{prefix}: stability status must be {expected}")
+
+    elif kind == "conservation_ledger":
+        transitions = item.get("transitions")
+        if not isinstance(transitions, list) or not transitions:
+            unknowns.append(f"{prefix}: transitions missing")
+        else:
+            cost_fields = tuple(policy["mechanisms"][kind].get("cost_fields") or ())
+            for j, row in enumerate(transitions):
+                here = f"{prefix}.transitions[{j}]"
+                if not isinstance(row, dict):
+                    unknowns.append(f"{here}: transition is not an object")
+                    continue
+                costs = row.get("costs")
+                if not isinstance(costs, dict) or any(not _number(costs.get(k)) for k in cost_fields):
+                    unknowns.append(f"{here}: costs are not fully measured")
+                before = row.get("authority_before")
+                after = row.get("authority_after")
+                if not isinstance(before, list) or not isinstance(after, list):
+                    unknowns.append(f"{here}: authority ledger missing")
+                elif not set(after).issubset(set(before)):
+                    errors.append(f"{here}: authority expanded during transition")
+                evidence = row.get("evidence")
+                if not isinstance(evidence, dict) or any(
+                    not isinstance(evidence.get(key), int) or isinstance(evidence.get(key), bool)
+                    for key in ("input", "new", "claimed")
+                ):
+                    unknowns.append(f"{here}: evidence ledger is unmeasured")
+                elif evidence["claimed"] > evidence["input"] + evidence["new"]:
+                    errors.append(f"{here}: output claims exceed input evidence")
+                if not isinstance(row.get("residual"), str) or not row["residual"].strip():
+                    errors.append(f"{here}: residual was silently discarded")
+
+    elif kind == "loop_escape":
+        attempts = item.get("attempts")
+        if not isinstance(attempts, list) or not attempts:
+            unknowns.append(f"{prefix}: attempts missing")
+        elif any(
+            not isinstance(row, dict)
+            or not _number(row.get("external_delta"))
+            or not _number(row.get("discrimination_delta"))
+            for row in attempts
+        ):
+            unknowns.append(f"{prefix}: attempt deltas are unmeasured")
+        else:
+            stagnant = len(attempts) >= 3 and all(
+                row["external_delta"] == 0 and row["discrimination_delta"] == 0
+                for row in attempts[-3:]
+            )
+            allowed = set(policy["mechanisms"][kind].get("escape_actions") or ())
+            if stagnant and item.get("next_action") not in allowed:
+                errors.append(f"{prefix}: stagnant loop did not switch to a discriminating action")
+
+    elif kind == "grip_guard":
+        impact = item.get("impact")
+        if impact not in RISK_ORDER:
+            unknowns.append(f"{prefix}: mutation impact is unknown")
+        else:
+            high = RISK_ORDER[impact] >= RISK_ORDER["R2"]
+            bounded = all(item.get(key) is True for key in ("bounded_transaction", "rollback", "read_back"))
+            emergency = item.get("emergency_recovery") is True and item.get("recovery_drill_pass") is True
+            if high and not (bounded or emergency):
+                errors.append(f"{prefix}: unbounded high-impact mutation is blocked")
+
+    elif kind == "destructive_interference":
+        if item.get("new_capability_probe") is not True:
+            unknowns.append(f"{prefix}: new capability was not measured")
+        if item.get("core_before_pass") is not True or item.get("core_after_pass") is not True:
+            errors.append(f"{prefix}: existing core capability regressed or lost its caller")
+        allowed = {"R_CAPABILITY", "R_OPERABILITY", "R_COMPLEXITY"}
+        residuals = item.get("residuals")
+        if not isinstance(residuals, list) or any(row not in allowed for row in residuals):
+            unknowns.append(f"{prefix}: interference residual vocabulary is invalid")
+
+    elif kind == "bifurcation_foresight":
+        series = item.get("series")
+        if not isinstance(series, list) or len(series) < 3 or any(not _number(v) for v in series):
+            unknowns.append(f"{prefix}: measured series is missing or malformed")
+        elif any(not _number(item.get(key)) for key in ("threshold", "age_seconds", "max_age_seconds")):
+            unknowns.append(f"{prefix}: threshold or freshness is unmeasured")
+        elif item["age_seconds"] > item["max_age_seconds"]:
+            unknowns.append(f"{prefix}: series is stale")
+        else:
+            slope = series[-1] - series[-2]
+            if series[-1] >= item["threshold"]:
+                classification = "measured_conclusion"
+            elif slope > 0 and series[-1] + slope >= item["threshold"]:
+                classification = "forecast"
+            else:
+                classification = "stable"
+            if item.get("classification") != classification:
+                errors.append(f"{prefix}: classification must be {classification}")
+
+    elif kind == "basis_alignment":
+        routes = item.get("routes")
+        chosen = item.get("chosen")
+        metrics = tuple(policy["mechanisms"][kind].get("metrics") or ())
+        if item.get("operator_route") != ["Ne", "Ti", "Ni", "Te"]:
+            errors.append(f"{prefix}: operator route is not Ne->Ti->Ni->Te")
+        if "score" in item:
+            errors.append(f"{prefix}: unitless aggregate score is forbidden")
+        if not isinstance(routes, list) or not routes:
+            unknowns.append(f"{prefix}: routes missing")
+        else:
+            indexed = {row.get("id"): row for row in routes if isinstance(row, dict)}
+            selected = indexed.get(chosen)
+            if not selected or any(not _number(selected.get(metric)) for metric in metrics):
+                unknowns.append(f"{prefix}: selected route metrics are unmeasured")
+            else:
+                for route_id, row in indexed.items():
+                    if route_id == chosen or any(not _number(row.get(metric)) for metric in metrics):
+                        continue
+                    dominated = all(row[m] <= selected[m] for m in metrics) and any(
+                        row[m] < selected[m] for m in metrics
+                    )
+                    if dominated:
+                        errors.append(f"{prefix}: route {route_id} dominates selected route")
+                        break
+
+    elif kind == "inverse_diagnosis":
+        symptom = item.get("symptom")
+        mapping = policy["mechanisms"][kind].get("mapping") or {}
+        expected = mapping.get(symptom)
+        if not isinstance(expected, dict):
+            unknowns.append(f"{prefix}: symptom has no falsifiable mapping")
+        elif item.get("minimal_stage") != expected.get("stage") or item.get("next_test") != expected.get("test"):
+            errors.append(f"{prefix}: result-to-stage inversion is not minimal or decisive")
+
+    elif kind == "epistemic_layers":
+        claims = item.get("claims")
+        allowed = {"source/measured", "model/hypothesis", "draft/unverified"}
+        if not isinstance(claims, list) or not claims:
+            unknowns.append(f"{prefix}: claims missing")
+        else:
+            for j, row in enumerate(claims):
+                here = f"{prefix}.claims[{j}]"
+                if not isinstance(row, dict) or row.get("layer") not in allowed:
+                    unknowns.append(f"{here}: epistemic layer is unknown")
+                    continue
+                admissible = row["layer"] == "source/measured"
+                if row.get("seal_admissible") is not admissible:
+                    errors.append(f"{here}: seal admissibility contradicts epistemic layer")
+    return errors, unknowns
+
+
+def _validate_meticulousness(record: dict, layer: dict) -> tuple[list[str], list[str], int]:
+    policy = layer.get("meticulousness_and_efficiency")
+    if not isinstance(policy, dict) or not isinstance(policy.get("mechanisms"), dict):
+        return [], ["meticulousness_and_efficiency policy missing"], 0
+    items = record.get("meticulousness")
+    if not isinstance(items, list) or not items:
+        return [], ["meticulousness checks missing"], 0
+    errors: list[str] = []
+    unknowns: list[str] = []
+    for index, item in enumerate(items):
+        item_errors, item_unknowns = _validate_meticulousness_item(item, policy, index)
+        errors.extend(item_errors)
+        unknowns.extend(item_unknowns)
+    return errors, unknowns, len(items)
+
+
 def validate_cognitive(record: dict) -> dict:
     """Validate one trace or a suite of traces against the bundled operator policy."""
     layer, problem = _cognitive_contract()
     if problem:
         return {"ok": False, "state": "UNKNOWN", "traces": 0, "errors": [problem]}
-    traces = record.get("traces") if isinstance(record, dict) else None
-    if traces is None:
-        traces = [record]
-    if not isinstance(traces, list) or not traces:
-        return {"ok": False, "state": "FAIL", "traces": 0, "errors": ["traces missing"]}
+    if not isinstance(record, dict):
+        return {"ok": False, "state": "UNKNOWN", "traces": 0, "errors": ["record is not an object"]}
+    traces = record.get("traces")
     errors: list[str] = []
-    for index, trace in enumerate(traces):
-        errors.extend(_validate_cognitive_trace(trace, layer, index))
+    unknowns: list[str] = []
+    trace_count = 0
+    if traces is not None:
+        if not isinstance(traces, list) or not traces:
+            unknowns.append("traces missing")
+        else:
+            trace_count = len(traces)
+            for index, trace in enumerate(traces):
+                errors.extend(_validate_cognitive_trace(trace, layer, index))
+    meticulousness_count = 0
+    if "meticulousness" in record:
+        quality_errors, quality_unknowns, meticulousness_count = _validate_meticulousness(record, layer)
+        errors.extend(quality_errors)
+        unknowns.extend(quality_unknowns)
+    if traces is None and "meticulousness" not in record:
+        unknowns.append("traces or meticulousness checks missing")
     return {
-        "ok": not errors,
-        "state": "PASS" if not errors else "FAIL",
-        "traces": len(traces),
-        "errors": errors,
+        "ok": not errors and not unknowns,
+        "state": "UNKNOWN" if unknowns else ("PASS" if not errors else "FAIL"),
+        "traces": trace_count,
+        "meticulousness": meticulousness_count,
+        "errors": errors + unknowns,
     }
 
 
@@ -1657,11 +1862,30 @@ def _evaluate_case(
                 bool(record.get("allow_rollback")),
             )
             ok = not errors
+            outcome = {"state": "PASS" if ok else "FAIL"}
+        elif validator == "contributor_id":
+            errors = []
+            for pair in record.get("aliases") or []:
+                try:
+                    left, right = pair
+                    if _contributor_id(left) != _contributor_id(right):
+                        errors.append(f"aliases do not converge: {pair!r}")
+                except (TypeError, ValueError) as exc:
+                    errors.append(str(exc))
+            ok = bool(record.get("aliases")) and not errors
+            outcome = {"state": "PASS" if ok else "FAIL"}
         else:
             return "UNKNOWN", f"unknown validator {validator!r}"
         want = bool(case.get("expect_ok"))
+        expected_state = case.get("expect_state")
+        actual_state = outcome.get("state")
+        if expected_state is not None and actual_state != expected_state:
+            return "FAIL", f"expected validator state {expected_state}, got {actual_state}"
         if ok == want:
-            return "PASS", ("accepted" if ok else f"refused ({len(errors)})")
+            detail = "accepted" if ok else f"refused ({len(errors)})"
+            if expected_state is not None:
+                detail += f" as {actual_state}"
+            return "PASS", detail
         if want:
             # Only echo rule messages when a case that should have passed did not.
             return "FAIL", "; ".join(str(e) for e in errors[:5])[:200]

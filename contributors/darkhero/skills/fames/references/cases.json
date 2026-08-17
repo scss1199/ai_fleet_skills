@@ -15,7 +15,7 @@
     "path_exists": "path (workspace-relative), expect present|absent",
     "file_size_max": "path, max_bytes, missing_ok -- measures size only, never reads content",
     "json_probe": "select (list of workspace-relative globs), pointer (slash path, * wildcard segment), expect all_equal|all_equal_ref|all_in, ref canonical_package_sha|canonical_version, values, missing_ok",
-    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|regression_guard, input_ref into fixtures, remove, patch, expect_ok",
+    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|regression_guard|contributor_id, input_ref into fixtures, remove, patch, expect_ok, optional expect_state",
     "parity": "bundle and registry describe the same protocol generations",
     "newest_age_max": "select globs, max_age_h, missing_ok -- newest match must be younger than the ceiling"
   },
@@ -89,6 +89,9 @@
       "remote": {"version": "1.6.0", "package_sha": "canon-sha-fixture"},
       "allow_rollback": false
     },
+    "contributor_ids": {
+      "aliases": [["darkhero", "ai_darkhero"], ["scar3", "ai_scar3"], ["altos", "ai_altos"]]
+    },
     "cognitive_suite": {
       "traces": [
         {
@@ -139,6 +142,26 @@
             {"operator": "Te", "role": "apply_route_and_verify_cost", "input_ref": "selected-route", "output_ref": "costed-result", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "result and cost read back"}}
           ]
         }
+      ]
+    },
+    "meticulousness_suite": {
+      "meticulousness": [
+        {"kind": "stability_margin", "unit": "requests", "margin": 12, "trend": -0.2, "measured_at": "2026-08-17T00:00:00Z", "leading_indicator": "retry_rate", "warning_threshold": 5, "trend_limit": 1, "status": "safe"},
+        {"kind": "stability_margin", "unit": "requests", "margin": 3, "trend": -0.1, "measured_at": "2026-08-17T00:00:00Z", "leading_indicator": "queue_depth", "warning_threshold": 5, "trend_limit": 1, "status": "warning"},
+        {"kind": "stability_margin", "unit": "seconds", "margin": 20, "trend": -2, "measured_at": "2026-08-17T00:00:00Z", "leading_indicator": "stale_evidence_age", "warning_threshold": 5, "trend_limit": 1, "status": "warning"},
+        {"kind": "conservation_ledger", "transitions": [{"costs": {"tokens": 0, "tool_calls": 2, "wall_ms": 40, "external_mutations": 1}, "authority_before": ["read", "write:fames"], "authority_after": ["read", "write:fames"], "evidence": {"input": 2, "new": 1, "claimed": 3}, "residual": "altos receipt remains UNKNOWN"}]},
+        {"kind": "loop_escape", "attempts": [{"external_delta": 0, "discrimination_delta": 0}, {"external_delta": 0, "discrimination_delta": 0}, {"external_delta": 0, "discrimination_delta": 0}], "next_action": "discriminating_test"},
+        {"kind": "loop_escape", "attempts": [{"external_delta": 0, "discrimination_delta": 1}, {"external_delta": 0, "discrimination_delta": 1}, {"external_delta": 0, "discrimination_delta": 1}], "next_action": "repeat"},
+        {"kind": "grip_guard", "impact": "R1", "bounded_transaction": false, "rollback": false, "read_back": true, "emergency_recovery": false, "recovery_drill_pass": false},
+        {"kind": "grip_guard", "impact": "R2", "bounded_transaction": true, "rollback": true, "read_back": true, "emergency_recovery": false, "recovery_drill_pass": false},
+        {"kind": "grip_guard", "impact": "R3", "bounded_transaction": false, "rollback": false, "read_back": true, "emergency_recovery": true, "recovery_drill_pass": true},
+        {"kind": "destructive_interference", "new_capability_probe": true, "core_before_pass": true, "core_after_pass": true, "residuals": ["R_CAPABILITY", "R_OPERABILITY", "R_COMPLEXITY"]},
+        {"kind": "bifurcation_foresight", "series": [2, 2, 2], "threshold": 10, "age_seconds": 10, "max_age_seconds": 300, "classification": "stable"},
+        {"kind": "bifurcation_foresight", "series": [7, 8, 9], "threshold": 10, "age_seconds": 10, "max_age_seconds": 300, "classification": "forecast"},
+        {"kind": "bifurcation_foresight", "series": [8, 9, 10], "threshold": 10, "age_seconds": 10, "max_age_seconds": 300, "classification": "measured_conclusion"},
+        {"kind": "basis_alignment", "operator_route": ["Ne", "Ti", "Ni", "Te"], "chosen": "grep", "routes": [{"id": "grep", "conversion_steps": 0, "tool_calls": 1, "bytes_context": 200, "wall_ms": 20}, {"id": "json_model", "conversion_steps": 2, "tool_calls": 3, "bytes_context": 2000, "wall_ms": 120}]},
+        {"kind": "inverse_diagnosis", "symptom": "external_change_missing", "minimal_stage": "Te", "next_test": "read_back_external_state"},
+        {"kind": "epistemic_layers", "claims": [{"id": "M1", "layer": "source/measured", "seal_admissible": true}, {"id": "H1", "layer": "model/hypothesis", "seal_admissible": false}, {"id": "D1", "layer": "draft/unverified", "seal_admissible": false}]}
       ]
     }
   },
@@ -238,6 +261,28 @@
       "expect_ok": false,
       "why": "an asserted resource estimate cannot seal as a measured allocation result"
     },
+    {"id": "C-METICULOUS-BASE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "expect_ok": true, "why": "all UT-derived engineering hypotheses accept their measured safe, warning, productive-loop, bounded-mutation and evidence-layer golden cases"},
+    {"id": "C-MARGIN-NO-UNIT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "remove": ["/meticulousness/0/unit"], "expect_ok": false, "expect_state": "UNKNOWN", "why": "a margin without a defined unit is UNKNOWN rather than an invented number"},
+    {"id": "C-MARGIN-NEAR-BOUNDARY", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/1/status": "safe"}, "expect_ok": false, "expect_state": "FAIL", "why": "current PASS cannot hide a measured margin already near its boundary"},
+    {"id": "C-MARGIN-WORSENING", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/2/status": "safe"}, "expect_ok": false, "expect_state": "FAIL", "why": "a rapidly shrinking margin is an early warning even before the boundary is crossed"},
+    {"id": "C-CONSERVATION-COST", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "remove": ["/meticulousness/3/transitions/0/costs/tool_calls"], "expect_ok": false, "expect_state": "UNKNOWN", "why": "an unmetered transition cost cannot satisfy task accounting"},
+    {"id": "C-CONSERVATION-AUTHORITY", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/3/transitions/0/authority_after": ["read", "write:fames", "deploy:anywhere"]}, "expect_ok": false, "expect_state": "FAIL", "why": "authority cannot expand during a pipeline transition"},
+    {"id": "C-CONSERVATION-EVIDENCE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/3/transitions/0/evidence/claimed": 4}, "expect_ok": false, "expect_state": "FAIL", "why": "output claims cannot exceed input plus newly measured evidence"},
+    {"id": "C-CONSERVATION-RESIDUAL", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/3/transitions/0/residual": ""}, "expect_ok": false, "expect_state": "FAIL", "why": "unresolved residuals cannot be silently discarded"},
+    {"id": "C-LOOP-ESCAPE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/4/next_action": "repeat"}, "expect_ok": false, "expect_state": "FAIL", "why": "three attempts with no external or discriminating delta must switch representation, test, or stop UNKNOWN"},
+    {"id": "C-LOOP-PRODUCTIVE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/5/next_action": "repeat"}, "expect_ok": true, "expect_state": "PASS", "why": "three repeated operations that each add measured discrimination are not a loop attractor"},
+    {"id": "C-GRIP-UNBOUNDED", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/7/rollback": false}, "expect_ok": false, "expect_state": "FAIL", "why": "an R2 mutation without rollback is blocked at the existing transaction gate"},
+    {"id": "C-INTERFERENCE-CORE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/9/core_after_pass": false}, "expect_ok": false, "expect_state": "FAIL", "why": "a new guard may not disable or orphan the core capability it surrounds"},
+    {"id": "C-BIFURCATION-FALSE-POSITIVE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/10/classification": "forecast"}, "expect_ok": false, "expect_state": "FAIL", "why": "a flat series below threshold cannot be promoted to a forecast"},
+    {"id": "C-BIFURCATION-FALSE-NEGATIVE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/11/classification": "stable"}, "expect_ok": false, "expect_state": "FAIL", "why": "a measured trend crossing on the next step cannot be hidden as stable"},
+    {"id": "C-BIFURCATION-STALE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/11/age_seconds": 301}, "expect_ok": false, "expect_state": "UNKNOWN", "why": "a stale series cannot support either forecast or conclusion"},
+    {"id": "C-BIFURCATION-CROSSING", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/12/classification": "forecast"}, "expect_ok": false, "expect_state": "FAIL", "why": "after the measured threshold crossing the result is a measured conclusion, not still a forecast"},
+    {"id": "C-BASIS-DOMINATED", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/13/chosen": "json_model"}, "expect_ok": false, "expect_state": "FAIL", "why": "a route dominated in conversions, calls, context bytes and wall time wastes representation work"},
+    {"id": "C-BASIS-MAGIC-SCORE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/13/score": 0.9}, "expect_ok": false, "expect_state": "FAIL", "why": "basis alignment uses replayable units, never an uncalibrated aggregate score"},
+    {"id": "C-INVERSE-MINIMAL-STAGE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/14/minimal_stage": "Ni"}, "expect_ok": false, "expect_state": "FAIL", "why": "a missing external change diagnoses the Te stop and names a decisive read-back, not a generic failure"},
+    {"id": "C-EPISTEMIC-PROMOTION", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/15/claims/1/seal_admissible": true}, "expect_ok": false, "expect_state": "FAIL", "why": "a confident hypothesis remains inadmissible until measured"},
+    {"id": "C-EPISTEMIC-UNKNOWN", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/15/claims/2/layer": "factish"}, "expect_ok": false, "expect_state": "UNKNOWN", "why": "an undeclared epistemic layer is UNKNOWN and cannot seal"},
+    {"id": "C-CONTRIBUTOR-ID-NORMALIZATION", "kind": "validator_probe", "charges": "R_FLEET", "fail_mode": "closed", "scope": "any", "validator": "contributor_id", "input_ref": "contributor_ids", "expect_ok": true, "expect_state": "PASS", "why": "seat ids and contributor ids resolve to one darkhero/scar3/altos manifest vocabulary rather than false file-not-found paths"},
     {
       "id": "C-PARITY",
       "kind": "parity",
