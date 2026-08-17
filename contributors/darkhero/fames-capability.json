@@ -1,0 +1,99 @@
+{
+  "schema": 1,
+  "host": "darkhero",
+  "package_sha": "e038c76a710cf4ac3787005993009c77ce9809dd456d56a61999f9d2ff86504c",
+  "capability_set_sha": "798281bb5b2d5d5d6faeb12dd501f01fc062337b8df675e040dd3514a2a23a90",
+  "validator_set_sha": "ae32de4fdebcf97d17d6d8d5d25d33ffb2e7457e2fa96aeff1bc052d2531899f",
+  "runner_state": "armed",
+  "observed_at": "2026-08-17T16:06:46.390360+00:00",
+  "freshness_seconds": 0,
+  "capability_manifest": [
+    {
+      "capability_id": "contract-core",
+      "contract_version": "1",
+      "validator_identity": "fames-cases:contract-core:v1",
+      "required_hosts": [
+        "darkhero",
+        "scar3",
+        "altos"
+      ]
+    },
+    {
+      "capability_id": "delivery-integrity",
+      "contract_version": "1",
+      "validator_identity": "fames-cases:delivery-integrity:v1",
+      "required_hosts": [
+        "darkhero",
+        "scar3",
+        "altos"
+      ]
+    },
+    {
+      "capability_id": "capability-convergence",
+      "contract_version": "1",
+      "validator_identity": "fames-cases:capability-convergence:v1",
+      "required_hosts": [
+        "darkhero",
+        "scar3",
+        "altos"
+      ]
+    }
+  ],
+  "capabilities": [
+    {
+      "capability_id": "contract-core",
+      "state": "PASS",
+      "validator_exit": 0,
+      "positive_control": true,
+      "negative_control_rejected": true,
+      "caller_backed": true,
+      "evidence_refs": [
+        "case://C-RUN-BASE",
+        "case://C-RUN-HASH",
+        "case://C-PARITY"
+      ]
+    },
+    {
+      "capability_id": "delivery-integrity",
+      "state": "PASS",
+      "validator_exit": 0,
+      "positive_control": true,
+      "negative_control_rejected": true,
+      "caller_backed": true,
+      "evidence_refs": [
+        "case://C-INTERACTION-BASE",
+        "case://C-DELIVERY-SCOPE-INFLATION",
+        "case://C-DELIVERY-HIDDEN-UNKNOWN",
+        "case://C-DELIVERY-NUMERIC-PROXY",
+        "case://C-DELIVERY-FIX-NO-BEFORE",
+        "case://C-DELIVERY-BUILD-AS-DEPLOY",
+        "case://C-DELIVERY-PASS-WITH-DEFECT",
+        "case://C-REPAIR-NO-NEXT-TEST",
+        "case://C-REPAIR-BUDGET"
+      ]
+    },
+    {
+      "capability_id": "capability-convergence",
+      "state": "PASS",
+      "validator_exit": 0,
+      "positive_control": true,
+      "negative_control_rejected": true,
+      "caller_backed": true,
+      "evidence_refs": [
+        "case://C-CAPABILITY-SYNC-BASE",
+        "case://C-CAPABILITY-SYNC-MISSING-HOST",
+        "case://C-CAPABILITY-SYNC-PACKAGE-DRIFT",
+        "case://C-CAPABILITY-SYNC-VALIDATOR-DRIFT",
+        "case://C-CAPABILITY-SYNC-MISSING-CAPABILITY",
+        "case://C-CAPABILITY-SYNC-NEGATIVE-CONTROL",
+        "case://C-CAPABILITY-SYNC-NO-CALLER",
+        "case://C-CAPABILITY-SYNC-RUNNER",
+        "case://C-CAPABILITY-SYNC-STALE"
+      ]
+    }
+  ],
+  "evidence_refs": [
+    "C:\\ai_workspace\\_skill\\fleet-skills\\fames\\bundle-manifest.json",
+    "C:\\ai_workspace\\_skill\\fleet-skills\\fames\\references\\cases.json"
+  ]
+}
