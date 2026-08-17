@@ -917,6 +917,16 @@ def _seat_root(workspace: Path, host: str) -> Path | None:
     return None
 
 
+def _contributor_id(host: str) -> str:
+    """Normalize seat ids to the immutable contributor directory vocabulary."""
+    normalized = str(host or "").strip().lower()
+    if normalized.startswith("ai_"):
+        normalized = normalized[3:]
+    if normalized not in {"darkhero", "scar3", "altos"}:
+        raise ValueError(f"unknown FAMES contributor id: {host!r}")
+    return normalized
+
+
 def _receipt_key(workspace: Path, host: str) -> str:
     """Receipt filename key = the seat directory the host actually resolves to.
 
@@ -1315,17 +1325,30 @@ def verify_fleet(workspace: Path, hosts: list[str]) -> dict:
         if fetch.returncode != 0:
             errors.append("carrier fetch failed")
     for host in hosts:
-        manifest_path = repo / "contributors" / host / "manifest.json"
+        try:
+            contributor = _contributor_id(host)
+        except ValueError as exc:
+            errors.append(str(exc))
+            rows.append({"host": host, "ok": False})
+            continue
+        manifest_path = repo / "contributors" / contributor / "manifest.json"
         try:
             manifest = _read_json(manifest_path)
         except (OSError, json.JSONDecodeError) as exc:
             errors.append(f"{host} manifest unreadable: {exc}")
-            rows.append({"host": host, "ok": False})
+            rows.append({"host": contributor, "host_requested": host, "ok": False})
             continue
         skill = next((row for row in manifest.get("skills", []) if row.get("name") == "fames"), None)
         if not skill:
             errors.append(f"{host} FAMES receipt missing")
-            rows.append({"host": host, "ok": False, "manifest_sha": manifest.get("manifest_sha")})
+            rows.append(
+                {
+                    "host": contributor,
+                    "host_requested": host,
+                    "ok": False,
+                    "manifest_sha": manifest.get("manifest_sha"),
+                }
+            )
             continue
         package_sha = skill.get("package_sha")
         package = verify_package(repo / "contributors" / host / "skills" / "fames")
@@ -1334,7 +1357,8 @@ def verify_fleet(workspace: Path, hosts: list[str]) -> dict:
             errors.append(f"{host} FAMES generation mismatch")
         rows.append(
             {
-                "host": host,
+                "host": contributor,
+                **({"host_requested": host} if host != contributor else {}),
                 "ok": bool(row_ok),
                 "manifest_sha": manifest.get("manifest_sha"),
                 "package_sha": package_sha,
