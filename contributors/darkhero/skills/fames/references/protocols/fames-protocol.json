@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.14.0",
+  "version": "1.14.1",
   "updated": "2026-08-17",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -273,6 +273,7 @@
       "purpose": "Prove that darkhero, scar3, and altos expose the same required FAMES behaviours, not merely files with the same package hash.",
       "expected_hosts": ["darkhero", "scar3", "altos"],
       "generation_identity": ["package_sha", "capability_set_sha", "validator_set_sha"],
+      "max_freshness_seconds": 3600,
       "transition": ["PUBLISH", "STAGE", "VERIFY", "ACTIVATE", "ATTEST", "RECONCILE", "COMMIT_CONVERGENCE"],
       "host_attestation_requires": ["package_identity", "runner_state", "capability_rows", "positive_control", "negative_control_rejected", "caller_backed", "fresh_observation", "evidence_refs"],
       "full_convergence_rule": "Full capability convergence requires the exact expected host set and a fresh PASS attestation for every required capability on every applicable host. Missing hosts, stale receipts, validator drift, unarmed runners, absent callers, failed negative controls, or package/capability/validator identity mismatch are UNKNOWN or FAIL and forbid a convergence claim.",

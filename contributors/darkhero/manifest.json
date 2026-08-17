@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-17T16:02:39Z",
-  "manifest_sha": "3cec07ee35f2d29b",
+  "generated_at": "2026-08-17T16:03:22Z",
+  "manifest_sha": "fc5043fdd49c95f7",
   "required": [
     "fames",
     "independent-review",
@@ -23,7 +23,7 @@
     "ztm-fleet-intelligence",
     "token-preflight"
   ],
-  "skill_count": 41,
+  "skill_count": 42,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -107,6 +107,26 @@
         "scripts/selftest_fames_ship_gate.py": "4a0f106e00e791ad33e589426f42fd657ef308c0d3a6ff343253122b640e3804",
         "scripts/selftest_quick_validate.py": "41d345f312b0737b9df9e45fb0acb4eb4233c28c460214cd3810e349cfebd503",
         "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37"
+      }
+    },
+    {
+      "name": "fames",
+      "sha": "04f5f24f93d425b7",
+      "required": true,
+      "lane": null,
+      "package_sha": "6347d000070669fa4a9d59019d3205590b419c083e72ebc762901b677aadf08a",
+      "files": {
+        "SKILL.md": "04f5f24f93d425b7ea4520665de98ff741f2569f8b08ca3a12eaba37767af418",
+        "bundle-manifest.json": "3fd148a2578a129cfdda5652299b10f000984d82e0c6f73c71490da3a6bfce0c",
+        "references/cases.json": "8c9cc18730f2ca65cc70c04ee048277f1fa1e211a8d3483ecc23451910010b16",
+        "references/production-web-delivery.json": "0f8edd3a24f856a4cc1a76ecd4490185bad414735c2bc1787104d619d0f0a251",
+        "references/protocols/fames-protocol.json": "9478ac45ead95d6a5ed6da9d630511487b8fd1847add7774cdfc6281d4081b77",
+        "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
+        "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
+        "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
+        "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
+        "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
+        "scripts/fames_fleet.py": "50cf393a6ead50ed88067fd151158de307c94d72ae672c10bdb74371f8d73119"
       }
     },
     {
@@ -478,5 +498,103 @@
       }
     }
   ],
-  "fames_capability": null
+  "fames_capability": {
+    "schema": 1,
+    "host": "darkhero",
+    "package_sha": "6347d000070669fa4a9d59019d3205590b419c083e72ebc762901b677aadf08a",
+    "capability_set_sha": "798281bb5b2d5d5d6faeb12dd501f01fc062337b8df675e040dd3514a2a23a90",
+    "validator_set_sha": "468239ff50f76e755119d2e8ce4b278e433b3801c2168a59a69f636d9d05a4cc",
+    "runner_state": "armed",
+    "observed_at": "2026-08-17T16:03:14.179897+00:00",
+    "freshness_seconds": 0,
+    "capability_manifest": [
+      {
+        "capability_id": "contract-core",
+        "contract_version": "1",
+        "validator_identity": "fames-cases:contract-core:v1",
+        "required_hosts": [
+          "darkhero",
+          "scar3",
+          "altos"
+        ]
+      },
+      {
+        "capability_id": "delivery-integrity",
+        "contract_version": "1",
+        "validator_identity": "fames-cases:delivery-integrity:v1",
+        "required_hosts": [
+          "darkhero",
+          "scar3",
+          "altos"
+        ]
+      },
+      {
+        "capability_id": "capability-convergence",
+        "contract_version": "1",
+        "validator_identity": "fames-cases:capability-convergence:v1",
+        "required_hosts": [
+          "darkhero",
+          "scar3",
+          "altos"
+        ]
+      }
+    ],
+    "capabilities": [
+      {
+        "capability_id": "contract-core",
+        "state": "PASS",
+        "validator_exit": 0,
+        "positive_control": true,
+        "negative_control_rejected": true,
+        "caller_backed": true,
+        "evidence_refs": [
+          "case://C-RUN-BASE",
+          "case://C-RUN-HASH",
+          "case://C-PARITY"
+        ]
+      },
+      {
+        "capability_id": "delivery-integrity",
+        "state": "PASS",
+        "validator_exit": 0,
+        "positive_control": true,
+        "negative_control_rejected": true,
+        "caller_backed": true,
+        "evidence_refs": [
+          "case://C-INTERACTION-BASE",
+          "case://C-DELIVERY-SCOPE-INFLATION",
+          "case://C-DELIVERY-HIDDEN-UNKNOWN",
+          "case://C-DELIVERY-NUMERIC-PROXY",
+          "case://C-DELIVERY-FIX-NO-BEFORE",
+          "case://C-DELIVERY-BUILD-AS-DEPLOY",
+          "case://C-DELIVERY-PASS-WITH-DEFECT",
+          "case://C-REPAIR-NO-NEXT-TEST",
+          "case://C-REPAIR-BUDGET"
+        ]
+      },
+      {
+        "capability_id": "capability-convergence",
+        "state": "PASS",
+        "validator_exit": 0,
+        "positive_control": true,
+        "negative_control_rejected": true,
+        "caller_backed": true,
+        "evidence_refs": [
+          "case://C-CAPABILITY-SYNC-BASE",
+          "case://C-CAPABILITY-SYNC-MISSING-HOST",
+          "case://C-CAPABILITY-SYNC-PACKAGE-DRIFT",
+          "case://C-CAPABILITY-SYNC-VALIDATOR-DRIFT",
+          "case://C-CAPABILITY-SYNC-MISSING-CAPABILITY",
+          "case://C-CAPABILITY-SYNC-NEGATIVE-CONTROL",
+          "case://C-CAPABILITY-SYNC-NO-CALLER",
+          "case://C-CAPABILITY-SYNC-RUNNER",
+          "case://C-CAPABILITY-SYNC-STALE"
+        ]
+      }
+    ],
+    "evidence_refs": [
+      "C:\\ai_workspace\\_skill\\fleet-skills\\fames\\bundle-manifest.json",
+      "C:\\ai_workspace\\_skill\\fleet-skills\\fames\\references\\cases.json"
+    ]
+  }
 }
