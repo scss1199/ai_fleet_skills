@@ -2,7 +2,7 @@
 name: mtm-fleet-skill-github
 description: >-
   MTM fleet skill federation via shared GitHub repo ai_fleet_skills.
-  contributors/darkhero = darkhero uploads; contributors/scar3 = scar3 uploads.
+  contributors/darkhero, contributors/scar3, and contributors/altos publish isolated receipts.
   HubClock tick for dynamic cross-machine skill sync.
 metadata:
   fleet:
@@ -16,7 +16,7 @@ ladder_ref: _registry/fleet-token-ladder.json
 parent_skill: aex-agent-evolution
 ---
 
-# mtm-fleet-skill-github — 共享 skill repo（雙機分目錄）
+# mtm-fleet-skill-github — 共享 skill repo（三機分目錄）
 
 > **Repo:** `github.com/scss1199/ai_fleet_skills`  
 > **SSOT:** `_registry/fleet-skill-github.json`
@@ -29,6 +29,7 @@ _skill/ai_fleet_skills/
   contributors/
     darkhero/skills/...      # darkhero 機 · ai_darkhero 策展
     scar3/skills/...         # scar3 機 · ai_scar3 策展
+    altos/skills/...         # altos 機 · ai_altos follower
 ```
 
 Commit 訊息：`chore(skills/darkhero): ...` 或 `chore(skills/scar3): ...`
@@ -45,7 +46,13 @@ python %AI_WORKSPACE%\_skill\engines\mtm-fleet-skill-github.py push --node ai_da
 python %AI_WORKSPACE%\_skill\engines\mtm-fleet-skill-github.py sync --node ai_scar3
 ```
 
-pull 讀 `contributors/darkhero/`；push 只寫 `contributors/scar3/`。
+pull 讀 `contributors/darkhero/`；每台主機只寫自己的 contributor 目錄。
+
+FAMES `converge` 會先跑本機正／負控制並寫
+`_registry/fames-capabilities/<seat>.json`。export 把該 receipt 納入 contributor
+manifest 與 fingerprint；因此能力證據變更不會被「skills 沒變」的快路徑跳過。
+中央 `verify-fleet` 必須同時驗 package、capability set、validator set、runner、
+caller 與 receipt freshness；三份 contributor manifest 缺一即不是 full convergence。
 
 ## 本機 SSOT
 
