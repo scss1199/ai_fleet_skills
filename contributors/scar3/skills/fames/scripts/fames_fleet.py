@@ -1556,7 +1556,7 @@ def verify_fleet(workspace: Path, hosts: list[str]) -> dict:
             )
             continue
         package_sha = skill.get("package_sha")
-        package = verify_package(repo / "contributors" / host / "skills" / "fames")
+        package = verify_package(repo / "contributors" / contributor / "skills" / "fames")
         row_ok = package.get("ok") and package_sha == expected == package.get("package_sha")
         if not row_ok:
             errors.append(f"{host} FAMES generation mismatch")

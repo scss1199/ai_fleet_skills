@@ -5,8 +5,8 @@
   "role": "downstream_curator",
   "machine": "scar3",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-17T08:05:01Z",
-  "manifest_sha": "240c02e3fec0712e",
+  "generated_at": "2026-08-17T08:13:05Z",
+  "manifest_sha": "dd845dce01e448b8",
   "required": [
     "fames",
     "independent-review",
@@ -111,13 +111,13 @@
     },
     {
       "name": "fames",
-      "sha": "60f13d006f9b21da",
+      "sha": "57dbc78784ad2760",
       "required": true,
       "lane": null,
-      "package_sha": "41e6354721b6442c17ecb64752c4ac6739864f122d02786f87302605f6f3e183",
+      "package_sha": "5a8e1af361a56da820d3626dc22911e0bba5a748ce5711b50bc76dbebff1cb5a",
       "files": {
-        "SKILL.md": "60f13d006f9b21dac7e05fd9ccedbb31366255f32b9d665c11729a18d3c21eba",
-        "bundle-manifest.json": "e3a08246fb8d021e6b0aebbf5147033c66596c97293700337d0d0dc2567bdb10",
+        "SKILL.md": "57dbc78784ad2760247c07d0a3c7c5c87b35a73a9b1dff6f82b6f03c5a7b8e9f",
+        "bundle-manifest.json": "cde2275f42172d848d3c1aab45b87d23b48425fd53d982984191253701a2167c",
         "references/cases.json": "b57487b88bbb17cc8dcb49cff2802118302b8ad54bf0b8598d21c91ae5a41209",
         "references/protocols/fames-protocol.json": "65a4275eaeffec3173aecbda9b10b664d0d368229e6e12832e5733627e7f03e6",
         "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
@@ -125,7 +125,7 @@
         "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
         "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
         "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-        "scripts/fames_fleet.py": "c0b621f3204b5a712e340a432227f900606070fee42f77c057a32277c18fb798"
+        "scripts/fames_fleet.py": "f7935a40d3849f7e500d6119c8447988b529fc3b685cfcfc9dbffde108db326b"
       }
     },
     {
