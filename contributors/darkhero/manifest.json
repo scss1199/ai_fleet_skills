@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-17T16:30:02Z",
-  "manifest_sha": "585b15a7416db767",
+  "generated_at": "2026-08-17T16:45:02Z",
+  "manifest_sha": "ae7c6643e860e9b9",
   "required": [
     "fames",
     "independent-review",
@@ -67,14 +67,15 @@
     },
     {
       "name": "api-key-apply",
-      "sha": "152a6112ca5de8c8",
+      "sha": "a3464e5ccb57d71f",
       "required": false,
-      "lane": "zero-token-mechanism",
-      "package_sha": "88608777272e171ff6d1c7260fee75f5e1393074811cc90ca97406e3a0e5aea2",
+      "lane": null,
+      "package_sha": "d48c97584e6e8b873404681b3ff2e8eb53f0d78787e618cd72bc4da8c79a9fac",
       "files": {
-        "SKILL.md": "152a6112ca5de8c8eb9ce3c836678c58655488a02718cd11206d6c353bc54a29",
-        "references/api-matrix-schema.md": "995194dfaf24fbc12ef008b9ff1f898438a97c09c7f1aa9bc5d35f2ad57a7c99",
-        "references/current-inventory.md": "79d5b49f5afc80132580a3d7d795fefe5b0c028d48dc1d63a4cbd79ea92a102f"
+        "SKILL.md": "a3464e5ccb57d71f6e05b8911745664d0d0cb86e1487b19426eea8f041fb32e0",
+        "agents/openai.yaml": "ef1d9d6f4ccc3e291101cce0f335140d5fc3db7120651f1e8743b227a88918a8",
+        "references/api-matrix-schema.md": "911b0be27961d1bd09b6d16849f7be0cb5b7421d4bf6efef03cee5006e1ee3da",
+        "references/current-inventory.md": "18648d13bb39886ddc9117a682c4480fd10740b25479e182eff7672e77dae8ac"
       }
     },
     {
