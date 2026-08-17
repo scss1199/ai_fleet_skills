@@ -1,6 +1,6 @@
 ---
 name: fames
-description: Execute the complete FP, MTM, SCF, AEX, and SEAL contract. Use when the user types FAMES, invokes $fames, asks for the former broad AEX Stack, or requires first-principles scope, minimal-token routing, residual checks, adaptive evolution, evidence sealing, or a bounded process that auto-absorbs candidate learning, self-reviews, self-drives repairs, and synchronizes verified generations.
+description: Execute the complete FP, MTM, SCF, AEX, and SEAL contract. Use when the user types FAMES, invokes $fames, asks for the former broad AEX Stack, or requires first-principles scope, minimal-token routing, residual checks, adaptive evolution, evidence sealing, delivery-claim integrity, or verified package-and-capability convergence.
 ---
 
 # FAMES
@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-17.13
+FAMES-GEN: 2026-08-17.14
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -87,6 +87,29 @@ instruction, a repaired artifact, or an evidence-backed refusal—not obedience 
 Validate these records through `validate-cognitive`; missing evidence, authority, or
 method identity is `UNKNOWN` and fails closed.
 
+### UT delivery truth and anti-handwave gate
+
+Treat “fixed”, “all complete”, a metric value, “deployed”, and “synchronized” as typed
+claims rather than prose. Record them under `interaction_integrity.delivery_claims`.
+The gate rejects sample-to-all scope inflation, hidden unknown entities, proxy metrics,
+build-as-deploy state laundering, missing FAIL-before/PASS-after evidence, and PASS with
+known defects. This detects a contradicted or unsupported delivery without pretending to
+know the producer's intent; “lying” still needs separate direct measured intent evidence.
+
+When the task changes a production website or another R2 surface, also load
+[the production delivery profile](references/production-web-delivery.json). Its entity,
+authority/cache, authorization, attributed-metric, UI provenance, route budget, client
+loop, deletion, commit, connection, deployment, and failure ledgers are the portable
+structure learned from the fracdigi case. Project-specific counts and business rules must
+come from the target project and remain `UNKNOWN` until measured; never copy the example's
+numbers as universal facts.
+
+A rejection must emit a structured repair request naming the shared goal, exact failed
+invariant, observed evidence, missing proof, smallest discriminating next test, acceptance
+condition, authority boundary, and attempt budget. Re-run the frozen validator after each
+revision. Stop at the budget or after three non-discriminating attempts; return `HANDOFF`
+or `UNKNOWN` instead of weakening the validator or accepting a narrative.
+
 ## Autonomic lifecycle
 
 Run `SENSE -> ABSORB -> TRIAGE -> DRIVE -> REVIEW -> EVOLVE -> SYNC -> OBSERVE ->
@@ -111,8 +134,9 @@ handoff, but never claim that another actor was driven or repaired.
   residuals and promote only after measured trial, accepted review, authority check,
   version/generation change, and non-regression evidence.
 - **SYNC/OBSERVE:** publish the content-addressed bundle, require atomic idempotent
-  read-back, name stale followers `UNKNOWN`, run self-check/liveness probes, and feed
-  remaining residuals into the next discriminating action.
+  read-back, name stale followers `UNKNOWN`, validate both package identity and behaviour,
+  run self-check/liveness probes, and feed remaining residuals into the next
+  discriminating action.
 
 Validate a lifecycle record with `python scripts/fames_fleet.py validate-autonomic
 --input <cycle.json> --json`. A passing record proves contract consistency, not the
@@ -128,7 +152,15 @@ FAMES broadens completeness only and does not expand user authority. It never au
 
 ## Fleet generation rule
 
-Treat `bundle-manifest.json.package_sha` as the FAMES generation identity. A machine has FAMES only when its installed package verifies and its GitHub contributor manifest reports that exact `package_sha`. A missing contributor receipt, stale manifest, hash mismatch, or unreadable bundled protocol is `UNKNOWN`; never infer convergence from a matching folder name.
+Treat `bundle-manifest.json.package_sha` as the package identity, not proof that every
+function is active. `verify-fleet` proves package parity only and deliberately reports
+capability convergence as `UNKNOWN`. Full convergence requires the exact darkhero, scar3,
+and altos host set; matching package, capability-set, and validator-set identities; an
+armed runner; and a fresh host-local result for every required capability. Each PASS row
+must include positive control, rejected negative control, a verified caller, and evidence
+references. Validate the attestation with `python scripts/fames_fleet.py
+validate-capability-sync --input <record.json> --json`. Missing or stale hosts, unused
+functions, validator drift, failed controls, and package-only receipts block convergence.
 
 ## External learning — outside material that proposes a change
 

@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.13.2",
+  "version": "1.14.0",
   "updated": "2026-08-17",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -269,6 +269,17 @@
       "model_token_calls": 0,
       "steady_state_processes_added": 0
     },
+    "capability_convergence": {
+      "purpose": "Prove that darkhero, scar3, and altos expose the same required FAMES behaviours, not merely files with the same package hash.",
+      "expected_hosts": ["darkhero", "scar3", "altos"],
+      "generation_identity": ["package_sha", "capability_set_sha", "validator_set_sha"],
+      "transition": ["PUBLISH", "STAGE", "VERIFY", "ACTIVATE", "ATTEST", "RECONCILE", "COMMIT_CONVERGENCE"],
+      "host_attestation_requires": ["package_identity", "runner_state", "capability_rows", "positive_control", "negative_control_rejected", "caller_backed", "fresh_observation", "evidence_refs"],
+      "full_convergence_rule": "Full capability convergence requires the exact expected host set and a fresh PASS attestation for every required capability on every applicable host. Missing hosts, stale receipts, validator drift, unarmed runners, absent callers, failed negative controls, or package/capability/validator identity mismatch are UNKNOWN or FAIL and forbid a convergence claim.",
+      "not_applicable_rule": "A capability may be NOT_APPLICABLE only with a registered false activation predicate and measured predicate evidence; host preference is not a predicate.",
+      "repair_rule": "RECONCILE emits one host-and-capability-specific repair request. It never flattens partial success into fleet PASS.",
+      "validator": "python scripts/fames_fleet.py validate-capability-sync --input <record.json> --json"
+    },
     "peer_learning": {
       "followers_publish": ["evidence", "candidate_improvement"],
       "authority_promotes_after": ["FP", "SCF", "SEAL"],
@@ -292,7 +303,8 @@
         "operators.Ne",
         "operators.Ni",
         "meticulousness_and_efficiency",
-        "interaction_integrity"
+        "interaction_integrity",
+        "delivery_integrity"
       ]
     },
     "operators": {
@@ -429,6 +441,24 @@
         "evidence_reproduction_rule": "The validator checks record consistency, not the truth of an evidence URI. Every load-bearing evidence reference must be independently reproduced before SEAL.",
         "unknown_rule": "Missing, stale, indirect, modelled, or merely asserted evidence cannot establish deception."
       },
+      "delivery_integrity": {
+        "purpose": "Detect unsupported completion, evasion, and hand-waving as evidence defects without inferring intent.",
+        "required_claim_fields": ["claim_id", "claim_type", "subject", "scope", "action_state", "artifact_identity", "evidence_class", "evidence_refs", "status", "residuals"],
+        "claim_types": ["fixed", "deployed", "verified", "numeric", "exhaustive", "synchronized", "reviewed"],
+        "action_states": ["proposed", "requested", "implemented", "built", "deployed", "read_back"],
+        "defect_classes": ["evidence_substitution", "scope_inflation", "identity_drift", "aggregation_masking", "negative_result_suppression", "action_state_laundering", "proxy_metric_substitution", "stale_evidence", "failure_path_omission"],
+        "scope_rule": "A claim over all, every, complete, fleet, or exhaustive scope requires a measured population identity, expected count, covered count, per-item verdicts or an equivalent deterministic coverage proof, and zero hidden UNKNOWN items. Sampling cannot support an exhaustive claim.",
+        "numeric_rule": "A numeric claim records unit, claimed value, measured value, delta, source, and measurement time. A total, proxy, or differently scoped metric cannot substitute for the named measure.",
+        "fixed_rule": "A fixed claim requires the same reproducer to fail before and pass after on the claimed artifact identity, plus affected non-regression evidence.",
+        "deployment_rule": "A deployed or synchronized claim requires source revision, deployed version, destination read-back, behaviour-specific verification, and rollback identity. Build success, HTTP 200, push success, or a sent request is not a substitute.",
+        "failure_rule": "Negative paths must distinguish failure from empty data, fake zero, blank UI, timeout, or infinite loading. Omitted required failure probes keep the claim UNKNOWN.",
+        "intent_boundary": "These defects can contradict a delivery claim but cannot establish deception intent without the separate direct measured intent evidence required by claim_integrity."
+      },
+      "repair_guidance": {
+        "required_fields": ["request_id", "claim_id", "shared_goal", "failed_invariant", "observed_evidence", "missing_proof", "smallest_next_test", "acceptance_condition", "authority_boundary", "attempt", "max_attempts"],
+        "rule": "Guide the counterpart with the exact failing invariant, smallest discriminating test, and an allowed equivalent proof. Revalidate the frozen goal and validator after revision.",
+        "stop_rule": "Stop with HANDOFF or UNKNOWN after the declared budget or after three attempts with neither artifact identity change nor discriminating evidence. Never weaken the validator or erase a negative result."
+      },
       "compliance_alignment": {
         "allowed_methods": ["shared_goal", "evidence", "constraint_explanation", "consequence_explanation", "bounded_options", "structured_repair"],
         "forbidden_methods": ["deception", "coercion", "threat", "impersonation", "hidden_pressure", "exploit_vulnerability", "authority_expansion"],
@@ -436,7 +466,7 @@
         "conflict_rule": "An instruction conflicting with higher-priority policy, safety, or user authority must be refused rather than persuaded into execution.",
         "success_rule": "Alignment succeeds when the counterpart accepts, repairs, or gives an evidence-backed refusal while authority and choice remain intact; obedience alone is not the metric."
       },
-      "unknown_rule": "Unknown evidence identity, authority, intent, method, or constraint conflict is UNKNOWN and fails closed."
+      "unknown_rule": "Unknown evidence identity, authority, intent, method, scope coverage, artifact identity, action state, or constraint conflict is UNKNOWN and fails closed."
     }
   },
   "autonomic_lifecycle": {
@@ -527,6 +557,12 @@
     "validator": "python scripts/fames_fleet.py validate-ingest --input <ingest.json> --json",
     "non_goals": ["autonomous crawling", "account creation", "bypassing an access control", "retaining material the source licenses against"],
     "does_not_expand_authority": true
+  },
+  "production_delivery_assurance": {
+    "profile": "references/production-web-delivery.json",
+    "activation": "production website, Worker, API, OAuth, webhook, database, analytics, or other externally observable delivery",
+    "risk_floor": "R2 for deployment or external-state mutation",
+    "rule": "Use exhaustive scope ledgers, claim-versus-measurement tables, failure-path probes, bounded resource accounting, isolated mutation, production version read-back, rollback identity, and per-item PASS/FAIL/UNKNOWN. Project-specific counts are regression baselines, never universal FAMES constants."
   },
   "distribution": {
     "mode": "content-addressed-github-bundle",

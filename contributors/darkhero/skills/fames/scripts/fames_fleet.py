@@ -32,6 +32,8 @@ PROTOCOL_TARGETS = {
 }
 CASES_SOURCE = "_registry/fames-cases.json"
 CASES_TARGET = "references/cases.json"
+PRODUCTION_PROFILE_SOURCE = "_registry/fames-production-web-delivery.json"
+PRODUCTION_PROFILE_TARGET = "references/production-web-delivery.json"
 SELF_EVIDENCE_DIR = "_registry/fames-evidence/self"
 RESIDUAL_DIMENSIONS = (
     "R_CONTRACT",
@@ -714,8 +716,14 @@ def validate_autonomic(record: dict) -> dict:
         unknowns.append("sync record missing")
         sync = {}
     expected_sha = str(sync.get("expected_package_sha") or "").strip()
+    expected_capability_sha = str(sync.get("expected_capability_set_sha") or "").strip()
+    expected_validator_sha = str(sync.get("expected_validator_set_sha") or "").strip()
     if not expected_sha:
         unknowns.append("sync package identity missing")
+    if not expected_capability_sha:
+        unknowns.append("sync capability-set identity missing")
+    if not expected_validator_sha:
+        unknowns.append("sync validator-set identity missing")
     if evolution.get("promoted") is True and evolution.get("package_sha") != expected_sha:
         errors.append("evolution and sync package identities differ")
     if evolution.get("promoted") is True and (sync.get("atomic") is not True or sync.get("idempotent") is not True):
@@ -737,9 +745,23 @@ def validate_autonomic(record: dict) -> dict:
         host = row.get("host")
         if row.get("state") not in {"PASS", "UNKNOWN", "FAIL"}:
             unknowns.append(f"{here}: read-back state is unknown")
-        matched = row.get("package_sha") == expected_sha and row.get("state") == "PASS"
-        if row.get("state") == "PASS" and row.get("package_sha") != expected_sha:
-            errors.append(f"{here}: PASS read-back has the wrong package identity")
+        identities_match = (
+            row.get("package_sha") == expected_sha
+            and row.get("capability_set_sha") == expected_capability_sha
+            and row.get("validator_set_sha") == expected_validator_sha
+        )
+        matched = (
+            identities_match
+            and row.get("state") == "PASS"
+            and row.get("capability_state") == "PASS"
+            and row.get("runner_state") == "armed"
+        )
+        if row.get("state") == "PASS" and not identities_match:
+            errors.append(f"{here}: PASS read-back has a mismatched package, capability, or validator identity")
+        if row.get("state") == "PASS" and row.get("capability_state") != "PASS":
+            errors.append(f"{here}: PASS read-back lacks capability validation")
+        if row.get("state") == "PASS" and row.get("runner_state") != "armed":
+            errors.append(f"{here}: PASS read-back lacks an armed convergence runner")
         if matched:
             matching += 1
         elif host not in unknown_hosts:
@@ -1174,7 +1196,287 @@ def _validate_interaction(record: dict, layer: dict) -> tuple[list[str], list[st
                 errors.append(f"{here}: unauthorized instruction was not refused")
             if not isinstance(attempt.get("why"), str) or not attempt["why"].strip():
                 unknowns.append(f"{here}: outcome reason missing")
+
+    delivery_policy = policy.get("delivery_integrity") or {}
+    claim_types = set(delivery_policy.get("claim_types") or ())
+    action_states = set(delivery_policy.get("action_states") or ())
+    delivery_claims = interaction.get("delivery_claims")
+    if not isinstance(delivery_claims, list) or not delivery_claims:
+        unknowns.append("delivery claims missing")
+    else:
+        count += len(delivery_claims)
+        for index, claim in enumerate(delivery_claims):
+            here = f"interaction_integrity.delivery_claims[{index}]"
+            if not isinstance(claim, dict):
+                unknowns.append(f"{here}: claim is not an object")
+                continue
+            for field in ("claim_id", "subject", "artifact_identity"):
+                if not isinstance(claim.get(field), str) or not claim[field].strip():
+                    unknowns.append(f"{here}: {field} missing")
+            claim_type = claim.get("claim_type")
+            if claim_type not in claim_types:
+                unknowns.append(f"{here}: claim type is unknown")
+            action_state = claim.get("action_state")
+            if action_state not in action_states:
+                unknowns.append(f"{here}: action state is unknown")
+            scope = claim.get("scope")
+            if scope not in {"single", "sample", "exhaustive", "fleet"}:
+                unknowns.append(f"{here}: scope is unknown")
+            if claim.get("status") not in {"PASS", "FAIL", "UNKNOWN"}:
+                unknowns.append(f"{here}: status is unknown")
+            refs = claim.get("evidence_refs")
+            if (
+                claim.get("evidence_class") != "measured"
+                or not isinstance(refs, list)
+                or not refs
+                or any(not isinstance(ref, str) or not ref.strip() for ref in refs)
+            ):
+                unknowns.append(f"{here}: measured evidence references missing")
+            residuals = claim.get("residuals")
+            if not isinstance(residuals, list):
+                unknowns.append(f"{here}: residual ledger missing")
+            defects = claim.get("defects")
+            if not isinstance(defects, list):
+                unknowns.append(f"{here}: defect ledger missing")
+                defects = []
+            if claim.get("status") == "PASS" and defects:
+                errors.append(f"{here}: PASS claim retains delivery defects")
+
+            if scope in {"exhaustive", "fleet"}:
+                for field in ("population_identity", "coverage_proof"):
+                    if not isinstance(claim.get(field), str) or not claim[field].strip():
+                        unknowns.append(f"{here}: {field} missing for exhaustive scope")
+                expected = claim.get("expected_count")
+                covered = claim.get("covered_count")
+                unknown_count = claim.get("unknown_count")
+                if not all(isinstance(value, int) and not isinstance(value, bool) and value >= 0 for value in (expected, covered, unknown_count)):
+                    unknowns.append(f"{here}: exhaustive counts are missing or invalid")
+                elif covered + unknown_count != expected:
+                    errors.append(f"{here}: exhaustive counts do not reconcile")
+                elif claim.get("status") == "PASS" and (covered != expected or unknown_count != 0):
+                    errors.append(f"{here}: exhaustive PASS does not cover the full population")
+                verdicts = claim.get("per_item_verdicts")
+                if not isinstance(verdicts, list) or not verdicts:
+                    unknowns.append(f"{here}: per-item verdicts missing for exhaustive scope")
+                elif isinstance(expected, int) and len(verdicts) != expected:
+                    errors.append(f"{here}: per-item verdict count differs from expected population")
+
+            if claim_type == "numeric":
+                for field in ("unit", "source", "measured_at"):
+                    if not isinstance(claim.get(field), str) or not claim[field].strip():
+                        unknowns.append(f"{here}: numeric {field} missing")
+                for field in ("claimed_value", "measured_value", "delta"):
+                    if not _number(claim.get(field)):
+                        unknowns.append(f"{here}: numeric {field} is unmeasured")
+                if all(_number(claim.get(field)) for field in ("claimed_value", "measured_value", "delta")):
+                    expected_delta = claim["measured_value"] - claim["claimed_value"]
+                    if abs(expected_delta - claim["delta"]) > 1e-9:
+                        errors.append(f"{here}: numeric delta does not reconcile")
+
+            if claim_type == "fixed":
+                if claim.get("before_state") != "FAIL" or claim.get("after_state") != "PASS":
+                    errors.append(f"{here}: fixed claim lacks FAIL-before/PASS-after evidence")
+                for field in ("reproducer_identity", "non_regression_refs"):
+                    value = claim.get(field)
+                    if (field.endswith("refs") and (not isinstance(value, list) or not value)) or (
+                        not field.endswith("refs") and (not isinstance(value, str) or not value.strip())
+                    ):
+                        unknowns.append(f"{here}: {field} missing for fixed claim")
+
+            if claim_type in {"deployed", "synchronized"}:
+                if action_state != "read_back":
+                    errors.append(f"{here}: deployment or synchronization claim is not externally read back")
+                for field in ("source_revision", "deployed_version", "rollback_identity"):
+                    if not isinstance(claim.get(field), str) or not claim[field].strip():
+                        unknowns.append(f"{here}: {field} missing for deployment claim")
+                if claim.get("destination_read_back") is not True:
+                    errors.append(f"{here}: destination read-back did not pass")
+                probes = claim.get("behavior_probe_refs")
+                if not isinstance(probes, list) or not probes:
+                    unknowns.append(f"{here}: behavior probes missing for deployment claim")
+
+    repair_policy = policy.get("repair_guidance") or {}
+    required_repair = set(repair_policy.get("required_fields") or ())
+    repair_requests = interaction.get("repair_requests")
+    if not isinstance(repair_requests, list) or not repair_requests:
+        unknowns.append("structured repair requests missing")
+    else:
+        count += len(repair_requests)
+        for index, request in enumerate(repair_requests):
+            here = f"interaction_integrity.repair_requests[{index}]"
+            if not isinstance(request, dict):
+                unknowns.append(f"{here}: repair request is not an object")
+                continue
+            for field in required_repair:
+                value = request.get(field)
+                if value is None or value == "" or value == []:
+                    unknowns.append(f"{here}: {field} missing")
+            attempt = request.get("attempt")
+            maximum = request.get("max_attempts")
+            if not all(isinstance(value, int) and not isinstance(value, bool) for value in (attempt, maximum)):
+                unknowns.append(f"{here}: attempt budget is invalid")
+            elif attempt < 1 or maximum < 1 or attempt > maximum:
+                errors.append(f"{here}: repair attempt exceeds the declared budget")
+            if request.get("authority_after") != request.get("authority_before"):
+                errors.append(f"{here}: repair request changed authority")
     return errors, unknowns, count
+
+
+def validate_capability_sync(record: dict) -> dict:
+    """Prove function parity across the declared FAMES fleet, not package parity alone."""
+    try:
+        protocol = _read_json(PACKAGE_ROOT / PROTOCOL_TARGETS["FAMES"])
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"ok": False, "state": "UNKNOWN", "errors": [f"capability policy unreadable: {exc}"]}
+    policy = ((protocol.get("fleet_topology") or {}).get("capability_convergence") or {})
+    if not policy:
+        return {"ok": False, "state": "UNKNOWN", "errors": ["capability convergence policy missing"]}
+    if not isinstance(record, dict):
+        return {"ok": False, "state": "UNKNOWN", "errors": ["record is not an object"]}
+
+    errors: list[str] = []
+    unknowns: list[str] = []
+    identity = record.get("generation_identity")
+    if not isinstance(identity, dict):
+        unknowns.append("generation identity missing")
+        identity = {}
+    identity_fields = tuple(policy.get("generation_identity") or ())
+    for field in identity_fields:
+        if not isinstance(identity.get(field), str) or not identity[field].strip():
+            unknowns.append(f"generation identity missing: {field}")
+
+    expected_hosts = []
+    for host in policy.get("expected_hosts") or ():
+        try:
+            expected_hosts.append(_contributor_id(host))
+        except ValueError:
+            unknowns.append(f"policy host identity invalid: {host!r}")
+    declared_hosts = record.get("expected_hosts")
+    if not isinstance(declared_hosts, list):
+        unknowns.append("expected host ledger missing")
+        declared_hosts = []
+    try:
+        declared_hosts = [_contributor_id(host) for host in declared_hosts]
+    except (TypeError, ValueError):
+        unknowns.append("declared host identity invalid")
+        declared_hosts = []
+    if declared_hosts and (len(set(declared_hosts)) != len(declared_hosts) or set(declared_hosts) != set(expected_hosts)):
+        errors.append("declared host set does not equal the policy host set")
+
+    capabilities = record.get("capability_manifest")
+    if not isinstance(capabilities, list) or not capabilities:
+        unknowns.append("capability manifest missing")
+        capabilities = []
+    capability_by_id: dict[str, dict] = {}
+    for index, capability in enumerate(capabilities):
+        here = f"capability_manifest[{index}]"
+        if not isinstance(capability, dict):
+            unknowns.append(f"{here}: capability is not an object")
+            continue
+        capability_id = capability.get("capability_id")
+        if not isinstance(capability_id, str) or not capability_id.strip():
+            unknowns.append(f"{here}: capability identity missing")
+            continue
+        if capability_id in capability_by_id:
+            errors.append(f"{here}: duplicate capability identity")
+        capability_by_id[capability_id] = capability
+        for field in ("contract_version", "validator_identity"):
+            if not isinstance(capability.get(field), str) or not capability[field].strip():
+                unknowns.append(f"{here}: {field} missing")
+        required_hosts = capability.get("required_hosts")
+        if not isinstance(required_hosts, list) or not required_hosts:
+            unknowns.append(f"{here}: required hosts missing")
+        else:
+            try:
+                normalized = {_contributor_id(host) for host in required_hosts}
+            except (TypeError, ValueError):
+                unknowns.append(f"{here}: required host identity invalid")
+                normalized = set()
+            if not normalized.issubset(set(expected_hosts)):
+                errors.append(f"{here}: required host is outside the policy fleet")
+
+    receipts = record.get("host_receipts")
+    if not isinstance(receipts, list) or not receipts:
+        unknowns.append("host receipts missing")
+        receipts = []
+    receipt_hosts: list[str] = []
+    max_freshness = policy.get("max_freshness_seconds", 3600)
+    for index, receipt in enumerate(receipts):
+        here = f"host_receipts[{index}]"
+        if not isinstance(receipt, dict):
+            unknowns.append(f"{here}: receipt is not an object")
+            continue
+        try:
+            host = _contributor_id(receipt.get("host"))
+        except (TypeError, ValueError):
+            unknowns.append(f"{here}: host identity missing")
+            continue
+        receipt_hosts.append(host)
+        if receipt.get("runner_state") != "armed":
+            errors.append(f"{here}: convergence runner is not armed")
+        for field in identity_fields:
+            if receipt.get(field) != identity.get(field):
+                errors.append(f"{here}: {field} differs from the expected generation")
+        if not isinstance(receipt.get("observed_at"), str) or not receipt["observed_at"].strip():
+            unknowns.append(f"{here}: observation timestamp missing")
+        freshness = receipt.get("freshness_seconds")
+        if not _number(freshness) or freshness < 0:
+            unknowns.append(f"{here}: freshness is unmeasured")
+        elif freshness > max_freshness:
+            errors.append(f"{here}: receipt is stale")
+        rows = receipt.get("capabilities")
+        if not isinstance(rows, list):
+            unknowns.append(f"{here}: capability results missing")
+            rows = []
+        result_by_id = {
+            row.get("capability_id"): row for row in rows
+            if isinstance(row, dict) and isinstance(row.get("capability_id"), str)
+        }
+        for capability_id, capability in capability_by_id.items():
+            try:
+                required = {_contributor_id(item) for item in capability.get("required_hosts") or []}
+            except (TypeError, ValueError):
+                required = set()
+            if host not in required:
+                continue
+            result = result_by_id.get(capability_id)
+            if not isinstance(result, dict):
+                errors.append(f"{here}: required capability missing: {capability_id}")
+                continue
+            state = result.get("state")
+            if state == "PASS":
+                if result.get("validator_exit") != 0:
+                    errors.append(f"{here}.{capability_id}: validator did not exit zero")
+                for field in ("positive_control", "negative_control_rejected", "caller_backed"):
+                    if result.get(field) is not True:
+                        errors.append(f"{here}.{capability_id}: {field} did not pass")
+                refs = result.get("evidence_refs")
+                if not isinstance(refs, list) or not refs:
+                    unknowns.append(f"{here}.{capability_id}: evidence references missing")
+            elif state == "N/A":
+                if result.get("activation_predicate_false") is not True:
+                    errors.append(f"{here}.{capability_id}: N/A lacks a false activation predicate")
+                refs = result.get("predicate_evidence_refs")
+                if not isinstance(refs, list) or not refs:
+                    unknowns.append(f"{here}.{capability_id}: N/A predicate evidence missing")
+            elif state in {"FAIL", "UNKNOWN"}:
+                errors.append(f"{here}.{capability_id}: capability state is {state}")
+            else:
+                unknowns.append(f"{here}.{capability_id}: capability state is unknown")
+
+    if len(set(receipt_hosts)) != len(receipt_hosts):
+        errors.append("duplicate host receipt")
+    if set(receipt_hosts) != set(expected_hosts):
+        errors.append("host receipts do not cover the exact policy fleet")
+    if record.get("full_convergence_claim") is not True:
+        unknowns.append("full capability convergence was not claimed")
+    return {
+        "ok": not errors and not unknowns,
+        "state": "UNKNOWN" if unknowns else ("PASS" if not errors else "FAIL"),
+        "hosts": len(receipt_hosts),
+        "capabilities": len(capability_by_id),
+        "errors": errors + unknowns,
+    }
 
 
 def validate_cognitive(record: dict) -> dict:
@@ -1289,11 +1591,23 @@ def build_bundle(
         raise FileNotFoundError(f"missing source cases: {cases_source}")
     copied[CASES_TARGET] = CASES_SOURCE
 
+    profile_source = workspace / PRODUCTION_PROFILE_SOURCE
+    profile_target = package_root / PRODUCTION_PROFILE_TARGET
+    profile_target.parent.mkdir(parents=True, exist_ok=True)
+    if protocol_git_ref:
+        profile_target.write_bytes(_git_protocol_blob(workspace, protocol_git_ref, PRODUCTION_PROFILE_SOURCE))
+    elif profile_source.is_file():
+        shutil.copy2(profile_source, profile_target)
+    elif not profile_target.is_file():
+        raise FileNotFoundError(f"missing production delivery profile: {profile_source}")
+    copied[PRODUCTION_PROFILE_TARGET] = PRODUCTION_PROFILE_SOURCE
+
     fames = _read_json(package_root / PROTOCOL_TARGETS["FAMES"])
     expected_files = [
         "SKILL.md",
         "scripts/fames_fleet.py",
         CASES_TARGET,
+        PRODUCTION_PROFILE_TARGET,
         *PROTOCOL_TARGETS.values(),
     ]
     files = {rel: _sha256(package_root / rel) for rel in sorted(set(expected_files))}
@@ -1996,6 +2310,9 @@ def verify_fleet(workspace: Path, hosts: list[str]) -> dict:
         )
     return {
         "ok": canonical.get("ok", False) and not errors and len(rows) == len(hosts),
+        "claim_scope": "package_only",
+        "capability_convergence": "UNKNOWN",
+        "capability_probe": "validate-capability-sync",
         "expected_package_sha": expected,
         "hosts": rows,
         "errors": errors,
@@ -2283,6 +2600,9 @@ def _evaluate_case(
         elif validator == "validate_autonomic":
             outcome = validate_autonomic(record)
             ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
+        elif validator == "validate_capability_sync":
+            outcome = validate_capability_sync(record)
+            ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
         elif validator == "regression_guard":
             errors = _regression_guard(
                 record.get("canonical") or {},
@@ -2474,13 +2794,13 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-autonomic", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-autonomic", "validate-capability-sync", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
         if name in {"verify-package", "parity", "status", "run-cases", "self-check"}:
             command.add_argument("--skill-dir", type=Path, default=PACKAGE_ROOT)
-        if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-autonomic"}:
+        if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-autonomic", "validate-capability-sync"}:
             command.add_argument("--input", type=Path, required=True)
         if name == "run-cases":
             command.add_argument("--only", nargs="+")
@@ -2553,6 +2873,13 @@ def main() -> int:
             payload = {"ok": False, "state": "UNKNOWN", "errors": [f"autonomic input unreadable: {exc}"]}
             return _emit(payload, args.json)
         return _emit(validate_autonomic(payload), args.json)
+    if args.command == "validate-capability-sync":
+        try:
+            payload = _read_json(args.input)
+        except (OSError, json.JSONDecodeError) as exc:
+            payload = {"ok": False, "state": "UNKNOWN", "errors": [f"capability-sync input unreadable: {exc}"]}
+            return _emit(payload, args.json)
+        return _emit(validate_capability_sync(payload), args.json)
     if args.command == "install":
         payload = install(args.workspace, args.host, args.source)
         if args.arm:

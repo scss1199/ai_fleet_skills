@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-17T14:38:05Z",
-  "manifest_sha": "074400bc04e586dd",
+  "generated_at": "2026-08-17T16:00:01Z",
+  "manifest_sha": "7f38861a2363c5be",
   "required": [
     "fames",
     "independent-review",
@@ -111,21 +111,22 @@
     },
     {
       "name": "fames",
-      "sha": "f432f241b8e6fddb",
+      "sha": "8341152ec1f559d4",
       "required": true,
       "lane": null,
-      "package_sha": "7afcbcad71e3d43d6de26936657f38b2b425985df518b3a5549c3773375e0162",
+      "package_sha": "1494e13630995f2c16aa6f9b38b94ad7b2315adcc6c936cadc1407d628f5a119",
       "files": {
-        "SKILL.md": "f432f241b8e6fddb9115674043a3751392978ac3754322fc150069f201bedc94",
-        "bundle-manifest.json": "fbc1a53c9d09b58d806dbbceb27d9d4dcc1eac1c0579e89ab97f1152bde94598",
-        "references/cases.json": "83a4e66243f2791eda76ed97b9919390afd02e762ffc6f01c73c162bd0c06a62",
-        "references/protocols/fames-protocol.json": "9a19b5df6e2fe9a625e5d1259d9e37da967708493016cc2ede1ead53f875d60b",
+        "SKILL.md": "8341152ec1f559d40da367700a8bb96f9b03866964dd50d5dec6e857605488b6",
+        "bundle-manifest.json": "aa2124e7e39999d11b1916b283a23217619b238f44d9861049f6f2a1bd0c42b8",
+        "references/cases.json": "8c9cc18730f2ca65cc70c04ee048277f1fa1e211a8d3483ecc23451910010b16",
+        "references/production-web-delivery.json": "0f8edd3a24f856a4cc1a76ecd4490185bad414735c2bc1787104d619d0f0a251",
+        "references/protocols/fames-protocol.json": "9f190c09fc361b76e0c4d7f9e3c80eb454fd4644484feb327a96f724aa51d157",
         "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
         "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
         "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
         "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
         "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-        "scripts/fames_fleet.py": "4c9ac895f5e014dd86e91f73d8c9d711de139e9d1a806ef854cec080ab551a34"
+        "scripts/fames_fleet.py": "ad9f80049d78b873aea6ac854d9510d394d90dc4b462d723c955f68f9e89a5c5"
       }
     },
     {
@@ -376,9 +377,11 @@
       "sha": "763b5727f9bc59b1",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "fb1d8b25737f39ed949d58e31774fb4a02fbe21f958115cca218985fa8d284c8",
+      "package_sha": "9de06b6e9c8527faae6ef0fdc5cc62abda8fe06175bd1e6fe13a2c9b6147581c",
       "files": {
-        "SKILL.md": "4be35fde873124f2635efd3d5f7fb1b15dbf44417791f2ff611a11e528c0daa8"
+        "SKILL.md": "4be35fde873124f2635efd3d5f7fb1b15dbf44417791f2ff611a11e528c0daa8",
+        "engines/git_repo_detect.py": "86a8275e600a2aa990dc6ffc4de2cf854b5dd3172f79b8451f4b75b00586f2a7",
+        "tests/test_git_repo_detect.py": "84966608e5bf9e1f32127a44654e77c38b25586478aa4e64099235eb3012aeff"
       }
     },
     {
