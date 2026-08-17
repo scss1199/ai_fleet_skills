@@ -59,10 +59,25 @@ python %AI_WORKSPACE%\_skill\engines\adus-generalize.py --agent {{agent}} --item
 python %AI_WORKSPACE%\_skill\engines\adus-verify.py --agent {{agent}} --skill <skill-name>
 ```
 
+For an existing REQUIRED canonical package, do not manufacture a draft. The authority
+uses the in-place lane, which verifies the portable package, version and generation
+bump, rollback identity, and curator authority:
+
+```powershell
+python %AI_WORKSPACE%\_skill\engines\adus-verify.py --agent ai_darkhero --skill <skill-name> --existing
+```
+
 ### 4 Promote（curator cwd = ai_darkhero）
 
 ```powershell
 python %AI_WORKSPACE%\_skill\engines\adus-promote.py --agent {{agent}} --skill <skill-name>
+```
+
+Existing canonical promotion consumes the matching receipt and never copies a second
+authority:
+
+```powershell
+python %AI_WORKSPACE%\_skill\engines\adus-promote.py --agent ai_darkhero --skill <skill-name> --existing
 ```
 
 ### 5 Orchestrator

@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-17T07:12:19Z",
-  "manifest_sha": "bd9feea8900e23b5",
+  "generated_at": "2026-08-17T08:00:02Z",
+  "manifest_sha": "d4e33ebc294ed451",
   "required": [
     "fames",
     "independent-review",
@@ -37,12 +37,12 @@
     },
     {
       "name": "adus-auto-deploy-upgrading-skill",
-      "sha": "faf184e9ecc61858",
+      "sha": "baa99f4e531e20fe",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "7fd5adea9591d8e2e078f6c8bf046282cd5447db215913099e3bc131f30328a0",
+      "package_sha": "24c58cb41b3ae07a5768e6ac6e3cd7d3ab11ff0fa44d6a2d745190e27755789d",
       "files": {
-        "SKILL.md": "a6a3afcb3af107724dca4cf70d49d0c5b7777d1d703da8a304aa7e91b073c127"
+        "SKILL.md": "9d0739f558bcc23bcc584d527c2baa941a5c76e44d2b2e476c3c2bac612b443e"
       }
     },
     {
@@ -111,21 +111,21 @@
     },
     {
       "name": "fames",
-      "sha": "7b480c550decdd8b",
+      "sha": "60f13d006f9b21da",
       "required": true,
       "lane": null,
-      "package_sha": "67d694d2f5dd0ba99ca1cff5a676b42de35d24a7e8ae8ede9d736d1c0c133f3d",
+      "package_sha": "41e6354721b6442c17ecb64752c4ac6739864f122d02786f87302605f6f3e183",
       "files": {
-        "SKILL.md": "7b480c550decdd8b636bb14be6035513c17e2b40011c1ed7b64e487e708f92a4",
-        "bundle-manifest.json": "3f8a18720de0a31b3619dc9064a037c0f82f4fac2206728bd57a9e359b34b62d",
-        "references/cases.json": "3be3afcceaa998bd26dc48914a003d5b2a739c4296d06754ed827cc07b579ead",
-        "references/protocols/fames-protocol.json": "444d17d6213d375a87ea0d2684697a7f7bb1f5179945ab7a7e4c23a16ee8b3f7",
+        "SKILL.md": "60f13d006f9b21dac7e05fd9ccedbb31366255f32b9d665c11729a18d3c21eba",
+        "bundle-manifest.json": "e3a08246fb8d021e6b0aebbf5147033c66596c97293700337d0d0dc2567bdb10",
+        "references/cases.json": "b57487b88bbb17cc8dcb49cff2802118302b8ad54bf0b8598d21c91ae5a41209",
+        "references/protocols/fames-protocol.json": "65a4275eaeffec3173aecbda9b10b664d0d368229e6e12832e5733627e7f03e6",
         "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
         "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
         "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
         "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
         "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-        "scripts/fames_fleet.py": "7fb8da3d10bc810aaf99d11cb91fd400413fbe3dda4063106a297603948ae5ce"
+        "scripts/fames_fleet.py": "c0b621f3204b5a712e340a432227f900606070fee42f77c057a32277c18fb798"
       }
     },
     {

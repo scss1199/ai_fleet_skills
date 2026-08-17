@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.9.1",
+  "version": "1.10.0",
   "updated": "2026-08-17",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -344,6 +344,58 @@
       "prediction_rule": "A forward branch is a hypothesis until Te installs a probe or guard and measured evidence resolves it.",
       "validator": "python scripts/fames_fleet.py validate-cognitive --input <trace.json> --json",
       "unknown_rule": "An unknown task class, missing operator, wrong order, unmet stop condition or unreadable policy is UNKNOWN or FAIL and cannot seal."
+    },
+    "meticulousness_and_efficiency": {
+      "status": "UT-derived engineering hypothesis",
+      "purpose": "Measure early risk, accounting conservation, loop escape, mutation bounds, negative interactions, leading indicators, representation fit, inverse diagnosis, and epistemic admissibility without treating cognitive labels as personality science.",
+      "is_phase": false,
+      "validator": "python scripts/fames_fleet.py validate-cognitive --input <trace.json> --json",
+      "unknown_rule": "Undefined units, malformed types, missing fields, stale series, exceptions, and unknown mechanisms are UNKNOWN and fail closed.",
+      "mechanisms": {
+        "stability_margin": {
+          "required": ["unit", "margin", "trend", "measured_at", "leading_indicator", "warning_threshold", "trend_limit", "status"],
+          "rule": "PASS is current only; a near boundary or rapidly shrinking measured margin is warning, while an undefined unit is UNKNOWN."
+        },
+        "conservation_ledger": {
+          "cost_fields": ["tokens", "tool_calls", "wall_ms", "external_mutations"],
+          "rule": "Each transition accounts for costs, evidence, authority, and an explicit residual; authority and evidence cannot expand without measured input."
+        },
+        "loop_escape": {
+          "escape_actions": ["discriminating_test", "representation_change", "blocked_unknown"],
+          "rule": "Three consecutive attempts with no external or discriminating delta require an escape action; productive repetitions remain valid."
+        },
+        "grip_guard": {
+          "activation": "R2 or R3 mutation after internal analysis",
+          "rule": "High-impact mutation requires a bounded transaction, rollback and read-back, or a measured emergency recovery drill."
+        },
+        "destructive_interference": {
+          "residuals": ["R_CAPABILITY", "R_OPERABILITY", "R_COMPLEXITY"],
+          "rule": "Every new capability must retain a passing caller-backed core probe before and after installation."
+        },
+        "bifurcation_foresight": {
+          "series": ["margin", "retry_rate", "queue_depth", "oscillation_rate", "stale_evidence_age"],
+          "rule": "Before crossing, output is forecast/hypothesis; after a measured crossing it is a measured conclusion; stale series is UNKNOWN."
+        },
+        "basis_alignment": {
+          "metrics": ["conversion_steps", "tool_calls", "bytes_context", "wall_ms"],
+          "operator_route": ["Ne", "Ti", "Ni", "Te"],
+          "rule": "Use replayable measured units and reject a selected representation dominated by a cheaper compatible route; unitless aggregate scores are forbidden."
+        },
+        "inverse_diagnosis": {
+          "status": "engineering supplement; not an original-theory claim",
+          "mapping": {
+            "external_change_missing": {"stage": "Te", "test": "read_back_external_state"},
+            "architecture_contradiction": {"stage": "Ti", "test": "bounded_counterexample"},
+            "premature_single_route": {"stage": "Ne/Ni", "test": "rank_saturation_and_discriminator"},
+            "unverifiable_prediction": {"stage": "Ni/Te", "test": "install_decisive_probe"}
+          }
+        },
+        "epistemic_layers": {
+          "layers": ["source/measured", "model/hypothesis", "draft/unverified"],
+          "seal_admissible": ["source/measured"],
+          "rule": "Tone never promotes a claim; SEAL accepts only the evidence class required by the goal."
+        }
+      }
     }
   },
   "external_learning": {

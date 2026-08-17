@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.9.0",
-  "skill_gen": "2026-08-17.2",
+  "version": "1.10.0",
+  "skill_gen": "2026-08-17.4",
   "execution_order": [
     "FP",
     "MTM",
@@ -21,15 +21,15 @@
   },
   "source_git_commit": null,
   "files": {
-    "SKILL.md": "7b480c550decdd8b636bb14be6035513c17e2b40011c1ed7b64e487e708f92a4",
-    "references/cases.json": "3be3afcceaa998bd26dc48914a003d5b2a739c4296d06754ed827cc07b579ead",
-    "references/protocols/fames-protocol.json": "444d17d6213d375a87ea0d2684697a7f7bb1f5179945ab7a7e4c23a16ee8b3f7",
+    "SKILL.md": "60f13d006f9b21dac7e05fd9ccedbb31366255f32b9d665c11729a18d3c21eba",
+    "references/cases.json": "b57487b88bbb17cc8dcb49cff2802118302b8ad54bf0b8598d21c91ae5a41209",
+    "references/protocols/fames-protocol.json": "65a4275eaeffec3173aecbda9b10b664d0d368229e6e12832e5733627e7f03e6",
     "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
     "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
     "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
     "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
     "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-    "scripts/fames_fleet.py": "7fb8da3d10bc810aaf99d11cb91fd400413fbe3dda4063106a297603948ae5ce"
+    "scripts/fames_fleet.py": "c0b621f3204b5a712e340a432227f900606070fee42f77c057a32277c18fb798"
   },
-  "package_sha": "67d694d2f5dd0ba99ca1cff5a676b42de35d24a7e8ae8ede9d736d1c0c133f3d"
+  "package_sha": "41e6354721b6442c17ecb64752c4ac6739864f122d02786f87302605f6f3e183"
 }
