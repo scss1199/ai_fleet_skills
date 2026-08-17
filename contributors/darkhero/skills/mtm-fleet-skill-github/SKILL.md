@@ -49,8 +49,9 @@ python %AI_WORKSPACE%\_skill\engines\mtm-fleet-skill-github.py sync --node ai_sc
 pull 讀 `contributors/darkhero/`；每台主機只寫自己的 contributor 目錄。
 
 FAMES `converge` 會先跑本機正／負控制並寫
-`_registry/fames-capabilities/<seat>.json`。export 把該 receipt 納入 contributor
-manifest 與 fingerprint；因此能力證據變更不會被「skills 沒變」的快路徑跳過。
+`_registry/fames-capabilities/<seat>.json`，再由 FAMES 自帶 publisher 只更新
+`contributors/<host>/fames-capability.json`。這條能力 receipt 路徑不依賴本 engine
+是否已升級，也不會被「skills 沒變」的快路徑跳過。
 中央 `verify-fleet` 必須同時驗 package、capability set、validator set、runner、
 caller 與 receipt freshness；三份 contributor manifest 缺一即不是 full convergence。
 

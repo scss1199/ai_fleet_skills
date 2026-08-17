@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-18.15
+FAMES-GEN: 2026-08-18.16
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -163,10 +163,11 @@ validate-capability-sync --input <record.json> --json`. Missing or stale hosts, 
 functions, validator drift, failed controls, and package-only receipts block convergence.
 Every `converge` run invokes the newly activated package's `attest-capabilities` command,
 runs the declared positive and negative cases locally, measures the runner, and writes a
-publishable host receipt. Fleet federation includes that receipt in the contributor
-manifest fingerprint, so a capability change is published even when skill filenames did
-not change. The verifier recomputes receipt age; it never trusts a producer's stored
-`freshness_seconds` value.
+publishable host receipt. The in-package runner writes only that host's
+`contributors/<host>/fames-capability.json` and publishes it through the existing carrier,
+so it does not depend on a separately upgraded federation engine or overwrite another
+host. Identical results are rate-limited while still fresh. The verifier recomputes receipt
+age; it never trusts a producer's stored `freshness_seconds` value.
 
 ## External learning — outside material that proposes a change
 

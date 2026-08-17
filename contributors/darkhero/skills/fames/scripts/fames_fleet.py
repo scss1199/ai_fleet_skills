@@ -2241,7 +2241,7 @@ def converge(
         canonical_script = workspace / "_skill" / "fleet-skills" / "fames" / "scripts" / "fames_fleet.py"
         try:
             proc = subprocess.run(
-                [sys.executable, str(canonical_script), "attest-capabilities", "--workspace", str(workspace), "--host", host, "--json"],
+                [sys.executable, str(canonical_script), "attest-capabilities", "--workspace", str(workspace), "--host", host, "--publish", "--json"],
                 capture_output=True,
                 text=True,
                 timeout=180,
@@ -2304,7 +2304,62 @@ def _capability_identities(package_root: Path) -> tuple[list[dict], str, str]:
     return manifest, capability_set_sha, validator_set_sha
 
 
-def attest_capabilities(workspace: Path, host: str) -> dict:
+def _publish_capability_receipt(workspace: Path, host: str, receipt: dict) -> dict:
+    """Publish one host-owned receipt without depending on the external federation engine."""
+    repo = workspace / "_skill" / "ai_fleet_skills"
+    if not (repo / ".git").is_dir():
+        return {"ok": False, "state": "UNKNOWN", "errors": ["fleet carrier repo missing"]}
+    contributor = _contributor_id(host)
+    relative = Path("contributors") / contributor / "fames-capability.json"
+    target = repo / relative
+    try:
+        current = _read_json(target) if target.is_file() else {}
+    except (OSError, json.JSONDecodeError):
+        current = {}
+    same_identity = all(
+        current.get(field) == receipt.get(field)
+        for field in ("host", "package_sha", "capability_set_sha", "validator_set_sha", "runner_state", "capabilities")
+    )
+    if same_identity:
+        try:
+            observed = datetime.fromisoformat(str(current.get("observed_at")).replace("Z", "+00:00"))
+            age = (datetime.now(timezone.utc) - observed.astimezone(timezone.utc)).total_seconds()
+        except (TypeError, ValueError):
+            age = 10**9
+        if age < 1800:
+            return {"ok": True, "state": "PASS", "changed": False, "skipped": "published receipt is still fresh", "errors": []}
+
+    def git(*args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True)
+
+    fetched = git("fetch", "origin", "main")
+    if fetched.returncode != 0:
+        return {"ok": False, "state": "UNKNOWN", "errors": ["carrier fetch failed"]}
+    head = git("rev-parse", "HEAD")
+    remote = git("rev-parse", "origin/main")
+    if head.returncode != 0 or remote.returncode != 0:
+        return {"ok": False, "state": "UNKNOWN", "errors": ["carrier identity unreadable"]}
+    if head.stdout.strip() != remote.stdout.strip():
+        merged = git("merge", "--ff-only", "origin/main")
+        if merged.returncode != 0:
+            return {"ok": False, "state": "UNKNOWN", "errors": ["carrier cannot fast-forward before receipt publication"]}
+    _write_json_atomic(target, receipt)
+    staged = git("add", "--", relative.as_posix())
+    if staged.returncode != 0:
+        return {"ok": False, "state": "UNKNOWN", "errors": ["capability receipt could not be staged"]}
+    committed = git("commit", "-m", f"chore(fames/{contributor}): attest capabilities")
+    if committed.returncode != 0:
+        status = git("status", "--porcelain", "--", relative.as_posix())
+        if not status.stdout.strip():
+            return {"ok": True, "state": "PASS", "changed": False, "skipped": "receipt unchanged", "errors": []}
+        return {"ok": False, "state": "UNKNOWN", "errors": ["capability receipt commit failed"]}
+    pushed = git("push", "origin", "HEAD:main")
+    if pushed.returncode != 0:
+        return {"ok": False, "state": "UNKNOWN", "changed": True, "errors": ["capability receipt push failed"]}
+    return {"ok": True, "state": "PASS", "changed": True, "commit": git("rev-parse", "HEAD").stdout.strip(), "errors": []}
+
+
+def attest_capabilities(workspace: Path, host: str, publish: bool = False) -> dict:
     """Run host-local positive and negative controls and persist a publishable receipt."""
     workspace = workspace.resolve()
     package_root = workspace / "_skill" / "fleet-skills" / "fames"
@@ -2353,14 +2408,22 @@ def attest_capabilities(workspace: Path, host: str) -> dict:
     key = _receipt_key(workspace, host)
     _write_json_atomic(workspace / CAPABILITY_DIR / f"{key}.json", receipt)
     state = "PASS" if not errors and all(row["state"] == "PASS" for row in rows) else "FAIL"
+    publication = _publish_capability_receipt(workspace, host, receipt) if publish and state == "PASS" else {
+        "ok": not publish,
+        "state": "NOT_APPLICABLE" if not publish else "FAIL",
+        "errors": [],
+    }
+    if publish and not publication.get("ok"):
+        errors.extend(str(item) for item in publication.get("errors") or [])
     return {
-        "ok": state == "PASS",
-        "state": state,
+        "ok": state == "PASS" and publication.get("ok", False),
+        "state": state if state != "PASS" or publication.get("ok") else "UNKNOWN",
         "host": receipt["host"],
         "package_sha": receipt["package_sha"],
         "capability_set_sha": capability_set_sha,
         "validator_set_sha": validator_set_sha,
         "receipt": receipt,
+        "publication": publication,
         "errors": errors,
     }
 
@@ -2438,7 +2501,11 @@ def verify_fleet(workspace: Path, hosts: list[str]) -> dict:
         row_ok = package.get("ok") and package_sha == expected == package.get("package_sha")
         if not row_ok:
             errors.append(f"{host} FAMES generation mismatch")
-        capability_receipt = manifest.get("fames_capability")
+        capability_path = repo / "contributors" / contributor / "fames-capability.json"
+        try:
+            capability_receipt = _read_json(capability_path)
+        except (OSError, json.JSONDecodeError):
+            capability_receipt = None
         if isinstance(capability_receipt, dict):
             capability_receipt = dict(capability_receipt)
             try:
@@ -2982,6 +3049,7 @@ def main() -> int:
             command.add_argument("--host", required=True)
         if name == "attest-capabilities":
             command.add_argument("--host", required=True)
+            command.add_argument("--publish", action="store_true")
         if name == "install":
             command.add_argument("--source", type=Path, default=PACKAGE_ROOT)
         if name in {"follow", "converge"}:
@@ -3052,7 +3120,7 @@ def main() -> int:
             return _emit(payload, args.json)
         return _emit(validate_capability_sync(payload), args.json)
     if args.command == "attest-capabilities":
-        return _emit(attest_capabilities(args.workspace, args.host), args.json)
+        return _emit(attest_capabilities(args.workspace, args.host, publish=args.publish), args.json)
     if args.command == "install":
         payload = install(args.workspace, args.host, args.source)
         if args.arm:

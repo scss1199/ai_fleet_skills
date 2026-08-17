@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-17T16:03:22Z",
-  "manifest_sha": "fc5043fdd49c95f7",
+  "generated_at": "2026-08-17T16:06:43Z",
+  "manifest_sha": "1492f4a1843bc7e8",
   "required": [
     "fames",
     "independent-review",
@@ -111,22 +111,22 @@
     },
     {
       "name": "fames",
-      "sha": "04f5f24f93d425b7",
+      "sha": "2004d5d5fc434e89",
       "required": true,
       "lane": null,
-      "package_sha": "6347d000070669fa4a9d59019d3205590b419c083e72ebc762901b677aadf08a",
+      "package_sha": "e038c76a710cf4ac3787005993009c77ce9809dd456d56a61999f9d2ff86504c",
       "files": {
-        "SKILL.md": "04f5f24f93d425b7ea4520665de98ff741f2569f8b08ca3a12eaba37767af418",
-        "bundle-manifest.json": "3fd148a2578a129cfdda5652299b10f000984d82e0c6f73c71490da3a6bfce0c",
+        "SKILL.md": "2004d5d5fc434e89b5379e8dbf51e92f4123eb384965b5034ae265a600c554f9",
+        "bundle-manifest.json": "0d1bb456a3837faa84b622c890e16978108398543669f6dc7bd97bdf1d3cb613",
         "references/cases.json": "8c9cc18730f2ca65cc70c04ee048277f1fa1e211a8d3483ecc23451910010b16",
         "references/production-web-delivery.json": "0f8edd3a24f856a4cc1a76ecd4490185bad414735c2bc1787104d619d0f0a251",
-        "references/protocols/fames-protocol.json": "9478ac45ead95d6a5ed6da9d630511487b8fd1847add7774cdfc6281d4081b77",
+        "references/protocols/fames-protocol.json": "68a2d949eaefb907e441ff24355357ef3aecd6fbe2aaae04ece20979d2205522",
         "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
         "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
         "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
         "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
         "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-        "scripts/fames_fleet.py": "50cf393a6ead50ed88067fd151158de307c94d72ae672c10bdb74371f8d73119"
+        "scripts/fames_fleet.py": "83c5df454abc51594aebb55eaa6b41c6ad17812d2f14316be11fc9a8835021cf"
       }
     },
     {
@@ -228,12 +228,12 @@
     },
     {
       "name": "mtm-fleet-skill-github",
-      "sha": "1f8b4a371a3ddd24",
+      "sha": "6ba6f0ba91d6555f",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "1060d88a78437aaa103d59408d0f8f8455f55f39f3d7d234eddb6450dc0e24d9",
+      "package_sha": "df46e07bd912f909e70d82e39a2ead1f2e098044fc727203927b082cf912e782",
       "files": {
-        "SKILL.md": "1f8b4a371a3ddd243b33c24558efb5afe99664a541c7eb01c556dc65015aa930"
+        "SKILL.md": "6ba6f0ba91d6555fee2801fede576a0698bc49de8b6f2bb7cb28064d1799aad1"
       }
     },
     {
@@ -497,104 +497,5 @@
         "SKILL.md": "955ff985c853f040090a42d8a4693c1e9fc489ecd1fefebc91e2e069654b4886"
       }
     }
-  ],
-  "fames_capability": {
-    "schema": 1,
-    "host": "darkhero",
-    "package_sha": "6347d000070669fa4a9d59019d3205590b419c083e72ebc762901b677aadf08a",
-    "capability_set_sha": "798281bb5b2d5d5d6faeb12dd501f01fc062337b8df675e040dd3514a2a23a90",
-    "validator_set_sha": "468239ff50f76e755119d2e8ce4b278e433b3801c2168a59a69f636d9d05a4cc",
-    "runner_state": "armed",
-    "observed_at": "2026-08-17T16:03:14.179897+00:00",
-    "freshness_seconds": 0,
-    "capability_manifest": [
-      {
-        "capability_id": "contract-core",
-        "contract_version": "1",
-        "validator_identity": "fames-cases:contract-core:v1",
-        "required_hosts": [
-          "darkhero",
-          "scar3",
-          "altos"
-        ]
-      },
-      {
-        "capability_id": "delivery-integrity",
-        "contract_version": "1",
-        "validator_identity": "fames-cases:delivery-integrity:v1",
-        "required_hosts": [
-          "darkhero",
-          "scar3",
-          "altos"
-        ]
-      },
-      {
-        "capability_id": "capability-convergence",
-        "contract_version": "1",
-        "validator_identity": "fames-cases:capability-convergence:v1",
-        "required_hosts": [
-          "darkhero",
-          "scar3",
-          "altos"
-        ]
-      }
-    ],
-    "capabilities": [
-      {
-        "capability_id": "contract-core",
-        "state": "PASS",
-        "validator_exit": 0,
-        "positive_control": true,
-        "negative_control_rejected": true,
-        "caller_backed": true,
-        "evidence_refs": [
-          "case://C-RUN-BASE",
-          "case://C-RUN-HASH",
-          "case://C-PARITY"
-        ]
-      },
-      {
-        "capability_id": "delivery-integrity",
-        "state": "PASS",
-        "validator_exit": 0,
-        "positive_control": true,
-        "negative_control_rejected": true,
-        "caller_backed": true,
-        "evidence_refs": [
-          "case://C-INTERACTION-BASE",
-          "case://C-DELIVERY-SCOPE-INFLATION",
-          "case://C-DELIVERY-HIDDEN-UNKNOWN",
-          "case://C-DELIVERY-NUMERIC-PROXY",
-          "case://C-DELIVERY-FIX-NO-BEFORE",
-          "case://C-DELIVERY-BUILD-AS-DEPLOY",
-          "case://C-DELIVERY-PASS-WITH-DEFECT",
-          "case://C-REPAIR-NO-NEXT-TEST",
-          "case://C-REPAIR-BUDGET"
-        ]
-      },
-      {
-        "capability_id": "capability-convergence",
-        "state": "PASS",
-        "validator_exit": 0,
-        "positive_control": true,
-        "negative_control_rejected": true,
-        "caller_backed": true,
-        "evidence_refs": [
-          "case://C-CAPABILITY-SYNC-BASE",
-          "case://C-CAPABILITY-SYNC-MISSING-HOST",
-          "case://C-CAPABILITY-SYNC-PACKAGE-DRIFT",
-          "case://C-CAPABILITY-SYNC-VALIDATOR-DRIFT",
-          "case://C-CAPABILITY-SYNC-MISSING-CAPABILITY",
-          "case://C-CAPABILITY-SYNC-NEGATIVE-CONTROL",
-          "case://C-CAPABILITY-SYNC-NO-CALLER",
-          "case://C-CAPABILITY-SYNC-RUNNER",
-          "case://C-CAPABILITY-SYNC-STALE"
-        ]
-      }
-    ],
-    "evidence_refs": [
-      "C:\\ai_workspace\\_skill\\fleet-skills\\fames\\bundle-manifest.json",
-      "C:\\ai_workspace\\_skill\\fleet-skills\\fames\\references\\cases.json"
-    ]
-  }
+  ]
 }
