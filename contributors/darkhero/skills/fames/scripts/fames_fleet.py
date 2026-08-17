@@ -469,6 +469,312 @@ def validate_ingest(record: dict) -> dict:
     }
 
 
+def validate_autonomic(record: dict) -> dict:
+    """Validate one bounded FAMES autonomic lifecycle record."""
+    try:
+        protocol = _read_json(PACKAGE_ROOT / PROTOCOL_TARGETS["FAMES"])
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"ok": False, "state": "UNKNOWN", "errors": [f"autonomic policy unreadable: {exc}"]}
+    policy = protocol.get("autonomic_lifecycle")
+    if not isinstance(policy, dict):
+        return {"ok": False, "state": "UNKNOWN", "errors": ["autonomic_lifecycle policy missing"]}
+    if not isinstance(record, dict):
+        return {"ok": False, "state": "UNKNOWN", "errors": ["record is not an object"]}
+
+    errors: list[str] = []
+    unknowns: list[str] = []
+    required = (policy.get("record") or {}).get("required_fields") or ()
+    for field in required:
+        if field not in record:
+            unknowns.append(f"autonomic field missing: {field}")
+    if not isinstance(record.get("cycle_id"), str) or not record["cycle_id"].strip():
+        unknowns.append("cycle_id is empty")
+
+    authority_before = record.get("authority_before")
+    authority_after = record.get("authority_after")
+    if not isinstance(authority_before, list) or not isinstance(authority_after, list):
+        unknowns.append("autonomic authority ledger missing")
+    elif not set(authority_after).issubset(set(authority_before)):
+        errors.append("autonomic lifecycle expanded authority")
+
+    ip_classes = set((policy.get("record") or {}).get("ip_classes") or ())
+    disclosure_classes = set((policy.get("record") or {}).get("disclosure_classes") or ())
+    sources = record.get("sources")
+    if not isinstance(sources, list) or not sources:
+        unknowns.append("autonomic sources missing")
+        sources = []
+    for index, source in enumerate(sources):
+        here = f"sources[{index}]"
+        if not isinstance(source, dict):
+            unknowns.append(f"{here}: source is not an object")
+            continue
+        for field in ("source_id", "content_identity"):
+            if not isinstance(source.get(field), str) or not source[field].strip():
+                unknowns.append(f"{here}: {field} missing")
+        refs = source.get("provenance_refs")
+        if not isinstance(refs, list) or not refs or any(not isinstance(ref, str) or not ref.strip() for ref in refs):
+            unknowns.append(f"{here}: provenance references missing")
+        ip_class = source.get("ip_class")
+        disclosure = source.get("disclosure")
+        if ip_class not in ip_classes:
+            unknowns.append(f"{here}: IP class is unknown")
+        if disclosure not in disclosure_classes:
+            unknowns.append(f"{here}: disclosure class is unknown")
+        if ip_class in {"restricted", "proprietary"} and disclosure != "local_only":
+            errors.append(f"{here}: restricted material is not local-only")
+        if source.get("ip_scan") not in {"CLEAN", "NOT_REQUIRED"}:
+            unknowns.append(f"{here}: IP scan is not resolved")
+        if ip_class in {"restricted", "proprietary"} and source.get("ip_scan") != "CLEAN":
+            errors.append(f"{here}: restricted material lacks a clean IP scan")
+        if disclosure in {"paste_safe", "publishable"} and ip_class != "public" and source.get("ip_scan") != "CLEAN":
+            errors.append(f"{here}: non-public disclosure lacks a clean IP scan")
+        if source.get("raw_restricted_embedded") is not False:
+            errors.append(f"{here}: raw restricted material is embedded")
+        if source.get("negative_results_preserved") is not True:
+            errors.append(f"{here}: honest negative results were not preserved")
+        if not isinstance(source.get("negative_results"), list):
+            unknowns.append(f"{here}: negative-result ledger missing")
+        hypotheses = source.get("hypotheses")
+        if not isinstance(hypotheses, list):
+            unknowns.append(f"{here}: hypothesis ledger missing")
+        else:
+            for h_index, hypothesis in enumerate(hypotheses):
+                if not isinstance(hypothesis, dict) or hypothesis.get("label") != "HYPOTHESIS":
+                    errors.append(f"{here}.hypotheses[{h_index}]: hypothesis is not labelled")
+                elif not isinstance(hypothesis.get("verified"), bool):
+                    unknowns.append(f"{here}.hypotheses[{h_index}]: verification state is unmeasured")
+
+    allowed_lanes = set(policy.get("triage_lanes") or ())
+    isolation_values = set(policy.get("safe_isolation") or ())
+    triage = record.get("triage")
+    if not isinstance(triage, list) or not triage:
+        unknowns.append("triage ledger missing")
+        triage = []
+    for index, item in enumerate(triage):
+        here = f"triage[{index}]"
+        if not isinstance(item, dict):
+            unknowns.append(f"{here}: item is not an object")
+            continue
+        if item.get("lane") not in allowed_lanes:
+            unknowns.append(f"{here}: lane is unknown")
+        for field in ("owner_only", "authorized", "shared_state_dirty", "destructive_command_used"):
+            if not isinstance(item.get(field), bool):
+                unknowns.append(f"{here}: {field} is unmeasured")
+        if item.get("disposition") not in {"execute", "handoff", "block", "continue_safe_branch"}:
+            unknowns.append(f"{here}: disposition is unknown")
+        refs = item.get("evidence_refs")
+        if not isinstance(refs, list) or not refs:
+            unknowns.append(f"{here}: routing evidence missing")
+        if item.get("owner_only") is True and item.get("disposition") == "execute":
+            errors.append(f"{here}: owner-only decision was executed by the agent")
+        if item.get("disposition") in {"execute", "continue_safe_branch"}:
+            if item.get("authorized") is not True:
+                errors.append(f"{here}: unauthorized work was executed")
+            isolation = item.get("isolation_strategy")
+            if isolation not in isolation_values:
+                unknowns.append(f"{here}: isolation strategy is unknown")
+            if item.get("shared_state_dirty") is True and isolation in {"not_applicable", None}:
+                errors.append(f"{here}: dirty shared state was mutated without isolation")
+        if item.get("destructive_command_used") is not False:
+            errors.append(f"{here}: destructive-command boundary is unresolved or violated")
+        if item.get("owner_only") is True and not item.get("handoff_ref"):
+            unknowns.append(f"{here}: owner-only decision lacks a handoff")
+
+    drive = record.get("drive")
+    if not isinstance(drive, dict):
+        unknowns.append("drive record missing")
+        drive = {}
+    controller_available = drive.get("controller_available")
+    if not isinstance(controller_available, bool):
+        unknowns.append("controller availability is unmeasured")
+    if controller_available is True and not str(drive.get("controller_channel") or "").strip():
+        unknowns.append("available controller has no channel identity")
+    if not str(drive.get("goal_identity") or "").strip():
+        unknowns.append("drive goal identity missing")
+    frozen_validator = str(drive.get("validator_identity") or "").strip()
+    if not frozen_validator:
+        unknowns.append("drive validator identity missing")
+    maximum = drive.get("max_attempts")
+    attempts = drive.get("attempts")
+    if not isinstance(maximum, int) or isinstance(maximum, bool) or not 1 <= maximum <= 10:
+        unknowns.append("repair attempt budget is invalid")
+    if not isinstance(attempts, list):
+        unknowns.append("repair attempts missing")
+        attempts = []
+    elif isinstance(maximum, int) and len(attempts) > maximum:
+        errors.append("repair attempt budget exceeded")
+    previous_after = None
+    stagnant = 0
+    for index, attempt in enumerate(attempts):
+        here = f"drive.attempts[{index}]"
+        if not isinstance(attempt, dict):
+            unknowns.append(f"{here}: attempt is not an object")
+            continue
+        for field in ("artifact_before", "artifact_after", "goal_identity", "validator_identity"):
+            if not isinstance(attempt.get(field), str) or not attempt[field].strip():
+                unknowns.append(f"{here}: {field} missing")
+        if drive.get("goal_identity") and attempt.get("goal_identity") != drive.get("goal_identity"):
+            errors.append(f"{here}: goal identity changed during repair")
+        if frozen_validator and attempt.get("validator_identity") != frozen_validator:
+            errors.append(f"{here}: validator identity changed during repair")
+        if attempt.get("validator_state") not in {"PASS", "FAIL", "UNKNOWN"}:
+            unknowns.append(f"{here}: validator state is unknown")
+        delta = attempt.get("discriminating_delta")
+        if not _number(delta):
+            unknowns.append(f"{here}: discriminating delta is unmeasured")
+            delta = 0
+        changed = attempt.get("artifact_after") != attempt.get("artifact_before")
+        if previous_after is not None and attempt.get("artifact_after") == previous_after and delta <= 0:
+            stagnant += 1
+        else:
+            stagnant = 0
+        if not changed and delta <= 0 and attempt.get("validator_state") != "PASS":
+            stagnant += 1
+        previous_after = attempt.get("artifact_after")
+    if stagnant >= 3:
+        errors.append("three stagnant repair attempts did not stop or change strategy")
+    terminal = drive.get("terminal_state")
+    if terminal not in set(policy.get("terminal_states") or ()):
+        unknowns.append("drive terminal state is unknown")
+    if controller_available is False and terminal == "PASS":
+        errors.append("drive claimed PASS without a controller")
+    if controller_available is False and not drive.get("handoff_ref"):
+        unknowns.append("missing controller did not produce a handoff")
+    if terminal == "PASS":
+        if not attempts or attempts[-1].get("validator_state") != "PASS":
+            errors.append("drive PASS lacks a final validator PASS")
+        if drive.get("external_read_back") is not True:
+            errors.append("drive PASS lacks external read-back")
+    if drive.get("repair_requests_structured") is not True:
+        errors.append("repair requests are not structured")
+
+    review = record.get("review")
+    if not isinstance(review, dict):
+        unknowns.append("review record missing")
+        review = {}
+    if review.get("lane") not in set(policy.get("review_lanes") or ()):
+        unknowns.append("review lane is unknown")
+    if not str(review.get("target_identity") or "").strip():
+        unknowns.append("review target identity missing")
+    if attempts and review.get("target_identity") != attempts[-1].get("artifact_after"):
+        errors.append("review target is not the final repaired artifact")
+    commands = review.get("commands_rerun")
+    if (
+        not isinstance(commands, list)
+        or not commands
+        or any(not isinstance(command, str) or not command.strip() for command in commands)
+    ):
+        unknowns.append("review reproduced no command")
+    if review.get("builder_narrative_only") is not False:
+        errors.append("review relied on builder narrative")
+    if review.get("negative_results_preserved") is not True:
+        errors.append("review erased negative results")
+    blocking_unknowns = review.get("blocking_unknowns")
+    if not isinstance(blocking_unknowns, list):
+        unknowns.append("review blocking-unknown ledger missing")
+        blocking_unknowns = []
+    verdict = review.get("verdict")
+    if verdict not in {"ACCEPTED", "REJECTED", "UNKNOWN"}:
+        unknowns.append("review verdict is unknown")
+    if verdict == "ACCEPTED" and (review.get("evidence_reproduced") is not True or blocking_unknowns):
+        errors.append("review accepted without reproduced evidence or with blocking UNKNOWN")
+
+    evolution = record.get("evolution")
+    if not isinstance(evolution, dict):
+        unknowns.append("evolution record missing")
+        evolution = {}
+    for field in ("activated", "promoted", "negative_results_preserved"):
+        if not isinstance(evolution.get(field), bool):
+            unknowns.append(f"evolution {field} is unmeasured")
+    if evolution.get("negative_results_preserved") is False:
+        errors.append("evolution erased negative results")
+    before = evolution.get("residual_before")
+    after = evolution.get("residual_after")
+    if not _number(before) or not _number(after):
+        unknowns.append("evolution residual is unmeasured")
+    if _number(before) and before > 0 and evolution.get("activated") is not True and not evolution.get("blocker_refs"):
+        unknowns.append("measured residual neither activated AEX nor named a blocker")
+    if evolution.get("promoted") is True:
+        if evolution.get("activated") is not True:
+            errors.append("promotion occurred without AEX activation")
+        if verdict != "ACCEPTED" or evolution.get("measured_trial") is not True:
+            errors.append("promotion lacks accepted review or measured trial")
+        if evolution.get("actor") != evolution.get("authority"):
+            errors.append("non-authority actor promoted the generation")
+        if not str(evolution.get("package_sha") or "").strip():
+            unknowns.append("promoted package identity missing")
+        for field in ("version_bumped", "generation_bumped", "package_identity_changed", "negative_results_preserved"):
+            if evolution.get(field) is not True:
+                errors.append(f"promotion gate failed: {field}")
+        if _number(before) and _number(after) and after > before:
+            errors.append("promotion increased the measured residual")
+
+    sync = record.get("sync")
+    if not isinstance(sync, dict):
+        unknowns.append("sync record missing")
+        sync = {}
+    expected_sha = str(sync.get("expected_package_sha") or "").strip()
+    if not expected_sha:
+        unknowns.append("sync package identity missing")
+    if evolution.get("promoted") is True and evolution.get("package_sha") != expected_sha:
+        errors.append("evolution and sync package identities differ")
+    if evolution.get("promoted") is True and (sync.get("atomic") is not True or sync.get("idempotent") is not True):
+        errors.append("promoted package lacks atomic idempotent sync")
+    readbacks = sync.get("readbacks")
+    if not isinstance(readbacks, list) or not readbacks:
+        unknowns.append("sync read-backs missing")
+        readbacks = []
+    unknown_hosts = sync.get("unknown_hosts")
+    if not isinstance(unknown_hosts, list) or any(not isinstance(host, str) or not host.strip() for host in unknown_hosts):
+        unknowns.append("sync unknown-host ledger missing")
+        unknown_hosts = []
+    matching = 0
+    for index, row in enumerate(readbacks):
+        here = f"sync.readbacks[{index}]"
+        if not isinstance(row, dict) or not row.get("host"):
+            unknowns.append(f"{here}: host identity missing")
+            continue
+        host = row.get("host")
+        if row.get("state") not in {"PASS", "UNKNOWN", "FAIL"}:
+            unknowns.append(f"{here}: read-back state is unknown")
+        matched = row.get("package_sha") == expected_sha and row.get("state") == "PASS"
+        if row.get("state") == "PASS" and row.get("package_sha") != expected_sha:
+            errors.append(f"{here}: PASS read-back has the wrong package identity")
+        if matched:
+            matching += 1
+        elif host not in unknown_hosts:
+            errors.append(f"{here}: stale or failed host was not named UNKNOWN")
+    if evolution.get("promoted") is True and matching == 0:
+        errors.append("promoted package has no matching read-back")
+    if sync.get("full_convergence_claim") is True and (unknown_hosts or matching != len(readbacks)):
+        errors.append("full convergence claimed with stale or unknown hosts")
+
+    observation = record.get("observation")
+    if not isinstance(observation, dict):
+        unknowns.append("observation record missing")
+        observation = {}
+    if observation.get("self_check_state") not in {"PASS", "FAIL", "UNKNOWN"}:
+        unknowns.append("observation self-check state is unknown")
+    if evolution.get("promoted") is True and observation.get("self_check_state") != "PASS":
+        errors.append("promoted generation lacks a passing self-check")
+    if not isinstance(observation.get("residuals"), list):
+        unknowns.append("observation residual ledger missing")
+    if observation.get("feedback_enqueued") is not True:
+        errors.append("observation did not close the feedback loop")
+    if not str(observation.get("next_action") or "").strip():
+        unknowns.append("observation next action missing")
+
+    return {
+        "ok": not errors and not unknowns,
+        "state": "UNKNOWN" if unknowns else ("PASS" if not errors else "FAIL"),
+        "sources": len(sources),
+        "triage_items": len(triage),
+        "attempts": len(attempts),
+        "readbacks": len(readbacks),
+        "errors": errors + unknowns,
+    }
+
+
 def _cognitive_contract() -> tuple[dict, str]:
     """Load the provider-neutral cognitive-operator policy from the bundled protocol."""
     try:
@@ -1974,6 +2280,9 @@ def _evaluate_case(
         elif validator == "validate_cognitive":
             outcome = validate_cognitive(record)
             ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
+        elif validator == "validate_autonomic":
+            outcome = validate_autonomic(record)
+            ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
         elif validator == "regression_guard":
             errors = _regression_guard(
                 record.get("canonical") or {},
@@ -2165,13 +2474,13 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-autonomic", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
         if name in {"verify-package", "parity", "status", "run-cases", "self-check"}:
             command.add_argument("--skill-dir", type=Path, default=PACKAGE_ROOT)
-        if name in {"validate-run", "validate-ingest", "validate-cognitive"}:
+        if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-autonomic"}:
             command.add_argument("--input", type=Path, required=True)
         if name == "run-cases":
             command.add_argument("--only", nargs="+")
@@ -2237,6 +2546,13 @@ def main() -> int:
             payload = {"ok": False, "state": "UNKNOWN", "errors": [f"cognitive input unreadable: {exc}"]}
             return _emit(payload, args.json)
         return _emit(validate_cognitive(payload), args.json)
+    if args.command == "validate-autonomic":
+        try:
+            payload = _read_json(args.input)
+        except (OSError, json.JSONDecodeError) as exc:
+            payload = {"ok": False, "state": "UNKNOWN", "errors": [f"autonomic input unreadable: {exc}"]}
+            return _emit(payload, args.json)
+        return _emit(validate_autonomic(payload), args.json)
     if args.command == "install":
         payload = install(args.workspace, args.host, args.source)
         if args.arm:

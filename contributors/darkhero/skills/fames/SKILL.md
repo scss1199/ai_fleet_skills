@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-17.11
+FAMES-GEN: 2026-08-17.13
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -93,6 +93,9 @@ Run `SENSE -> ABSORB -> TRIAGE -> DRIVE -> REVIEW -> EVOLVE -> SYNC -> OBSERVE -
 SENSE` around repeated FAMES runs. This is a control lifecycle, not a sixth phase;
 every mutation still runs `FP -> MTM -> SCF -> AEX -> SEAL`. Automation increases
 persistence, not authority.
+Advance automatically only through registered event sources, deterministic engines,
+and writable controller channels. Without an actuator, validate, classify, and emit a
+handoff, but never claim that another actor was driven or repaired.
 
 - **SENSE/ABSORB:** read fresh identified receipts, handoffs, residuals, and candidate
   material. Extract only structural claims; retain provenance, IP/disclosure class,

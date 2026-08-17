@@ -15,7 +15,7 @@
     "path_exists": "path (workspace-relative), expect present|absent",
     "file_size_max": "path, max_bytes, missing_ok -- measures size only, never reads content",
     "json_probe": "select (list of workspace-relative globs), pointer (slash path, * wildcard segment), expect all_equal|all_equal_ref|all_in, ref canonical_package_sha|canonical_version, values, missing_ok",
-    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|regression_guard|contributor_id, input_ref into fixtures, remove, patch, expect_ok, optional expect_state",
+    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|validate_autonomic|regression_guard|contributor_id, input_ref into fixtures, remove, patch, expect_ok, optional expect_state",
     "parity": "bundle and registry describe the same protocol generations",
     "newest_age_max": "select globs, max_age_h, missing_ok -- newest match must be younger than the ceiling"
   },
@@ -176,6 +176,38 @@
           {"instruction_id": "I2", "authorized": false, "goal_explicit": true, "constraints_explicit": true, "methods": ["constraint_explanation"], "forbidden_methods_used": [], "evidence_refs": ["policy://higher-priority"], "authority_before": ["read"], "authority_after": ["read"], "counterparty_choice_preserved": true, "higher_priority_conflict": true, "result": "refused", "why": "higher-priority policy blocks execution"}
         ]
       }
+    },
+    "autonomic_suite": {
+      "cycle_id": "fixture-autonomic-0001",
+      "authority_before": ["read", "write:fames", "publish:fames"],
+      "authority_after": ["read", "write:fames", "publish:fames"],
+      "sources": [
+        {"source_id": "session-handoff", "content_identity": "sha256:handoff-fixture", "provenance_refs": ["local://handoff"], "ip_class": "internal", "disclosure": "local_only", "ip_scan": "CLEAN", "raw_restricted_embedded": false, "negative_results": ["standard route did not satisfy the measured predicate"], "negative_results_preserved": true, "hypotheses": []},
+        {"source_id": "proprietary-abstraction", "content_identity": "sha256:ip-safe-fixture", "provenance_refs": ["local://private-source"], "ip_class": "proprietary", "disclosure": "local_only", "ip_scan": "CLEAN", "raw_restricted_embedded": false, "negative_results": ["internal data did not provide independent validation"], "negative_results_preserved": true, "hypotheses": [{"claim": "a data-quality issue may affect a derived metric", "label": "HYPOTHESIS", "verified": false}]}
+      ],
+      "triage": [
+        {"id": "T1", "lane": "mechanical", "disposition": "execute", "owner_only": false, "authorized": true, "shared_state_dirty": true, "isolation_strategy": "independent_worktree", "destructive_command_used": false, "evidence_refs": ["receipt://disjoint-paths"]},
+        {"id": "T2", "lane": "judgment", "disposition": "handoff", "owner_only": true, "authorized": false, "shared_state_dirty": false, "isolation_strategy": "not_applicable", "destructive_command_used": false, "evidence_refs": ["diff://competing-implementations"], "handoff_ref": "handoff://decision"},
+        {"id": "T3", "lane": "authority", "disposition": "handoff", "owner_only": true, "authorized": false, "shared_state_dirty": false, "isolation_strategy": "not_applicable", "destructive_command_used": false, "evidence_refs": ["policy://arming-consent"], "handoff_ref": "handoff://authority"}
+      ],
+      "drive": {
+        "controller_available": true,
+        "controller_channel": "inbox://producer",
+        "goal_identity": "goal:fixture-autonomic-0001",
+        "validator_identity": "validator:v1",
+        "max_attempts": 3,
+        "repair_requests_structured": true,
+        "attempts": [
+          {"artifact_before": "sha256:a", "artifact_after": "sha256:b", "goal_identity": "goal:fixture-autonomic-0001", "validator_identity": "validator:v1", "validator_state": "FAIL", "discriminating_delta": 1},
+          {"artifact_before": "sha256:b", "artifact_after": "sha256:c", "goal_identity": "goal:fixture-autonomic-0001", "validator_identity": "validator:v1", "validator_state": "PASS", "discriminating_delta": 1}
+        ],
+        "terminal_state": "PASS",
+        "external_read_back": true
+      },
+      "review": {"lane": "fresh_evidence_pass", "target_identity": "sha256:c", "commands_rerun": ["validator:v1", "package-verify"], "builder_narrative_only": false, "evidence_reproduced": true, "negative_results_preserved": true, "blocking_unknowns": [], "verdict": "ACCEPTED"},
+      "evolution": {"activated": true, "residual_before": 3, "residual_after": 0, "measured_trial": true, "actor": "ai_darkhero", "authority": "ai_darkhero", "package_sha": "fixture-package-sha", "version_bumped": true, "generation_bumped": true, "package_identity_changed": true, "negative_results_preserved": true, "promoted": true},
+      "sync": {"expected_package_sha": "fixture-package-sha", "atomic": true, "idempotent": true, "readbacks": [{"host": "darkhero", "package_sha": "fixture-package-sha", "state": "PASS"}, {"host": "scar3", "package_sha": "old-package-sha", "state": "UNKNOWN"}], "unknown_hosts": ["scar3"], "full_convergence_claim": false},
+      "observation": {"self_check_state": "PASS", "residuals": ["scar3 remains UNKNOWN"], "feedback_enqueued": true, "next_action": "retry follower convergence after rate limit clears"}
     }
   },
   "cases": [
@@ -191,6 +223,25 @@
       "why": "all five task classes must follow their declared operator sequence and measured stop contracts"
     },
     {"id": "C-INTERACTION-BASE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "expect_ok": true, "expect_state": "PASS", "why": "claim states follow evidence while transparent alignment preserves authority and choice"},
+    {"id": "C-AUTONOMIC-BASE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "expect_ok": true, "expect_state": "PASS", "why": "the full absorb-triage-drive-review-evolve-sync-observe cycle is honest, bounded and authority-conserving"},
+    {"id": "C-AUTONOMIC-IP-LEAK", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/sources/1/disclosure": "publishable", "/sources/1/raw_restricted_embedded": true}, "expect_ok": false, "expect_state": "FAIL", "why": "auto-absorb cannot publish or embed proprietary raw material"},
+    {"id": "C-AUTONOMIC-NEGATIVE-RESULT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/sources/1/negative_results_preserved": false}, "expect_ok": false, "expect_state": "FAIL", "why": "evolution cannot erase an honest negative result"},
+    {"id": "C-AUTONOMIC-OWNER-ONLY", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/triage/1/disposition": "execute", "/triage/1/authorized": true}, "expect_ok": false, "expect_state": "FAIL", "why": "self-driving cannot execute an owner-only judgment"},
+    {"id": "C-AUTONOMIC-DIRTY-ISOLATION", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/triage/0/isolation_strategy": "not_applicable"}, "expect_ok": false, "expect_state": "FAIL", "why": "mechanical progress in dirty shared state requires verified isolation"},
+    {"id": "C-AUTONOMIC-NO-CONTROLLER", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/drive/controller_available": false}, "expect_ok": false, "expect_state": "UNKNOWN", "why": "without a controller the process must emit a handoff and cannot claim PASS"},
+    {"id": "C-AUTONOMIC-SELF-REVIEW", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/review/builder_narrative_only": true}, "expect_ok": false, "expect_state": "FAIL", "why": "self-review must reproduce artifacts rather than accept the builder narrative"},
+    {"id": "C-AUTONOMIC-PROMOTE-NO-TRIAL", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/evolution/measured_trial": false}, "expect_ok": false, "expect_state": "FAIL", "why": "a plausible absorbed idea cannot evolve canon without a measured trial"},
+    {"id": "C-AUTONOMIC-FALSE-CONVERGENCE", "kind": "validator_probe", "charges": "R_FLEET", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/sync/full_convergence_claim": true}, "expect_ok": false, "expect_state": "FAIL", "why": "self-sync cannot call stale or unreachable followers converged"},
+    {"id": "C-AUTONOMIC-HIDDEN-STALE-HOST", "kind": "validator_probe", "charges": "R_FLEET", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/sync/unknown_hosts": []}, "expect_ok": false, "expect_state": "FAIL", "why": "every mismatched follower must remain explicitly UNKNOWN"},
+    {"id": "C-AUTONOMIC-OPEN-LOOP", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/observation/feedback_enqueued": false}, "expect_ok": false, "expect_state": "FAIL", "why": "observation must feed residuals back into the next cycle"},
+    {"id": "C-AUTONOMIC-AUTHORITY", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/authority_after": ["read", "write:fames", "publish:fames", "deploy:anywhere"]}, "expect_ok": false, "expect_state": "FAIL", "why": "autonomy increases persistence rather than authority"},
+    {"id": "C-AUTONOMIC-VALIDATOR-DRIFT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/drive/attempts/1/validator_identity": "validator:weakened"}, "expect_ok": false, "expect_state": "FAIL", "why": "a producer cannot change the validator during the repair loop"},
+    {"id": "C-AUTONOMIC-ATTEMPT-BUDGET", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/drive/max_attempts": 1}, "expect_ok": false, "expect_state": "FAIL", "why": "self-driving repair must stop at its declared attempt budget"},
+    {"id": "C-AUTONOMIC-FALSE-READBACK", "kind": "validator_probe", "charges": "R_FLEET", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/sync/readbacks/1/state": "PASS"}, "expect_ok": false, "expect_state": "FAIL", "why": "a follower cannot report PASS for a mismatched package identity"},
+    {"id": "C-AUTONOMIC-TRIAGE-UNKNOWN", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "remove": ["/triage/0/owner_only"], "expect_ok": false, "expect_state": "UNKNOWN", "why": "missing decision ownership cannot default to agent authority"},
+    {"id": "C-AUTONOMIC-GOAL-DRIFT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/drive/attempts/1/goal_identity": "goal:easier-substitute"}, "expect_ok": false, "expect_state": "FAIL", "why": "a repair loop cannot replace the original goal with an easier target"},
+    {"id": "C-AUTONOMIC-STALE-REVIEW", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/review/target_identity": "sha256:b"}, "expect_ok": false, "expect_state": "FAIL", "why": "review must reproduce the final repaired artifact rather than an earlier passing-looking version"},
+    {"id": "C-AUTONOMIC-PACKAGE-CHAIN", "kind": "validator_probe", "charges": "R_FLEET", "fail_mode": "closed", "scope": "any", "validator": "validate_autonomic", "input_ref": "autonomic_suite", "patch": {"/sync/expected_package_sha": "different-package"}, "expect_ok": false, "expect_state": "FAIL", "why": "the evolved generation and synchronized generation must be the same content identity"},
     {"id": "C-INTERACTION-CONTRADICTION-NOT-LIE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "patch": {"/interaction_integrity/claim_assessments/1/deception_state": "SUPPORTED"}, "expect_ok": false, "expect_state": "FAIL", "why": "contradiction alone cannot prove deliberate deception"},
     {"id": "C-INTERACTION-CLAIM-MAPPING", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "patch": {"/interaction_integrity/claim_assessments/1/claim_state": "SUPPORTED"}, "expect_ok": false, "expect_state": "FAIL", "why": "a claim contradicted by measured evidence cannot be marked supported"},
     {"id": "C-ALIGNMENT-NO-COERCION", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "patch": {"/interaction_integrity/alignment_attempts/0/forbidden_methods_used": ["coercion"]}, "expect_ok": false, "expect_state": "FAIL", "why": "compliance obtained through coercion is not UT alignment"},

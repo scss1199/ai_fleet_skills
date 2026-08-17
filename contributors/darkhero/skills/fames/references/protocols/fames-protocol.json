@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.12.2",
+  "version": "1.13.2",
   "updated": "2026-08-17",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -438,6 +438,41 @@
       },
       "unknown_rule": "Unknown evidence identity, authority, intent, method, or constraint conflict is UNKNOWN and fails closed."
     }
+  },
+  "autonomic_lifecycle": {
+    "purpose": "Make FAMES a bounded, evidence-driven process that continuously absorbs candidate learning, advances safe work, reviews itself, evolves on measured residuals, and synchronizes verified generations without expanding authority.",
+    "is_phase": false,
+    "relationship": "This lifecycle connects repeated FAMES runs; it does not add a sixth phase. Every mutation inside DRIVE or EVOLVE still executes FP -> MTM -> SCF -> AEX -> SEAL.",
+    "cycle": ["SENSE", "ABSORB", "TRIAGE", "DRIVE", "REVIEW", "EVOLVE", "SYNC", "OBSERVE", "SENSE"],
+    "invariant": "Automation increases persistence, not authority.",
+    "execution_boundary": "The lifecycle advances automatically only through registered event sources, deterministic engines, and writable controller channels. Without an actuator it may validate, classify, and emit a handoff, but must not claim that another actor was driven or repaired.",
+    "stages": {
+      "SENSE": "Read fresh receipts, handoffs, residuals, heartbeats, and candidate material by identity rather than importing an entire conversation as truth.",
+      "ABSORB": "Extract the smallest structural claims; preserve provenance, IP/disclosure class, hypotheses, contradictions, and honest negative results. Proprietary raw material remains local.",
+      "TRIAGE": "Separate mechanical work, judgment, and authority decisions. Owner-only decisions become evidence-backed handoffs; safe non-conflicting branches continue when isolation is verified.",
+      "DRIVE": "Use an available controller channel to issue structured repair requests and re-run a frozen validator within a bounded attempt budget. Without a controller, emit a handoff and remain UNKNOWN.",
+      "REVIEW": "Review artifacts rather than builder narrative through the first available independent lane; reproduce evidence and retain negative results.",
+      "EVOLVE": "Activate AEX only on a measured residual. Promote only after a measured trial, accepted review, authority check, semantic version/generation change, and non-regression evidence.",
+      "SYNC": "Publish a content-addressed package and require atomic, idempotent follower read-back. A stale or unreachable follower remains named UNKNOWN and forbids a full-convergence claim.",
+      "OBSERVE": "Run self-check and liveness probes, record remaining residuals, and enqueue the next discriminating action so the loop closes on measured state."
+    },
+    "triage_lanes": ["mechanical", "judgment", "authority"],
+    "safe_isolation": ["read_only", "path_limited", "independent_worktree", "bounded_transaction", "not_applicable"],
+    "review_lanes": ["dedicated_readonly", "independent_agent", "fresh_evidence_pass"],
+    "terminal_states": ["PASS", "HANDOFF", "UNKNOWN", "FAIL"],
+    "stop_rules": [
+      "PASS requires the frozen validator and external read-back to pass.",
+      "A missing controller, owner-only decision, access block, or unverifiable evidence stops mutation and emits HANDOFF or UNKNOWN.",
+      "Do not repeat after the attempt budget, or after three attempts with neither artifact-identity change nor discriminating evidence.",
+      "Never edit the validator or erase a negative result merely to obtain PASS."
+    ],
+    "record": {
+      "required_fields": ["cycle_id", "sources", "triage", "drive", "review", "evolution", "sync", "observation", "authority_before", "authority_after"],
+      "ip_classes": ["public", "internal", "restricted", "proprietary"],
+      "disclosure_classes": ["publishable", "paste_safe", "local_only"],
+      "unknown_rule": "Missing source identity, disclosure/IP classification, routing evidence, controller state, review identity, promotion gate, sync read-back, or observation feedback is UNKNOWN and fails closed."
+    },
+    "validator": "python scripts/fames_fleet.py validate-autonomic --input <cycle.json> --json"
   },
   "external_learning": {
     "purpose": "Governs information acquired from OUTSIDE the fleet that proposes an improvement to the fleet. Turns 'I read something useful' into work with the same completion truth as any other FAMES work.",
