@@ -51,6 +51,7 @@
   "allocation": {
     "background_p_core_exception": "A background task may borrow one P logical CPU only when p_core_required is true and the serial critical path is declared.",
     "worker_rule": "requested_workers and applied workers must not exceed allocated logical CPUs or the global concurrency cap.",
+    "task_default_caps": {"maintenance_e_max": 2, "io_background_e_max": 4},
     "pressure_rule": "Sustained pressure downshifts deferrable/background work by at least one service class; urgent or critical work still preserves the ordinary reserve.",
     "exclusive_rule": "Using reserved logical CPUs requires hardware.compute.exclusive authority, explicit operator impact acknowledgement, a maximum duration of 900 seconds, restore-on-exit, and exact read-back.",
     "hysteresis": "Adapters must use sustained measurements and hysteresis; one instantaneous sample may not oscillate a task between classes."

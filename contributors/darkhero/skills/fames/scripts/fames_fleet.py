@@ -928,6 +928,11 @@ def plan_compute(request: dict, workspace: Path | None = None) -> dict:
     task_class = task.get("task_class")
     if task_class in {"batch_background", "io_background", "maintenance"}:
         cap_p = 1 if task.get("p_core_required") is True and available_p else 0
+        task_caps = (profile.get("allocation") or {}).get("task_default_caps") or {}
+        if task_class == "maintenance":
+            cap_e = min(cap_e, int(task_caps.get("maintenance_e_max", 2)))
+        elif task_class == "io_background":
+            cap_e = min(cap_e, int(task_caps.get("io_background_e_max", 4)))
     elif task_class in {"latency_serial", "interactive"}:
         cap_e = 0 if service in {"eco", "normal"} else min(cap_e, 1)
     requested_p = task.get("requested_p", cap_p)
