@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-18.18
+FAMES-GEN: 2026-08-18.20
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -155,6 +155,56 @@ handoff, but never claim that another actor was driven or repaired.
 Validate a lifecycle record with `python scripts/fames_fleet.py validate-autonomic
 --input <cycle.json> --json`. A passing record proves contract consistency, not the
 truth of referenced evidence; SEAL still requires independent reproduction.
+
+## Background execution invariant
+
+Every scheduled task, rider, daemon, watchdog, updater, and its complete descendant
+process tree must run with zero visible console windows and zero focus steals. On
+Windows, every console-capable child uses `CREATE_NO_WINDOW` together with
+`STARTF_USESHOWWINDOW`/`SW_HIDE`, `shell=False`, and non-interactive prompt settings.
+`pythonw` hides only its own entry point; it does not exempt `git`, package managers,
+shells, or helper CLIs from the same child-process controls. `DETACHED_PROCESS` alone
+is not an acceptable control. Validate the measured launch/read-back record with:
+
+```
+python scripts/fames_fleet.py validate-background --input <record.json> --json
+```
+
+An explicitly operator-invoked `manual_foreground` diagnostic may be visible only
+when no scheduled path can call it. A background claim without descendant coverage,
+prompt suppression, and measured `visible_window_count: 0` plus
+`focus_steal_count: 0` is `UNKNOWN` or `FAIL`, never PASS.
+
+## Hardware compute scheduling
+
+Load the [hardware compute profile](references/hardware-compute.json) before assigning
+CPU work. FAMES owns the provider-neutral decision; a host allocator only measures
+topology and applies affinity, priority, power throttling, and worker limits. Never
+infer authority, importance, urgency, or service class from an agent, harness, model,
+vendor, seat, or process name.
+
+Classify work as `latency_serial`, `interactive`, `throughput_parallel`,
+`batch_background`, `io_background`, `maintenance`, or `safety_recovery`. Background
+and maintenance work prefer E cores; serial and interactive critical paths prefer P
+cores; measured parallel throughput may use both. Preserve at least two measured P
+logical CPUs and two measured E logical CPUs for the operating system and interactive
+user. Reserved CPUs require explicit `hardware.compute.exclusive` authority, operator
+impact acknowledgement, a duration of at most 900 seconds, restore-on-exit, and exact
+read-back.
+
+Plan and validate with the same deterministic policy:
+
+```
+python scripts/fames_fleet.py measure-compute --workspace <root> --json
+python scripts/fames_fleet.py plan-compute --input <request.json> --json
+python scripts/fames_fleet.py validate-compute --input <record.json> --json
+```
+
+Deadline or immediate urgency needs explicit deadline evidence. Sustained resource
+pressure downshifts deferrable/background work with hysteresis. Worker count never
+exceeds allocated logical CPUs or the declared global concurrency cap. Unknown or
+stale topology, missing authority, unmeasured application state, or mismatched
+read-back fails closed.
 
 Classify the task with the bundled profile/risk table. Risk may add evidence and guards but never authority. For a machine-verifiable completion record, pass the provider-neutral JSON ledger to `python scripts/fames_fleet.py validate-run --input <run.json> --json`; a non-zero exit fails closed. R2/R3 records require the bounded PREPARE/APPLY/VERIFY/COMMIT/RECOVER transaction fields, and R3 also requires a passing recovery drill.
 

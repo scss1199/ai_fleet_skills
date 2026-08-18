@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -34,6 +35,8 @@ CASES_SOURCE = "_registry/fames-cases.json"
 CASES_TARGET = "references/cases.json"
 PRODUCTION_PROFILE_SOURCE = "_registry/fames-production-web-delivery.json"
 PRODUCTION_PROFILE_TARGET = "references/production-web-delivery.json"
+HARDWARE_PROFILE_SOURCE = "_registry/fames-hardware-compute.json"
+HARDWARE_PROFILE_TARGET = "references/hardware-compute.json"
 SELF_EVIDENCE_DIR = "_registry/fames-evidence/self"
 RESIDUAL_DIMENSIONS = (
     "R_CONTRACT",
@@ -101,6 +104,23 @@ LOCAL_CAPABILITY_CASES = {
         "C-HARNESS-NAME-POLICY",
         "C-HARNESS-UNREGISTERED-PASS",
     ),
+    "background-execution-enforcement": (
+        "C-BACKGROUND-BASE",
+        "C-BACKGROUND-CHILD-FLAGS",
+        "C-BACKGROUND-DETACHED-ONLY",
+        "C-BACKGROUND-PROMPT",
+        "C-BACKGROUND-READBACK",
+    ),
+    "hardware-compute-scheduling": (
+        "C-COMPUTE-BASE",
+        "C-COMPUTE-BACKGROUND-P-CORE",
+        "C-COMPUTE-URGENCY-EVIDENCE",
+        "C-COMPUTE-AUTHORITY",
+        "C-COMPUTE-OVER-CAP",
+        "C-COMPUTE-WORKERS",
+        "C-COMPUTE-EXCLUSIVE-AUTH",
+        "C-COMPUTE-READBACK",
+    ),
 }
 TEXT_SUFFIXES = {
     ".json",
@@ -129,6 +149,50 @@ RESIDUAL_KEYS = (
     "R_outcome", "R_safety", "R_evidence", "R_complexity",
     "R_portability", "R_authority", "R_operability",
 )
+
+
+def _silent_cli_env(extra: dict | None = None) -> dict:
+    """Return a non-interactive environment for background-capable child CLIs."""
+    env = os.environ.copy()
+    env.update(
+        {
+            "GIT_TERMINAL_PROMPT": "0",
+            "GCM_INTERACTIVE": "Never",
+            "SSH_ASKPASS": "",
+        }
+    )
+    if extra:
+        env.update({str(key): str(value) for key, value in extra.items()})
+    return env
+
+
+def _hidden_subprocess_kwargs() -> dict:
+    """Build Windows flags that hide the whole console-capable child launch."""
+    if os.name != "nt":
+        return {}
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = subprocess.SW_HIDE
+    return {
+        "creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000),
+        "startupinfo": startupinfo,
+    }
+
+
+def _run_hidden(args, **kwargs):
+    """Run one child with no shell, no prompt, and no visible Windows console."""
+    if kwargs.pop("shell", False):
+        raise ValueError("background child execution forbids shell=True")
+    supplied_env = kwargs.pop("env", None)
+    kwargs["env"] = _silent_cli_env(supplied_env)
+    for key, value in _hidden_subprocess_kwargs().items():
+        if key == "creationflags":
+            kwargs[key] = int(kwargs.get(key, 0)) | int(value)
+        else:
+            kwargs.setdefault(key, value)
+    return subprocess.run(args, shell=False, **kwargs)
+
+
 GOAL_FIELDS = (
     "outcome", "verification", "constraints", "authority_scope", "non_goals",
     "irreversible_boundary", "success_horizon", "task_profile",
@@ -664,6 +728,292 @@ def validate_harness(record: dict) -> dict:
         "state": "UNKNOWN" if unknowns else ("PASS" if not errors else "FAIL"),
         "registered_surfaces": len(registered),
         "receipts": len(receipt_ids),
+        "errors": errors + unknowns,
+    }
+
+
+def _hardware_profile() -> tuple[dict, str | None]:
+    try:
+        profile = _read_json(PACKAGE_ROOT / HARDWARE_PROFILE_TARGET)
+    except (OSError, json.JSONDecodeError) as exc:
+        return {}, f"hardware compute profile unreadable: {exc}"
+    return profile, None
+
+
+def measure_compute_topology(workspace: Path) -> dict:
+    """Discover a capability adapter and return measured P/E topology."""
+    profile, problem = _hardware_profile()
+    if problem:
+        return {"ok": False, "state": "UNKNOWN", "errors": [problem]}
+    errors: list[str] = []
+    for adapter in profile.get("host_adapter_examples") or ():
+        if not isinstance(adapter, dict) or adapter.get("policy_authority") is not False:
+            continue
+        path = workspace.resolve() / str(adapter.get("path") or "")
+        if path.name != "fleet_pe_allocator.py" or not path.is_file():
+            continue
+        try:
+            proc = _run_hidden(
+                [sys.executable, str(path), "--json", "status"],
+                cwd=path.parent,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            errors.append(f"adapter probe failed: {exc.__class__.__name__}")
+            continue
+        if proc.returncode != 0:
+            errors.append(f"adapter probe exit {proc.returncode}")
+            continue
+        try:
+            payload = json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            errors.append("adapter probe returned invalid JSON")
+            continue
+        topology = payload.get("topology") if isinstance(payload.get("topology"), dict) else {}
+        p_ids = topology.get("P") if isinstance(topology.get("P"), list) else []
+        e_ids = topology.get("E") if isinstance(topology.get("E"), list) else []
+        if not p_ids and not e_ids:
+            errors.append("adapter topology has no P/E identities")
+            continue
+        return {
+            "ok": True,
+            "state": "PASS",
+            "adapter_id": str(path.relative_to(workspace.resolve())).replace("\\", "/"),
+            "topology": {
+                "measured": True,
+                "source": topology.get("source") or "fleet_pe_allocator",
+                "logical_p": len(p_ids),
+                "logical_e": len(e_ids),
+                "p_cpu_ids": p_ids,
+                "e_cpu_ids": e_ids,
+            },
+            "errors": [],
+        }
+    return {
+        "ok": False,
+        "state": "UNKNOWN",
+        "errors": errors or ["NO_CAPABLE_ADAPTER: no measured P/E topology adapter is available"],
+    }
+
+
+def validate_background(record: dict) -> dict:
+    """Validate that a scheduled launch and its descendants are genuinely windowless."""
+    profile, problem = _hardware_profile()
+    if problem:
+        return {"ok": False, "state": "UNKNOWN", "errors": [problem]}
+    if not isinstance(record, dict):
+        return {"ok": False, "state": "UNKNOWN", "errors": ["background record is not an object"]}
+    policy = profile.get("background_execution") or {}
+    errors: list[str] = []
+    unknowns: list[str] = []
+    if record.get("background") is not True:
+        errors.append("record is not classified as background")
+    if record.get("full_descendant_policy_applied") is not True:
+        errors.append("windowless controls do not cover the full descendant tree")
+    controls = set(record.get("windows_console_flags") or ())
+    required = set(policy.get("windows_console_flags") or ())
+    if not controls:
+        unknowns.append("Windows console controls are unmeasured")
+    elif not required.issubset(controls):
+        errors.append("required Windows hidden-launch controls are missing")
+    if record.get("shell_false") is not True:
+        errors.append("background launch must use shell=False")
+    if record.get("detached_process_only") is True:
+        errors.append("DETACHED_PROCESS alone is not a hidden-window control")
+    if record.get("interactive_prompts_disabled") is not True:
+        errors.append("interactive child prompts are not disabled")
+    for field in ("visible_window_count", "focus_steal_count"):
+        value = record.get(field)
+        if not isinstance(value, int) or isinstance(value, bool):
+            unknowns.append(f"{field} is unmeasured")
+        elif value != 0:
+            errors.append(f"{field} must be zero")
+    return {
+        "ok": not errors and not unknowns,
+        "state": "UNKNOWN" if unknowns else ("PASS" if not errors else "FAIL"),
+        "errors": errors + unknowns,
+    }
+
+
+def _service_class(task: dict) -> str:
+    task_class = task.get("task_class")
+    importance = task.get("importance")
+    urgency = task.get("urgency")
+    if urgency == "immediate" and importance == "critical" and task_class == "safety_recovery":
+        return "critical"
+    if urgency == "immediate" or (urgency == "deadline" and importance in {"high", "critical"}):
+        return "urgent"
+    if importance in {"high", "critical"}:
+        return "priority"
+    if task_class in {"batch_background", "io_background", "maintenance"}:
+        return "background"
+    if importance == "low" and urgency == "deferrable":
+        return "eco"
+    return "normal"
+
+
+def _bounded_count(available: int, fraction: float) -> int:
+    if available <= 0 or fraction <= 0:
+        return 0
+    return max(1, int(available * fraction))
+
+
+def plan_compute(request: dict, workspace: Path | None = None) -> dict:
+    """Produce one deterministic task-level P/E-core allocation."""
+    profile, problem = _hardware_profile()
+    if problem:
+        return {"ok": False, "state": "UNKNOWN", "errors": [problem]}
+    if not isinstance(request, dict):
+        return {"ok": False, "state": "UNKNOWN", "errors": ["compute request is not an object"]}
+    topology = request.get("topology") if isinstance(request.get("topology"), dict) else {}
+    measured_adapter = None
+    if not topology and workspace is not None:
+        measured_adapter = measure_compute_topology(workspace)
+        if measured_adapter.get("ok"):
+            topology = measured_adapter["topology"]
+    task = request.get("task") if isinstance(request.get("task"), dict) else {}
+    pressure = request.get("pressure") if isinstance(request.get("pressure"), dict) else {}
+    errors: list[str] = []
+    unknowns: list[str] = []
+    if topology.get("measured") is not True or not isinstance(topology.get("source"), str):
+        unknowns.append("runtime topology is not measured")
+    p_total = topology.get("logical_p")
+    e_total = topology.get("logical_e")
+    if not isinstance(p_total, int) or isinstance(p_total, bool) or p_total < 0:
+        unknowns.append("logical_p is unknown")
+        p_total = 0
+    if not isinstance(e_total, int) or isinstance(e_total, bool) or e_total < 0:
+        unknowns.append("logical_e is unknown")
+        e_total = 0
+    task_classes = set((profile.get("task_classes") or {}).keys())
+    if task.get("task_class") not in task_classes:
+        unknowns.append("task_class is unknown")
+    if task.get("importance") not in set(profile.get("importance") or ()):
+        unknowns.append("importance is unknown")
+    if task.get("urgency") not in set(profile.get("urgency") or ()):
+        unknowns.append("urgency is unknown")
+    if task.get("authority_verified") is not True:
+        errors.append("compute authority is not verified")
+    scopes = task.get("authority_scope")
+    if not isinstance(scopes, list) or not scopes:
+        unknowns.append("compute authority scope is missing")
+        scopes = []
+    if task.get("urgency") in {"deadline", "immediate"} and not task.get("deadline_evidence"):
+        errors.append("deadline/immediate urgency lacks deadline evidence")
+    exclusive = task.get("exclusive_compute_requested") is True
+    expected_duration = task.get("expected_duration_seconds")
+    if exclusive:
+        if "hardware.compute.exclusive" not in scopes:
+            errors.append("exclusive compute authority is missing")
+        if task.get("operator_impact_ack") is not True:
+            errors.append("exclusive compute lacks operator impact acknowledgement")
+        if not isinstance(expected_duration, int) or expected_duration <= 0 or expected_duration > 900:
+            errors.append("exclusive compute duration must be 1..900 seconds")
+        if task.get("restore_on_exit") is not True:
+            errors.append("exclusive compute must restore resources on exit")
+    reserve = profile.get("topology", {}).get("reserve") or {}
+    reserve_p = 0 if exclusive else min(p_total, int(reserve.get("p_logical_min", 2)))
+    reserve_e = 0 if exclusive else min(e_total, int(reserve.get("e_logical_min", 2)))
+    available_p = max(0, p_total - reserve_p)
+    available_e = max(0, e_total - reserve_e)
+    service = _service_class(task)
+    if pressure.get("sustained") is True and task.get("task_class") in {"batch_background", "io_background", "maintenance"}:
+        service = "eco"
+    class_policy = (profile.get("service_classes") or {}).get(service) or {}
+    cap_p = _bounded_count(available_p, float(class_policy.get("p_fraction", 0)))
+    cap_e = _bounded_count(available_e, float(class_policy.get("e_fraction", 0)))
+    task_class = task.get("task_class")
+    if task_class in {"batch_background", "io_background", "maintenance"}:
+        cap_p = 1 if task.get("p_core_required") is True and available_p else 0
+    elif task_class in {"latency_serial", "interactive"}:
+        cap_e = 0 if service in {"eco", "normal"} else min(cap_e, 1)
+    requested_p = task.get("requested_p", cap_p)
+    requested_e = task.get("requested_e", cap_e)
+    if not isinstance(requested_p, int) or isinstance(requested_p, bool) or requested_p < 0:
+        unknowns.append("requested_p is invalid")
+        requested_p = 0
+    if not isinstance(requested_e, int) or isinstance(requested_e, bool) or requested_e < 0:
+        unknowns.append("requested_e is invalid")
+        requested_e = 0
+    allocated_p = min(requested_p, cap_p)
+    allocated_e = min(requested_e, cap_e)
+    logical_allocated = allocated_p + allocated_e
+    global_cap = request.get("global_concurrency_cap", logical_allocated)
+    if not isinstance(global_cap, int) or isinstance(global_cap, bool) or global_cap < 1:
+        unknowns.append("global_concurrency_cap is invalid")
+        global_cap = logical_allocated
+    requested_workers = task.get("requested_workers", logical_allocated)
+    if not isinstance(requested_workers, int) or isinstance(requested_workers, bool) or requested_workers < 1:
+        unknowns.append("requested_workers is invalid")
+        requested_workers = 0
+    workers = min(requested_workers, logical_allocated, global_cap) if logical_allocated else 0
+    if logical_allocated == 0:
+        errors.append("allocation has no logical CPU")
+    if unknowns or errors:
+        state = "UNKNOWN" if unknowns else "FAIL"
+    else:
+        state = "PASS"
+    return {
+        "ok": state == "PASS",
+        "state": state,
+        "service_class": service,
+        "topology_source": topology.get("source"),
+        "topology_adapter": measured_adapter.get("adapter_id") if measured_adapter else request.get("topology_adapter"),
+        "reserve": {"p": reserve_p, "e": reserve_e},
+        "caps": {"p": cap_p, "e": cap_e},
+        "allocation": {"p": allocated_p, "e": allocated_e, "workers": workers},
+        "priority": class_policy.get("priority"),
+        "power_throttling": class_policy.get("power_throttling"),
+        "exclusive": exclusive,
+        "clamped": requested_p > cap_p or requested_e > cap_e or requested_workers > workers,
+        "errors": errors + unknowns,
+    }
+
+
+def validate_compute(record: dict) -> dict:
+    """Recompute the plan and verify an applied allocation plus windowless read-back."""
+    if not isinstance(record, dict):
+        return {"ok": False, "state": "UNKNOWN", "errors": ["compute record is not an object"]}
+    request = record.get("request")
+    plan = plan_compute(request)
+    if plan.get("state") != "PASS":
+        return plan
+    errors: list[str] = []
+    unknowns: list[str] = []
+    declared = record.get("plan") if isinstance(record.get("plan"), dict) else {}
+    for field in ("service_class", "allocation", "priority", "power_throttling", "reserve"):
+        if declared.get(field) != plan.get(field):
+            errors.append(f"declared compute plan differs at {field}")
+    if record.get("applied") is not True:
+        unknowns.append("compute allocation was not applied")
+    read_back = record.get("read_back") if isinstance(record.get("read_back"), dict) else {}
+    if not read_back.get("adapter_id") or not read_back.get("topology_source"):
+        unknowns.append("compute adapter/topology read-back is missing")
+    allocation = plan["allocation"]
+    expected = {
+        "applied_p": allocation["p"],
+        "applied_e": allocation["e"],
+        "applied_workers": allocation["workers"],
+        "priority": plan["priority"],
+        "power_throttling": plan["power_throttling"],
+    }
+    for field, value in expected.items():
+        if field not in read_back:
+            unknowns.append(f"compute read-back missing {field}")
+        elif read_back.get(field) != value:
+            errors.append(f"compute read-back differs at {field}")
+    if read_back.get("visible_window_count") != 0 or read_back.get("focus_steal_count") != 0:
+        errors.append("compute adapter produced a visible window or focus steal")
+    if plan.get("exclusive") and read_back.get("restored") is not True:
+        errors.append("exclusive compute did not restore resources")
+    if not plan.get("exclusive") and read_back.get("restored") not in {True, False}:
+        unknowns.append("restore state is unmeasured")
+    return {
+        "ok": not errors and not unknowns,
+        "state": "UNKNOWN" if unknowns else ("PASS" if not errors else "FAIL"),
+        "plan": plan,
         "errors": errors + unknowns,
     }
 
@@ -1791,7 +2141,7 @@ def _package_identity(version: str, files: dict[str, str]) -> str:
 
 
 def _git_protocol_blob(workspace: Path, git_ref: str, source_rel: str) -> bytes:
-    result = subprocess.run(
+    result = _run_hidden(
         ["git", "show", f"{git_ref}:{source_rel}"],
         cwd=workspace,
         capture_output=True,
@@ -1849,12 +2199,24 @@ def build_bundle(
         raise FileNotFoundError(f"missing production delivery profile: {profile_source}")
     copied[PRODUCTION_PROFILE_TARGET] = PRODUCTION_PROFILE_SOURCE
 
+    hardware_source = workspace / HARDWARE_PROFILE_SOURCE
+    hardware_target = package_root / HARDWARE_PROFILE_TARGET
+    hardware_target.parent.mkdir(parents=True, exist_ok=True)
+    if protocol_git_ref:
+        hardware_target.write_bytes(_git_protocol_blob(workspace, protocol_git_ref, HARDWARE_PROFILE_SOURCE))
+    elif hardware_source.is_file():
+        shutil.copy2(hardware_source, hardware_target)
+    elif not hardware_target.is_file():
+        raise FileNotFoundError(f"missing hardware compute profile: {hardware_source}")
+    copied[HARDWARE_PROFILE_TARGET] = HARDWARE_PROFILE_SOURCE
+
     fames = _read_json(package_root / PROTOCOL_TARGETS["FAMES"])
     expected_files = [
         "SKILL.md",
         "scripts/fames_fleet.py",
         CASES_TARGET,
         PRODUCTION_PROFILE_TARGET,
+        HARDWARE_PROFILE_TARGET,
         *PROTOCOL_TARGETS.values(),
     ]
     files = {rel: _sha256(package_root / rel) for rel in sorted(set(expected_files))}
@@ -1881,7 +2243,7 @@ def build_bundle(
         "execution_order": EXECUTION_ORDER,
         "source_files": copied,
         "source_git_commit": (
-            subprocess.run(
+            _run_hidden(
                 ["git", "rev-parse", protocol_git_ref],
                 cwd=workspace,
                 capture_output=True,
@@ -2410,7 +2772,7 @@ def arm(workspace: Path, host: str, apply: bool = False) -> dict:
         )
         return result
     try:
-        proc = subprocess.run(
+        proc = _run_hidden(
             argv,
             capture_output=True,
             text=True,
@@ -2460,7 +2822,7 @@ def converge(
     if outcome.get("ok"):
         canonical_script = workspace / "_skill" / "fleet-skills" / "fames" / "scripts" / "fames_fleet.py"
         try:
-            proc = subprocess.run(
+            proc = _run_hidden(
                 [sys.executable, str(canonical_script), "attest-capabilities", "--workspace", str(workspace), "--host", host, "--publish", "--json"],
                 capture_output=True,
                 text=True,
@@ -2550,7 +2912,7 @@ def _publish_capability_receipt(workspace: Path, host: str, receipt: dict) -> di
             return {"ok": True, "state": "PASS", "changed": False, "skipped": "published receipt is still fresh", "errors": []}
 
     def git(*args: str) -> subprocess.CompletedProcess:
-        return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True)
+        return _run_hidden(["git", *args], cwd=repo, capture_output=True, text=True)
 
     fetched = git("fetch", "origin", "main")
     if fetched.returncode != 0:
@@ -2680,14 +3042,14 @@ def verify_fleet(workspace: Path, hosts: list[str]) -> dict:
     if not (repo / ".git").is_dir():
         errors.append(f"carrier repo missing: {repo}")
     else:
-        fetch = subprocess.run(
+        fetch = _run_hidden(
             ["git", "fetch", "origin", "main"], cwd=repo, capture_output=True, text=True
         )
         if fetch.returncode != 0:
             errors.append("carrier fetch failed")
         else:
-            head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, capture_output=True, text=True)
-            remote = subprocess.run(["git", "rev-parse", "origin/main"], cwd=repo, capture_output=True, text=True)
+            head = _run_hidden(["git", "rev-parse", "HEAD"], cwd=repo, capture_output=True, text=True)
+            remote = _run_hidden(["git", "rev-parse", "origin/main"], cwd=repo, capture_output=True, text=True)
             if head.returncode != 0 or remote.returncode != 0 or head.stdout.strip() != remote.stdout.strip():
                 errors.append("carrier worktree is not at fetched origin/main")
     for host in hosts:
@@ -3090,6 +3452,12 @@ def _evaluate_case(
         elif validator == "validate_harness":
             outcome = validate_harness(record)
             ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
+        elif validator == "validate_background":
+            outcome = validate_background(record)
+            ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
+        elif validator == "validate_compute":
+            outcome = validate_compute(record)
+            ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
         elif validator == "validate_autonomic":
             outcome = validate_autonomic(record)
             ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
@@ -3287,13 +3655,13 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-harness", "validate-autonomic", "validate-capability-sync", "attest-capabilities", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-harness", "validate-background", "measure-compute", "plan-compute", "validate-compute", "validate-autonomic", "validate-capability-sync", "attest-capabilities", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
         if name in {"verify-package", "parity", "status", "run-cases", "self-check"}:
             command.add_argument("--skill-dir", type=Path, default=PACKAGE_ROOT)
-        if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-harness", "validate-autonomic", "validate-capability-sync"}:
+        if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-harness", "validate-background", "plan-compute", "validate-compute", "validate-autonomic", "validate-capability-sync"}:
             command.add_argument("--input", type=Path, required=True)
         if name == "run-cases":
             command.add_argument("--only", nargs="+")
@@ -3369,6 +3737,29 @@ def main() -> int:
             payload = {"ok": False, "state": "UNKNOWN", "errors": [f"harness input unreadable: {exc}"]}
             return _emit(payload, args.json)
         return _emit(validate_harness(payload), args.json)
+    if args.command == "validate-background":
+        try:
+            payload = _read_json(args.input)
+        except (OSError, json.JSONDecodeError) as exc:
+            payload = {"ok": False, "state": "UNKNOWN", "errors": [f"background input unreadable: {exc}"]}
+            return _emit(payload, args.json)
+        return _emit(validate_background(payload), args.json)
+    if args.command == "measure-compute":
+        return _emit(measure_compute_topology(args.workspace), args.json)
+    if args.command == "plan-compute":
+        try:
+            payload = _read_json(args.input)
+        except (OSError, json.JSONDecodeError) as exc:
+            payload = {"ok": False, "state": "UNKNOWN", "errors": [f"compute request unreadable: {exc}"]}
+            return _emit(payload, args.json)
+        return _emit(plan_compute(payload, args.workspace), args.json)
+    if args.command == "validate-compute":
+        try:
+            payload = _read_json(args.input)
+        except (OSError, json.JSONDecodeError) as exc:
+            payload = {"ok": False, "state": "UNKNOWN", "errors": [f"compute record unreadable: {exc}"]}
+            return _emit(payload, args.json)
+        return _emit(validate_compute(payload), args.json)
     if args.command == "validate-autonomic":
         try:
             payload = _read_json(args.input)

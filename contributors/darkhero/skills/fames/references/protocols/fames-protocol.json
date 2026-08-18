@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.16.0",
+  "version": "1.17.0",
   "updated": "2026-08-18",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -244,6 +244,64 @@
       "coverage_rule": "A compliance claim covers exactly the surfaces registered and freshly read back. An unregistered, unloaded, stale, or unprobed harness is UNKNOWN, never implicitly compliant.",
       "authority_rule": "A harness may execute and verify locally but may not rewrite canonical policy, weaken a validator, or add authority. Canonical promotion retains exactly one writer.",
       "validator": "python scripts/fames_fleet.py validate-harness --input <record.json> --json"
+    },
+    "background_execution_contract": {
+      "scope": "Every scheduled task, rider, daemon, watchdog, updater, and its full descendant process tree.",
+      "rule": "Background execution must create zero visible console windows and steal focus zero times. This applies to every console-capable child, including git, package managers, shells, and helper CLIs.",
+      "windows_required_controls": [
+        "CREATE_NO_WINDOW",
+        "STARTF_USESHOWWINDOW",
+        "SW_HIDE",
+        "shell_false",
+        "interactive_prompts_disabled"
+      ],
+      "python_rule": "Use pythonw for a background Python entry point when available, but never treat pythonw as protection for child processes; each child still receives hidden creation flags.",
+      "forbidden": [
+        "DETACHED_PROCESS alone",
+        "visible cmd or PowerShell fallback",
+        "interactive credential prompt",
+        "focus stealing",
+        "claiming windowless operation without measured read-back"
+      ],
+      "manual_exception": "An operator-invoked foreground diagnostic may be visible only when it is explicitly classified manual_foreground and is not reachable from a scheduler.",
+      "required_read_back": [
+        "background",
+        "full_descendant_policy_applied",
+        "visible_window_count",
+        "focus_steal_count",
+        "interactive_prompts_disabled"
+      ],
+      "validator": "python scripts/fames_fleet.py validate-background --input <record.json> --json"
+    },
+    "hardware_compute_scheduler": {
+      "profile": "references/hardware-compute.json",
+      "policy_owner": "FAMES",
+      "adapter_rule": "Host adapters measure and apply topology, affinity, priority, power throttling, and worker limits. They do not infer authority, importance, urgency, or service class.",
+      "selection_predicates": [
+        "measured_topology",
+        "task_class",
+        "verified_authority",
+        "importance",
+        "urgency",
+        "deadline_evidence",
+        "resource_pressure",
+        "user_activity",
+        "duration",
+        "measured_scaling"
+      ],
+      "forbidden_predicates": [
+        "agent_name",
+        "harness_name",
+        "model_name",
+        "vendor_name",
+        "seat_name",
+        "process_name_alone"
+      ],
+      "reserve_rule": "Ordinary tasks preserve at least 2 measured P logical CPUs and 2 measured E logical CPUs for the operating system and interactive user.",
+      "exclusive_rule": "Reserved CPUs may be used only with hardware.compute.exclusive authority, explicit operator-impact acknowledgement, duration at most 900 seconds, restore-on-exit, and exact read-back.",
+      "topology_probe": "python scripts/fames_fleet.py measure-compute --workspace <root> --json",
+      "planner": "python scripts/fames_fleet.py plan-compute --input <request.json> --json",
+      "validator": "python scripts/fames_fleet.py validate-compute --input <record.json> --json"
     },
     "retention_rule": "Every file and process requires a verified caller or contract role; otherwise merge or remove it.",
     "minimize_order": ["physical_files", "executable_code", "execution_steps", "steady_state_resources"]

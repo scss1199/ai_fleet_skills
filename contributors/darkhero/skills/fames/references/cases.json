@@ -15,7 +15,7 @@
     "path_exists": "path (workspace-relative), expect present|absent",
     "file_size_max": "path, max_bytes, missing_ok -- measures size only, never reads content",
     "json_probe": "select (list of workspace-relative globs), pointer (slash path, * wildcard segment), expect all_equal|all_equal_ref|all_in, ref canonical_package_sha|canonical_version, values, missing_ok",
-    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|validate_harness|validate_autonomic|regression_guard|contributor_id, input_ref into fixtures, remove, patch, expect_ok, optional expect_state",
+    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|validate_harness|validate_background|validate_compute|validate_autonomic|regression_guard|contributor_id, input_ref into fixtures, remove, patch, expect_ok, optional expect_state",
     "parity": "bundle and registry describe the same protocol generations",
     "newest_age_max": "select globs, max_age_h, missing_ok -- newest match must be younger than the ceiling",
     "forbidden_text": "paths, forbidden strings, and optional expect_clean -- canonical policy files must not contain platform identifiers"
@@ -273,6 +273,57 @@
       "sync": {"expected_package_sha": "fixture-package-sha", "expected_capability_set_sha": "fixture-capabilities-sha", "expected_validator_set_sha": "fixture-validators-sha", "atomic": true, "idempotent": true, "readbacks": [{"host": "darkhero", "package_sha": "fixture-package-sha", "capability_set_sha": "fixture-capabilities-sha", "validator_set_sha": "fixture-validators-sha", "capability_state": "PASS", "runner_state": "armed", "state": "PASS"}, {"host": "scar3", "package_sha": "old-package-sha", "capability_set_sha": "old-capabilities-sha", "validator_set_sha": "old-validators-sha", "capability_state": "UNKNOWN", "runner_state": "armed", "state": "UNKNOWN"}], "unknown_hosts": ["scar3"], "full_convergence_claim": false},
       "observation": {"self_check_state": "PASS", "residuals": ["scar3 remains UNKNOWN"], "feedback_enqueued": true, "next_action": "retry follower convergence after rate limit clears"}
     },
+    "background_suite": {
+      "background": true,
+      "full_descendant_policy_applied": true,
+      "windows_console_flags": ["CREATE_NO_WINDOW", "STARTF_USESHOWWINDOW", "SW_HIDE"],
+      "shell_false": true,
+      "detached_process_only": false,
+      "interactive_prompts_disabled": true,
+      "visible_window_count": 0,
+      "focus_steal_count": 0
+    },
+    "compute_suite": {
+      "request": {
+        "topology": {"measured": true, "source": "GetSystemCpuSetInformation", "logical_p": 16, "logical_e": 16},
+        "pressure": {"state": "normal", "sustained": false, "user_active": true},
+        "global_concurrency_cap": 12,
+        "task": {
+          "task_id": "fixture-background-batch",
+          "task_class": "batch_background",
+          "importance": "normal",
+          "urgency": "normal",
+          "authority_verified": true,
+          "authority_scope": ["hardware.compute.allocate"],
+          "expected_duration_seconds": 120,
+          "p_core_required": false,
+          "requested_p": 0,
+          "requested_e": 8,
+          "requested_workers": 8,
+          "exclusive_compute_requested": false
+        }
+      },
+      "plan": {
+        "service_class": "background",
+        "allocation": {"p": 0, "e": 8, "workers": 8},
+        "priority": "below_normal",
+        "power_throttling": true,
+        "reserve": {"p": 2, "e": 2}
+      },
+      "applied": true,
+      "read_back": {
+        "adapter_id": "windows-pe-affinity-fixture",
+        "topology_source": "GetSystemCpuSetInformation",
+        "applied_p": 0,
+        "applied_e": 8,
+        "applied_workers": 8,
+        "priority": "below_normal",
+        "power_throttling": true,
+        "visible_window_count": 0,
+        "focus_steal_count": 0,
+        "restored": false
+      }
+    },
     "capability_sync_suite": {
       "generation_identity": {"package_sha": "pkg-v1", "capability_set_sha": "caps-v1", "validator_set_sha": "validators-v1"},
       "expected_hosts": ["darkhero", "scar3", "altos"],
@@ -289,6 +340,19 @@
     }
   },
   "cases": [
+    {"id": "C-BACKGROUND-BASE", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_background", "input_ref": "background_suite", "expect_ok": true, "expect_state": "PASS", "why": "scheduled work and every descendant use hidden non-interactive launch controls with zero measured windows and focus steals"},
+    {"id": "C-BACKGROUND-CHILD-FLAGS", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_background", "input_ref": "background_suite", "remove": ["/windows_console_flags/2"], "expect_ok": false, "expect_state": "FAIL", "why": "pythonw or a hidden parent does not protect a console-capable child without SW_HIDE"},
+    {"id": "C-BACKGROUND-DETACHED-ONLY", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_background", "input_ref": "background_suite", "patch": {"/detached_process_only": true}, "expect_ok": false, "expect_state": "FAIL", "why": "DETACHED_PROCESS alone may still flash and is forbidden"},
+    {"id": "C-BACKGROUND-PROMPT", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_background", "input_ref": "background_suite", "patch": {"/interactive_prompts_disabled": false}, "expect_ok": false, "expect_state": "FAIL", "why": "background git and package tools cannot surface interactive credential prompts"},
+    {"id": "C-BACKGROUND-READBACK", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_background", "input_ref": "background_suite", "patch": {"/visible_window_count": 1}, "expect_ok": false, "expect_state": "FAIL", "why": "one visible window disproves the windowless completion claim"},
+    {"id": "C-COMPUTE-BASE", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_compute", "input_ref": "compute_suite", "expect_ok": true, "expect_state": "PASS", "why": "measured topology, task class, authority, service class, allocation and exact read-back agree"},
+    {"id": "C-COMPUTE-BACKGROUND-P-CORE", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_compute", "input_ref": "compute_suite", "patch": {"/plan/allocation/p": 2}, "expect_ok": false, "expect_state": "FAIL", "why": "ordinary background work cannot silently consume P cores"},
+    {"id": "C-COMPUTE-URGENCY-EVIDENCE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_compute", "input_ref": "compute_suite", "patch": {"/request/task/urgency": "immediate"}, "expect_ok": false, "expect_state": "FAIL", "why": "immediate priority needs explicit deadline evidence"},
+    {"id": "C-COMPUTE-AUTHORITY", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_compute", "input_ref": "compute_suite", "patch": {"/request/task/authority_verified": false}, "expect_ok": false, "expect_state": "FAIL", "why": "a model or agent identity cannot substitute for compute authority"},
+    {"id": "C-COMPUTE-OVER-CAP", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_compute", "input_ref": "compute_suite", "patch": {"/plan/allocation/e": 14}, "expect_ok": false, "expect_state": "FAIL", "why": "declared allocation cannot exceed the task service-class plan"},
+    {"id": "C-COMPUTE-WORKERS", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_compute", "input_ref": "compute_suite", "patch": {"/plan/allocation/workers": 12}, "expect_ok": false, "expect_state": "FAIL", "why": "worker count cannot exceed allocated logical CPUs"},
+    {"id": "C-COMPUTE-EXCLUSIVE-AUTH", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_compute", "input_ref": "compute_suite", "patch": {"/request/task/exclusive_compute_requested": true}, "expect_ok": false, "expect_state": "FAIL", "why": "using the OS/user reserve requires exclusive authority, impact acknowledgement, bounded duration and restore"},
+    {"id": "C-COMPUTE-READBACK", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_compute", "input_ref": "compute_suite", "patch": {"/read_back/applied_e": 6}, "expect_ok": false, "expect_state": "FAIL", "why": "an allocation claim fails when the adapter read-back differs"},
     {
       "id": "C-COGNITIVE-BASE",
       "kind": "validator_probe",

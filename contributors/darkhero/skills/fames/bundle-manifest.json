@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.16.0",
-  "skill_gen": "2026-08-18.18",
+  "version": "1.17.0",
+  "skill_gen": "2026-08-18.20",
   "execution_order": [
     "FP",
     "MTM",
@@ -18,20 +18,22 @@
     "references/protocols/fleet-token-ladder.json": "_registry/fleet-token-ladder.json",
     "references/protocols/seal-protocol.json": "_registry/seal-protocol.json",
     "references/cases.json": "_registry/fames-cases.json",
-    "references/production-web-delivery.json": "_registry/fames-production-web-delivery.json"
+    "references/production-web-delivery.json": "_registry/fames-production-web-delivery.json",
+    "references/hardware-compute.json": "_registry/fames-hardware-compute.json"
   },
   "source_git_commit": null,
   "files": {
-    "SKILL.md": "4e3f7f02f4d2bc04b14a8ba2711b1f3f07ffd1a945c879868188cdf33ac4b171",
-    "references/cases.json": "c4e39b5c69a97398acd69e07fb306ae3b2c53ff50b953ea2ada24db603094d5a",
+    "SKILL.md": "553846fb3e965dc5f48ad6a7d6effc2a211d462154901193ebacce72a255d954",
+    "references/cases.json": "3b97fe879a38f4ef4005fc9c2aa8ff160be78a9228ff04b763f1e74feadaa331",
+    "references/hardware-compute.json": "3f043a9401f8558bab8730c846bbbc6301d9728b980361d4cce12695abbe24fc",
     "references/production-web-delivery.json": "0f8edd3a24f856a4cc1a76ecd4490185bad414735c2bc1787104d619d0f0a251",
-    "references/protocols/fames-protocol.json": "12edd8c5496ec2c6ee68ce8f02de4be4c9467952142b332a35814509af1b793b",
+    "references/protocols/fames-protocol.json": "57224bfdf1e484ac5f0a55fc65fd41bfe7edc89a2bcc512ba61fc8edd659d9d8",
     "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
     "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
     "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
     "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
     "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-    "scripts/fames_fleet.py": "d9f5fd5b6a15cf54cca77fcfbea7a8f1ffe1acfe294dd0e2f51061e2aae00c05"
+    "scripts/fames_fleet.py": "0aedeb900bfc8f02c028137ca7565203e15948dc6b185d4e17000369ce19ddd9"
   },
-  "package_sha": "024675b4ab30452c07df8694fb994e60d159f0262fca20425dbd525e73340481"
+  "package_sha": "7c707c4f0eccbb800f170f5aba213927eea61751db5ddf2408f180df521a5c77"
 }
