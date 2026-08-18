@@ -95,6 +95,12 @@ LOCAL_CAPABILITY_CASES = {
         "C-PLATFORM-NEUTRAL-POLICY",
         "C-PLATFORM-NEUTRAL-REJECTS-HOST-NAME",
     ),
+    "harness-contract-enforcement": (
+        "C-HARNESS-BASE",
+        "C-HARNESS-MISSING-SURFACE",
+        "C-HARNESS-NAME-POLICY",
+        "C-HARNESS-UNREGISTERED-PASS",
+    ),
 }
 TEXT_SUFFIXES = {
     ".json",
@@ -139,12 +145,14 @@ COMPLEXITY_FIELDS = (
 )
 # external_learning lane: an ingest record is outside material proposing a canon change.
 INGEST_FIELDS = (
-    "source_uri", "acquired_at", "acquisition_route", "quota_cost",
+    "source_uri", "source_kind", "source_channel", "scope", "acquired_at", "acquisition_route", "quota_cost",
     "content_identity", "trust_class_map", "claims", "verdict", "promoted",
 )
 INGEST_CLAIM_FIELDS = ("id", "claim", "trust_class", "verdict", "why")
 TRUST_CLASSES = {"measured", "modelled", "asserted"}
 INGEST_VERDICTS = {"adopt", "adapt", "reject", "already_covered", "UNKNOWN"}
+INGEST_SOURCE_KINDS = {"skill", "academic", "web", "line", "other"}
+INGEST_SOURCE_CHANNELS = {"skill_registry", "line_ingest", "background_web_ingest", "manual"}
 INGEST_FORBIDDEN_KEYS = (
     "token", "cookie", "credential", "api_key", "apikey", "password",
     "secret", "authorization", "session_id",
@@ -421,6 +429,21 @@ def validate_ingest(record: dict) -> dict:
         errors.append("acquired_at is not a parseable timestamp")
     if not str(record.get("source_uri") or "").strip():
         errors.append("source_uri is empty")
+    source_kind = record.get("source_kind")
+    if source_kind not in INGEST_SOURCE_KINDS:
+        errors.append("source_kind is not declared")
+    source_channel = record.get("source_channel")
+    if source_channel not in INGEST_SOURCE_CHANNELS:
+        errors.append("source_channel is not declared")
+    scope = record.get("scope")
+    if not isinstance(scope, dict):
+        errors.append("scope ledger is missing")
+    else:
+        for field in ("user_scope", "authority_scope", "in_scope"):
+            if field not in scope:
+                errors.append(f"scope.{field} is missing")
+        if scope.get("in_scope") is not True:
+            errors.append("ingest is outside the declared scope")
     if not str(record.get("acquisition_route") or "").strip():
         errors.append("acquisition_route is empty: route order is cost order and must be stated")
     quota = record.get("quota_cost")
@@ -475,6 +498,63 @@ def validate_ingest(record: dict) -> dict:
             if not str(claim.get("lands_in") or "").strip():
                 errors.append(f"claim {label}: adopted without naming the canon file it lands in")
 
+    if source_kind == "academic":
+        citation = record.get("academic_citation")
+        if not isinstance(citation, dict):
+            errors.append("academic source lacks academic_citation")
+            citation = {}
+        if not str(citation.get("style") or "").strip():
+            errors.append("academic citation style is missing")
+        in_text = citation.get("in_text")
+        references = citation.get("references")
+        if not isinstance(in_text, list) or not in_text:
+            errors.append("academic source lacks in-text citations")
+            in_text = []
+        if not isinstance(references, list) or not references:
+            errors.append("academic source lacks a reference list")
+            references = []
+        reference_ids: list[str] = []
+        for index, reference in enumerate(references):
+            here = f"academic_citation.references[{index}]"
+            if not isinstance(reference, dict):
+                errors.append(f"{here} is not an object")
+                continue
+            for field in ("citation_id", "authors", "year", "title", "container", "persistent_id"):
+                value = reference.get(field)
+                if value is None or value == "" or value == []:
+                    errors.append(f"{here}: {field} missing")
+            if isinstance(reference.get("citation_id"), str):
+                reference_ids.append(reference["citation_id"])
+        if len(reference_ids) != len(set(reference_ids)):
+            errors.append("academic reference-list citation ids are not unique")
+        claim_ids = {
+            str(claim.get("id"))
+            for claim in claims
+            if isinstance(claim, dict) and str(claim.get("id") or "").strip()
+        }
+        cited_claims: set[str] = set()
+        for index, item in enumerate(in_text):
+            here = f"academic_citation.in_text[{index}]"
+            if not isinstance(item, dict):
+                errors.append(f"{here} is not an object")
+                continue
+            citation_id = item.get("citation_id")
+            linked = item.get("claim_ids")
+            if citation_id not in reference_ids:
+                errors.append(f"{here}: citation_id does not resolve exactly once")
+            if not isinstance(linked, list) or not linked:
+                errors.append(f"{here}: claim_ids missing")
+            else:
+                unknown_claims = {str(value) for value in linked} - claim_ids
+                if unknown_claims:
+                    errors.append(f"{here}: unknown claim ids")
+                cited_claims.update(str(value) for value in linked)
+            if not str(item.get("locator") or "").strip():
+                errors.append(f"{here}: locator missing")
+        uncited = claim_ids - cited_claims
+        if uncited:
+            errors.append("academic claims lack in-text citations")
+
     if record.get("verdict") not in INGEST_VERDICTS:
         errors.append("record verdict is not a declared value")
     elif record.get("verdict") == "UNKNOWN":
@@ -500,6 +580,91 @@ def validate_ingest(record: dict) -> dict:
         "adopted": adopted,
         "promoted": record.get("promoted") is True,
         "errors": errors,
+    }
+
+
+def validate_harness(record: dict) -> dict:
+    """Validate decentralized harness execution against one provider-neutral contract."""
+    try:
+        protocol = _read_json(PACKAGE_ROOT / PROTOCOL_TARGETS["FAMES"])
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"ok": False, "state": "UNKNOWN", "errors": [f"harness policy unreadable: {exc}"]}
+    policy = ((protocol.get("architecture_standard") or {}).get("harness_contract") or {})
+    if not policy:
+        return {"ok": False, "state": "UNKNOWN", "errors": ["harness contract missing"]}
+    if not isinstance(record, dict):
+        return {"ok": False, "state": "UNKNOWN", "errors": ["record is not an object"]}
+
+    errors: list[str] = []
+    unknowns: list[str] = []
+    for field in ("registry_identity", "canonical_package_sha"):
+        if not isinstance(record.get(field), str) or not record[field].strip():
+            unknowns.append(f"harness {field} missing")
+    allowed = set(policy.get("selection_predicates") or ())
+    forbidden = set(policy.get("forbidden_predicates") or ())
+    predicates = record.get("selection_predicates")
+    if not isinstance(predicates, list) or not predicates:
+        unknowns.append("harness selection predicates missing")
+    else:
+        if any(predicate not in allowed for predicate in predicates):
+            errors.append("harness policy uses an undeclared selection predicate")
+        if set(predicates) & forbidden:
+            errors.append("harness policy selects by a forbidden product identity")
+
+    registered = record.get("registered_surface_ids")
+    if not isinstance(registered, list) or not registered:
+        unknowns.append("registered harness population missing")
+        registered = []
+    elif len(registered) != len(set(registered)):
+        errors.append("registered harness population contains duplicate identities")
+    receipts = record.get("surface_receipts")
+    if not isinstance(receipts, list) or not receipts:
+        unknowns.append("harness surface receipts missing")
+        receipts = []
+    receipt_ids: list[str] = []
+    canonical_sha = record.get("canonical_package_sha")
+    required_fields = tuple(policy.get("required_surface_receipt_fields") or ())
+    for index, receipt in enumerate(receipts):
+        here = f"surface_receipts[{index}]"
+        if not isinstance(receipt, dict):
+            unknowns.append(f"{here}: receipt is not an object")
+            continue
+        missing = [field for field in required_fields if receipt.get(field) in (None, "", [])]
+        if missing:
+            unknowns.append(f"{here}: missing {', '.join(missing)}")
+        surface_id = receipt.get("surface_id")
+        if isinstance(surface_id, str) and surface_id:
+            receipt_ids.append(surface_id)
+        if receipt.get("package_sha") != canonical_sha:
+            errors.append(f"{here}: package identity differs from canonical")
+        for field in ("load_receipt", "behavior_probe", "local_verification", "read_back"):
+            if receipt.get(field) is not True:
+                errors.append(f"{here}: {field} did not pass")
+    if registered and set(receipt_ids) != set(registered):
+        errors.append("harness receipts do not cover the exact registered population")
+    if len(receipt_ids) != len(set(receipt_ids)):
+        errors.append("harness surface receipts contain duplicate identities")
+
+    rename = record.get("rename_probe")
+    if not isinstance(rename, dict):
+        unknowns.append("harness rename probe missing")
+    else:
+        if rename.get("name_changed") is not True or rename.get("capability_identity_unchanged") is not True:
+            errors.append("harness rename probe does not isolate name from capability")
+        if rename.get("before_decision") != rename.get("after_decision"):
+            errors.append("harness rename changed the routing decision")
+    if record.get("promotion_writer_count") != 1:
+        errors.append("harness topology must retain exactly one canonical promotion writer")
+    if record.get("local_execution_decentralized") is not True:
+        errors.append("harness execution is not locally decentralized")
+    if record.get("unregistered_harness_state") != "UNKNOWN":
+        errors.append("unregistered harness was implicitly claimed compliant")
+    return {
+        "ok": not errors and not unknowns,
+        "state": "UNKNOWN" if unknowns else ("PASS" if not errors else "FAIL"),
+        "registered_surfaces": len(registered),
+        "receipts": len(receipt_ids),
+        "errors": errors + unknowns,
     }
 
 
@@ -900,6 +1065,24 @@ def _validate_cognitive_trace(trace: object, layer: dict, index: int) -> list[st
             candidates = stage.get("candidates")
             if not isinstance(candidates, list) or not candidates:
                 errors.append(f"{here}: Ne produced no alternatives")
+            sources = stage.get("discovery_sources")
+            allowed_sources = set(policy.get("allowed_source_kinds") or ())
+            if not isinstance(sources, list) or not sources:
+                errors.append(f"{here}: Ne discovery sources missing")
+            else:
+                for source_index, source in enumerate(sources):
+                    source_here = f"{here}.discovery_sources[{source_index}]"
+                    if not isinstance(source, dict):
+                        errors.append(f"{source_here}: source is not an object")
+                        continue
+                    if source.get("kind") not in allowed_sources:
+                        errors.append(f"{source_here}: source kind is outside the registered Ne scope")
+                    for field in ("source_ref", "content_identity"):
+                        if not isinstance(source.get(field), str) or not source[field].strip():
+                            errors.append(f"{source_here}: {field} missing")
+                    for field in ("scope_match", "freshness_checked", "authority_checked"):
+                        if source.get(field) is not True:
+                            errors.append(f"{source_here}: {field} is not measured true")
             window = policy.get("saturation_window", 3)
             if not isinstance(window, int) or isinstance(window, bool) or window < 1:
                 errors.append(f"{here}: Ne saturation policy is invalid")
@@ -923,6 +1106,38 @@ def _validate_cognitive_trace(trace: object, layer: dict, index: int) -> list[st
                 errors.append(f"{here}: Te has no measured external state change")
             if stage.get("verification_met") is not True:
                 errors.append(f"{here}: Te verification is not met")
+        elif operator == "Si":
+            for field in ("structure_identity", "version", "application_receipt"):
+                if not isinstance(stage.get(field), str) or not stage[field].strip():
+                    errors.append(f"{here}: Si {field} missing")
+            for field in ("caller_backed", "measured", "fresh"):
+                if stage.get(field) is not True:
+                    errors.append(f"{here}: Si {field} is not measured true")
+        elif operator == "Fe":
+            for field in ("actors", "commitments", "context_refs"):
+                value = stage.get(field)
+                if not isinstance(value, list) or not value:
+                    errors.append(f"{here}: Fe {field} missing")
+            if not isinstance(stage.get("authority_context"), dict) or not stage["authority_context"]:
+                errors.append(f"{here}: Fe authority context missing")
+            if stage.get("intent_inferred") is not False:
+                errors.append(f"{here}: Fe inferred intent from interaction context")
+        elif operator == "Fi":
+            assessments = stage.get("claim_assessments")
+            invariants = stage.get("commitment_invariants")
+            if not isinstance(assessments, list) or not assessments:
+                errors.append(f"{here}: Fi claim assessments missing")
+            if not isinstance(invariants, list) or not invariants:
+                errors.append(f"{here}: Fi commitment invariants missing")
+            if stage.get("intent_boundary_preserved") is not True:
+                errors.append(f"{here}: Fi intent boundary is not preserved")
+            deception = stage.get("deception_state")
+            if deception not in {"SUPPORTED", "UNKNOWN"}:
+                errors.append(f"{here}: Fi deception state is undeclared")
+            if deception == "SUPPORTED":
+                refs = stage.get("direct_intent_evidence_refs")
+                if stage.get("intent_evidence_class") != "measured" or not isinstance(refs, list) or not refs:
+                    errors.append(f"{here}: Fi deception verdict lacks direct measured intent evidence")
     return errors
 
 

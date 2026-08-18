@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-18.17
+FAMES-GEN: 2026-08-18.18
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -36,7 +36,8 @@ Perform the task itself between MTM routing and the SCF result comparison. Prese
 ### UT（統一理論）
 
 Within this project, **UT** is the canonical umbrella name for every reasoning and
-engineering mechanism that FAMES acquires from `ai_ut`, including Te, Ti, Ne, Ni,
+engineering mechanism that FAMES acquires from `ai_ut`, including Te, Ti, Ne, Ni, Si,
+Fe, Fi,
 and the meticulousness/efficiency mechanisms below. This is an internal unification
 name, not a claim of established scientific truth: each mechanism remains a
 hypothesis until its declared measurement passes. UT operates inside FAMES and does
@@ -46,14 +47,27 @@ claim-checking or influence functions to interaction integrity, but keep the fun
 `UNKNOWN` until its purpose, inputs, stop rule, evidence class, authority boundary,
 and validator are registered.
 
-For non-trivial completion, diagnosis, architecture, foresight, or resource-routing work, select the smallest pipeline from `cognitive_operator_layer` in the bundled FAMES protocol. Te, Ti, Ne, and Ni are task operators, not personality labels, user traits, or evidence:
+For non-trivial completion, diagnosis, architecture, foresight, resource-routing,
+known-structure application, or inter-agent integrity work, select the smallest pipeline
+from `cognitive_operator_layer` in the bundled FAMES protocol. These are task operators,
+not personality labels, user traits, or evidence:
 
 - **Ni** converges evidence into one falsifiable model and names the next discriminating test.
 - **Te** changes or measures external state and stops only when Verification is observably met. Understanding, discussion, and generated text alone are not completion.
-- **Ne** generates alternatives, counterexamples, and unobserved branches. Stop after three consecutive additions do not change the ranking.
+- **Ne** discovers alternatives from installed skills and fresh, identity-bound, in-scope ingest receipts produced by registered LINE intake or background web acquisition. Raw search snippets are pointers, not facts. Stop after three consecutive additions do not change the ranking.
 - **Ti** converts candidates into invariants, contracts, and a bounded counterexample search.
+- **Si** retrieves only versioned, measured, caller-backed known structures; familiarity or repetition alone is not evidence.
+- **Fe** bounds actors, commitments, authority, interaction context, and observable discrepancies without actuating another agent.
+- **Fi** compares claims and commitments with measured evidence. Fe/Fi may expose contradiction but cannot establish lying without direct measured evidence of knowledge and deliberate misrepresentation.
 
-Use the declared task pipelines rather than invoking every operator by habit. Record each stage's input, output, role, stop rule, and evidence. A prediction remains a hypothesis until Te installs a probe or guard and measured evidence resolves it. Validate a trace with `python scripts/fames_fleet.py validate-cognitive --input <trace.json> --json`; a missing operator, wrong route, unmet stop rule, or non-measured seal claim fails closed. This layer improves execution quality inside MTM/SCF and does not add a sixth FAMES phase.
+Use the declared task pipelines rather than invoking every operator by habit. For stable
+reuse, run `Si -> Ti -> Te`; Te read-back residuals return to a later FAMES run and Si
+never promotes memory by itself. Record each stage's input, output, role, stop rule, and
+evidence. A prediction remains a hypothesis until Te installs a probe or guard and
+measured evidence resolves it. Validate a trace with `python scripts/fames_fleet.py
+validate-cognitive --input <trace.json> --json`; a missing operator, wrong route, unmet
+stop rule, or non-measured seal claim fails closed. This layer improves execution quality
+inside MTM/SCF and does not add a sixth FAMES phase.
 
 ### UT meticulousness and efficiency
 
@@ -171,11 +185,18 @@ age; it never trusts a producer's stored `freshness_seconds` value.
 
 ## External learning — outside material that proposes a change
 
-When material from outside the fleet is used to justify a change to canon, tooling, or routing, run the `external_learning` lane in the bundled protocol: `ACQUIRE -> UNDERSTAND -> CLAIM -> TRIAL -> PROMOTE`. It is a lane feeding AEX, not a sixth phase; `execution_order` is unchanged.
+When material from outside the fleet is used to justify a change to canon, tooling, or routing, run the `external_learning` lane in the bundled protocol: `ACQUIRE -> UNDERSTAND -> CLAIM -> TRIAL -> PROMOTE`. It is a lane feeding AEX, not a sixth phase; `execution_order` is unchanged. Ne may discover only installed-skill records and fresh, in-scope ingest receipts from registered LINE intake or background web acquisition. It never treats an unacquired search result as content.
 
 Acquire by cost order — publisher-supplied text, then a local model whose input never leaves the machine, then a metered API — and treat a login wall, paywall, or bot check as a named blocker for the operator, never a puzzle. Classify every item as `measured` (a deterministic local instrument), `modelled` (ASR, OCR, summary), or `asserted` (the source's own words). **Only `measured` items are admissible as SEAL evidence.** A modelled or asserted item is a candidate that needs a measured verification of its own, whose Verification is written before the trial runs. `already_covered` is a first-class verdict and costs nothing.
 
-Record the ingest at `_registry/fames-evidence/ingest-<stamp>-<slug>.json` and validate it with `python scripts/fames_fleet.py validate-ingest --input <file> --json`. A record missing provenance, content identity, route, or a per-claim verdict is `UNKNOWN` and fails closed; `UNKNOWN` never promotes. Followers may publish an ingest record as a candidate improvement; only the authority promotes, after FP, SCF, and SEAL.
+For academic material, record both in-text citations attached to claim ids and a reference
+list. Each citation id must resolve exactly once to authors, year, title, container and a
+persistent identifier. Record the ingest at
+`_registry/fames-evidence/ingest-<stamp>-<slug>.json` and validate it with `python
+scripts/fames_fleet.py validate-ingest --input <file> --json`. A record missing provenance,
+content identity, scope, route, citation linkage, or a per-claim verdict is `UNKNOWN` and
+fails closed; `UNKNOWN` never promotes. Followers may publish an ingest record as a
+candidate improvement; only the authority promotes, after FP, SCF, and SEAL.
 
 ## Self-check — FAMES run against FAMES, at zero tokens
 
@@ -209,6 +230,15 @@ appear in adapter inventories, compatibility aliases, and dated evidence, but it
 weaken a validator. Discover adapters at run time; if none satisfies the capability request, return
 `HANDOFF / NO_CAPABLE_ADAPTER` with missing capabilities. Unknown availability is `UNKNOWN` and
 fails closed. Renaming an adapter without changing its declared measurements must not change routing.
+
+Execution is decentralized across registered harness surfaces, while canonical promotion
+retains one writer to prevent policy drift. Every registered surface must load the same
+content-addressed package, run the same validator, and leave a fresh load receipt plus a
+behaviour probe. Validate a coverage record with `python scripts/fames_fleet.py
+validate-harness --input <record.json> --json`. A registered but unloaded or mismatched
+surface, and every unregistered harness, is `UNKNOWN`; package presence alone is not a
+compliance claim. A harness rename with unchanged capabilities and evidence must not alter
+the decision.
 
 ## Authority, followers, and peer learning
 
