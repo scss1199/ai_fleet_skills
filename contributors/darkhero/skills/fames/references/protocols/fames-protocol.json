@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.15.0",
+  "version": "1.16.0",
   "updated": "2026-08-18",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -233,6 +233,18 @@
       "allowed_platform_names": ["adapter inventory", "host adapter implementation", "dated evidence ledger", "compatibility alias"],
       "forbidden_platform_names": ["canonical selection predicate", "completion prerequisite", "validator exception", "authority expansion"]
     },
+    "harness_contract": {
+      "purpose": "Make the same FAMES policy loadable and mechanically auditable from every registered AI harness without allowing a harness name to own policy.",
+      "execution_topology": "decentralized local execution and verification over one content-addressed contract; promotion remains single-writer so decentralization cannot become policy drift",
+      "registered_population_source": "_registry/agent-surfaces.json",
+      "required_surface_receipt_fields": ["surface_id", "discovery_path", "package_sha", "load_receipt", "behavior_probe", "local_verification", "read_back"],
+      "selection_predicates": ["capability", "availability", "authority", "safety", "evidence_freshness", "cost"],
+      "forbidden_predicates": ["harness_name", "product_name", "model_name", "vendor_name", "ide_name", "adapter_name", "skill_name"],
+      "rename_invariance": "Changing only a surface or harness label must not change eligibility, route, terminal state, validator identity, or authority.",
+      "coverage_rule": "A compliance claim covers exactly the surfaces registered and freshly read back. An unregistered, unloaded, stale, or unprobed harness is UNKNOWN, never implicitly compliant.",
+      "authority_rule": "A harness may execute and verify locally but may not rewrite canonical policy, weaken a validator, or add authority. Canonical promotion retains exactly one writer.",
+      "validator": "python scripts/fames_fleet.py validate-harness --input <record.json> --json"
+    },
     "retention_rule": "Every file and process requires a verified caller or contract role; otherwise merge or remove it.",
     "minimize_order": ["physical_files", "executable_code", "execution_steps", "steady_state_resources"]
   },
@@ -314,6 +326,9 @@
         "operators.Ti",
         "operators.Ne",
         "operators.Ni",
+        "operators.Si",
+        "operators.Fe",
+        "operators.Fi",
         "meticulousness_and_efficiency",
         "interaction_integrity",
         "delivery_integrity"
@@ -333,10 +348,12 @@
         "failure_mode": "claiming completion because the work is understood, discussed or written while external state is unchanged"
       },
       "Ne": {
-        "operation": "Generate alternative routes, counterexamples and unobserved failure branches that can change the current ranking.",
-        "strengthens": ["error discovery", "architecture option search", "risk anticipation", "route discovery"],
+        "operation": "Discover alternative routes from the installed skill registry and fresh, identity-bound, in-scope ingest records. Allowed ingest origins are registered LINE intake and registered background web acquisition; raw search snippets and out-of-scope material are not evidence.",
+        "strengthens": ["skill discovery", "ingest discovery", "error discovery", "architecture option search", "risk anticipation", "route discovery"],
         "required_stop_rule": "rank_saturation",
         "saturation_window": 3,
+        "allowed_source_kinds": ["skill_registry", "line_ingest", "background_web_ingest"],
+        "source_requirements": ["source_ref", "content_identity", "scope_match", "freshness_checked", "authority_checked"],
         "failure_mode": "unbounded ideation that consumes resources without changing a decision"
       },
       "Ti": {
@@ -344,6 +361,24 @@
         "strengthens": ["root-cause isolation", "interface design", "consistency checking", "constraint enforcement"],
         "required_stop_rule": "invariants_and_counterexamples",
         "failure_mode": "internally elegant analysis with no falsifiable contract or stopping budget"
+      },
+      "Si": {
+        "operation": "Retrieve a versioned, measured, caller-backed known structure and its previously passing application constraints; never turn familiarity, repetition, or memory alone into evidence.",
+        "strengthens": ["stable reuse", "known-structure recovery", "non-regression", "application continuity"],
+        "required_stop_rule": "known_structure_reproduced",
+        "failure_mode": "treating stale, unversioned, unverified, or merely familiar material as a reusable known"
+      },
+      "Fe": {
+        "operation": "Bound the inter-agent context: actors, commitments, authority, audience, repair attempts, and observable discrepancies. This is an audit-only context operator and does not actuate another agent.",
+        "strengthens": ["interaction context", "commitment comparison", "coordination integrity", "repair routing"],
+        "required_stop_rule": "interaction_context_bounded",
+        "failure_mode": "inferring intent from tone, social expectation, confidence, or disagreement"
+      },
+      "Fi": {
+        "operation": "Compare one actor's claims and declared commitments against measured evidence and explicit invariants. It may classify support or contradiction but cannot establish deception intent without direct measured knowledge-and-deliberation evidence.",
+        "strengthens": ["claim integrity", "commitment consistency", "evidence conflict detection", "intent-boundary preservation"],
+        "required_stop_rule": "claim_integrity_bounded",
+        "failure_mode": "calling an error, contradiction, omission, or value conflict a lie without direct measured intent evidence"
       }
     },
     "pipelines": {
@@ -374,6 +409,15 @@
         {"operator": "Ti", "role": "enforce_constraints"},
         {"operator": "Ni", "role": "rank_by_goal_value"},
         {"operator": "Te", "role": "apply_route_and_verify_cost"}
+      ],
+      "known_structure_application": [
+        {"operator": "Si", "role": "retrieve_verified_known_structure"},
+        {"operator": "Ti", "role": "restate_invariants_and_application_bounds"},
+        {"operator": "Te", "role": "apply_known_structure_and_read_back"}
+      ],
+      "agent_integrity": [
+        {"operator": "Fe", "role": "bound_interaction_context"},
+        {"operator": "Fi", "role": "assess_claim_and_commitment_integrity"}
       ]
     },
     "trace_contract": {
@@ -381,6 +425,8 @@
       "required_stage_fields": ["operator", "role", "input_ref", "output_ref", "stop"],
       "seal_admissible_evidence": ["measured"],
       "prediction_rule": "A forward branch is a hypothesis until Te installs a probe or guard and measured evidence resolves it.",
+      "stable_application_rule": "Si retrieves a known structure, Ti revalidates its invariants, and Te applies and reads it back. Te residuals return only to the next FAMES run; Si cannot silently promote new memory.",
+      "integrity_rule": "Fe and Fi may detect context or evidence contradictions, but a deception verdict still requires direct measured proof of knowledge and deliberate misrepresentation.",
       "validator": "python scripts/fames_fleet.py validate-cognitive --input <trace.json> --json",
       "unknown_rule": "An unknown task class, missing operator, wrong order, unmet stop condition or unreadable policy is UNKNOWN or FAIL and cannot seal."
     },
@@ -442,6 +488,7 @@
       "is_phase": false,
       "validator": "python scripts/fames_fleet.py validate-cognitive --input <trace.json> --json",
       "claim_integrity": {
+        "operator_roles": {"Fe": "bound interaction context and observable commitments", "Fi": "compare claims and commitments with measured evidence"},
         "evidence_statuses": ["matches", "conflicts", "insufficient"],
         "claim_states": ["SUPPORTED", "CONTRADICTED", "UNKNOWN"],
         "mapping": {
@@ -449,7 +496,7 @@
           "conflicts": "CONTRADICTED",
           "insufficient": "UNKNOWN"
         },
-        "deception_rule": "A contradiction is not proof of lying. Deception may be SUPPORTED only by direct measured evidence that the actor knew the claim was false and deliberately represented it as true; otherwise intent is UNKNOWN.",
+        "deception_rule": "Fe and Fi may jointly expose a contradiction, but contradiction is not proof of lying. Deception may be SUPPORTED only by direct measured evidence that the actor knew the claim was false and deliberately represented it as true; otherwise intent is UNKNOWN.",
         "evidence_reproduction_rule": "The validator checks record consistency, not the truth of an evidence URI. Every load-bearing evidence reference must be independently reproduced before SEAL.",
         "unknown_rule": "Missing, stale, indirect, modelled, or merely asserted evidence cannot establish deception."
       },
@@ -489,8 +536,8 @@
     "invariant": "Automation increases persistence, not authority.",
     "execution_boundary": "The lifecycle advances automatically only through registered event sources, deterministic engines, and writable controller channels. Without an actuator it may validate, classify, and emit a handoff, but must not claim that another actor was driven or repaired.",
     "stages": {
-      "SENSE": "Read fresh receipts, handoffs, residuals, heartbeats, and candidate material by identity rather than importing an entire conversation as truth.",
-      "ABSORB": "Extract the smallest structural claims; preserve provenance, IP/disclosure class, hypotheses, contradictions, and honest negative results. Proprietary raw material remains local.",
+      "SENSE": "Read fresh receipts, handoffs, residuals, heartbeats, installed-skill manifests, and identity-bound candidate material by identity rather than importing an entire conversation as truth.",
+      "ABSORB": "Let Ne discover only registered skills and fresh in-scope ingest records from registered LINE intake or background web acquisition. Extract the smallest structural claims; preserve provenance, academic citations when applicable, IP/disclosure class, hypotheses, contradictions, and honest negative results. Proprietary raw material remains local.",
       "TRIAGE": "Separate mechanical work, judgment, and authority decisions. Owner-only decisions become evidence-backed handoffs; safe non-conflicting branches continue when isolation is verified.",
       "DRIVE": "Use an available controller channel to issue structured repair requests and re-run a frozen validator within a bounded attempt budget. Without a controller, emit a handoff and remain UNKNOWN.",
       "REVIEW": "Review artifacts rather than builder narrative through the first available independent lane; reproduce evidence and retain negative results.",
@@ -522,6 +569,12 @@
     "lane_rule": "This is a lane that feeds AEX, not a sixth phase. execution_order is unchanged. A promoted candidate is an adaptation and is judged by AEX, SCF and SEAL like any other adaptation.",
     "activation_predicate": "material originating outside the fleet is used to justify a change to fleet canon, tooling or routing",
     "stages": ["ACQUIRE", "UNDERSTAND", "CLAIM", "TRIAL", "PROMOTE"],
+    "discovery_sources": {
+      "allowed": ["skill_registry", "line_ingest", "background_web_ingest"],
+      "scope_rule": "Ne may discover only records whose content identity, source reference, freshness, authority and user-scope match are explicit. A search result is a pointer to acquire, never a fact.",
+      "line_rule": "LINE material must already exist as a persisted, identified ingest receipt; unavailable chat history remains unavailable.",
+      "background_web_rule": "Background web material must come from a registered acquisition event and retain source URI, acquisition time and content identity; autonomous unbounded crawling is forbidden."
+    },
     "stage_contract": {
       "ACQUIRE": {
         "owns": ["retrieval of bits from a channel", "provenance", "content identity"],
@@ -538,7 +591,8 @@
       "CLAIM": {
         "owns": ["what the source asserts, attributed to the source"],
         "must_not_own": ["truth"],
-        "rule": "A source assertion is recorded as a claim with its trust class and its own wording bounded to the minimum needed to test it. Restating a claim never promotes it to fact."
+        "rule": "A source assertion is recorded as a claim with its trust class and its own wording bounded to the minimum needed to test it. Restating a claim never promotes it to fact.",
+        "academic_rule": "An academic source requires both in-text citations attached to claim ids and a reference list. Every in-text citation id must resolve to exactly one reference-list entry carrying authors, year, title, container and a persistent identifier; uncited academic claims are UNKNOWN."
       },
       "TRIAL": {
         "owns": ["a bounded local test of the claim against this fleet"],
@@ -560,8 +614,13 @@
     "admissibility_rule": "Only measured items may be cited as SEAL evidence. A modelled or asserted item enters as a candidate and requires a measured verification of its own before any phase may go PASS on it.",
     "record": {
       "path": "_registry/fames-evidence/ingest-<stamp>-<slug>.json",
-      "required_fields": ["source_uri", "acquired_at", "acquisition_route", "quota_cost", "content_identity", "trust_class_map", "claims", "verdict", "promoted"],
+      "required_fields": ["source_uri", "source_kind", "source_channel", "scope", "acquired_at", "acquisition_route", "quota_cost", "content_identity", "trust_class_map", "claims", "verdict", "promoted"],
+      "source_kinds": ["skill", "academic", "web", "line", "other"],
+      "source_channels": ["skill_registry", "line_ingest", "background_web_ingest", "manual"],
       "claim_fields": ["id", "claim", "trust_class", "verdict", "why"],
+      "academic_citation_fields": ["style", "in_text", "references"],
+      "in_text_fields": ["citation_id", "claim_ids", "locator"],
+      "reference_fields": ["citation_id", "authors", "year", "title", "container", "persistent_id"],
       "verdict_values": ["adopt", "adapt", "reject", "already_covered", "UNKNOWN"],
       "forbidden_material": ["raw credential", "token", "cookie", "session material", "reproduced copyrighted body"],
       "unknown_rule": "A record missing provenance, content identity, route or a per-claim verdict is UNKNOWN and fails closed; UNKNOWN never promotes."

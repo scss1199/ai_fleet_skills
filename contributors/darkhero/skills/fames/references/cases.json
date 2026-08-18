@@ -15,7 +15,7 @@
     "path_exists": "path (workspace-relative), expect present|absent",
     "file_size_max": "path, max_bytes, missing_ok -- measures size only, never reads content",
     "json_probe": "select (list of workspace-relative globs), pointer (slash path, * wildcard segment), expect all_equal|all_equal_ref|all_in, ref canonical_package_sha|canonical_version, values, missing_ok",
-    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|validate_autonomic|regression_guard|contributor_id, input_ref into fixtures, remove, patch, expect_ok, optional expect_state",
+    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|validate_harness|validate_autonomic|regression_guard|contributor_id, input_ref into fixtures, remove, patch, expect_ok, optional expect_state",
     "parity": "bundle and registry describe the same protocol generations",
     "newest_age_max": "select globs, max_age_h, missing_ok -- newest match must be younger than the ceiling",
     "forbidden_text": "paths, forbidden strings, and optional expect_clean -- canonical policy files must not contain platform identifiers"
@@ -70,6 +70,9 @@
     },
     "ingest_min": {
       "source_uri": "fixture://fames-cases/ingest-min",
+      "source_kind": "other",
+      "source_channel": "manual",
+      "scope": {"user_scope": "fames-case fixture", "authority_scope": "read-only validator", "in_scope": true},
       "acquired_at": "2026-08-15T00:00:00Z",
       "acquisition_route": "publisher-supplied text",
       "quota_cost": {"metered_calls": 0, "model_tokens_external": 0},
@@ -84,6 +87,40 @@
       }],
       "verdict": "already_covered",
       "promoted": false
+    },
+    "academic_ingest": {
+      "source_uri": "https://doi.org/10.0000/fames.fixture",
+      "source_kind": "academic",
+      "source_channel": "background_web_ingest",
+      "scope": {"user_scope": "academic routing fixture", "authority_scope": "read-only validator", "in_scope": true},
+      "acquired_at": "2026-08-18T00:00:00Z",
+      "acquisition_route": "registered background web ingest",
+      "quota_cost": {"metered_calls": 0, "model_tokens_external": 0},
+      "content_identity": {"sha256": "1111111111111111111111111111111111111111111111111111111111111111"},
+      "trust_class_map": {"body": "asserted", "doi": "measured"},
+      "claims": [{"id": "A1", "claim": "the fixture source asserts one testable method", "trust_class": "asserted", "verdict": "reject", "why": "citation structure is being tested; the claim is not promoted"}],
+      "academic_citation": {
+        "style": "author-date",
+        "in_text": [{"citation_id": "REF1", "claim_ids": ["A1"], "locator": "p. 1"}],
+        "references": [{"citation_id": "REF1", "authors": ["Example, A."], "year": 2026, "title": "A bounded fixture", "container": "Journal of Deterministic Tests", "persistent_id": "doi:10.0000/fames.fixture"}]
+      },
+      "verdict": "reject",
+      "promoted": false
+    },
+    "harness_suite": {
+      "registry_identity": "sha256:agent-surfaces-fixture",
+      "canonical_package_sha": "sha256:fames-package-fixture",
+      "selection_predicates": ["capability", "availability", "authority", "safety", "evidence_freshness", "cost"],
+      "registered_surface_ids": ["surface-a", "surface-b", "surface-c"],
+      "surface_receipts": [
+        {"surface_id": "surface-a", "discovery_path": "path:a", "package_sha": "sha256:fames-package-fixture", "load_receipt": true, "behavior_probe": true, "local_verification": true, "read_back": true},
+        {"surface_id": "surface-b", "discovery_path": "path:b", "package_sha": "sha256:fames-package-fixture", "load_receipt": true, "behavior_probe": true, "local_verification": true, "read_back": true},
+        {"surface_id": "surface-c", "discovery_path": "path:c", "package_sha": "sha256:fames-package-fixture", "load_receipt": true, "behavior_probe": true, "local_verification": true, "read_back": true}
+      ],
+      "rename_probe": {"name_changed": true, "capability_identity_unchanged": true, "before_decision": "eligible", "after_decision": "eligible"},
+      "promotion_writer_count": 1,
+      "local_execution_decentralized": true,
+      "unregistered_harness_state": "UNKNOWN"
     },
     "guard_base": {
       "canonical": {"version": "1.6.0", "package_sha": "canon-sha-fixture"},
@@ -107,7 +144,7 @@
           "task_class": "debugging",
           "evidence_class": "measured",
           "stages": [
-            {"operator": "Ne", "role": "generate_failure_hypotheses", "input_ref": "failure-observation", "output_ref": "ranked-hypotheses", "candidates": ["boundary", "state", "timing"], "stop": {"rule": "rank_saturation", "met": true, "evidence": "three additions left ranking unchanged", "stable_rank_additions": 3, "ranking_changed": false}},
+            {"operator": "Ne", "role": "generate_failure_hypotheses", "input_ref": "failure-observation", "output_ref": "ranked-hypotheses", "candidates": ["boundary", "state", "timing"], "discovery_sources": [{"kind": "skill_registry", "source_ref": "skill://debugging", "content_identity": "sha256:debugging-skill", "scope_match": true, "freshness_checked": true, "authority_checked": true}], "stop": {"rule": "rank_saturation", "met": true, "evidence": "three additions left ranking unchanged", "stable_rank_additions": 3, "ranking_changed": false}},
             {"operator": "Ti", "role": "isolate_invariant_violation", "input_ref": "ranked-hypotheses", "output_ref": "minimal-reproduction", "invariants": ["input contract", "state transition"], "counterexample_status": "found_and_resolved", "stop": {"rule": "invariants_and_counterexamples", "met": true, "evidence": "smallest failing contract isolated"}},
             {"operator": "Te", "role": "reproduce_fix_and_verify", "input_ref": "minimal-reproduction", "output_ref": "passing-reproduction", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "reproduction changed from fail to pass"}}
           ]
@@ -116,7 +153,7 @@
           "task_class": "architecture",
           "evidence_class": "measured",
           "stages": [
-            {"operator": "Ne", "role": "enumerate_viable_shapes", "input_ref": "requirements", "output_ref": "ranked-shapes", "candidates": ["modular-core", "event-boundary", "single-process"], "stop": {"rule": "rank_saturation", "met": true, "evidence": "three additions left ranking unchanged", "stable_rank_additions": 3, "ranking_changed": false}},
+            {"operator": "Ne", "role": "enumerate_viable_shapes", "input_ref": "requirements", "output_ref": "ranked-shapes", "candidates": ["modular-core", "event-boundary", "single-process"], "discovery_sources": [{"kind": "line_ingest", "source_ref": "ingest://line/architecture", "content_identity": "sha256:line-architecture", "scope_match": true, "freshness_checked": true, "authority_checked": true}], "stop": {"rule": "rank_saturation", "met": true, "evidence": "three additions left ranking unchanged", "stable_rank_additions": 3, "ranking_changed": false}},
             {"operator": "Ti", "role": "define_invariants_and_boundaries", "input_ref": "ranked-shapes", "output_ref": "architecture-contract", "invariants": ["single authority", "bounded interface"], "counterexample_status": "none_within_budget", "stop": {"rule": "invariants_and_counterexamples", "met": true, "evidence": "bounded counterexample search closed"}},
             {"operator": "Ni", "role": "select_coherent_system_model", "input_ref": "architecture-contract", "output_ref": "selected-model", "model": "one coherent component graph", "discriminating_test": "prototype the highest-risk boundary", "residual_bounded": true, "stop": {"rule": "model_and_discriminator", "met": true, "evidence": "model explains requirements and names probe"}},
             {"operator": "Te", "role": "prototype_and_measure", "input_ref": "selected-model", "output_ref": "prototype-result", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "boundary prototype passed"}}
@@ -127,7 +164,7 @@
           "evidence_class": "measured",
           "stages": [
             {"operator": "Ni", "role": "form_forward_model", "input_ref": "current-state", "output_ref": "forward-model", "model": "causal forward model", "discriminating_test": "observe leading indicator", "residual_bounded": true, "stop": {"rule": "model_and_discriminator", "met": true, "evidence": "model and indicator recorded"}},
-            {"operator": "Ne", "role": "branch_counterfactual_failures", "input_ref": "forward-model", "output_ref": "ranked-failure-branches", "candidates": ["capacity", "stale-state", "partial-commit"], "stop": {"rule": "rank_saturation", "met": true, "evidence": "three additions left ranking unchanged", "stable_rank_additions": 3, "ranking_changed": false}},
+            {"operator": "Ne", "role": "branch_counterfactual_failures", "input_ref": "forward-model", "output_ref": "ranked-failure-branches", "candidates": ["capacity", "stale-state", "partial-commit"], "discovery_sources": [{"kind": "background_web_ingest", "source_ref": "ingest://web/foresight", "content_identity": "sha256:web-foresight", "scope_match": true, "freshness_checked": true, "authority_checked": true}], "stop": {"rule": "rank_saturation", "met": true, "evidence": "three additions left ranking unchanged", "stable_rank_additions": 3, "ranking_changed": false}},
             {"operator": "Ti", "role": "reject_inconsistent_branches", "input_ref": "ranked-failure-branches", "output_ref": "viable-risks", "invariants": ["causal ordering", "authority boundary"], "counterexample_status": "none_within_budget", "stop": {"rule": "invariants_and_counterexamples", "met": true, "evidence": "inconsistent branches removed"}},
             {"operator": "Te", "role": "install_probe_or_guard", "input_ref": "viable-risks", "output_ref": "active-guard", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "guard fired on injected risk"}}
           ]
@@ -137,10 +174,27 @@
           "evidence_class": "measured",
           "stages": [
             {"operator": "Te", "role": "measure_budget_and_capacity", "input_ref": "available-resources", "output_ref": "measured-budget", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "budget receipt written"}},
-            {"operator": "Ne", "role": "enumerate_routes", "input_ref": "measured-budget", "output_ref": "ranked-routes", "candidates": ["reuse", "local-engine", "bounded-model"], "stop": {"rule": "rank_saturation", "met": true, "evidence": "three additions left ranking unchanged", "stable_rank_additions": 3, "ranking_changed": false}},
+            {"operator": "Ne", "role": "enumerate_routes", "input_ref": "measured-budget", "output_ref": "ranked-routes", "candidates": ["reuse", "local-engine", "bounded-model"], "discovery_sources": [{"kind": "skill_registry", "source_ref": "skill://resource-routing", "content_identity": "sha256:resource-routing", "scope_match": true, "freshness_checked": true, "authority_checked": true}], "stop": {"rule": "rank_saturation", "met": true, "evidence": "three additions left ranking unchanged", "stable_rank_additions": 3, "ranking_changed": false}},
             {"operator": "Ti", "role": "enforce_constraints", "input_ref": "ranked-routes", "output_ref": "feasible-routes", "invariants": ["authority", "budget ceiling"], "counterexample_status": "none_within_budget", "stop": {"rule": "invariants_and_counterexamples", "met": true, "evidence": "infeasible routes rejected"}},
             {"operator": "Ni", "role": "rank_by_goal_value", "input_ref": "feasible-routes", "output_ref": "selected-route", "model": "highest expected goal value per cost", "discriminating_test": "run cheapest decisive probe", "residual_bounded": true, "stop": {"rule": "model_and_discriminator", "met": true, "evidence": "route and probe recorded"}},
             {"operator": "Te", "role": "apply_route_and_verify_cost", "input_ref": "selected-route", "output_ref": "costed-result", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "result and cost read back"}}
+          ]
+        },
+        {
+          "task_class": "known_structure_application",
+          "evidence_class": "measured",
+          "stages": [
+            {"operator": "Si", "role": "retrieve_verified_known_structure", "input_ref": "known-structure-index", "output_ref": "versioned-structure", "structure_identity": "engine:known-v1", "version": "1.0.0", "application_receipt": "receipt://known-v1/pass", "caller_backed": true, "measured": true, "fresh": true, "stop": {"rule": "known_structure_reproduced", "met": true, "evidence": "same caller reproduced the known structure"}},
+            {"operator": "Ti", "role": "restate_invariants_and_application_bounds", "input_ref": "versioned-structure", "output_ref": "bounded-application-contract", "invariants": ["same input schema", "same authority boundary"], "counterexample_status": "none_within_budget", "stop": {"rule": "invariants_and_counterexamples", "met": true, "evidence": "bounded counterexample search closed"}},
+            {"operator": "Te", "role": "apply_known_structure_and_read_back", "input_ref": "bounded-application-contract", "output_ref": "known-structure-result", "external_state_changed": true, "verification_met": true, "stop": {"rule": "measured_state_match", "met": true, "evidence": "known application read back"}}
+          ]
+        },
+        {
+          "task_class": "agent_integrity",
+          "evidence_class": "measured",
+          "stages": [
+            {"operator": "Fe", "role": "bound_interaction_context", "input_ref": "agent-message-ledger", "output_ref": "bounded-interaction-context", "actors": ["builder", "reviewer"], "commitments": ["claimed validator pass", "promised package identity"], "context_refs": ["receipt://message/1", "receipt://validator/fail"], "authority_context": {"builder": ["write:artifact"], "reviewer": ["read:artifact"]}, "intent_inferred": false, "stop": {"rule": "interaction_context_bounded", "met": true, "evidence": "actors, commitments and authority recorded"}},
+            {"operator": "Fi", "role": "assess_claim_and_commitment_integrity", "input_ref": "bounded-interaction-context", "output_ref": "claim-integrity-result", "claim_assessments": [{"claim_id": "AG1", "state": "CONTRADICTED", "evidence_ref": "receipt://validator/fail"}], "commitment_invariants": ["same artifact identity", "same validator identity"], "intent_boundary_preserved": true, "deception_state": "UNKNOWN", "stop": {"rule": "claim_integrity_bounded", "met": true, "evidence": "contradiction recorded without inferring intent"}}
           ]
         }
       ]
@@ -376,6 +430,10 @@
       "expect_ok": false,
       "why": "an asserted resource estimate cannot seal as a measured allocation result"
     },
+    {"id": "C-COGNITIVE-NE-SCOPE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "cognitive_suite", "patch": {"/traces/2/stages/0/discovery_sources/0/kind": "raw_search_result"}, "expect_ok": false, "expect_state": "FAIL", "why": "Ne may discover only registered skills or identity-bound LINE/background-web ingest receipts"},
+    {"id": "C-COGNITIVE-SI-REPRODUCTION", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "cognitive_suite", "patch": {"/traces/5/stages/0/caller_backed": false}, "expect_ok": false, "expect_state": "FAIL", "why": "Si cannot call a familiar structure known unless the verified caller still reproduces it"},
+    {"id": "C-COGNITIVE-FE-CONTEXT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "cognitive_suite", "patch": {"/traces/6/stages/0/intent_inferred": true}, "expect_ok": false, "expect_state": "FAIL", "why": "Fe bounds observable interaction context and cannot infer private intent"},
+    {"id": "C-COGNITIVE-FI-INTENT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "cognitive_suite", "patch": {"/traces/6/stages/1/deception_state": "SUPPORTED"}, "expect_ok": false, "expect_state": "FAIL", "why": "Fi contradiction without direct measured intent evidence cannot support a lying verdict"},
     {"id": "C-METICULOUS-BASE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "expect_ok": true, "why": "all UT-derived engineering hypotheses accept their measured safe, warning, productive-loop, bounded-mutation and evidence-layer golden cases"},
     {"id": "C-MARGIN-NO-UNIT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "remove": ["/meticulousness/0/unit"], "expect_ok": false, "expect_state": "UNKNOWN", "why": "a margin without a defined unit is UNKNOWN rather than an invented number"},
     {"id": "C-MARGIN-NEAR-BOUNDARY", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "meticulousness_suite", "patch": {"/meticulousness/1/status": "safe"}, "expect_ok": false, "expect_state": "FAIL", "why": "current PASS cannot hide a measured margin already near its boundary"},
@@ -608,6 +666,15 @@
      "patch": {"/promoted": true, "/promotion": {"actor": "ai_scar3", "authority": "ai_darkhero", "phases": {}}},
      "expect_ok": false,
      "why": "only the authority promotes; this is the rule that keeps learning bidirectional without multi-writer drift"},
+    {"id": "C-INGEST-ACADEMIC-BASE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_ingest", "input_ref": "academic_ingest", "expect_ok": true, "expect_state": "PASS", "why": "academic ingest requires linked in-text citations and a complete reference list"},
+    {"id": "C-INGEST-ACADEMIC-IN-TEXT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_ingest", "input_ref": "academic_ingest", "remove": ["/academic_citation/in_text"], "expect_ok": false, "expect_state": "FAIL", "why": "a reference list without in-text claim linkage is not an academic citation contract"},
+    {"id": "C-INGEST-ACADEMIC-REFERENCE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_ingest", "input_ref": "academic_ingest", "remove": ["/academic_citation/references/0/persistent_id"], "expect_ok": false, "expect_state": "FAIL", "why": "an academic reference must carry a stable identifier that can be resolved and reproduced"},
+    {"id": "C-INGEST-OUT-OF-SCOPE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_ingest", "input_ref": "academic_ingest", "patch": {"/scope/in_scope": false}, "expect_ok": false, "expect_state": "FAIL", "why": "Ne may not absorb an ingest outside the frozen user and authority scope"},
+
+    {"id": "C-HARNESS-BASE", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_harness", "input_ref": "harness_suite", "expect_ok": true, "expect_state": "PASS", "why": "all registered surfaces independently load, probe and read back the same content-addressed FAMES contract"},
+    {"id": "C-HARNESS-MISSING-SURFACE", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_harness", "input_ref": "harness_suite", "remove": ["/surface_receipts/2"], "expect_ok": false, "expect_state": "FAIL", "why": "a compliance claim cannot hide a registered harness with no fresh receipt"},
+    {"id": "C-HARNESS-NAME-POLICY", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_harness", "input_ref": "harness_suite", "patch": {"/selection_predicates/0": "harness_name"}, "expect_ok": false, "expect_state": "FAIL", "why": "canonical routing cannot select by a product or harness label"},
+    {"id": "C-HARNESS-UNREGISTERED-PASS", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_harness", "input_ref": "harness_suite", "patch": {"/unregistered_harness_state": "PASS"}, "expect_ok": false, "expect_state": "FAIL", "why": "an unregistered or unprobed AI tool remains UNKNOWN rather than inheriting compliance by association"},
 
     {"id": "C-GUARD-EQUAL", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
      "validator": "regression_guard", "input_ref": "guard_base", "expect_ok": true,

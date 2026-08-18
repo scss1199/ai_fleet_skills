@@ -3087,6 +3087,9 @@ def _evaluate_case(
         elif validator == "validate_cognitive":
             outcome = validate_cognitive(record)
             ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
+        elif validator == "validate_harness":
+            outcome = validate_harness(record)
+            ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
         elif validator == "validate_autonomic":
             outcome = validate_autonomic(record)
             ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
@@ -3284,13 +3287,13 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-autonomic", "validate-capability-sync", "attest-capabilities", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-harness", "validate-autonomic", "validate-capability-sync", "attest-capabilities", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
         if name in {"verify-package", "parity", "status", "run-cases", "self-check"}:
             command.add_argument("--skill-dir", type=Path, default=PACKAGE_ROOT)
-        if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-autonomic", "validate-capability-sync"}:
+        if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-harness", "validate-autonomic", "validate-capability-sync"}:
             command.add_argument("--input", type=Path, required=True)
         if name == "run-cases":
             command.add_argument("--only", nargs="+")
@@ -3359,6 +3362,13 @@ def main() -> int:
             payload = {"ok": False, "state": "UNKNOWN", "errors": [f"cognitive input unreadable: {exc}"]}
             return _emit(payload, args.json)
         return _emit(validate_cognitive(payload), args.json)
+    if args.command == "validate-harness":
+        try:
+            payload = _read_json(args.input)
+        except (OSError, json.JSONDecodeError) as exc:
+            payload = {"ok": False, "state": "UNKNOWN", "errors": [f"harness input unreadable: {exc}"]}
+            return _emit(payload, args.json)
+        return _emit(validate_harness(payload), args.json)
     if args.command == "validate-autonomic":
         try:
             payload = _read_json(args.input)
