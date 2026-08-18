@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-18T15:32:55Z",
-  "manifest_sha": "463cfcde81028832",
+  "generated_at": "2026-08-18T15:34:50Z",
+  "manifest_sha": "b633cc61614118b8",
   "required": [
     "fames",
     "independent-review",
@@ -126,13 +126,13 @@
     },
     {
       "name": "fames",
-      "sha": "9fa266edab57dbae",
+      "sha": "2ce2ce10c66ebb41",
       "required": true,
       "lane": null,
-      "package_sha": "7c707c4f0eccbb800f170f5aba213927eea61751db5ddf2408f180df521a5c77",
+      "package_sha": "c2ec1af503ab97fa8ba94b5823746dfbebd2451a48b37e787dbe3bc151c7b117",
       "files": {
-        "SKILL.md": "553846fb3e965dc5f48ad6a7d6effc2a211d462154901193ebacce72a255d954",
-        "bundle-manifest.json": "2c589d53d340ae3cfcdaa19b2564b4e1424b15405312e81b588f2ce8edc038a4",
+        "SKILL.md": "7b0542aa4747a0ba386c1fc8142de8a2622b5566ac1abedd8be898a62be38927",
+        "bundle-manifest.json": "aa2edbc0556c554305d004c36051cfc01ba4e8bb4865c6838698bb6b6dc3aa3b",
         "references/cases.json": "3b97fe879a38f4ef4005fc9c2aa8ff160be78a9228ff04b763f1e74feadaa331",
         "references/hardware-compute.json": "3f043a9401f8558bab8730c846bbbc6301d9728b980361d4cce12695abbe24fc",
         "references/production-web-delivery.json": "0f8edd3a24f856a4cc1a76ecd4490185bad414735c2bc1787104d619d0f0a251",
@@ -142,7 +142,7 @@
         "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
         "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
         "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-        "scripts/fames_fleet.py": "0aedeb900bfc8f02c028137ca7565203e15948dc6b185d4e17000369ce19ddd9"
+        "scripts/fames_fleet.py": "476fb03cf120caedcafc63013e3d1f17fcd159e57495eead85c30bf77aca55ad"
       }
     },
     {

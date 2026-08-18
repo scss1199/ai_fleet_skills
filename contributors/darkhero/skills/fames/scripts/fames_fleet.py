@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import urllib.request
+import urllib.parse
 import uuid
 from datetime import datetime, timezone
 
@@ -2557,6 +2558,41 @@ def _source_bytes(base: str, relative: str) -> bytes:
     return (Path(base) / Path(relative)).read_bytes()
 
 
+def _resolve_authority_base(authority: str) -> tuple[str, str | None]:
+    """Pin a GitHub raw branch URL to the repository's measured commit SHA."""
+    if not authority.startswith(("https://", "http://")):
+        return authority, None
+    parsed = urllib.parse.urlsplit(authority)
+    if parsed.netloc.lower() != "raw.githubusercontent.com":
+        return authority, None
+    parts = [urllib.parse.unquote(part) for part in parsed.path.split("/") if part]
+    if len(parts) < 4:
+        raise ValueError("GitHub raw authority path is incomplete")
+    owner, repo, ref, *tail = parts
+    if len(ref) == 40 and all(ch in "0123456789abcdefABCDEF" for ch in ref):
+        return authority, ref.lower()
+    api = f"https://api.github.com/repos/{urllib.parse.quote(owner)}/{urllib.parse.quote(repo)}/commits/{urllib.parse.quote(ref)}"
+    request = urllib.request.Request(
+        api,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+            "User-Agent": "FAMES-content-addressed-follower",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
+        payload = json.loads(response.read().decode("utf-8-sig"))
+    commit = str(payload.get("sha") or "")
+    if len(commit) != 40 or any(ch not in "0123456789abcdefABCDEF" for ch in commit):
+        raise ValueError("GitHub authority did not return a commit SHA")
+    suffix = "/".join(urllib.parse.quote(part) for part in tail)
+    base = f"https://raw.githubusercontent.com/{urllib.parse.quote(owner)}/{urllib.parse.quote(repo)}/{commit}"
+    if suffix:
+        base = f"{base}/{suffix}"
+    return base, commit.lower()
+
+
 def follow(
     workspace: Path,
     host: str,
@@ -2565,7 +2601,8 @@ def follow(
 ) -> dict:
     """Converge one follower to the authority's content-addressed FAMES generation."""
     try:
-        manifest = json.loads(_source_bytes(authority, "manifest.json").decode("utf-8-sig"))
+        resolved_authority, authority_commit = _resolve_authority_base(authority)
+        manifest = json.loads(_source_bytes(resolved_authority, "manifest.json").decode("utf-8-sig"))
         skill = next(row for row in manifest.get("skills", []) if row.get("name") == "fames")
         declared = skill.get("files") or {}
         if not declared:
@@ -2611,7 +2648,7 @@ def follow(
                     raise ValueError(f"unsafe package path: {relative}")
                 target = package.joinpath(*parts)
                 target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(_source_bytes(authority, f"skills/fames/{relative}"))
+                target.write_bytes(_source_bytes(resolved_authority, f"skills/fames/{relative}"))
                 if _sha256(target) != expected:
                     raise ValueError(f"authority hash mismatch: {relative}")
             package_check = verify_package(package)
@@ -2636,6 +2673,7 @@ def follow(
                     "errors": regressions,
                 }
             result = install(workspace, host, package)
+            result["authority_commit"] = authority_commit
         if not result.get("ok"):
             return result
         receipt = result["receipt"]

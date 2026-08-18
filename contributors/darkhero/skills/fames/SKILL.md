@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-18.20
+FAMES-GEN: 2026-08-18.21
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -295,6 +295,11 @@ the decision.
 `ai_darkhero` publishes the canonical generation. `ai_scar3` and `ai_altos` follow it with one idempotent transition: `fames_fleet.py follow --workspace <root> --host <seat>`. The command downloads the authority manifest, verifies every file and the package identity, atomically activates the package, and writes a local receipt. An online bootstrapped follower converges in one invocation; an offline or unbootstrapped machine remains `UNKNOWN` until its first successful invocation. `follow` is the primitive; `converge` below is what a machine actually schedules.
 
 Followers may publish evidence and candidate improvements, but only the authority promotes a new canonical generation after FP, SCF, and SEAL. This keeps learning bidirectional without multi-writer drift.
+
+For a GitHub raw branch authority, `follow` first resolves the branch through the
+repository API and pins every manifest and package-file fetch to that measured commit
+SHA. A mutable branch URL or a stale CDN object is never accepted as the package
+identity; any hash mismatch remains `UNKNOWN` and fails closed.
 
 ## Zero-token natural convergence — the runner is part of the package
 
