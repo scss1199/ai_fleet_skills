@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "15fffbabab50d376991ad76c11eba304d8ecb8d0b53f98465eac9d49472c7bbd",
-  "capability_set_sha": "e3c162d5ced3b7a57b9e476cf3f874ee0d188cf74fc0f9cb0fb136fc90bd5708",
-  "validator_set_sha": "4d3b52afdf465fb44d9e08b7a326b80bde8c0bfee4e59a07c32829dda79c9a66",
+  "package_sha": "024675b4ab30452c07df8694fb994e60d159f0262fca20425dbd525e73340481",
+  "capability_set_sha": "8f687b0b010337ed0290d5bac6d81881eb9084fc5788d7f7c9f5645e19d5f314",
+  "validator_set_sha": "7f8905142645012de9101776579b412d31b8c2faccd1be790163fd3f67b8a7b2",
   "runner_state": "armed",
-  "observed_at": "2026-08-18T02:31:01.547478+00:00",
+  "observed_at": "2026-08-18T03:10:23.553024+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -42,6 +42,16 @@
       "capability_id": "platform-neutral-execution",
       "contract_version": "1",
       "validator_identity": "fames-cases:platform-neutral-execution:v1",
+      "required_hosts": [
+        "darkhero",
+        "scar3",
+        "altos"
+      ]
+    },
+    {
+      "capability_id": "harness-contract-enforcement",
+      "contract_version": "1",
+      "validator_identity": "fames-cases:harness-contract-enforcement:v1",
       "required_hosts": [
         "darkhero",
         "scar3",
@@ -111,6 +121,20 @@
       "evidence_refs": [
         "case://C-PLATFORM-NEUTRAL-POLICY",
         "case://C-PLATFORM-NEUTRAL-REJECTS-HOST-NAME"
+      ]
+    },
+    {
+      "capability_id": "harness-contract-enforcement",
+      "state": "PASS",
+      "validator_exit": 0,
+      "positive_control": true,
+      "negative_control_rejected": true,
+      "caller_backed": true,
+      "evidence_refs": [
+        "case://C-HARNESS-BASE",
+        "case://C-HARNESS-MISSING-SURFACE",
+        "case://C-HARNESS-NAME-POLICY",
+        "case://C-HARNESS-UNREGISTERED-PASS"
       ]
     }
   ],
