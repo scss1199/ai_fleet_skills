@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "id": "FAMES-HARDWARE-COMPUTE",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "policy_owner": "FAMES",
   "adapter_boundary": "Host adapters measure topology and apply affinity, priority, power throttling, and worker limits. They never choose authority, urgency, service class, or terminal state.",
   "topology": {
@@ -55,6 +55,18 @@
     "pressure_rule": "Sustained pressure downshifts deferrable/background work by at least one service class; urgent or critical work still preserves the ordinary reserve.",
     "exclusive_rule": "Using reserved logical CPUs requires hardware.compute.exclusive authority, explicit operator impact acknowledgement, a maximum duration of 900 seconds, restore-on-exit, and exact read-back.",
     "hysteresis": "Adapters must use sustained measurements and hysteresis; one instantaneous sample may not oscillate a task between classes."
+  },
+  "localization": {
+    "profile_path": "_registry/fames-local-compute.json",
+    "scope": "One measured host. Local P/E numbers, project budgets, resident-process rules, and rider concurrency are host policy and are never portable constants.",
+    "required_sections": ["hardware", "evidence", "lifecycle_classes", "global_caps", "project_profiles", "process_rules", "rules"],
+    "lifecycle_classes": ["resident_control", "resident_service", "scheduled_ephemeral", "on_demand_batch", "on_demand_interactive", "safety_recovery"],
+    "project_coverage_rule": "Every top-level project with an AGENTS.md Outcome must have an explicit local profile, even when its observed resident allocation is zero.",
+    "resident_rule": "Registered, enabled, frequent, or important does not mean resident. Only a daemon or service expected to outlive multiple dispatch cadences is resident.",
+    "rider_rule": "Every HubClock rider invocation is scheduled_ephemeral. A rider may ensure a separate resident service, but the invocation itself remains ephemeral.",
+    "controller_rule": "HubClock and tray control processes use the resident_control baseline; descendants are classified independently.",
+    "enforcement": ["host adapter exact process rules", "HubClock concurrency read-back", "process affinity and priority read-back", "zero visible windows and zero focus steals"],
+    "unknown_rule": "Missing project coverage, stale topology, an unmeasured resident claim, or an invalid local budget is UNKNOWN and cannot be promoted as a FAMES-localized profile."
   },
   "background_execution": {
     "scope": "Every scheduled task, rider, daemon, watchdog, updater, and every descendant process.",

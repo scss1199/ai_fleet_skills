@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "updated": "2026-08-18",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
