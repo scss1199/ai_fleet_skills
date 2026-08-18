@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "024675b4ab30452c07df8694fb994e60d159f0262fca20425dbd525e73340481",
-  "capability_set_sha": "8f687b0b010337ed0290d5bac6d81881eb9084fc5788d7f7c9f5645e19d5f314",
-  "validator_set_sha": "7f8905142645012de9101776579b412d31b8c2faccd1be790163fd3f67b8a7b2",
+  "package_sha": "c2ec1af503ab97fa8ba94b5823746dfbebd2451a48b37e787dbe3bc151c7b117",
+  "capability_set_sha": "dfdb8bc82d5e3c043eb7def1a43faa1d1bd3c6bde061ffa40463c61eec14ccfb",
+  "validator_set_sha": "f84d3b3a2a973e2a867b1695c5c71a96c5cdf0c2c76f3fac9027750afced0c5a",
   "runner_state": "armed",
-  "observed_at": "2026-08-18T15:00:01.452300+00:00",
+  "observed_at": "2026-08-18T15:34:54.146911+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -52,6 +52,26 @@
       "capability_id": "harness-contract-enforcement",
       "contract_version": "1",
       "validator_identity": "fames-cases:harness-contract-enforcement:v1",
+      "required_hosts": [
+        "darkhero",
+        "scar3",
+        "altos"
+      ]
+    },
+    {
+      "capability_id": "background-execution-enforcement",
+      "contract_version": "1",
+      "validator_identity": "fames-cases:background-execution-enforcement:v1",
+      "required_hosts": [
+        "darkhero",
+        "scar3",
+        "altos"
+      ]
+    },
+    {
+      "capability_id": "hardware-compute-scheduling",
+      "contract_version": "1",
+      "validator_identity": "fames-cases:hardware-compute-scheduling:v1",
       "required_hosts": [
         "darkhero",
         "scar3",
@@ -135,6 +155,39 @@
         "case://C-HARNESS-MISSING-SURFACE",
         "case://C-HARNESS-NAME-POLICY",
         "case://C-HARNESS-UNREGISTERED-PASS"
+      ]
+    },
+    {
+      "capability_id": "background-execution-enforcement",
+      "state": "PASS",
+      "validator_exit": 0,
+      "positive_control": true,
+      "negative_control_rejected": true,
+      "caller_backed": true,
+      "evidence_refs": [
+        "case://C-BACKGROUND-BASE",
+        "case://C-BACKGROUND-CHILD-FLAGS",
+        "case://C-BACKGROUND-DETACHED-ONLY",
+        "case://C-BACKGROUND-PROMPT",
+        "case://C-BACKGROUND-READBACK"
+      ]
+    },
+    {
+      "capability_id": "hardware-compute-scheduling",
+      "state": "PASS",
+      "validator_exit": 0,
+      "positive_control": true,
+      "negative_control_rejected": true,
+      "caller_backed": true,
+      "evidence_refs": [
+        "case://C-COMPUTE-BASE",
+        "case://C-COMPUTE-BACKGROUND-P-CORE",
+        "case://C-COMPUTE-URGENCY-EVIDENCE",
+        "case://C-COMPUTE-AUTHORITY",
+        "case://C-COMPUTE-OVER-CAP",
+        "case://C-COMPUTE-WORKERS",
+        "case://C-COMPUTE-EXCLUSIVE-AUTH",
+        "case://C-COMPUTE-READBACK"
       ]
     }
   ],
