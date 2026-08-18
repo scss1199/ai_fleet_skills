@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-18T15:37:52Z",
-  "manifest_sha": "cfb8ec1cb6003c55",
+  "generated_at": "2026-08-18T16:03:11Z",
+  "manifest_sha": "000837115c704c69",
   "required": [
     "fames",
     "independent-review",
@@ -23,7 +23,7 @@
     "ztm-fleet-intelligence",
     "token-preflight"
   ],
-  "skill_count": 43,
+  "skill_count": 42,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -122,27 +122,6 @@
         "scripts/selftest_fames_ship_gate.py": "4a0f106e00e791ad33e589426f42fd657ef308c0d3a6ff343253122b640e3804",
         "scripts/selftest_quick_validate.py": "41d345f312b0737b9df9e45fb0acb4eb4233c28c460214cd3810e349cfebd503",
         "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37"
-      }
-    },
-    {
-      "name": "fames",
-      "sha": "aab9a81ba8887d8a",
-      "required": true,
-      "lane": null,
-      "package_sha": "448307c34bfa002b8f85eb097cb3a6924d6cbc5fa8053392d9308268547aa9d3",
-      "files": {
-        "SKILL.md": "83237aac61bd3c8e7bafc74be3f8fdf5ae4eacf23e0d5e7c1a49d342fbbe4631",
-        "bundle-manifest.json": "8b7e47735e8ae5f7c1d432893c38169559a48db44558aca6fa0bb2c825ae743f",
-        "references/cases.json": "3b97fe879a38f4ef4005fc9c2aa8ff160be78a9228ff04b763f1e74feadaa331",
-        "references/hardware-compute.json": "4ce1ad696660df1ece5248e0ab3864fa430bc2e5870f6365c8f9fc5d5f6677a3",
-        "references/production-web-delivery.json": "0f8edd3a24f856a4cc1a76ecd4490185bad414735c2bc1787104d619d0f0a251",
-        "references/protocols/fames-protocol.json": "57224bfdf1e484ac5f0a55fc65fd41bfe7edc89a2bcc512ba61fc8edd659d9d8",
-        "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
-        "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
-        "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
-        "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
-        "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-        "scripts/fames_fleet.py": "ddc01320fb28e8cd9a70ef448cf071c7eae28ba09898ca848391f3dda3e39b15"
       }
     },
     {

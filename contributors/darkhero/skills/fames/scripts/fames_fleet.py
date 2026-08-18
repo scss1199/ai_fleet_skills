@@ -1024,6 +1024,163 @@ def validate_compute(record: dict) -> dict:
     }
 
 
+def _parse_xy_budget(value: object) -> tuple[int, int] | None:
+    text = str(value or "").strip().upper()
+    if "P+" not in text or not text.endswith("E"):
+        return None
+    p_text, e_text = text[:-1].split("P+", 1)
+    try:
+        p_value, e_value = int(p_text), int(e_text)
+    except ValueError:
+        return None
+    if p_value < 0 or e_value < 0:
+        return None
+    return p_value, e_value
+
+
+def validate_local_compute(profile: dict, workspace: Path | None = None) -> dict:
+    """Validate one host's measured project/lifecycle P/E localization."""
+    if not isinstance(profile, dict):
+        return {"ok": False, "state": "UNKNOWN", "errors": ["local compute profile is not an object"]}
+    errors: list[str] = []
+    unknowns: list[str] = []
+    for section in (
+        "hardware", "evidence", "lifecycle_classes", "global_caps",
+        "expected_projects", "project_profiles", "process_rules", "rules",
+    ):
+        if section not in profile:
+            errors.append(f"local compute profile missing {section}")
+
+    hardware = profile.get("hardware") if isinstance(profile.get("hardware"), dict) else {}
+    numeric_fields = (
+        "logical_p", "logical_e", "ordinary_reserve_p", "ordinary_reserve_e",
+        "ordinary_cap_p", "ordinary_cap_e",
+    )
+    for field in numeric_fields:
+        value = hardware.get(field)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            errors.append(f"hardware {field} is invalid")
+    logical_p = hardware.get("logical_p") if isinstance(hardware.get("logical_p"), int) else 0
+    logical_e = hardware.get("logical_e") if isinstance(hardware.get("logical_e"), int) else 0
+    cap_p = hardware.get("ordinary_cap_p") if isinstance(hardware.get("ordinary_cap_p"), int) else 0
+    cap_e = hardware.get("ordinary_cap_e") if isinstance(hardware.get("ordinary_cap_e"), int) else 0
+    reserve_p = hardware.get("ordinary_reserve_p") if isinstance(hardware.get("ordinary_reserve_p"), int) else 0
+    reserve_e = hardware.get("ordinary_reserve_e") if isinstance(hardware.get("ordinary_reserve_e"), int) else 0
+    if cap_p + reserve_p != logical_p or cap_e + reserve_e != logical_e:
+        errors.append("ordinary caps plus reserves do not equal measured topology")
+
+    lifecycle = profile.get("lifecycle_classes") if isinstance(profile.get("lifecycle_classes"), dict) else {}
+    required_lifecycle = {
+        "resident_control", "resident_service", "scheduled_ephemeral",
+        "on_demand_batch", "on_demand_interactive", "safety_recovery",
+    }
+    if set(lifecycle) != required_lifecycle:
+        errors.append("lifecycle classes are incomplete or contain an undeclared class")
+    valid_priorities = {"idle", "below_normal", "normal", "above_normal", "high"}
+    for name, row in lifecycle.items():
+        if not isinstance(row, dict):
+            errors.append(f"lifecycle {name} is not an object")
+            continue
+        p_value, e_value = row.get("default_p"), row.get("default_e")
+        if not isinstance(p_value, int) or not isinstance(e_value, int) or p_value < 0 or e_value < 0:
+            errors.append(f"lifecycle {name} has an invalid default budget")
+        elif p_value > cap_p or e_value > cap_e:
+            errors.append(f"lifecycle {name} exceeds the ordinary host cap")
+        if row.get("priority") not in valid_priorities:
+            errors.append(f"lifecycle {name} has an invalid priority")
+
+    global_caps = profile.get("global_caps") if isinstance(profile.get("global_caps"), dict) else {}
+    hub_limit = global_caps.get("hubclock_max_concurrent")
+    scheduled = global_caps.get("scheduled_ephemeral") if isinstance(global_caps.get("scheduled_ephemeral"), dict) else {}
+    if not isinstance(hub_limit, int) or isinstance(hub_limit, bool) or not 1 <= hub_limit <= 8:
+        errors.append("HubClock concurrency must be between 1 and 8")
+    elif scheduled.get("max_concurrent") != hub_limit:
+        errors.append("HubClock and scheduled-ephemeral concurrency caps differ")
+    if scheduled.get("aggregate_p", cap_p + 1) > cap_p or scheduled.get("aggregate_e", cap_e + 1) > cap_e:
+        errors.append("scheduled-ephemeral aggregate budget exceeds the ordinary host cap")
+
+    expected = profile.get("expected_projects") if isinstance(profile.get("expected_projects"), list) else []
+    project_profiles = profile.get("project_profiles") if isinstance(profile.get("project_profiles"), dict) else {}
+    if not expected or len(expected) != len(set(expected)):
+        errors.append("expected project list is empty or duplicated")
+    if set(expected) != set(project_profiles):
+        missing = sorted(set(expected) - set(project_profiles))
+        extra = sorted(set(project_profiles) - set(expected))
+        errors.append(f"project coverage mismatch missing={missing} extra={extra}")
+    for project, row in project_profiles.items():
+        if not isinstance(row, dict) or not row.get("role"):
+            errors.append(f"project {project} lacks a role")
+            continue
+        if not isinstance(row.get("observed_resident"), bool):
+            errors.append(f"project {project} lacks an observed_resident boolean")
+        for field in ("resident", "scheduled", "interactive", "urgent"):
+            budget = _parse_xy_budget(row.get(field))
+            if budget is None:
+                errors.append(f"project {project} has invalid {field} budget")
+            elif budget[0] > cap_p or budget[1] > cap_e:
+                errors.append(f"project {project} {field} budget exceeds the ordinary cap")
+
+    seen_rules: set[str] = set()
+    process_rules = profile.get("process_rules") if isinstance(profile.get("process_rules"), list) else []
+    for row in process_rules:
+        if not isinstance(row, dict):
+            errors.append("process rule is not an object")
+            continue
+        rule_id = str(row.get("id") or "")
+        if not rule_id or rule_id in seen_rules:
+            errors.append("process rule id is missing or duplicated")
+        seen_rules.add(rule_id)
+        if row.get("project") not in project_profiles:
+            errors.append(f"process rule {rule_id} references an unknown project")
+        if row.get("lifecycle") not in lifecycle:
+            errors.append(f"process rule {rule_id} references an unknown lifecycle")
+        matches = row.get("match_all")
+        if not isinstance(matches, list) or not matches or not all(isinstance(item, str) and item for item in matches):
+            errors.append(f"process rule {rule_id} has no deterministic match")
+        p_value, e_value = row.get("p"), row.get("e")
+        if not isinstance(p_value, int) or not isinstance(e_value, int) or p_value < 0 or e_value < 0:
+            errors.append(f"process rule {rule_id} has an invalid budget")
+        elif p_value > cap_p or e_value > cap_e or p_value + e_value < 1:
+            errors.append(f"process rule {rule_id} exceeds the ordinary cap or allocates no CPU")
+        if row.get("priority") not in valid_priorities:
+            errors.append(f"process rule {rule_id} has an invalid priority")
+
+    rules = profile.get("rules") if isinstance(profile.get("rules"), dict) else {}
+    if rules.get("all_hubclock_rider_invocations_are") != "scheduled_ephemeral":
+        errors.append("HubClock rider lifecycle is not scheduled_ephemeral")
+    if rules.get("registered_does_not_mean_resident") is not True:
+        errors.append("registered riders can be misclassified as resident")
+    if rules.get("background_visible_window_count") != 0:
+        errors.append("background visible-window policy is not zero")
+
+    if workspace is not None and not errors:
+        workspace = workspace.resolve()
+        registry = workspace / "_registry" / "hosts.json"
+        if not registry.is_file():
+            unknowns.append("HubClock registry is unavailable for local read-back")
+        else:
+            try:
+                riders = (_read_json(registry).get("hosts") or {}).get("HubClock", {}).get("riders") or []
+                observed_count = len(riders)
+                declared_count = (profile.get("evidence") or {}).get("rider_count")
+                if observed_count != declared_count:
+                    unknowns.append(f"rider registry drift: declared={declared_count} observed={observed_count}")
+            except (OSError, json.JSONDecodeError, AttributeError) as exc:
+                unknowns.append(f"HubClock registry read-back failed: {exc.__class__.__name__}")
+
+    state = "FAIL" if errors else ("UNKNOWN" if unknowns else "PASS")
+    return {
+        "ok": state == "PASS",
+        "state": state,
+        "host_id": profile.get("host_id"),
+        "hardware": {"p": logical_p, "e": logical_e, "reserve_p": reserve_p, "reserve_e": reserve_e},
+        "project_count": len(project_profiles),
+        "process_rule_count": len(process_rules),
+        "hubclock_max_concurrent": hub_limit,
+        "errors": errors + unknowns,
+    }
+
+
 def validate_autonomic(record: dict) -> dict:
     """Validate one bounded FAMES autonomic lifecycle record."""
     try:
@@ -3698,7 +3855,7 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-harness", "validate-background", "measure-compute", "plan-compute", "validate-compute", "validate-autonomic", "validate-capability-sync", "attest-capabilities", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-harness", "validate-background", "measure-compute", "plan-compute", "validate-compute", "validate-local-compute", "validate-autonomic", "validate-capability-sync", "attest-capabilities", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
@@ -3706,6 +3863,8 @@ def main() -> int:
             command.add_argument("--skill-dir", type=Path, default=PACKAGE_ROOT)
         if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-harness", "validate-background", "plan-compute", "validate-compute", "validate-autonomic", "validate-capability-sync"}:
             command.add_argument("--input", type=Path, required=True)
+        if name == "validate-local-compute":
+            command.add_argument("--input", type=Path)
         if name == "run-cases":
             command.add_argument("--only", nargs="+")
         if name == "self-check":
@@ -3803,6 +3962,14 @@ def main() -> int:
             payload = {"ok": False, "state": "UNKNOWN", "errors": [f"compute record unreadable: {exc}"]}
             return _emit(payload, args.json)
         return _emit(validate_compute(payload), args.json)
+    if args.command == "validate-local-compute":
+        source = args.input or (args.workspace / "_registry" / "fames-local-compute.json")
+        try:
+            payload = _read_json(source)
+        except (OSError, json.JSONDecodeError) as exc:
+            payload = {"ok": False, "state": "UNKNOWN", "errors": [f"local compute profile unreadable: {exc}"]}
+            return _emit(payload, args.json)
+        return _emit(validate_local_compute(payload, args.workspace), args.json)
     if args.command == "validate-autonomic":
         try:
             payload = _read_json(args.input)

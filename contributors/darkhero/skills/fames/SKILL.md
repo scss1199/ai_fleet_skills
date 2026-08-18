@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-18.22
+FAMES-GEN: 2026-08-18.23
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -199,6 +199,13 @@ python scripts/fames_fleet.py measure-compute --workspace <root> --json
 python scripts/fames_fleet.py plan-compute --input <request.json> --json
 python scripts/fames_fleet.py validate-compute --input <record.json> --json
 ```
+
+On a host that carries `_registry/fames-local-compute.json`, validate that profile
+before applying P/E policy. The local file owns measured topology, per-project caps,
+resident-versus-ephemeral classification, exact resident-process rules, and HubClock
+concurrency. Host numbers never become portable defaults. A registered HubClock rider
+is an ephemeral invocation; it becomes resident only if it separately ensures a daemon
+or service, and that service receives its own process rule.
 
 Deadline or immediate urgency needs explicit deadline evidence. Sustained resource
 pressure downshifts deferrable/background work with hysteresis. Worker count never
