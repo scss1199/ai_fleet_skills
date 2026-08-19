@@ -1,8 +1,8 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.18.0",
-  "updated": "2026-08-18",
+  "version": "1.19.0",
+  "updated": "2026-08-19",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
   "legacy_umbrella_aliases": [
@@ -584,6 +584,55 @@
         "success_rule": "Alignment succeeds when the counterpart accepts, repairs, or gives an evidence-backed refusal while authority and choice remain intact; obedience alone is not the metric."
       },
       "unknown_rule": "Unknown evidence identity, authority, intent, method, scope coverage, artifact identity, action state, or constraint conflict is UNKNOWN and fails closed."
+    },
+    "cognitive_boundary": {
+      "status": "UT measured joint-system frontier contract",
+      "shorthand": "RB",
+      "purpose": "Represent, test, extend, monitor, and retract the context-indexed frontier at which a human-AI system can produce, communicate, review, and safely act on a result with declared evidence.",
+      "definition": "RB is the set of measured boundary cells for which the joint human-AI system meets the frozen task predicate, preserves the canonical result through the interaction interface, exposes uncertainty and risk, stays within authority and resource constraints, and reproduces on the declared population. It is a vector-valued tested frontier, never a scalar intelligence score, personality label, or universal claim about a model.",
+      "is_phase": false,
+      "phase_relationship": {
+        "FP": "Freeze the boundary cell, population identity, baseline, metrics, thresholds, authority, and expansion claim before execution.",
+        "MTM": "Select the smallest decisive positive control, negative control, comprehension probe, and non-regression set.",
+        "SCF": "Compute residuals per boundary cell and per metric; unsampled cells remain UNKNOWN.",
+        "AEX": "Adapt only a measured non-zero residual and never generalize beyond the tested population.",
+        "SEAL": "Accept a boundary statement only with fresh measured cells, semantic-fidelity proof, authority conservation, and replayable evidence."
+      },
+      "lifecycle": ["DECLARE", "MEASURE", "MAP", "CHALLENGE", "ADAPT", "VERIFY", "PROMOTE", "MONITOR", "RETRACT"],
+      "states": ["SUPPORTED", "LIMITED", "OUTSIDE", "UNKNOWN", "FORBIDDEN"],
+      "state_semantics": {
+        "SUPPORTED": "All declared metrics and controls pass for this exact cell and population.",
+        "LIMITED": "Measured operation is useful but one or more named residuals remain; the residuals and safe operating limit are explicit.",
+        "OUTSIDE": "A measured positive control establishes that the instrument works, while the frozen task predicate fails for this cell.",
+        "UNKNOWN": "Evidence, coverage, freshness, identity, or measurement is missing or unresolved. UNKNOWN never inherits support from a neighbouring cell.",
+        "FORBIDDEN": "Policy, safety, privacy, or authority excludes the action. Learning, output style, automation, or user convenience cannot expand this state."
+      },
+      "required_coordinates": ["task_family", "distribution", "context", "tool_surface", "evidence_class", "interaction_profile", "resource_budget", "authority_scope", "freshness"],
+      "required_metrics": ["task_correctness", "reproducibility", "calibration", "generalization", "semantic_fidelity", "comprehension", "cognitive_cost", "safety_authority"],
+      "population_rule": "Every map names the measured population identity and reconciles expected, covered, and UNKNOWN counts. A sample supports only its declared distribution; it cannot support every, general, fleet-wide, or model-wide language.",
+      "cell_rule": "SUPPORTED, LIMITED, and OUTSIDE cells require measured evidence, a passing positive control, a rejected negative control, fresh replayable references, and metric-level thresholds. FORBIDDEN cells require the controlling invariant. Missing evidence produces UNKNOWN, not an optimistic interpolation.",
+      "interface_contract": {
+        "name": "truth-preserving cognitive interface",
+        "canonical_result_rule": "Reasoning and verification produce one identity-bound canonical result before presentation adaptation. Presentation is a projection of that result, not a second source of truth.",
+        "profile_sources": ["explicit", "task_declared", "measured_session"],
+        "profile_scope": "task_local",
+        "forbidden_profile_inference": "Do not infer stable intelligence, personality, disability, intent, or demographic traits. Session observations may tune only the current task and expire with it.",
+        "adaptable_dimensions": ["vocabulary", "detail", "ordering", "examples", "sentence_length", "terminology"],
+        "required_information": ["outcome", "evidence", "uncertainty", "blockers", "risk", "action_state", "authority", "next_action"],
+        "preservation_rule": "Every required information field must remain traceable to the same canonical identity. Style may compress or expand wording but must not alter claims, evidence class, uncertainty, negative results, risk severity, action state, authority, or completion state.",
+        "risk_rule": "Contentious, irreversible, destructive, security-sensitive, financial, medical, legal, privacy, or authority-sensitive judgment is stated before optional detail and requires a measured comprehension or decision probe before action.",
+        "quality_rule": "Optimize joint decision accuracy and cognitive cost, not brevity, fluency, agreement, or obedience in isolation."
+      },
+      "promotion_contract": {
+        "required": ["baseline_identity", "candidate_identity", "measured_before_after", "expanded_cell_ids", "positive_controls", "negative_controls", "non_regression", "independent_review", "authority_conserved", "version_change", "generation_change"],
+        "scope_rule": "Promotion changes only the named cells whose before/after trial passed. No neighbouring task, audience, tool, resource, or distribution cell is promoted by analogy.",
+        "authority_rule": "Authority after promotion must be a subset of authority before promotion. FORBIDDEN cells are not promotion targets.",
+        "review_rule": "An independent reviewer reproduces the raw artifacts and frozen predicates rather than reviewing the builder narrative.",
+        "monitor_rule": "Promoted cells retain evidence age and regression probes. Stale, contradicted, or regressed cells are downgraded to LIMITED, OUTSIDE, or UNKNOWN and the prior support claim is retracted."
+      },
+      "degraded_evidence_rule": "A fallback summary or partial rendering may support UNDERSTAND with its degraded identity, but it is not promotion-admissible evidence. Promotion requires the full source identity plus measured local trial evidence.",
+      "unknown_rule": "Unknown boundary identity, population coverage, coordinate, metric, threshold, control, canonical result, semantic preservation, profile source, comprehension result, review, authority, freshness, or retraction state is UNKNOWN and fails closed.",
+      "validator": "python scripts/fames_fleet.py validate-cognitive-boundary --input <boundary.json> --json"
     }
   },
   "autonomic_lifecycle": {

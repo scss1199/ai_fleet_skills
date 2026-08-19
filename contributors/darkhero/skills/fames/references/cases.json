@@ -15,7 +15,7 @@
     "path_exists": "path (workspace-relative), expect present|absent",
     "file_size_max": "path, max_bytes, missing_ok -- measures size only, never reads content",
     "json_probe": "select (list of workspace-relative globs), pointer (slash path, * wildcard segment), expect all_equal|all_equal_ref|all_in, ref canonical_package_sha|canonical_version, values, missing_ok",
-    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|validate_harness|validate_background|validate_compute|validate_autonomic|regression_guard|contributor_id, input_ref into fixtures, remove, patch, expect_ok, optional expect_state",
+    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|validate_cognitive_boundary|validate_harness|validate_background|validate_compute|validate_autonomic|regression_guard|contributor_id, input_ref into fixtures, remove, patch, expect_ok, optional expect_state",
     "parity": "bundle and registry describe the same protocol generations",
     "newest_age_max": "select globs, max_age_h, missing_ok -- newest match must be younger than the ceiling",
     "forbidden_text": "paths, forbidden strings, and optional expect_clean -- canonical policy files must not contain platform identifiers"
@@ -241,6 +241,71 @@
         ]
       }
     },
+    "cognitive_boundary_suite": {
+      "boundary_id": "rb-fixture-0001",
+      "subject_identity": "fames:1.19.0",
+      "goal_identity": "sha256:rb-fixture-goal",
+      "measured_at": "2026-08-19T00:00:00Z",
+      "population": {"identity": "sha256:rb-fixture-population", "expected_count": 1, "covered_count": 1, "unknown_count": 0},
+      "cells": [
+        {
+          "id": "cell-output-interface",
+          "state": "SUPPORTED",
+          "coordinates": {
+            "task_family": "technical_delivery",
+            "distribution": "fames-boundary-validator-fixture-v1",
+            "context": "single-task",
+            "tool_surface": "local-python-validator",
+            "evidence_class": "measured",
+            "interaction_profile": "explicit-engineer",
+            "resource_budget": "one-local-process",
+            "authority_scope": "read-and-validate",
+            "freshness": "same-generation"
+          },
+          "evidence_class": "measured",
+          "positive_control_passed": true,
+          "negative_control_rejected": true,
+          "fresh": true,
+          "reproducible": true,
+          "evidence_refs": ["receipt://rb/base-pass", "receipt://rb/negative-rejected"],
+          "residuals": [],
+          "metrics": {
+            "task_correctness": {"measured": true, "threshold": "all frozen predicates pass", "pass": true, "evidence_ref": "receipt://rb/correctness"},
+            "reproducibility": {"measured": true, "threshold": "same validator reproduces PASS", "pass": true, "evidence_ref": "receipt://rb/reproduction"},
+            "calibration": {"measured": true, "threshold": "negative control is rejected", "pass": true, "evidence_ref": "receipt://rb/calibration"},
+            "generalization": {"measured": true, "threshold": "claim names fixture distribution only", "pass": true, "evidence_ref": "receipt://rb/scope"},
+            "semantic_fidelity": {"measured": true, "threshold": "all required canonical fields preserved", "pass": true, "evidence_ref": "receipt://rb/fidelity"},
+            "comprehension": {"measured": true, "threshold": "decision probe passes", "pass": true, "evidence_ref": "receipt://rb/comprehension"},
+            "cognitive_cost": {"measured": true, "threshold": "one response and zero clarification turns", "pass": true, "evidence_ref": "receipt://rb/cost"},
+            "safety_authority": {"measured": true, "threshold": "authority after is subset of authority before", "pass": true, "evidence_ref": "receipt://rb/authority"}
+          }
+        }
+      ],
+      "interface": {
+        "canonical_result_identity": "sha256:rb-canonical-result",
+        "profile_source": "explicit",
+        "profile_scope": "task_local",
+        "style_changes_only": true,
+        "changed_dimensions": ["vocabulary", "detail", "ordering", "sentence_length"],
+        "forbidden_inferences": [],
+        "authority_before": ["read", "validate"],
+        "authority_after": ["read", "validate"],
+        "high_risk": false,
+        "risk_first": true,
+        "comprehension_probe": {"measured": true, "passed": true, "evidence_ref": "receipt://rb/comprehension"},
+        "preservation": [
+          {"field": "outcome", "canonical_ref": "canonical://outcome", "presented_ref": "presented://outcome", "preserved": true},
+          {"field": "evidence", "canonical_ref": "canonical://evidence", "presented_ref": "presented://evidence", "preserved": true},
+          {"field": "uncertainty", "canonical_ref": "canonical://uncertainty", "presented_ref": "presented://uncertainty", "preserved": true},
+          {"field": "blockers", "canonical_ref": "canonical://blockers", "presented_ref": "presented://blockers", "preserved": true},
+          {"field": "risk", "canonical_ref": "canonical://risk", "presented_ref": "presented://risk", "preserved": true},
+          {"field": "action_state", "canonical_ref": "canonical://action-state", "presented_ref": "presented://action-state", "preserved": true},
+          {"field": "authority", "canonical_ref": "canonical://authority", "presented_ref": "presented://authority", "preserved": true},
+          {"field": "next_action", "canonical_ref": "canonical://next-action", "presented_ref": "presented://next-action", "preserved": true}
+        ]
+      },
+      "promotion": {"requested": false}
+    },
     "autonomic_suite": {
       "cycle_id": "fixture-autonomic-0001",
       "authority_before": ["read", "write:fames", "publish:fames"],
@@ -353,6 +418,14 @@
     {"id": "C-COMPUTE-WORKERS", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_compute", "input_ref": "compute_suite", "patch": {"/plan/allocation/workers": 12}, "expect_ok": false, "expect_state": "FAIL", "why": "worker count cannot exceed allocated logical CPUs"},
     {"id": "C-COMPUTE-EXCLUSIVE-AUTH", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_compute", "input_ref": "compute_suite", "patch": {"/request/task/exclusive_compute_requested": true}, "expect_ok": false, "expect_state": "FAIL", "why": "using the OS/user reserve requires exclusive authority, impact acknowledgement, bounded duration and restore"},
     {"id": "C-COMPUTE-READBACK", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_compute", "input_ref": "compute_suite", "patch": {"/read_back/applied_e": 6}, "expect_ok": false, "expect_state": "FAIL", "why": "an allocation claim fails when the adapter read-back differs"},
+    {"id": "C-BOUNDARY-BASE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "expect_ok": true, "expect_state": "PASS", "why": "a cognitive-boundary cell needs reconciled population coverage, measured controls and metrics, a truth-preserving interface, and conserved authority"},
+    {"id": "C-BOUNDARY-POPULATION", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/population/expected_count": 2}, "expect_ok": false, "expect_state": "FAIL", "why": "a sampled boundary cannot silently inflate its population scope"},
+    {"id": "C-BOUNDARY-SEMANTIC-DRIFT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/interface/preservation/1/preserved": false}, "expect_ok": false, "expect_state": "FAIL", "why": "presentation adaptation must not alter or hide canonical evidence"},
+    {"id": "C-BOUNDARY-PROFILE-INFERENCE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/interface/profile_source": "inferred_personality"}, "expect_ok": false, "expect_state": "FAIL", "why": "RB may use explicit or measured task-local interaction state but cannot infer a stable personality or intelligence trait"},
+    {"id": "C-BOUNDARY-NONMEASURED", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/cells/0/evidence_class": "asserted"}, "expect_ok": false, "expect_state": "FAIL", "why": "a SUPPORTED frontier cell requires measured rather than asserted evidence"},
+    {"id": "C-BOUNDARY-NEGATIVE-CONTROL", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/cells/0/negative_control_rejected": false}, "expect_ok": false, "expect_state": "FAIL", "why": "a boundary instrument that accepts its negative control cannot establish support"},
+    {"id": "C-BOUNDARY-HIGH-RISK-COMPREHENSION", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/interface/high_risk": true, "/interface/comprehension_probe/measured": false}, "expect_ok": false, "expect_state": "FAIL", "why": "high-risk output must place risk first and measure that the decision-maker understood it"},
+    {"id": "C-BOUNDARY-PROMOTION-GATE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/promotion/requested": true}, "expect_ok": false, "expect_state": "UNKNOWN", "why": "a boundary cannot be promoted without identities, before/after measures, controls, non-regression, independent review, authority conservation, and a new version/generation"},
     {
       "id": "C-COGNITIVE-BASE",
       "kind": "validator_probe",

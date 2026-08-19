@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-18.23
+FAMES-GEN: 2026-08-19.1
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -100,6 +100,29 @@ with higher-priority policy, safety, or user authority. Measure success by an ac
 instruction, a repaired artifact, or an evidence-backed refusal—not obedience alone.
 Validate these records through `validate-cognitive`; missing evidence, authority, or
 method identity is `UNKNOWN` and fails closed.
+
+### UT cognitive boundary (RB)
+
+RB is the measured, context-indexed frontier of the **joint human-AI system**, not a
+scalar model IQ or personality profile. A cell is supported only when the task result,
+reproduction, calibration, bounded generalization, semantic fidelity, comprehension,
+cognitive cost, and safety/authority metrics pass for an identity-bound population.
+Unmeasured neighbouring cells remain `UNKNOWN`; policy- or authority-excluded cells are
+`FORBIDDEN` and cannot be expanded by learning or automation.
+
+Reasoning produces one canonical result before output adaptation. The cognitive
+interface may change vocabulary, detail, ordering, examples, sentence length, and
+terminology for an explicit or measured task-local profile, but it must preserve outcome,
+evidence, uncertainty, blockers, risk, action state, authority, and next action. It may
+never infer stable intelligence or personality traits. High-risk judgment is surfaced
+first and requires a measured comprehension probe before action.
+
+RB runs inside `FP -> MTM -> SCF -> AEX -> SEAL`: freeze a cell and baseline in FP,
+choose decisive controls in MTM, compute cell residuals in SCF, adapt only measured
+residuals in AEX, and promote only fresh reviewed cells in SEAL. Validate a map with
+`python scripts/fames_fleet.py validate-cognitive-boundary --input <boundary.json>
+--json`. Stale or regressed cells are downgraded and their prior support claim is
+retracted.
 
 ### UT delivery truth and anti-handwave gate
 

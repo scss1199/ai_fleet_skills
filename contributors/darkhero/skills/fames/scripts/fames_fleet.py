@@ -73,6 +73,16 @@ CAPABILITY_DIR = "_registry/fames-capabilities"
 FLEET_HOSTS = ("darkhero", "scar3", "altos")
 LOCAL_CAPABILITY_CASES = {
     "contract-core": ("C-RUN-BASE", "C-RUN-HASH", "C-PARITY"),
+    "cognitive-boundary": (
+        "C-BOUNDARY-BASE",
+        "C-BOUNDARY-POPULATION",
+        "C-BOUNDARY-SEMANTIC-DRIFT",
+        "C-BOUNDARY-PROFILE-INFERENCE",
+        "C-BOUNDARY-NONMEASURED",
+        "C-BOUNDARY-NEGATIVE-CONTROL",
+        "C-BOUNDARY-HIGH-RISK-COMPREHENSION",
+        "C-BOUNDARY-PROMOTION-GATE",
+    ),
     "delivery-integrity": (
         "C-INTERACTION-BASE",
         "C-DELIVERY-SCOPE-INFLATION",
@@ -2279,6 +2289,245 @@ def validate_cognitive(record: dict) -> dict:
     }
 
 
+def validate_cognitive_boundary(record: dict) -> dict:
+    """Validate one measured RB map and its truth-preserving interaction interface."""
+    layer, problem = _cognitive_contract()
+    if problem:
+        return {"ok": False, "state": "UNKNOWN", "cells": 0, "errors": [problem]}
+    policy = layer.get("cognitive_boundary")
+    if not isinstance(policy, dict):
+        return {"ok": False, "state": "UNKNOWN", "cells": 0, "errors": ["cognitive_boundary policy missing"]}
+    if not isinstance(record, dict):
+        return {"ok": False, "state": "UNKNOWN", "cells": 0, "errors": ["record is not an object"]}
+
+    errors: list[str] = []
+    unknowns: list[str] = []
+
+    for field in ("boundary_id", "subject_identity", "goal_identity", "measured_at"):
+        if not isinstance(record.get(field), str) or not record[field].strip():
+            unknowns.append(f"{field} missing")
+
+    population = record.get("population")
+    if not isinstance(population, dict):
+        unknowns.append("population missing")
+        population = {}
+    if not isinstance(population.get("identity"), str) or not population.get("identity", "").strip():
+        unknowns.append("population.identity missing")
+    counts: dict[str, int] = {}
+    for field in ("expected_count", "covered_count", "unknown_count"):
+        value = population.get(field)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            unknowns.append(f"population.{field} is not a non-negative integer")
+        else:
+            counts[field] = value
+    if len(counts) == 3 and counts["expected_count"] != counts["covered_count"] + counts["unknown_count"]:
+        errors.append("population counts do not reconcile")
+
+    cells = record.get("cells")
+    if not isinstance(cells, list) or not cells:
+        unknowns.append("boundary cells missing")
+        cells = []
+    if "covered_count" in counts and counts["covered_count"] != len(cells):
+        errors.append("population covered_count does not equal the number of measured cells")
+
+    required_coordinates = set(policy.get("required_coordinates") or ())
+    required_metrics = set(policy.get("required_metrics") or ())
+    allowed_states = set(policy.get("states") or ())
+    seen_ids: set[str] = set()
+    supported_ids: set[str] = set()
+    forbidden_ids: set[str] = set()
+    for index, cell in enumerate(cells):
+        here = f"cells[{index}]"
+        if not isinstance(cell, dict):
+            unknowns.append(f"{here} is not an object")
+            continue
+        cell_id = cell.get("id")
+        if not isinstance(cell_id, str) or not cell_id.strip():
+            unknowns.append(f"{here}.id missing")
+        elif cell_id in seen_ids:
+            errors.append(f"{here}.id is duplicated")
+        else:
+            seen_ids.add(cell_id)
+        state = cell.get("state")
+        if state not in allowed_states:
+            unknowns.append(f"{here}.state is unknown")
+        if state == "SUPPORTED":
+            supported_ids.add(str(cell_id))
+        if state == "FORBIDDEN":
+            forbidden_ids.add(str(cell_id))
+            if not isinstance(cell.get("controlling_invariant_ref"), str) or not cell["controlling_invariant_ref"].strip():
+                unknowns.append(f"{here}: FORBIDDEN cell lacks controlling invariant")
+
+        coordinates = cell.get("coordinates")
+        if not isinstance(coordinates, dict):
+            unknowns.append(f"{here}.coordinates missing")
+        else:
+            missing = sorted(
+                key for key in required_coordinates
+                if not isinstance(coordinates.get(key), str) or not coordinates[key].strip()
+            )
+            if missing:
+                unknowns.append(f"{here}.coordinates missing {', '.join(missing)}")
+
+        metrics = cell.get("metrics")
+        if not isinstance(metrics, dict):
+            unknowns.append(f"{here}.metrics missing")
+        else:
+            missing_metrics = sorted(required_metrics - set(metrics))
+            if missing_metrics:
+                unknowns.append(f"{here}.metrics missing {', '.join(missing_metrics)}")
+            for name in sorted(required_metrics & set(metrics)):
+                metric = metrics.get(name)
+                metric_here = f"{here}.metrics.{name}"
+                if not isinstance(metric, dict):
+                    unknowns.append(f"{metric_here} is not an object")
+                    continue
+                if metric.get("measured") is not True:
+                    unknowns.append(f"{metric_here} is not measured")
+                if "threshold" not in metric:
+                    unknowns.append(f"{metric_here}.threshold missing")
+                if not isinstance(metric.get("pass"), bool):
+                    unknowns.append(f"{metric_here}.pass is unmeasured")
+                if not isinstance(metric.get("evidence_ref"), str) or not metric["evidence_ref"].strip():
+                    unknowns.append(f"{metric_here}.evidence_ref missing")
+
+        if state in {"SUPPORTED", "LIMITED", "OUTSIDE"}:
+            if cell.get("evidence_class") != "measured":
+                errors.append(f"{here}: measured boundary state uses non-measured evidence")
+            if cell.get("positive_control_passed") is not True:
+                errors.append(f"{here}: positive control did not pass")
+            if cell.get("negative_control_rejected") is not True:
+                errors.append(f"{here}: negative control was not rejected")
+            if cell.get("fresh") is not True or cell.get("reproducible") is not True:
+                errors.append(f"{here}: evidence is stale or not reproducible")
+            refs = cell.get("evidence_refs")
+            if not isinstance(refs, list) or not refs or any(not isinstance(ref, str) or not ref.strip() for ref in refs):
+                unknowns.append(f"{here}.evidence_refs missing")
+        if state == "SUPPORTED" and isinstance(metrics, dict):
+            failed = [name for name in required_metrics if isinstance(metrics.get(name), dict) and metrics[name].get("pass") is not True]
+            if failed:
+                errors.append(f"{here}: SUPPORTED cell has failing metrics {', '.join(sorted(failed))}")
+        if state == "LIMITED":
+            residuals = cell.get("residuals")
+            if not isinstance(residuals, list) or not residuals:
+                unknowns.append(f"{here}: LIMITED cell lacks named residuals")
+
+    interface = record.get("interface")
+    if not isinstance(interface, dict):
+        unknowns.append("interface missing")
+        interface = {}
+    if not isinstance(interface.get("canonical_result_identity"), str) or not interface.get("canonical_result_identity", "").strip():
+        unknowns.append("interface.canonical_result_identity missing")
+    contract = policy.get("interface_contract") or {}
+    if interface.get("profile_source") not in set(contract.get("profile_sources") or ()):
+        errors.append("interface.profile_source is inferred or undeclared")
+    if interface.get("profile_scope") != contract.get("profile_scope"):
+        errors.append("interface profile is not task-local")
+    if interface.get("style_changes_only") is not True:
+        errors.append("interface adaptation is not presentation-only")
+    forbidden_inferences = interface.get("forbidden_inferences")
+    if not isinstance(forbidden_inferences, list):
+        unknowns.append("interface.forbidden_inferences ledger missing")
+    elif forbidden_inferences:
+        errors.append("interface contains forbidden stable-trait inference")
+    adaptable = set(contract.get("adaptable_dimensions") or ())
+    changed = interface.get("changed_dimensions")
+    if not isinstance(changed, list):
+        unknowns.append("interface.changed_dimensions missing")
+    elif any(item not in adaptable for item in changed):
+        errors.append("interface changed a non-presentational dimension")
+
+    required_information = set(contract.get("required_information") or ())
+    preservation = interface.get("preservation")
+    preserved_fields: set[str] = set()
+    if not isinstance(preservation, list):
+        unknowns.append("interface.preservation ledger missing")
+    else:
+        for index, item in enumerate(preservation):
+            here = f"interface.preservation[{index}]"
+            if not isinstance(item, dict):
+                unknowns.append(f"{here} is not an object")
+                continue
+            field = item.get("field")
+            if field in required_information:
+                preserved_fields.add(field)
+            if item.get("preserved") is not True:
+                errors.append(f"{here}: canonical information was not preserved")
+            for ref_name in ("canonical_ref", "presented_ref"):
+                if not isinstance(item.get(ref_name), str) or not item[ref_name].strip():
+                    unknowns.append(f"{here}.{ref_name} missing")
+    missing_information = sorted(required_information - preserved_fields)
+    if missing_information:
+        unknowns.append(f"interface.preservation missing {', '.join(missing_information)}")
+
+    before = interface.get("authority_before")
+    after = interface.get("authority_after")
+    if not isinstance(before, list) or not isinstance(after, list):
+        unknowns.append("interface authority ledger missing")
+    elif not set(after).issubset(set(before)):
+        errors.append("interface adaptation expanded authority")
+    high_risk = interface.get("high_risk")
+    if not isinstance(high_risk, bool):
+        unknowns.append("interface.high_risk is unmeasured")
+    if high_risk:
+        if interface.get("risk_first") is not True:
+            errors.append("high-risk judgment was not presented first")
+        probe = interface.get("comprehension_probe")
+        if not isinstance(probe, dict):
+            unknowns.append("high-risk comprehension probe missing")
+        elif probe.get("measured") is not True or probe.get("passed") is not True or not probe.get("evidence_ref"):
+            errors.append("high-risk comprehension probe did not pass")
+
+    promotion = record.get("promotion")
+    if not isinstance(promotion, dict) or not isinstance(promotion.get("requested"), bool):
+        unknowns.append("promotion request state missing")
+        promotion = {}
+    if promotion.get("requested") is True:
+        required = set((policy.get("promotion_contract") or {}).get("required") or ())
+        missing = sorted(key for key in required if key not in promotion)
+        if missing:
+            unknowns.append(f"promotion missing {', '.join(missing)}")
+        if promotion.get("measured_before_after") is not True:
+            errors.append("promotion lacks measured before/after evidence")
+        expanded = promotion.get("expanded_cell_ids")
+        if not isinstance(expanded, list) or not expanded:
+            unknowns.append("promotion expanded_cell_ids missing")
+        else:
+            if any(cell_id not in supported_ids for cell_id in expanded):
+                errors.append("promotion targets a cell that is not SUPPORTED")
+            if set(expanded) & forbidden_ids:
+                errors.append("promotion targets a FORBIDDEN cell")
+        for field in ("positive_controls", "negative_controls"):
+            if not isinstance(promotion.get(field), list) or not promotion[field]:
+                unknowns.append(f"promotion.{field} missing")
+        if promotion.get("non_regression") is not True:
+            errors.append("promotion non-regression did not pass")
+        review = promotion.get("independent_review")
+        if not isinstance(review, dict) or review.get("accepted") is not True or not review.get("evidence_ref"):
+            errors.append("promotion lacks accepted independent review")
+        promotion_before = promotion.get("authority_before")
+        promotion_after = promotion.get("authority_after")
+        if not isinstance(promotion_before, list) or not isinstance(promotion_after, list):
+            unknowns.append("promotion authority ledger missing")
+        elif not set(promotion_after).issubset(set(promotion_before)) or promotion.get("authority_conserved") is not True:
+            errors.append("promotion expanded authority")
+        if promotion.get("version_before") == promotion.get("version_after") or not promotion.get("version_change"):
+            errors.append("promotion lacks a semantic version change")
+        if promotion.get("generation_before") == promotion.get("generation_after") or not promotion.get("generation_change"):
+            errors.append("promotion lacks a generation change")
+
+    if counts.get("unknown_count", 0) > 0 and promotion.get("requested") is True:
+        errors.append("promotion cannot hide UNKNOWN population cells")
+    return {
+        "ok": not errors and not unknowns,
+        "state": "UNKNOWN" if unknowns else ("PASS" if not errors else "FAIL"),
+        "cells": len(cells),
+        "supported": len(supported_ids),
+        "unknown_population": counts.get("unknown_count"),
+        "errors": errors + unknowns,
+    }
+
+
 def _read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
@@ -3649,6 +3898,9 @@ def _evaluate_case(
         elif validator == "validate_cognitive":
             outcome = validate_cognitive(record)
             ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
+        elif validator == "validate_cognitive_boundary":
+            outcome = validate_cognitive_boundary(record)
+            ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
         elif validator == "validate_harness":
             outcome = validate_harness(record)
             ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
@@ -3855,13 +4107,13 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-harness", "validate-background", "measure-compute", "plan-compute", "validate-compute", "validate-local-compute", "validate-autonomic", "validate-capability-sync", "attest-capabilities", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-background", "measure-compute", "plan-compute", "validate-compute", "validate-local-compute", "validate-autonomic", "validate-capability-sync", "attest-capabilities", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
         if name in {"verify-package", "parity", "status", "run-cases", "self-check"}:
             command.add_argument("--skill-dir", type=Path, default=PACKAGE_ROOT)
-        if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-harness", "validate-background", "plan-compute", "validate-compute", "validate-autonomic", "validate-capability-sync"}:
+        if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-background", "plan-compute", "validate-compute", "validate-autonomic", "validate-capability-sync"}:
             command.add_argument("--input", type=Path, required=True)
         if name == "validate-local-compute":
             command.add_argument("--input", type=Path)
@@ -3932,6 +4184,13 @@ def main() -> int:
             payload = {"ok": False, "state": "UNKNOWN", "errors": [f"cognitive input unreadable: {exc}"]}
             return _emit(payload, args.json)
         return _emit(validate_cognitive(payload), args.json)
+    if args.command == "validate-cognitive-boundary":
+        try:
+            payload = _read_json(args.input)
+        except (OSError, json.JSONDecodeError) as exc:
+            payload = {"ok": False, "state": "UNKNOWN", "errors": [f"cognitive-boundary input unreadable: {exc}"]}
+            return _emit(payload, args.json)
+        return _emit(validate_cognitive_boundary(payload), args.json)
     if args.command == "validate-harness":
         try:
             payload = _read_json(args.input)
