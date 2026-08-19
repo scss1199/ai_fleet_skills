@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "f5c988506cbf733552849debadd327c60d75305bd6a58a559197a89cba300ef4",
+  "package_sha": "d33de853ec5b8c00d99d24dd7628f170c486b03933a41f4fd788137604552e74",
   "capability_set_sha": "cd06263ad5694c9a37e4c2d71606bfdad96062631849328bcffd5a5b57d66590",
-  "validator_set_sha": "9735e5d8a5d24c7385b4892667e4c71c0018038489df4ff062fea16f8c9acc0f",
+  "validator_set_sha": "388aad16fa44ca97d798efd2ae1f82e9a01c5caf589cd03b2c558184c349cca3",
   "runner_state": "armed",
-  "observed_at": "2026-08-19T06:10:05.343913+00:00",
+  "observed_at": "2026-08-19T06:30:11.956726+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -139,7 +139,12 @@
         "case://C-INGEST-PROMOTION-TRIAL-HASH",
         "case://C-INGEST-PROMOTION-UNRELATED-FILE",
         "case://C-INGEST-PROMOTION-REPLAY-CANDIDATE",
-        "case://C-INGEST-PROMOTION-REVIEW"
+        "case://C-INGEST-PROMOTION-REVIEW",
+        "case://C-INGEST-PROMOTION-SELF-REVIEW",
+        "case://C-INGEST-PROMOTION-REVIEWER-MISMATCH",
+        "case://C-INGEST-PROMOTION-NONREG-VALIDATOR",
+        "case://C-INGEST-PROMOTION-NONREG-OUTPUT",
+        "case://C-INGEST-PROMOTION-REVIEW-STALE"
       ]
     },
     {
