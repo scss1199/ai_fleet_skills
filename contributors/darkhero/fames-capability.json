@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "62a707744ba0dd2470141d21406e27a2b057ecf8900d255896666e5fb45216f6",
+  "package_sha": "f5c988506cbf733552849debadd327c60d75305bd6a58a559197a89cba300ef4",
   "capability_set_sha": "cd06263ad5694c9a37e4c2d71606bfdad96062631849328bcffd5a5b57d66590",
-  "validator_set_sha": "65c9a2886daee20e30ccf8c1f52722b1d9b3bccfdd31089a918e14d4ab11f7d5",
+  "validator_set_sha": "9735e5d8a5d24c7385b4892667e4c71c0018038489df4ff062fea16f8c9acc0f",
   "runner_state": "armed",
-  "observed_at": "2026-08-19T05:26:03.123323+00:00",
+  "observed_at": "2026-08-19T06:10:05.343913+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -118,7 +118,28 @@
         "case://C-BOUNDARY-NONMEASURED",
         "case://C-BOUNDARY-NEGATIVE-CONTROL",
         "case://C-BOUNDARY-HIGH-RISK-COMPREHENSION",
-        "case://C-BOUNDARY-PROMOTION-GATE"
+        "case://C-BOUNDARY-PROMOTION-GATE",
+        "case://C-BOUNDARY-EXPIRED",
+        "case://C-BOUNDARY-METRIC-SPOOF",
+        "case://C-BOUNDARY-OUTSIDE-CONTRADICTION",
+        "case://C-BOUNDARY-MONITOR-REGRESSION",
+        "case://C-BOUNDARY-DISTRIBUTION-DRIFT",
+        "case://C-BOUNDARY-FORBIDDEN-INFERENCE",
+        "case://C-BOUNDARY-PROFILE-OUTLIVES-TASK",
+        "case://C-BOUNDARY-CURRENT-RETRACTED",
+        "case://C-RUN-BOUNDARY-MISSING",
+        "case://C-RUN-BOUNDARY-RESULT-MISMATCH",
+        "case://C-INTERACTION-BOUNDARY-MISSING",
+        "case://C-INTERACTION-BOUNDARY-MISMATCH",
+        "case://C-INGEST-PROMOTION-BASE",
+        "case://C-INGEST-PROMOTION-CANDIDATE",
+        "case://C-INGEST-PROMOTION-CLAIM-SEMANTICS",
+        "case://C-INGEST-PROMOTION-LANDING-BYTES",
+        "case://C-INGEST-PROMOTION-SOURCE-BINDING",
+        "case://C-INGEST-PROMOTION-TRIAL-HASH",
+        "case://C-INGEST-PROMOTION-UNRELATED-FILE",
+        "case://C-INGEST-PROMOTION-REPLAY-CANDIDATE",
+        "case://C-INGEST-PROMOTION-REVIEW"
       ]
     },
     {
