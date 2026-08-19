@@ -949,6 +949,21 @@
 
     {"id": "C-APPHEALTH-ARMED", "kind": "json_probe", "charges": "R_FLEET", "fail_mode": "degraded", "scope": "any",
      "select": ["_registry/claude-app-health/*.json"], "pointer": "/rider_state", "expect": "all_in", "values": ["armed"],
-     "why": "the tick re-reads hosts.json after it runs, so this is the registry's answer and not the engine's exit code. It stays red until the operator arms the rider, which is the correct picture rather than a defect to hide: arming a schedule is the operator's authority, so an agent that proposed one and an operator who accepted one must be distinguishable. It also catches a rider later removed or renamed, where the heartbeat would otherwise keep arriving from a hand-run command and read as an armed clock."}
+     "why": "the tick re-reads hosts.json after it runs, so this is the registry's answer and not the engine's exit code. It stays red until the operator arms the rider, which is the correct picture rather than a defect to hide: arming a schedule is the operator's authority, so an agent that proposed one and an operator who accepted one must be distinguishable. It also catches a rider later removed or renamed, where the heartbeat would otherwise keep arriving from a hand-run command and read as an armed clock."},
+    {"id": "C-INTEGRITY-DECLARED", "kind": "json_probe", "charges": "R_CONTRACT", "fail_mode": "closed", "scope": "authority",
+     "select": ["_registry/fames-protocol.json"], "pointer": "/integrity_invariants/invariants/*/binding",
+     "expect": "all_in", "values": ["hard"], "missing_ok": false,
+     "why": "the integrity invariants are the clause that forbids fabrication, placation, and reading a permission wider than it was given. A run that cannot see them is a run with nothing holding it to them, so an unresolved pointer here fails rather than passing quietly. Binding is asserted to be hard because a soft invariant is an invariant the next deadline trades away."},
+
+    {"id": "C-REDLINE-OPERATOR-OWNED", "kind": "json_probe", "charges": "R_CONTRACT", "fail_mode": "closed", "scope": "authority",
+     "select": ["_registry/fames-protocol.json"], "pointer": "/integrity_invariants/red_lines/*/authority",
+     "expect": "all_in", "values": ["operator_only"], "missing_ok": false,
+     "why": "a red line the agent may re-author is not a red line. This is the mechanical form of RED_LINE_PRECEDENCE: an agent may add an entry, but any entry whose authority is not operator_only means someone widened who gets to relax it, which is exactly the failure this section exists to prevent."},
+
+    {"id": "C-REDLINE-BACKED", "kind": "claim_backed", "charges": "R_CONTRACT", "fail_mode": "closed", "scope": "authority",
+     "select": ["_registry/fames-protocol.json"], "pointer": "/integrity_invariants/red_lines/*",
+     "flag": "enforced_by_machine_check", "id_field": "check_token",
+     "backing": "_skill/engines/zt-foreground-guard.py", "pattern": "{id}", "missing_ok": false,
+     "why": "RL-PERIODIC-FOREGROUND-POPUP went unenforced for three months because the guard trusted a hardcoded floor list instead of enumerating live scheduled tasks, and reported green over the gap. A red line that claims machine enforcement must name a token that actually exists in the enforcing engine, so deleting or renaming the check turns the protocol red instead of silently disarming it."}
   ]
 }
