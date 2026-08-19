@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.19.0",
+  "version": "1.21.1",
   "updated": "2026-08-19",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -588,9 +588,22 @@
     "cognitive_boundary": {
       "status": "UT measured joint-system frontier contract",
       "shorthand": "RB",
+      "canonical_name": "Reasoning Boundary",
       "purpose": "Represent, test, extend, monitor, and retract the context-indexed frontier at which a human-AI system can produce, communicate, review, and safely act on a result with declared evidence.",
       "definition": "RB is the set of measured boundary cells for which the joint human-AI system meets the frozen task predicate, preserves the canonical result through the interaction interface, exposes uncertainty and risk, stays within authority and resource constraints, and reproduces on the declared population. It is a vector-valued tested frontier, never a scalar intelligence score, personality label, or universal claim about a model.",
       "is_phase": false,
+      "activation_contract": {
+        "mandatory_callers": ["validate_run", "validate_cognitive when interaction_integrity is present", "validate_ingest when promoted is true"],
+        "rule": "Every non-trivial FAMES completion ledger validates an embedded RB record. Interaction-bearing cognitive records and promotion records also validate one. A phase string, evidence label, or detached receipt cannot substitute for replaying the bound record with the active validator identity.",
+        "not_applicable_rule": "A standalone operator trace with no interaction, presentation adaptation, human or agent decision, authorization, action, or capability promotion may omit RB. validate_run itself is never exempt."
+      },
+      "binding_contract": {
+        "required": ["caller", "goal_identity", "result_identity", "authority_scope", "risk_categories"],
+        "run_rule": "validate_run binds RB to the caller's exact goal hash, canonical result identity, task risk categories, and authority scope.",
+        "interaction_rule": "validate_cognitive binds RB to a hash of the complete interaction_integrity record.",
+        "promotion_rule": "validate_ingest binds RB to source content identity, sorted claim ids, landing-artifact identity, candidate identity, and ingest authority scope.",
+        "evidence_rule": "Promotion evidence is replayable only when its local path exists and the active validator recomputes the declared SHA-256. URI plus a well-formed hash is insufficient for promotion."
+      },
       "phase_relationship": {
         "FP": "Freeze the boundary cell, population identity, baseline, metrics, thresholds, authority, and expansion claim before execution.",
         "MTM": "Select the smallest decisive positive control, negative control, comprehension probe, and non-regression set.",
@@ -609,27 +622,46 @@
       },
       "required_coordinates": ["task_family", "distribution", "context", "tool_surface", "evidence_class", "interaction_profile", "resource_budget", "authority_scope", "freshness"],
       "required_metrics": ["task_correctness", "reproducibility", "calibration", "generalization", "semantic_fidelity", "comprehension", "cognitive_cost", "safety_authority"],
-      "population_rule": "Every map names the measured population identity and reconciles expected, covered, and UNKNOWN counts. A sample supports only its declared distribution; it cannot support every, general, fleet-wide, or model-wide language.",
-      "cell_rule": "SUPPORTED, LIMITED, and OUTSIDE cells require measured evidence, a passing positive control, a rejected negative control, fresh replayable references, and metric-level thresholds. FORBIDDEN cells require the controlling invariant. Missing evidence produces UNKNOWN, not an optimistic interpolation.",
+      "population_contract": {
+        "units": ["task_instance", "interaction_session", "decision", "operator", "cohort_member"],
+        "required": ["identity", "unit", "members", "sample_plan", "member_verdicts", "expected_count", "covered_count", "unknown_count"],
+        "rule": "Population member count is independent of boundary-cell count. Identity is computed over the member manifest and sample plan; every covered member has exactly one content-addressed verdict bound to a declared cell. A sample supports only its declared distribution."
+      },
+      "metric_contract": {
+        "required": ["value", "unit", "comparator", "threshold", "error_bound", "baseline", "candidate", "measured", "pass", "evidence"],
+        "comparators": ["ge", "le", "eq"],
+        "rule": "The validator recomputes pass from value, comparator, and threshold. Evidence carries URI plus full SHA-256; pass, measured, and a prose threshold alone never establish a metric. Metric evidence identities within a cell are distinct."
+      },
+      "population_rule": "Every map names the exact measured population and reconciles its member manifest, sample plan, per-member verdicts, covered count, and UNKNOWN count. A sample cannot support every, general, fleet-wide, model-wide, or neighbouring-cell language.",
+      "cell_rule": "SUPPORTED requires every metric and the frozen predicate to pass. LIMITED requires failed metrics, named residuals, and a safe operating limit. OUTSIDE requires a working instrument plus a failed frozen predicate. UNKNOWN records missing measurement and blocks promotion. FORBIDDEN is controlled by a versioned policy and authority invariant and never fabricates task metrics.",
       "interface_contract": {
         "name": "truth-preserving cognitive interface",
         "canonical_result_rule": "Reasoning and verification produce one identity-bound canonical result before presentation adaptation. Presentation is a projection of that result, not a second source of truth.",
         "profile_sources": ["explicit", "task_declared", "measured_session"],
         "profile_scope": "task_local",
+        "allowed_profile_observations": ["requested_detail", "requested_vocabulary", "requested_order", "clarification_count", "decision_probe_result", "fatigue_self_report"],
+        "profile_receipt_rule": "A profile is bound to task and session identity, observed facts from the allowed vocabulary, uncertainty, consent where explicit, content-addressed evidence, measurement time, and expiry. It cannot survive the task expiry or become a stable trait.",
         "forbidden_profile_inference": "Do not infer stable intelligence, personality, disability, intent, or demographic traits. Session observations may tune only the current task and expire with it.",
         "adaptable_dimensions": ["vocabulary", "detail", "ordering", "examples", "sentence_length", "terminology"],
         "required_information": ["outcome", "evidence", "uncertainty", "blockers", "risk", "action_state", "authority", "next_action"],
-        "preservation_rule": "Every required information field must remain traceable to the same canonical identity. Style may compress or expand wording but must not alter claims, evidence class, uncertainty, negative results, risk severity, action state, authority, or completion state.",
-        "risk_rule": "Contentious, irreversible, destructive, security-sensitive, financial, medical, legal, privacy, or authority-sensitive judgment is stated before optional detail and requires a measured comprehension or decision probe before action.",
+        "preservation_rule": "Canonical and presented structured values for every required field are hashed and compared by the validator. Prose may compress or expand wording around those fields but cannot alter claims, evidence class, uncertainty, negative results, risk severity, action state, authority, or completion state.",
+        "risk_policy": {
+          "categories": ["none", "reversible_local_edit", "contentious", "irreversible", "destructive", "security_sensitive", "financial", "medical", "legal", "privacy", "authority_sensitive"],
+          "high_risk_categories": ["contentious", "irreversible", "destructive", "security_sensitive", "financial", "medical", "legal", "privacy", "authority_sensitive"],
+          "rule": "high_risk is derived from the frozen category set and policy identity; the producer cannot disable the gate with a free boolean."
+        },
+        "risk_rule": "A high-risk judgment is stated before optional detail and requires a content-addressed comprehension or decision probe bound to the same canonical result before action.",
+        "authority_rule": "Authority is an exact, content-identified grant set. Wildcards are invalid and authority_after must be a subset of authority_before; delegation or deny semantics require a separate versioned ontology rather than string approximation.",
         "quality_rule": "Optimize joint decision accuracy and cognitive cost, not brevity, fluency, agreement, or obedience in isolation."
       },
       "promotion_contract": {
-        "required": ["baseline_identity", "candidate_identity", "measured_before_after", "expanded_cell_ids", "positive_controls", "negative_controls", "non_regression", "independent_review", "authority_conserved", "version_change", "generation_change"],
+        "required": ["baseline_identity", "candidate_identity", "measured_before_after", "expanded_cell_ids", "positive_controls", "negative_controls", "non_regression", "independent_review", "authority_before", "authority_after", "authority_conserved", "version_before", "version_after", "version_change", "generation_before", "generation_after", "generation_change", "validator_identity"],
         "scope_rule": "Promotion changes only the named cells whose before/after trial passed. No neighbouring task, audience, tool, resource, or distribution cell is promoted by analogy.",
         "authority_rule": "Authority after promotion must be a subset of authority before promotion. FORBIDDEN cells are not promotion targets.",
         "review_rule": "An independent reviewer reproduces the raw artifacts and frozen predicates rather than reviewing the builder narrative.",
-        "monitor_rule": "Promoted cells retain evidence age and regression probes. Stale, contradicted, or regressed cells are downgraded to LIMITED, OUTSIDE, or UNKNOWN and the prior support claim is retracted."
+        "monitor_rule": "Every support map carries valid_until, validator identity, content-addressed regression probes, supersession links, and CURRENT, REGRESSED, or RETRACTED state. Expired, contradicted, regressed, or retracted maps cannot contain effective SUPPORTED cells."
       },
+      "monitor_contract": ["state", "validator_identity", "last_checked_at", "valid_until", "regression_probe_refs", "supersedes", "retracted_at", "retraction_reason"],
       "degraded_evidence_rule": "A fallback summary or partial rendering may support UNDERSTAND with its degraded identity, but it is not promotion-admissible evidence. Promotion requires the full source identity plus measured local trial evidence.",
       "unknown_rule": "Unknown boundary identity, population coverage, coordinate, metric, threshold, control, canonical result, semantic preservation, profile source, comprehension result, review, authority, freshness, or retraction state is UNKNOWN and fails closed.",
       "validator": "python scripts/fames_fleet.py validate-cognitive-boundary --input <boundary.json> --json"

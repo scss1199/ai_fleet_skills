@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.19.0",
-  "skill_gen": "2026-08-19.1",
+  "version": "1.21.1",
+  "skill_gen": "2026-08-19.4",
   "execution_order": [
     "FP",
     "MTM",
@@ -23,17 +23,17 @@
   },
   "source_git_commit": null,
   "files": {
-    "SKILL.md": "bdafde6aa47dbda60f0c14ee32da2107d18724af9b984ba30dc51d6281cd92ec",
-    "references/cases.json": "ef166ce9035433ccbaf6f42a2ea8e5406d919fb5edb91d7b5bb978c0f8524e63",
+    "SKILL.md": "e9113e8d5e2ecc83710025fb1fdb11f82bc4414bc25934496a4910c24e08e1d4",
+    "references/cases.json": "8999575c5b33996374f7b2caf8fc4de36ca25a510e47a34d60a845b92c5b1ac8",
     "references/hardware-compute.json": "e0792dce63c4894107fd63e43e3e0095ce4c4999686811279fd12543106a8df4",
     "references/production-web-delivery.json": "0f8edd3a24f856a4cc1a76ecd4490185bad414735c2bc1787104d619d0f0a251",
-    "references/protocols/fames-protocol.json": "f21c73f40d85b888dd2d4ce848d29e876047f104c79b867c39c3ec7720626fea",
+    "references/protocols/fames-protocol.json": "0794e703b8cfa742ec128c35d68219d4d89d00de726f4925aeb631676654990a",
     "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
     "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
     "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
     "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
     "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-    "scripts/fames_fleet.py": "b69c00043302812729f5f626449fef5de45c9125bea931c30f8fcc74691832c6"
+    "scripts/fames_fleet.py": "e323ac362492fca0d691541e676cd4d7800626c1e8744f5887cb1e8f9bca67a6"
   },
-  "package_sha": "62a707744ba0dd2470141d21406e27a2b057ecf8900d255896666e5fb45216f6"
+  "package_sha": "4904ebfe7a28fd639085d933df420ed38926001ed5ae6bb0b3da67a0e3ee50c3"
 }

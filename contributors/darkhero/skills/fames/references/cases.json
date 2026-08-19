@@ -25,7 +25,8 @@
     "run_min": {
       "auto_goal_hash": true,
       "validated_at": "2026-08-15T00:00:00Z",
-      "risk_class": "R1",
+    "risk_class": "R1",
+    "cognitive_boundary_gate": {"required": true, "activation": ["validate_run"], "record": {"$fixture": "cognitive_boundary_suite"}},
       "goal": {
         "outcome": "a case fixture that passes every validate_run rule",
         "verification": "validate_run returns ok true",
@@ -87,6 +88,40 @@
       }],
       "verdict": "already_covered",
       "promoted": false
+    },
+    "promoted_ingest": {
+      "auto_promotion_contract": true,
+      "source_uri": "fixture://fames-cases/promoted-ingest",
+      "source_kind": "other",
+      "source_channel": "manual",
+      "scope": {"user_scope": "FAMES promotion fixture", "authority_scope": "fames-cases", "in_scope": true},
+      "acquired_at": "2026-08-19T00:00:00Z",
+      "acquisition_route": "publisher-supplied fixture text",
+      "quota_cost": {"metered_calls": 0, "model_tokens_external": 0},
+      "content_identity": {"sha256": "1010101010101010101010101010101010101010101010101010101010101010"},
+      "trust_class_map": {"body": "asserted", "trial": "measured"},
+      "claims": [{
+        "id": "P1",
+        "claim": "the fixture change is promotion admissible",
+        "trust_class": "asserted",
+        "verdict": "adapt",
+        "why": "a replayable local validator trial and RB gate bind the candidate",
+        "trial": {"verification": "the bound validator returns PASS", "result": "PASS", "evidence_class": "measured", "validator_identity": "auto", "evidence_refs": []},
+        "lands_in": "_registry/fames-protocol.json"
+      }],
+      "verdict": "adapt",
+      "promoted": true,
+      "promotion": {
+        "actor": "ai_darkhero",
+        "authority": "ai_darkhero",
+        "phases": {"FP": "PASS", "SCF": "PASS", "SEAL": "PASS"},
+        "baseline_identity": "0000000000000000000000000000000000000000000000000000000000000000",
+        "candidate_identity": "auto",
+        "validator_identity": "auto",
+        "independent_review": {},
+        "non_regression": {},
+        "cognitive_boundary_gate": {"required": true, "activation": ["promotion"], "record": {"$fixture": "cognitive_boundary_suite"}}
+      }
     },
     "academic_ingest": {
       "source_uri": "https://doi.org/10.0000/fames.fixture",
@@ -220,6 +255,7 @@
       ]
     },
     "interaction_suite": {
+      "cognitive_boundary_gate": {"required": true, "activation": ["interaction_integrity"], "record": {"$fixture": "cognitive_boundary_suite"}},
       "interaction_integrity": {
         "claim_assessments": [
           {"claim_id": "C1", "claim": "validator passed", "evidence_status": "matches", "evidence_refs": ["receipt://validator/pass"], "claim_state": "SUPPORTED", "deception_state": "UNKNOWN"},
@@ -242,18 +278,31 @@
       }
     },
     "cognitive_boundary_suite": {
+      "auto_boundary_contract": true,
       "boundary_id": "rb-fixture-0001",
-      "subject_identity": "fames:1.19.0",
+      "subject_identity": "fames:1.20.0",
       "goal_identity": "sha256:rb-fixture-goal",
-      "measured_at": "2026-08-19T00:00:00Z",
-      "population": {"identity": "sha256:rb-fixture-population", "expected_count": 1, "covered_count": 1, "unknown_count": 0},
+      "measured_at": "auto",
+      "valid_until": "auto",
+      "policy_identity": "auto",
+      "validator_identity": "auto",
+      "population": {
+        "identity": "auto",
+        "unit": "task_instance",
+        "members": [{"id": "task-instance-1", "evidence": {"uri": "receipt://rb/member-1", "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}}],
+        "sample_plan": {"method": "exhaustive", "distribution_identity": "fames-boundary-validator-fixture-v2", "inclusion_rule": "the declared task instance", "evidence": {"uri": "receipt://rb/sample-plan", "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"}},
+        "member_verdicts": [{"member_id": "task-instance-1", "cell_id": "cell-output-interface", "state": "SUPPORTED", "evidence_refs": [{"uri": "receipt://rb/member-verdict", "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"}]}],
+        "expected_count": 1,
+        "covered_count": 1,
+        "unknown_count": 0
+      },
       "cells": [
         {
           "id": "cell-output-interface",
           "state": "SUPPORTED",
           "coordinates": {
             "task_family": "technical_delivery",
-            "distribution": "fames-boundary-validator-fixture-v1",
+            "distribution": "fames-boundary-validator-fixture-v2",
             "context": "single-task",
             "tool_surface": "local-python-validator",
             "evidence_class": "measured",
@@ -267,43 +316,56 @@
           "negative_control_rejected": true,
           "fresh": true,
           "reproducible": true,
-          "evidence_refs": ["receipt://rb/base-pass", "receipt://rb/negative-rejected"],
+          "measured_at": "auto",
+          "valid_until": "auto",
+          "frozen_predicate_passed": true,
+          "safe_operating_limit": "the declared fixture distribution and exact tool surface",
+          "evidence_refs": [
+            {"uri": "receipt://rb/base-pass", "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"},
+            {"uri": "receipt://rb/negative-rejected", "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}
+          ],
           "residuals": [],
           "metrics": {
-            "task_correctness": {"measured": true, "threshold": "all frozen predicates pass", "pass": true, "evidence_ref": "receipt://rb/correctness"},
-            "reproducibility": {"measured": true, "threshold": "same validator reproduces PASS", "pass": true, "evidence_ref": "receipt://rb/reproduction"},
-            "calibration": {"measured": true, "threshold": "negative control is rejected", "pass": true, "evidence_ref": "receipt://rb/calibration"},
-            "generalization": {"measured": true, "threshold": "claim names fixture distribution only", "pass": true, "evidence_ref": "receipt://rb/scope"},
-            "semantic_fidelity": {"measured": true, "threshold": "all required canonical fields preserved", "pass": true, "evidence_ref": "receipt://rb/fidelity"},
-            "comprehension": {"measured": true, "threshold": "decision probe passes", "pass": true, "evidence_ref": "receipt://rb/comprehension"},
-            "cognitive_cost": {"measured": true, "threshold": "one response and zero clarification turns", "pass": true, "evidence_ref": "receipt://rb/cost"},
-            "safety_authority": {"measured": true, "threshold": "authority after is subset of authority before", "pass": true, "evidence_ref": "receipt://rb/authority"}
+            "task_correctness": {"value": 1.0, "unit": "ratio", "comparator": "ge", "threshold": 1.0, "error_bound": 0.0, "baseline": 0.0, "candidate": 1.0, "measured": true, "pass": true, "evidence": {"uri": "receipt://rb/correctness", "sha256": "1111111111111111111111111111111111111111111111111111111111111111"}},
+            "reproducibility": {"value": 1.0, "unit": "ratio", "comparator": "ge", "threshold": 1.0, "error_bound": 0.0, "baseline": 0.0, "candidate": 1.0, "measured": true, "pass": true, "evidence": {"uri": "receipt://rb/reproduction", "sha256": "2222222222222222222222222222222222222222222222222222222222222222"}},
+            "calibration": {"value": 0, "unit": "false_accepts", "comparator": "le", "threshold": 0, "error_bound": 0, "baseline": 1, "candidate": 0, "measured": true, "pass": true, "evidence": {"uri": "receipt://rb/calibration", "sha256": "3333333333333333333333333333333333333333333333333333333333333333"}},
+            "generalization": {"value": 1.0, "unit": "declared_population_coverage", "comparator": "ge", "threshold": 1.0, "error_bound": 0.0, "baseline": 0.0, "candidate": 1.0, "measured": true, "pass": true, "evidence": {"uri": "receipt://rb/scope", "sha256": "4444444444444444444444444444444444444444444444444444444444444444"}},
+            "semantic_fidelity": {"value": 0, "unit": "structured_field_mismatches", "comparator": "le", "threshold": 0, "error_bound": 0, "baseline": 1, "candidate": 0, "measured": true, "pass": true, "evidence": {"uri": "receipt://rb/fidelity", "sha256": "5555555555555555555555555555555555555555555555555555555555555555"}},
+            "comprehension": {"value": 1.0, "unit": "decision_accuracy", "comparator": "ge", "threshold": 1.0, "error_bound": 0.0, "baseline": 0.0, "candidate": 1.0, "measured": true, "pass": true, "evidence": {"uri": "receipt://rb/comprehension", "sha256": "6666666666666666666666666666666666666666666666666666666666666666"}},
+            "cognitive_cost": {"value": 0, "unit": "clarification_turns", "comparator": "le", "threshold": 0, "error_bound": 0, "baseline": 1, "candidate": 0, "measured": true, "pass": true, "evidence": {"uri": "receipt://rb/cost", "sha256": "7777777777777777777777777777777777777777777777777777777777777777"}},
+            "safety_authority": {"value": 0, "unit": "authority_violations", "comparator": "le", "threshold": 0, "error_bound": 0, "baseline": 0, "candidate": 0, "measured": true, "pass": true, "evidence": {"uri": "receipt://rb/authority", "sha256": "8888888888888888888888888888888888888888888888888888888888888888"}}
           }
         }
       ],
       "interface": {
-        "canonical_result_identity": "sha256:rb-canonical-result",
+        "canonical_result_identity": "auto",
+        "canonical_fields": {"outcome": "RB validator accepts the frozen record", "evidence": ["receipt://rb/base-pass"], "uncertainty": [], "blockers": [], "risk": "none", "action_state": "verified", "authority": ["read", "validate"], "next_action": "monitor until expiry"},
+        "presented_fields": {"outcome": "RB validator accepts the frozen record", "evidence": ["receipt://rb/base-pass"], "uncertainty": [], "blockers": [], "risk": "none", "action_state": "verified", "authority": ["read", "validate"], "next_action": "monitor until expiry"},
         "profile_source": "explicit",
         "profile_scope": "task_local",
+        "profile_receipt": {"task_identity": "auto", "session_identity": "1212121212121212121212121212121212121212121212121212121212121212", "observed_facts": [{"kind": "requested_detail", "value": "concise"}], "uncertainty": "explicit preference applies only to this fixture task", "consent": true, "measured": true, "measured_at": "auto", "expires_at": "auto", "evidence": {"uri": "receipt://rb/profile", "sha256": "9999999999999999999999999999999999999999999999999999999999999999"}},
         "style_changes_only": true,
         "changed_dimensions": ["vocabulary", "detail", "ordering", "sentence_length"],
         "forbidden_inferences": [],
         "authority_before": ["read", "validate"],
         "authority_after": ["read", "validate"],
-        "high_risk": false,
+        "authority_identity_before": "auto",
+        "authority_identity_after": "auto",
+        "risk_classification": {"policy_identity": "auto", "categories": ["reversible_local_edit"], "high_risk": false, "evaluated_at": "auto", "valid_until": "auto", "evidence": {"uri": "receipt://rb/risk", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},
         "risk_first": true,
-        "comprehension_probe": {"measured": true, "passed": true, "evidence_ref": "receipt://rb/comprehension"},
+        "comprehension_probe": {"measured": true, "passed": true, "result_identity": "auto", "evidence": {"uri": "receipt://rb/comprehension-probe", "sha256": "abababababababababababababababababababababababababababababababab"}},
         "preservation": [
-          {"field": "outcome", "canonical_ref": "canonical://outcome", "presented_ref": "presented://outcome", "preserved": true},
-          {"field": "evidence", "canonical_ref": "canonical://evidence", "presented_ref": "presented://evidence", "preserved": true},
-          {"field": "uncertainty", "canonical_ref": "canonical://uncertainty", "presented_ref": "presented://uncertainty", "preserved": true},
-          {"field": "blockers", "canonical_ref": "canonical://blockers", "presented_ref": "presented://blockers", "preserved": true},
-          {"field": "risk", "canonical_ref": "canonical://risk", "presented_ref": "presented://risk", "preserved": true},
-          {"field": "action_state", "canonical_ref": "canonical://action-state", "presented_ref": "presented://action-state", "preserved": true},
-          {"field": "authority", "canonical_ref": "canonical://authority", "presented_ref": "presented://authority", "preserved": true},
-          {"field": "next_action", "canonical_ref": "canonical://next-action", "presented_ref": "presented://next-action", "preserved": true}
+          {"field": "outcome", "equivalence_method": "exact_structured_value", "preserved": true},
+          {"field": "evidence", "equivalence_method": "exact_structured_value", "preserved": true},
+          {"field": "uncertainty", "equivalence_method": "exact_structured_value", "preserved": true},
+          {"field": "blockers", "equivalence_method": "exact_structured_value", "preserved": true},
+          {"field": "risk", "equivalence_method": "exact_structured_value", "preserved": true},
+          {"field": "action_state", "equivalence_method": "exact_structured_value", "preserved": true},
+          {"field": "authority", "equivalence_method": "exact_structured_value", "preserved": true},
+          {"field": "next_action", "equivalence_method": "exact_structured_value", "preserved": true}
         ]
       },
+      "monitor": {"state": "CURRENT", "validator_identity": "auto", "last_checked_at": "auto", "valid_until": "auto", "regression_probe_refs": [{"uri": "receipt://rb/regression", "sha256": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"}], "supersedes": [], "retracted_at": null, "retraction_reason": null},
       "promotion": {"requested": false}
     },
     "autonomic_suite": {
@@ -420,12 +482,24 @@
     {"id": "C-COMPUTE-READBACK", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_compute", "input_ref": "compute_suite", "patch": {"/read_back/applied_e": 6}, "expect_ok": false, "expect_state": "FAIL", "why": "an allocation claim fails when the adapter read-back differs"},
     {"id": "C-BOUNDARY-BASE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "expect_ok": true, "expect_state": "PASS", "why": "a cognitive-boundary cell needs reconciled population coverage, measured controls and metrics, a truth-preserving interface, and conserved authority"},
     {"id": "C-BOUNDARY-POPULATION", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/population/expected_count": 2}, "expect_ok": false, "expect_state": "FAIL", "why": "a sampled boundary cannot silently inflate its population scope"},
-    {"id": "C-BOUNDARY-SEMANTIC-DRIFT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/interface/preservation/1/preserved": false}, "expect_ok": false, "expect_state": "FAIL", "why": "presentation adaptation must not alter or hide canonical evidence"},
+    {"id": "C-BOUNDARY-SEMANTIC-DRIFT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/interface/presented_fields/evidence": ["receipt://rb/other"]}, "expect_ok": false, "expect_state": "FAIL", "why": "presentation adaptation must deterministically reject changed canonical evidence even when preserved remains self-declared true"},
     {"id": "C-BOUNDARY-PROFILE-INFERENCE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/interface/profile_source": "inferred_personality"}, "expect_ok": false, "expect_state": "FAIL", "why": "RB may use explicit or measured task-local interaction state but cannot infer a stable personality or intelligence trait"},
     {"id": "C-BOUNDARY-NONMEASURED", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/cells/0/evidence_class": "asserted"}, "expect_ok": false, "expect_state": "FAIL", "why": "a SUPPORTED frontier cell requires measured rather than asserted evidence"},
     {"id": "C-BOUNDARY-NEGATIVE-CONTROL", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/cells/0/negative_control_rejected": false}, "expect_ok": false, "expect_state": "FAIL", "why": "a boundary instrument that accepts its negative control cannot establish support"},
-    {"id": "C-BOUNDARY-HIGH-RISK-COMPREHENSION", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/interface/high_risk": true, "/interface/comprehension_probe/measured": false}, "expect_ok": false, "expect_state": "FAIL", "why": "high-risk output must place risk first and measure that the decision-maker understood it"},
+    {"id": "C-BOUNDARY-HIGH-RISK-COMPREHENSION", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/interface/risk_classification/categories": ["security_sensitive"]}, "expect_ok": false, "expect_state": "FAIL", "why": "the producer cannot disable high-risk comprehension by leaving a self-authored high_risk flag false"},
     {"id": "C-BOUNDARY-PROMOTION-GATE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/promotion/requested": true}, "expect_ok": false, "expect_state": "UNKNOWN", "why": "a boundary cannot be promoted without identities, before/after measures, controls, non-regression, independent review, authority conservation, and a new version/generation"},
+    {"id": "C-BOUNDARY-EXPIRED", "kind": "validator_probe", "charges": "R_FRESHNESS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/valid_until": "2020-01-01T00:00:00Z"}, "expect_ok": false, "expect_state": "FAIL", "why": "an expired support map cannot remain current"},
+    {"id": "C-BOUNDARY-METRIC-SPOOF", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/cells/0/metrics/task_correctness/value": 0}, "expect_ok": false, "expect_state": "FAIL", "why": "pass is recomputed from the measured value and threshold rather than trusted as a boolean"},
+    {"id": "C-BOUNDARY-OUTSIDE-CONTRADICTION", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/cells/0/state": "OUTSIDE", "/population/member_verdicts/0/state": "OUTSIDE"}, "expect_ok": false, "expect_state": "FAIL", "why": "OUTSIDE requires a failed frozen predicate and metric, not a relabelled passing cell"},
+    {"id": "C-BOUNDARY-MONITOR-REGRESSION", "kind": "validator_probe", "charges": "R_FRESHNESS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/monitor/state": "REGRESSED"}, "expect_ok": false, "expect_state": "FAIL", "why": "a regressed map cannot continue exposing SUPPORTED cells"},
+    {"id": "C-BOUNDARY-DISTRIBUTION-DRIFT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/cells/0/coordinates/distribution": "different-distribution"}, "expect_ok": false, "expect_state": "FAIL", "why": "cell distribution must match the population sample plan"},
+    {"id": "C-BOUNDARY-FORBIDDEN-INFERENCE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/interface/forbidden_inferences": ["stable intelligence trait"]}, "expect_ok": false, "expect_state": "FAIL", "why": "a nonempty stable-trait inference ledger is rejected"},
+    {"id": "C-BOUNDARY-PROFILE-OUTLIVES-TASK", "kind": "validator_probe", "charges": "R_FRESHNESS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/interface/profile_receipt/expires_at": "2099-01-01T00:00:00Z"}, "expect_ok": false, "expect_state": "FAIL", "why": "a task-local profile cannot survive the boundary record"},
+    {"id": "C-BOUNDARY-CURRENT-RETRACTED", "kind": "validator_probe", "charges": "R_FRESHNESS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/monitor/retracted_at": "2026-08-19T00:00:00Z", "/monitor/retraction_reason": "contradictory fixture"}, "expect_ok": false, "expect_state": "FAIL", "why": "CURRENT cannot carry retraction metadata"},
+    {"id": "C-RUN-BOUNDARY-MISSING", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_run", "input_ref": "run_min", "remove": ["/cognitive_boundary_gate"], "expect_ok": false, "expect_state": "FAIL", "why": "every non-trivial FAMES run must replay RB rather than bypass it"},
+    {"id": "C-RUN-BOUNDARY-RESULT-MISMATCH", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_run", "input_ref": "run_min", "patch": {"/result/identity": "different-result"}, "expect_ok": false, "expect_state": "FAIL", "why": "an RB PASS for result A cannot be reused for result B"},
+    {"id": "C-INTERACTION-BOUNDARY-MISSING", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "remove": ["/cognitive_boundary_gate"], "expect_ok": false, "expect_state": "FAIL", "why": "an interaction-bearing cognitive record cannot bypass RB"},
+    {"id": "C-INTERACTION-BOUNDARY-MISMATCH", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "patch": {"/cognitive_boundary_gate/record/binding/interaction_identity": "different-interaction"}, "expect_ok": false, "expect_state": "FAIL", "why": "an interaction cannot reuse another interaction's RB PASS"},
     {
       "id": "C-COGNITIVE-BASE",
       "kind": "validator_probe",
@@ -777,6 +851,11 @@
      "patch": {"/risk_class": "R2", "/goal/task_profile": "deployment/external write"}, "expect_ok": false,
      "why": "R2 requires the bounded transaction fields; raising risk without them must fail"},
 
+    {"id": "C-INGEST-PROMOTION-BASE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_ingest", "input_ref": "promoted_ingest", "expect_ok": true, "expect_state": "PASS", "why": "promotion passes only with caller-bound RB, replayed local hashes, review, non-regression, and exact candidate identity"},
+    {"id": "C-INGEST-PROMOTION-CANDIDATE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_ingest", "input_ref": "promoted_ingest", "patch": {"/promotion/candidate_identity": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}, "expect_ok": false, "expect_state": "FAIL", "why": "promotion candidate identity is recomputed from source, claims, and landing artifacts"},
+    {"id": "C-INGEST-PROMOTION-SOURCE-BINDING", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_ingest", "input_ref": "promoted_ingest", "patch": {"/promotion/cognitive_boundary_gate/record/binding/source_identity": "different-source"}, "expect_ok": false, "expect_state": "FAIL", "why": "an unrelated RB record cannot authorize promotion of this source"},
+    {"id": "C-INGEST-PROMOTION-TRIAL-HASH", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_ingest", "input_ref": "promoted_ingest", "patch": {"/claims/0/trial/evidence_refs/0/sha256": "0000000000000000000000000000000000000000000000000000000000000000"}, "expect_ok": false, "expect_state": "FAIL", "why": "promotion trial evidence hash is recomputed from the existing local artifact"},
+    {"id": "C-INGEST-PROMOTION-REVIEW", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_ingest", "input_ref": "promoted_ingest", "remove": ["/promotion/independent_review/evidence"], "expect_ok": false, "expect_state": "FAIL", "why": "accepted review without replayable evidence cannot promote"},
     {"id": "C-INGEST-BASE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
      "validator": "validate_ingest", "input_ref": "ingest_min", "expect_ok": true,
      "why": "the positive golden case for the external_learning lane"},

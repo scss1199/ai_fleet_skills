@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-19.1
+FAMES-GEN: 2026-08-19.4
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -103,7 +103,7 @@ method identity is `UNKNOWN` and fails closed.
 
 ### UT cognitive boundary (RB)
 
-RB is the measured, context-indexed frontier of the **joint human-AI system**, not a
+**RB (Reasoning Boundary)** is the measured, context-indexed frontier of the **joint human-AI system**, not a
 scalar model IQ or personality profile. A cell is supported only when the task result,
 reproduction, calibration, bounded generalization, semantic fidelity, comprehension,
 cognitive cost, and safety/authority metrics pass for an identity-bound population.
@@ -123,6 +123,17 @@ residuals in AEX, and promote only fresh reviewed cells in SEAL. Validate a map 
 `python scripts/fames_fleet.py validate-cognitive-boundary --input <boundary.json>
 --json`. Stale or regressed cells are downgraded and their prior support claim is
 retracted.
+
+RB is a mandatory invariant for every `validate-run`, every cognitive record carrying
+`interaction_integrity`, and every promoted ingest. Each embeds the replayable boundary
+record; a detached PASS string or self-declared measured label is insufficient. Population
+members are distinct from boundary cells. Metrics carry numeric values, units,
+comparators, thresholds, error bounds, baseline/candidate values, and content hashes.
+Canonical and presented structured fields are compared directly. Support expires and a
+REGRESSED or RETRACTED monitor state makes prior support unusable.
+Caller binding prevents reuse of an unrelated PASS record: runs bind goal, result, risk,
+and authority; interaction records bind the full interaction hash; promotions bind source,
+claim ids, landing artifacts, candidate identity, and replayed local evidence hashes.
 
 ### UT delivery truth and anti-handwave gate
 
