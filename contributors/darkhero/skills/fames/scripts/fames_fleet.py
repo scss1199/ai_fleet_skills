@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -14,7 +15,7 @@ import tempfile
 import urllib.request
 import urllib.parse
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
@@ -82,6 +83,12 @@ LOCAL_CAPABILITY_CASES = {
         "C-BOUNDARY-NEGATIVE-CONTROL",
         "C-BOUNDARY-HIGH-RISK-COMPREHENSION",
         "C-BOUNDARY-PROMOTION-GATE",
+        "C-BOUNDARY-EXPIRED",
+        "C-BOUNDARY-METRIC-SPOOF",
+        "C-BOUNDARY-OUTSIDE-CONTRADICTION",
+        "C-BOUNDARY-MONITOR-REGRESSION",
+        "C-RUN-BOUNDARY-MISSING",
+        "C-INTERACTION-BOUNDARY-MISSING",
     ),
     "delivery-integrity": (
         "C-INTERACTION-BASE",
@@ -462,6 +469,15 @@ def validate_run(run: dict) -> dict:
         if promotion.get("actor") != promotion.get("authority"):
             errors.append("follower cannot promote the canonical generation")
 
+    errors.extend(
+        _validate_boundary_gate(
+            run,
+            context="validate_run",
+            force_required=True,
+            expected_goal_identity=expected_hash,
+        )
+    )
+
     return {
         "ok": not errors,
         "state": "PASS" if not errors else "FAIL",
@@ -644,6 +660,38 @@ def validate_ingest(record: dict) -> dict:
                 errors.append(f"promotion requires {phase} PASS")
         if adopted == 0:
             errors.append("promoted with no adopted claim")
+        errors.extend(
+            _validate_boundary_gate(
+                promotion,
+                context="validate_ingest promotion",
+                force_required=True,
+            )
+        )
+        validator_identity = _sha256(Path(__file__).resolve())
+        if promotion.get("validator_identity") != validator_identity:
+            errors.append("promotion validator identity does not match the executing validator")
+        review = promotion.get("independent_review")
+        if not isinstance(review, dict) or review.get("accepted") is not True:
+            errors.append("promotion lacks accepted independent review")
+        else:
+            errors.extend(_content_ref_errors(review.get("evidence"), "promotion.independent_review.evidence"))
+        non_regression = promotion.get("non_regression")
+        if not isinstance(non_regression, dict) or non_regression.get("passed") is not True:
+            errors.append("promotion lacks passing non-regression evidence")
+        else:
+            errors.extend(_content_ref_errors(non_regression.get("evidence"), "promotion.non_regression.evidence"))
+        for claim in claims:
+            if not isinstance(claim, dict) or claim.get("verdict") not in {"adopt", "adapt"}:
+                continue
+            trial = claim.get("trial") if isinstance(claim.get("trial"), dict) else {}
+            if trial.get("validator_identity") != validator_identity:
+                errors.append(f"claim {claim.get('id')}: promoted trial validator identity mismatch")
+            refs = trial.get("evidence_refs")
+            if not isinstance(refs, list) or not refs:
+                errors.append(f"claim {claim.get('id')}: promoted trial lacks content-addressed evidence")
+            else:
+                for ref_index, ref in enumerate(refs):
+                    errors.extend(_content_ref_errors(ref, f"claim {claim.get('id')}.trial.evidence_refs[{ref_index}]"))
 
     for path in _forbidden_key_paths(record):
         errors.append(f"forbidden material key at {path}")
@@ -2277,6 +2325,12 @@ def validate_cognitive(record: dict) -> dict:
         interaction_errors, interaction_unknowns, interaction_count = _validate_interaction(record, layer)
         errors.extend(interaction_errors)
         unknowns.extend(interaction_unknowns)
+        gate_errors = _validate_boundary_gate(
+            record,
+            context="validate_cognitive interaction",
+            force_required=True,
+        )
+        errors.extend(gate_errors)
     if traces is None and "meticulousness" not in record and "interaction_integrity" not in record:
         unknowns.append("traces, meticulousness, or interaction-integrity checks missing")
     return {
@@ -2289,8 +2343,67 @@ def validate_cognitive(record: dict) -> dict:
     }
 
 
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _content_ref_errors(value: object, label: str) -> list[str]:
+    if not isinstance(value, dict):
+        return [f"{label} is not a content-addressed reference"]
+    errors: list[str] = []
+    if not isinstance(value.get("uri"), str) or not value["uri"].strip():
+        errors.append(f"{label}.uri missing")
+    digest = str(value.get("sha256") or "").lower()
+    if not SHA256_RE.fullmatch(digest):
+        errors.append(f"{label}.sha256 is not a full content hash")
+    return errors
+
+
+def _metric_expected_pass(metric: dict) -> bool | None:
+    value = metric.get("value")
+    threshold = metric.get("threshold")
+    comparator = metric.get("comparator")
+    if isinstance(value, bool) or isinstance(threshold, bool):
+        return value == threshold if comparator == "eq" else None
+    if not isinstance(value, (int, float)) or not isinstance(threshold, (int, float)):
+        return None
+    if comparator == "ge":
+        return value >= threshold
+    if comparator == "le":
+        return value <= threshold
+    if comparator == "eq":
+        return value == threshold
+    return None
+
+
+def _validate_boundary_gate(
+    container: dict,
+    context: str,
+    force_required: bool,
+    expected_goal_identity: str | None = None,
+) -> list[str]:
+    gate = container.get("cognitive_boundary_gate")
+    if not isinstance(gate, dict):
+        return [f"{context}: cognitive_boundary_gate missing"] if force_required else []
+    errors: list[str] = []
+    if gate.get("required") is not True:
+        errors.append(f"{context}: RB gate must be required")
+    activation = gate.get("activation")
+    if not isinstance(activation, list) or not activation or any(not isinstance(item, str) or not item for item in activation):
+        errors.append(f"{context}: RB activation identity missing")
+    boundary = gate.get("record")
+    if not isinstance(boundary, dict):
+        errors.append(f"{context}: RB record missing")
+        return errors
+    outcome = validate_cognitive_boundary(boundary)
+    if outcome.get("ok") is not True or outcome.get("state") != "PASS":
+        errors.append(f"{context}: RB record did not PASS ({'; '.join(outcome.get('errors') or [])[:240]})")
+    if expected_goal_identity and boundary.get("goal_identity") != expected_goal_identity:
+        errors.append(f"{context}: RB goal identity mismatch")
+    return errors
+
+
 def validate_cognitive_boundary(record: dict) -> dict:
-    """Validate one measured RB map and its truth-preserving interaction interface."""
+    """Validate a replayable, expiring RB map and truth-preserving interface."""
     layer, problem = _cognitive_contract()
     if problem:
         return {"ok": False, "state": "UNKNOWN", "cells": 0, "errors": [problem]}
@@ -2302,17 +2415,76 @@ def validate_cognitive_boundary(record: dict) -> dict:
 
     errors: list[str] = []
     unknowns: list[str] = []
-
-    for field in ("boundary_id", "subject_identity", "goal_identity", "measured_at"):
+    now = datetime.now(timezone.utc)
+    for field in ("boundary_id", "subject_identity", "goal_identity"):
         if not isinstance(record.get(field), str) or not record[field].strip():
             unknowns.append(f"{field} missing")
+    if record.get("policy_identity") != _stable_sha(policy):
+        errors.append("policy identity does not match the active RB contract")
+    if record.get("validator_identity") != _sha256(Path(__file__).resolve()):
+        errors.append("validator identity does not match the executing validator")
+    measured_at = _parse_time(record.get("measured_at"))
+    valid_until = _parse_time(record.get("valid_until"))
+    if measured_at is None or valid_until is None:
+        unknowns.append("boundary measurement or expiry time is invalid")
+    elif measured_at > now or valid_until <= measured_at or valid_until <= now:
+        errors.append("boundary record is future-dated or expired")
 
     population = record.get("population")
     if not isinstance(population, dict):
-        unknowns.append("population missing")
+        unknowns.append("population manifest missing")
         population = {}
-    if not isinstance(population.get("identity"), str) or not population.get("identity", "").strip():
-        unknowns.append("population.identity missing")
+    unit = population.get("unit")
+    allowed_units = set((policy.get("population_contract") or {}).get("units") or ())
+    if unit not in allowed_units:
+        unknowns.append("population unit is undeclared")
+    members = population.get("members")
+    member_ids: list[str] = []
+    if not isinstance(members, list) or not members:
+        unknowns.append("population members missing")
+        members = []
+    for index, member in enumerate(members):
+        here = f"population.members[{index}]"
+        if not isinstance(member, dict) or not isinstance(member.get("id"), str) or not member["id"].strip():
+            unknowns.append(f"{here}.id missing")
+            continue
+        member_ids.append(member["id"])
+        errors.extend(_content_ref_errors(member.get("evidence"), f"{here}.evidence"))
+    if len(member_ids) != len(set(member_ids)):
+        errors.append("population member ids are not unique")
+    sample_plan = population.get("sample_plan")
+    if not isinstance(sample_plan, dict):
+        unknowns.append("population sample_plan missing")
+        sample_plan = {}
+    if sample_plan.get("method") not in {"exhaustive", "random", "stratified", "bounded"}:
+        unknowns.append("population sampling method is undeclared")
+    for field in ("distribution_identity", "inclusion_rule"):
+        if not isinstance(sample_plan.get(field), str) or not sample_plan[field].strip():
+            unknowns.append(f"population.sample_plan.{field} missing")
+    errors.extend(_content_ref_errors(sample_plan.get("evidence"), "population.sample_plan.evidence"))
+    verdicts = population.get("member_verdicts")
+    covered_members: set[str] = set()
+    if not isinstance(verdicts, list):
+        unknowns.append("population member verdicts missing")
+        verdicts = []
+    for index, verdict in enumerate(verdicts):
+        here = f"population.member_verdicts[{index}]"
+        if not isinstance(verdict, dict):
+            unknowns.append(f"{here} is not an object")
+            continue
+        member_id = verdict.get("member_id")
+        if member_id not in member_ids:
+            errors.append(f"{here} names an unknown member")
+        elif member_id in covered_members:
+            errors.append(f"{here} duplicates a member verdict")
+        else:
+            covered_members.add(member_id)
+        refs = verdict.get("evidence_refs")
+        if not isinstance(refs, list) or not refs:
+            unknowns.append(f"{here}.evidence_refs missing")
+        else:
+            for ref_index, ref in enumerate(refs):
+                errors.extend(_content_ref_errors(ref, f"{here}.evidence_refs[{ref_index}]"))
     counts: dict[str, int] = {}
     for field in ("expected_count", "covered_count", "unknown_count"):
         value = population.get(field)
@@ -2320,22 +2492,29 @@ def validate_cognitive_boundary(record: dict) -> dict:
             unknowns.append(f"population.{field} is not a non-negative integer")
         else:
             counts[field] = value
-    if len(counts) == 3 and counts["expected_count"] != counts["covered_count"] + counts["unknown_count"]:
-        errors.append("population counts do not reconcile")
+    if len(counts) == 3:
+        if counts["expected_count"] != len(member_ids):
+            errors.append("population expected_count does not equal member manifest size")
+        if counts["covered_count"] != len(covered_members):
+            errors.append("population covered_count does not equal unique member verdicts")
+        if counts["unknown_count"] != counts["expected_count"] - counts["covered_count"]:
+            errors.append("population counts do not reconcile")
+        if counts["unknown_count"] > 0:
+            unknowns.append("population contains UNKNOWN members")
+    population_identity_payload = {"unit": unit, "members": members, "sample_plan": sample_plan}
+    if population.get("identity") != _stable_sha(population_identity_payload):
+        errors.append("population identity does not match its manifest and sample plan")
 
     cells = record.get("cells")
     if not isinstance(cells, list) or not cells:
         unknowns.append("boundary cells missing")
         cells = []
-    if "covered_count" in counts and counts["covered_count"] != len(cells):
-        errors.append("population covered_count does not equal the number of measured cells")
-
     required_coordinates = set(policy.get("required_coordinates") or ())
     required_metrics = set(policy.get("required_metrics") or ())
     allowed_states = set(policy.get("states") or ())
     seen_ids: set[str] = set()
     supported_ids: set[str] = set()
-    forbidden_ids: set[str] = set()
+    cell_states: dict[str, str] = {}
     for index, cell in enumerate(cells):
         here = f"cells[{index}]"
         if not isinstance(cell, dict):
@@ -2344,139 +2523,250 @@ def validate_cognitive_boundary(record: dict) -> dict:
         cell_id = cell.get("id")
         if not isinstance(cell_id, str) or not cell_id.strip():
             unknowns.append(f"{here}.id missing")
+            cell_id = f"<unknown-{index}>"
         elif cell_id in seen_ids:
             errors.append(f"{here}.id is duplicated")
-        else:
-            seen_ids.add(cell_id)
+        seen_ids.add(cell_id)
         state = cell.get("state")
+        cell_states[cell_id] = str(state)
         if state not in allowed_states:
             unknowns.append(f"{here}.state is unknown")
-        if state == "SUPPORTED":
-            supported_ids.add(str(cell_id))
-        if state == "FORBIDDEN":
-            forbidden_ids.add(str(cell_id))
-            if not isinstance(cell.get("controlling_invariant_ref"), str) or not cell["controlling_invariant_ref"].strip():
-                unknowns.append(f"{here}: FORBIDDEN cell lacks controlling invariant")
-
         coordinates = cell.get("coordinates")
         if not isinstance(coordinates, dict):
             unknowns.append(f"{here}.coordinates missing")
         else:
-            missing = sorted(
-                key for key in required_coordinates
-                if not isinstance(coordinates.get(key), str) or not coordinates[key].strip()
-            )
+            missing = sorted(key for key in required_coordinates if not isinstance(coordinates.get(key), str) or not coordinates[key].strip())
             if missing:
                 unknowns.append(f"{here}.coordinates missing {', '.join(missing)}")
+        cell_measured = _parse_time(cell.get("measured_at"))
+        cell_valid = _parse_time(cell.get("valid_until"))
+        if state != "FORBIDDEN" and (cell_measured is None or cell_valid is None):
+            unknowns.append(f"{here}: measurement or expiry invalid")
+        elif state != "FORBIDDEN" and (cell_measured > now or cell_valid <= now or cell_valid <= cell_measured):
+            errors.append(f"{here}: measurement is future-dated or expired")
+
+        if state == "FORBIDDEN":
+            invariant = cell.get("controlling_invariant")
+            if not isinstance(invariant, dict):
+                unknowns.append(f"{here}: FORBIDDEN invariant missing")
+            else:
+                for field in ("policy_identity", "authority_identity", "version", "reason", "valid_until"):
+                    if not invariant.get(field):
+                        unknowns.append(f"{here}.controlling_invariant.{field} missing")
+                if _parse_time(invariant.get("valid_until")) is None:
+                    unknowns.append(f"{here}: FORBIDDEN invariant expiry invalid")
+            continue
+        if state == "UNKNOWN":
+            reasons = cell.get("unknown_reasons")
+            if not isinstance(reasons, list) or not reasons:
+                unknowns.append(f"{here}: UNKNOWN reasons missing")
+            unknowns.append(f"{here}: state is UNKNOWN")
+            continue
 
         metrics = cell.get("metrics")
+        failed_metrics: list[str] = []
+        evidence_hashes: set[str] = set()
         if not isinstance(metrics, dict):
             unknowns.append(f"{here}.metrics missing")
+            metrics = {}
+        missing_metrics = sorted(required_metrics - set(metrics))
+        if missing_metrics:
+            unknowns.append(f"{here}.metrics missing {', '.join(missing_metrics)}")
+        for name in sorted(required_metrics & set(metrics)):
+            metric = metrics.get(name)
+            metric_here = f"{here}.metrics.{name}"
+            if not isinstance(metric, dict):
+                unknowns.append(f"{metric_here} is not an object")
+                continue
+            for field in ("unit", "comparator", "value", "threshold", "error_bound", "baseline", "candidate", "measured", "pass", "evidence"):
+                if field not in metric:
+                    unknowns.append(f"{metric_here}.{field} missing")
+            if metric.get("measured") is not True:
+                unknowns.append(f"{metric_here} is not measured")
+            if not isinstance(metric.get("unit"), str) or not metric.get("unit"):
+                unknowns.append(f"{metric_here}.unit missing")
+            if not isinstance(metric.get("error_bound"), (int, float)) or isinstance(metric.get("error_bound"), bool) or metric.get("error_bound", -1) < 0:
+                unknowns.append(f"{metric_here}.error_bound invalid")
+            expected_pass = _metric_expected_pass(metric)
+            if expected_pass is None:
+                unknowns.append(f"{metric_here} comparator or values are not replayable")
+            elif metric.get("pass") is not expected_pass:
+                errors.append(f"{metric_here}.pass contradicts value, comparator, and threshold")
+            if expected_pass is False:
+                failed_metrics.append(name)
+            evidence = metric.get("evidence")
+            errors.extend(_content_ref_errors(evidence, f"{metric_here}.evidence"))
+            if isinstance(evidence, dict) and SHA256_RE.fullmatch(str(evidence.get("sha256") or "")):
+                digest = str(evidence["sha256"])
+                if digest in evidence_hashes:
+                    errors.append(f"{metric_here} reuses another metric's evidence identity")
+                evidence_hashes.add(digest)
+        if cell.get("evidence_class") != "measured":
+            errors.append(f"{here}: measured boundary state uses non-measured evidence")
+        if cell.get("positive_control_passed") is not True or cell.get("negative_control_rejected") is not True:
+            errors.append(f"{here}: positive or negative control failed")
+        if cell.get("fresh") is not True or cell.get("reproducible") is not True:
+            errors.append(f"{here}: evidence is stale or not reproducible")
+        refs = cell.get("evidence_refs")
+        if not isinstance(refs, list) or not refs:
+            unknowns.append(f"{here}.evidence_refs missing")
         else:
-            missing_metrics = sorted(required_metrics - set(metrics))
-            if missing_metrics:
-                unknowns.append(f"{here}.metrics missing {', '.join(missing_metrics)}")
-            for name in sorted(required_metrics & set(metrics)):
-                metric = metrics.get(name)
-                metric_here = f"{here}.metrics.{name}"
-                if not isinstance(metric, dict):
-                    unknowns.append(f"{metric_here} is not an object")
-                    continue
-                if metric.get("measured") is not True:
-                    unknowns.append(f"{metric_here} is not measured")
-                if "threshold" not in metric:
-                    unknowns.append(f"{metric_here}.threshold missing")
-                if not isinstance(metric.get("pass"), bool):
-                    unknowns.append(f"{metric_here}.pass is unmeasured")
-                if not isinstance(metric.get("evidence_ref"), str) or not metric["evidence_ref"].strip():
-                    unknowns.append(f"{metric_here}.evidence_ref missing")
+            for ref_index, ref in enumerate(refs):
+                errors.extend(_content_ref_errors(ref, f"{here}.evidence_refs[{ref_index}]"))
+        predicate_passed = cell.get("frozen_predicate_passed")
+        if not isinstance(predicate_passed, bool):
+            unknowns.append(f"{here}.frozen_predicate_passed is unmeasured")
+        if state == "SUPPORTED":
+            supported_ids.add(cell_id)
+            if failed_metrics or predicate_passed is not True:
+                errors.append(f"{here}: SUPPORTED contradicts its metric or frozen predicate result")
+        elif state == "LIMITED":
+            if not failed_metrics or not cell.get("safe_operating_limit") or not cell.get("residuals"):
+                errors.append(f"{here}: LIMITED lacks failing metrics, residuals, or safe operating limit")
+        elif state == "OUTSIDE" and (not failed_metrics or predicate_passed is not False):
+            errors.append(f"{here}: OUTSIDE requires a failed metric and frozen predicate")
 
-        if state in {"SUPPORTED", "LIMITED", "OUTSIDE"}:
-            if cell.get("evidence_class") != "measured":
-                errors.append(f"{here}: measured boundary state uses non-measured evidence")
-            if cell.get("positive_control_passed") is not True:
-                errors.append(f"{here}: positive control did not pass")
-            if cell.get("negative_control_rejected") is not True:
-                errors.append(f"{here}: negative control was not rejected")
-            if cell.get("fresh") is not True or cell.get("reproducible") is not True:
-                errors.append(f"{here}: evidence is stale or not reproducible")
-            refs = cell.get("evidence_refs")
-            if not isinstance(refs, list) or not refs or any(not isinstance(ref, str) or not ref.strip() for ref in refs):
-                unknowns.append(f"{here}.evidence_refs missing")
-        if state == "SUPPORTED" and isinstance(metrics, dict):
-            failed = [name for name in required_metrics if isinstance(metrics.get(name), dict) and metrics[name].get("pass") is not True]
-            if failed:
-                errors.append(f"{here}: SUPPORTED cell has failing metrics {', '.join(sorted(failed))}")
-        if state == "LIMITED":
-            residuals = cell.get("residuals")
-            if not isinstance(residuals, list) or not residuals:
-                unknowns.append(f"{here}: LIMITED cell lacks named residuals")
+    for index, verdict in enumerate(verdicts):
+        if not isinstance(verdict, dict):
+            continue
+        if verdict.get("cell_id") not in cell_states:
+            errors.append(f"population.member_verdicts[{index}] names an unknown cell")
+        elif verdict.get("state") != cell_states[verdict["cell_id"]]:
+            errors.append(f"population.member_verdicts[{index}] state disagrees with its cell")
 
+    contract = policy.get("interface_contract") or {}
     interface = record.get("interface")
     if not isinstance(interface, dict):
         unknowns.append("interface missing")
         interface = {}
-    if not isinstance(interface.get("canonical_result_identity"), str) or not interface.get("canonical_result_identity", "").strip():
-        unknowns.append("interface.canonical_result_identity missing")
-    contract = policy.get("interface_contract") or {}
-    if interface.get("profile_source") not in set(contract.get("profile_sources") or ()):
-        errors.append("interface.profile_source is inferred or undeclared")
-    if interface.get("profile_scope") != contract.get("profile_scope"):
-        errors.append("interface profile is not task-local")
-    if interface.get("style_changes_only") is not True:
-        errors.append("interface adaptation is not presentation-only")
-    forbidden_inferences = interface.get("forbidden_inferences")
-    if not isinstance(forbidden_inferences, list):
-        unknowns.append("interface.forbidden_inferences ledger missing")
-    elif forbidden_inferences:
-        errors.append("interface contains forbidden stable-trait inference")
-    adaptable = set(contract.get("adaptable_dimensions") or ())
-    changed = interface.get("changed_dimensions")
-    if not isinstance(changed, list):
-        unknowns.append("interface.changed_dimensions missing")
-    elif any(item not in adaptable for item in changed):
-        errors.append("interface changed a non-presentational dimension")
-
+    canonical_fields = interface.get("canonical_fields")
+    presented_fields = interface.get("presented_fields")
     required_information = set(contract.get("required_information") or ())
+    if not isinstance(canonical_fields, dict) or not isinstance(presented_fields, dict):
+        unknowns.append("canonical or presented structured fields missing")
+        canonical_fields, presented_fields = {}, {}
+    if interface.get("canonical_result_identity") != _stable_sha(canonical_fields):
+        errors.append("canonical result identity does not match canonical structured fields")
     preservation = interface.get("preservation")
     preserved_fields: set[str] = set()
     if not isinstance(preservation, list):
         unknowns.append("interface.preservation ledger missing")
-    else:
-        for index, item in enumerate(preservation):
-            here = f"interface.preservation[{index}]"
-            if not isinstance(item, dict):
-                unknowns.append(f"{here} is not an object")
-                continue
-            field = item.get("field")
-            if field in required_information:
-                preserved_fields.add(field)
-            if item.get("preserved") is not True:
-                errors.append(f"{here}: canonical information was not preserved")
-            for ref_name in ("canonical_ref", "presented_ref"):
-                if not isinstance(item.get(ref_name), str) or not item[ref_name].strip():
-                    unknowns.append(f"{here}.{ref_name} missing")
+        preservation = []
+    for index, item in enumerate(preservation):
+        here = f"interface.preservation[{index}]"
+        if not isinstance(item, dict):
+            unknowns.append(f"{here} is not an object")
+            continue
+        field = item.get("field")
+        if field in required_information:
+            preserved_fields.add(field)
+        if item.get("equivalence_method") != "exact_structured_value":
+            errors.append(f"{here}: equivalence method is not deterministic")
+        equal = field in canonical_fields and field in presented_fields and _stable_sha(canonical_fields[field]) == _stable_sha(presented_fields[field])
+        if item.get("preserved") is not equal or not equal:
+            errors.append(f"{here}: canonical and presented values differ")
     missing_information = sorted(required_information - preserved_fields)
     if missing_information:
         unknowns.append(f"interface.preservation missing {', '.join(missing_information)}")
+    if interface.get("style_changes_only") is not True:
+        errors.append("interface adaptation is not presentation-only")
+    changed = interface.get("changed_dimensions")
+    if not isinstance(changed, list) or any(item not in set(contract.get("adaptable_dimensions") or ()) for item in changed):
+        errors.append("interface changed an undeclared dimension")
+
+    source = interface.get("profile_source")
+    if source not in set(contract.get("profile_sources") or ()) or interface.get("profile_scope") != contract.get("profile_scope"):
+        errors.append("interface profile source or scope is invalid")
+    profile = interface.get("profile_receipt")
+    if not isinstance(profile, dict):
+        unknowns.append("interface profile receipt missing")
+        profile = {}
+    if profile.get("task_identity") != record.get("goal_identity") or not profile.get("session_identity"):
+        errors.append("profile receipt is not bound to this task and session")
+    observed = profile.get("observed_facts")
+    allowed_observations = set(contract.get("allowed_profile_observations") or ())
+    if not isinstance(observed, list) or not observed:
+        unknowns.append("profile observed facts missing")
+    elif any(not isinstance(item, dict) or item.get("kind") not in allowed_observations or "value" not in item for item in observed):
+        errors.append("profile contains an undeclared or trait-like observation")
+    profile_measured = _parse_time(profile.get("measured_at"))
+    profile_expires = _parse_time(profile.get("expires_at"))
+    if profile_measured is None or profile_expires is None or profile_measured > now or profile_expires <= now:
+        errors.append("profile receipt is future-dated or expired")
+    if source == "explicit" and profile.get("consent") is not True:
+        errors.append("explicit profile lacks consent")
+    if source == "measured_session" and profile.get("measured") is not True:
+        errors.append("measured-session profile is not measured")
+    if not isinstance(profile.get("uncertainty"), str) or not profile["uncertainty"].strip():
+        unknowns.append("profile uncertainty missing")
+    errors.extend(_content_ref_errors(profile.get("evidence"), "interface.profile_receipt.evidence"))
+
+    risk_policy = contract.get("risk_policy") or {}
+    risk = interface.get("risk_classification")
+    if not isinstance(risk, dict):
+        unknowns.append("risk classification missing")
+        risk = {}
+    if risk.get("policy_identity") != _stable_sha(risk_policy):
+        errors.append("risk classification policy identity mismatch")
+    categories = risk.get("categories")
+    if not isinstance(categories, list):
+        unknowns.append("risk categories missing")
+        categories = []
+    declared_categories = set(risk_policy.get("categories") or ())
+    if any(category not in declared_categories for category in categories):
+        errors.append("risk classification contains an undeclared category")
+    derived_high_risk = bool(set(categories) & set(risk_policy.get("high_risk_categories") or ()))
+    if risk.get("high_risk") is not derived_high_risk:
+        errors.append("high-risk flag contradicts the frozen risk policy")
+    risk_measured = _parse_time(risk.get("evaluated_at"))
+    risk_valid = _parse_time(risk.get("valid_until"))
+    if risk_measured is None or risk_valid is None or risk_measured > now or risk_valid <= now:
+        errors.append("risk classification is future-dated or expired")
+    errors.extend(_content_ref_errors(risk.get("evidence"), "interface.risk_classification.evidence"))
+    if derived_high_risk:
+        probe = interface.get("comprehension_probe")
+        if interface.get("risk_first") is not True:
+            errors.append("high-risk judgment was not presented first")
+        if not isinstance(probe, dict) or probe.get("measured") is not True or probe.get("passed") is not True:
+            errors.append("high-risk comprehension probe did not pass")
+        elif probe.get("result_identity") != interface.get("canonical_result_identity"):
+            errors.append("comprehension probe is not bound to the canonical result")
+        else:
+            errors.extend(_content_ref_errors(probe.get("evidence"), "interface.comprehension_probe.evidence"))
 
     before = interface.get("authority_before")
     after = interface.get("authority_after")
-    if not isinstance(before, list) or not isinstance(after, list):
-        unknowns.append("interface authority ledger missing")
-    elif not set(after).issubset(set(before)):
+    if not isinstance(before, list) or not isinstance(after, list) or any(not isinstance(item, str) or not item or "*" in item or "?" in item for item in before + after):
+        unknowns.append("interface authority grants are invalid or wildcarded")
+        before, after = [], []
+    if not set(after).issubset(set(before)):
         errors.append("interface adaptation expanded authority")
-    high_risk = interface.get("high_risk")
-    if not isinstance(high_risk, bool):
-        unknowns.append("interface.high_risk is unmeasured")
-    if high_risk:
-        if interface.get("risk_first") is not True:
-            errors.append("high-risk judgment was not presented first")
-        probe = interface.get("comprehension_probe")
-        if not isinstance(probe, dict):
-            unknowns.append("high-risk comprehension probe missing")
-        elif probe.get("measured") is not True or probe.get("passed") is not True or not probe.get("evidence_ref"):
-            errors.append("high-risk comprehension probe did not pass")
+    if interface.get("authority_identity_before") != _stable_sha(sorted(before)) or interface.get("authority_identity_after") != _stable_sha(sorted(after)):
+        errors.append("interface authority identity mismatch")
+
+    monitor = record.get("monitor")
+    if not isinstance(monitor, dict):
+        unknowns.append("boundary monitor ledger missing")
+        monitor = {}
+    monitor_state = monitor.get("state")
+    if monitor_state not in {"CURRENT", "REGRESSED", "RETRACTED"}:
+        unknowns.append("boundary monitor state invalid")
+    if monitor.get("validator_identity") != record.get("validator_identity"):
+        errors.append("monitor validator identity mismatch")
+    checked_at = _parse_time(monitor.get("last_checked_at"))
+    monitor_until = _parse_time(monitor.get("valid_until"))
+    if checked_at is None or monitor_until is None or checked_at > now or monitor_until <= now:
+        errors.append("monitor evidence is future-dated or expired")
+    probe_refs = monitor.get("regression_probe_refs")
+    if not isinstance(probe_refs, list) or not probe_refs:
+        unknowns.append("monitor regression probes missing")
+    else:
+        for index, ref in enumerate(probe_refs):
+            errors.extend(_content_ref_errors(ref, f"monitor.regression_probe_refs[{index}]"))
+    if monitor_state in {"REGRESSED", "RETRACTED"} and supported_ids:
+        errors.append("regressed or retracted boundary still contains SUPPORTED cells")
+    if monitor_state == "RETRACTED" and (not _parse_time(monitor.get("retracted_at")) or not monitor.get("retraction_reason")):
+        unknowns.append("retraction timestamp or reason missing")
 
     promotion = record.get("promotion")
     if not isinstance(promotion, dict) or not isinstance(promotion.get("requested"), bool):
@@ -2484,40 +2774,46 @@ def validate_cognitive_boundary(record: dict) -> dict:
         promotion = {}
     if promotion.get("requested") is True:
         required = set((policy.get("promotion_contract") or {}).get("required") or ())
-        missing = sorted(key for key in required if key not in promotion)
+        missing = sorted(key for key in required if key not in promotion or promotion.get(key) in (None, "", [], {}))
         if missing:
             unknowns.append(f"promotion missing {', '.join(missing)}")
-        if promotion.get("measured_before_after") is not True:
-            errors.append("promotion lacks measured before/after evidence")
         expanded = promotion.get("expanded_cell_ids")
         if not isinstance(expanded, list) or not expanded:
             unknowns.append("promotion expanded_cell_ids missing")
-        else:
-            if any(cell_id not in supported_ids for cell_id in expanded):
-                errors.append("promotion targets a cell that is not SUPPORTED")
-            if set(expanded) & forbidden_ids:
-                errors.append("promotion targets a FORBIDDEN cell")
+        elif any(cell_id not in supported_ids for cell_id in expanded):
+            errors.append("promotion targets a cell that is not SUPPORTED")
+        if promotion.get("measured_before_after") is not True:
+            errors.append("promotion lacks measured before/after evidence")
         for field in ("positive_controls", "negative_controls"):
-            if not isinstance(promotion.get(field), list) or not promotion[field]:
+            refs = promotion.get(field)
+            if not isinstance(refs, list) or not refs:
                 unknowns.append(f"promotion.{field} missing")
-        if promotion.get("non_regression") is not True:
+            else:
+                for index, ref in enumerate(refs):
+                    errors.extend(_content_ref_errors(ref, f"promotion.{field}[{index}]"))
+        non_regression = promotion.get("non_regression")
+        if not isinstance(non_regression, dict) or non_regression.get("passed") is not True:
             errors.append("promotion non-regression did not pass")
+        else:
+            errors.extend(_content_ref_errors(non_regression.get("evidence"), "promotion.non_regression.evidence"))
         review = promotion.get("independent_review")
-        if not isinstance(review, dict) or review.get("accepted") is not True or not review.get("evidence_ref"):
+        if not isinstance(review, dict) or review.get("accepted") is not True or not review.get("reviewer_identity"):
             errors.append("promotion lacks accepted independent review")
+        else:
+            errors.extend(_content_ref_errors(review.get("evidence"), "promotion.independent_review.evidence"))
         promotion_before = promotion.get("authority_before")
         promotion_after = promotion.get("authority_after")
         if not isinstance(promotion_before, list) or not isinstance(promotion_after, list):
             unknowns.append("promotion authority ledger missing")
         elif not set(promotion_after).issubset(set(promotion_before)) or promotion.get("authority_conserved") is not True:
             errors.append("promotion expanded authority")
-        if promotion.get("version_before") == promotion.get("version_after") or not promotion.get("version_change"):
+        if not promotion.get("version_before") or not promotion.get("version_after") or promotion.get("version_before") == promotion.get("version_after") or promotion.get("version_change") is not True:
             errors.append("promotion lacks a semantic version change")
-        if promotion.get("generation_before") == promotion.get("generation_after") or not promotion.get("generation_change"):
+        if not promotion.get("generation_before") or not promotion.get("generation_after") or promotion.get("generation_before") == promotion.get("generation_after") or promotion.get("generation_change") is not True:
             errors.append("promotion lacks a generation change")
+        if promotion.get("validator_identity") != record.get("validator_identity"):
+            errors.append("promotion validator identity mismatch")
 
-    if counts.get("unknown_count", 0) > 0 and promotion.get("requested") is True:
-        errors.append("promotion cannot hide UNKNOWN population cells")
     return {
         "ok": not errors and not unknowns,
         "state": "UNKNOWN" if unknowns else ("PASS" if not errors else "FAIL"),
@@ -3695,13 +3991,76 @@ def _inject_goal_hash(record: dict) -> None:
     for row in record.get("evidence") or []:
         if isinstance(row, dict):
             row["goal_identity"] = digest
+    gate = record.get("cognitive_boundary_gate")
+    if isinstance(gate, dict) and isinstance(gate.get("record"), dict):
+        gate["record"]["goal_identity"] = digest
+
+
+def _resolve_fixture_refs(node: object, fixtures: dict, stack: tuple[str, ...] = ()) -> object:
+    if isinstance(node, dict) and set(node) == {"$fixture"}:
+        ref = node.get("$fixture")
+        if ref not in fixtures or ref in stack:
+            return node
+        return _resolve_fixture_refs(json.loads(json.dumps(fixtures[ref])), fixtures, (*stack, str(ref)))
+    if isinstance(node, dict):
+        return {key: _resolve_fixture_refs(value, fixtures, stack) for key, value in node.items()}
+    if isinstance(node, list):
+        return [_resolve_fixture_refs(value, fixtures, stack) for value in node]
+    return node
+
+
+def _hydrate_boundary_fixtures(node: object) -> None:
+    if isinstance(node, dict):
+        if node.pop("auto_boundary_contract", False):
+            layer, _ = _cognitive_contract()
+            policy = layer.get("cognitive_boundary") or {}
+            now = datetime.now(timezone.utc)
+            expires = now + timedelta(hours=1)
+            now_text = now.isoformat()
+            expires_text = expires.isoformat()
+            node["policy_identity"] = _stable_sha(policy)
+            node["validator_identity"] = _sha256(Path(__file__).resolve())
+            node["measured_at"] = now_text
+            node["valid_until"] = expires_text
+            population = node.get("population") or {}
+            population["identity"] = _stable_sha({
+                "unit": population.get("unit"),
+                "members": population.get("members"),
+                "sample_plan": population.get("sample_plan"),
+            })
+            interface = node.get("interface") or {}
+            interface["canonical_result_identity"] = _stable_sha(interface.get("canonical_fields") or {})
+            interface["authority_identity_before"] = _stable_sha(sorted(interface.get("authority_before") or []))
+            interface["authority_identity_after"] = _stable_sha(sorted(interface.get("authority_after") or []))
+            profile = interface.get("profile_receipt") or {}
+            profile["task_identity"] = node.get("goal_identity")
+            profile["measured_at"] = now_text
+            profile["expires_at"] = expires_text
+            risk = interface.get("risk_classification") or {}
+            risk["policy_identity"] = _stable_sha((policy.get("interface_contract") or {}).get("risk_policy") or {})
+            risk["evaluated_at"] = now_text
+            risk["valid_until"] = expires_text
+            for cell in node.get("cells") or []:
+                if isinstance(cell, dict):
+                    cell["measured_at"] = now_text
+                    cell["valid_until"] = expires_text
+            monitor = node.get("monitor") or {}
+            monitor["validator_identity"] = node["validator_identity"]
+            monitor["last_checked_at"] = now_text
+            monitor["valid_until"] = expires_text
+        for value in node.values():
+            _hydrate_boundary_fixtures(value)
+    elif isinstance(node, list):
+        for value in node:
+            _hydrate_boundary_fixtures(value)
 
 
 def _prepare_input(fixtures: dict, case: dict) -> tuple[object, str]:
     ref = case.get("input_ref")
     if ref not in fixtures:
         return None, f"unknown input_ref {ref!r}"
-    record = json.loads(json.dumps(fixtures[ref]))
+    record = _resolve_fixture_refs(json.loads(json.dumps(fixtures[ref])), fixtures, (str(ref),))
+    _hydrate_boundary_fixtures(record)
     auto = record.pop("auto_goal_hash", False) if isinstance(record, dict) else False
     for pointer in case.get("remove") or []:
         _pointer_del(record, pointer)
