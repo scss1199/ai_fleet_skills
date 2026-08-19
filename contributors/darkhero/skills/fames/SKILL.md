@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-19.5
+FAMES-GEN: 2026-08-19.8
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -135,8 +135,15 @@ Caller binding prevents reuse of an unrelated PASS record: runs bind goal, resul
 and authority; interaction records bind the full interaction hash; promotions bind source,
 claim ids, landing artifacts, candidate identity, and replayed local evidence hashes.
 Promotion candidate identity includes full claim semantics and current landing-artifact
-bytes. The active validator reruns the exact RB input and recomputes the execution receipt;
-review and non-regression JSON receipts must bind the same candidate and artifact.
+bytes. The active validator reruns the exact RB input and recomputes the execution receipt.
+Independent review must come from an identity separated from builder and promoter authority,
+reproduce the frozen RB subject, predicates, evidence, and output, and carry an unexpired
+content-addressed receipt. Trial replay binds the exact current input; review execution
+timestamps are checked through the receipt window rather than mistaken for invariant subject
+matter. The
+active promotion validator directly reruns the frozen non-regression cases; a PASS string or
+self-authored receipt cannot substitute for package-, validator-, case-, input-, output-,
+state-, exit-, candidate-, and artifact-bound evidence.
 
 ### UT delivery truth and anti-handwave gate
 

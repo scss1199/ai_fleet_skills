@@ -110,6 +110,11 @@ LOCAL_CAPABILITY_CASES = {
         "C-INGEST-PROMOTION-UNRELATED-FILE",
         "C-INGEST-PROMOTION-REPLAY-CANDIDATE",
         "C-INGEST-PROMOTION-REVIEW",
+        "C-INGEST-PROMOTION-SELF-REVIEW",
+        "C-INGEST-PROMOTION-REVIEWER-MISMATCH",
+        "C-INGEST-PROMOTION-NONREG-VALIDATOR",
+        "C-INGEST-PROMOTION-NONREG-OUTPUT",
+        "C-INGEST-PROMOTION-REVIEW-STALE",
     ),
     "delivery-integrity": (
         "C-INTERACTION-BASE",
@@ -742,31 +747,60 @@ def validate_ingest(record: dict) -> dict:
         validator_identity = _sha256(Path(__file__).resolve())
         if promotion.get("validator_identity") != validator_identity:
             errors.append("promotion validator identity does not match the executing validator")
-        review = promotion.get("independent_review")
-        if not isinstance(review, dict) or review.get("accepted") is not True:
-            errors.append("promotion lacks accepted independent review")
-        else:
-            errors.extend(_bound_json_receipt_errors(review.get("evidence"), "promotion.independent_review.evidence", {
-                "kind": "independent_review",
-                "candidate_identity": candidate_identity,
-                "artifact_identity": artifact_identity,
-                "decision": "ACCEPT",
-            }))
-        non_regression = promotion.get("non_regression")
-        if not isinstance(non_regression, dict) or non_regression.get("passed") is not True:
-            errors.append("promotion lacks passing non-regression evidence")
-        else:
-            errors.extend(_bound_json_receipt_errors(non_regression.get("evidence"), "promotion.non_regression.evidence", {
-                "kind": "non_regression",
-                "candidate_identity": candidate_identity,
-                "artifact_identity": artifact_identity,
-                "state": "PASS",
-            }))
         boundary_input = ((promotion.get("cognitive_boundary_gate") or {}).get("record")
                           if isinstance(promotion.get("cognitive_boundary_gate"), dict) else None)
         replayed_outcome = validate_cognitive_boundary(boundary_input) if isinstance(boundary_input, dict) else {}
         replay_input_identity = _stable_sha(boundary_input or {})
+        review_subject_identity = _boundary_review_subject_identity(boundary_input or {})
         replay_output_identity = _stable_sha(replayed_outcome)
+        review = promotion.get("independent_review")
+        if not isinstance(review, dict) or review.get("accepted") is not True:
+            errors.append("promotion lacks accepted independent review")
+        else:
+            reviewer_identity = review.get("reviewer_identity")
+            if not isinstance(reviewer_identity, str) or not reviewer_identity.strip():
+                errors.append("promotion independent reviewer identity missing")
+            elif reviewer_identity in {promotion.get("actor"), promotion.get("authority")}:
+                errors.append("promotion independent reviewer is not separated from promoter authority")
+            expected_review = {
+                "kind": "independent_review",
+                "candidate_identity": candidate_identity,
+                "artifact_identity": artifact_identity,
+                "builder_identity": promotion.get("actor"),
+                "reviewer_identity": reviewer_identity,
+                "validator_identity": validator_identity,
+                "reproduction_input_identity": review_subject_identity,
+                "reproduction_output_identity": replay_output_identity,
+                "decision": "ACCEPT",
+                "executed_at": review.get("executed_at"),
+                "valid_until": review.get("valid_until"),
+            }
+            errors.extend(_receipt_window_errors(review, "promotion.independent_review"))
+            errors.extend(_bound_json_receipt_errors(
+                review.get("evidence"), "promotion.independent_review.evidence", expected_review
+            ))
+        non_regression = promotion.get("non_regression")
+        if not isinstance(non_regression, dict) or non_regression.get("passed") is not True:
+            errors.append("promotion lacks passing non-regression evidence")
+        else:
+            actual_non_regression = _promotion_non_regression()
+            expected_non_regression = {
+                "kind": "non_regression",
+                "candidate_identity": candidate_identity,
+                "artifact_identity": artifact_identity,
+                **actual_non_regression,
+                "executed_at": non_regression.get("executed_at"),
+                "valid_until": non_regression.get("valid_until"),
+            }
+            for field, expected in actual_non_regression.items():
+                if non_regression.get(field) != expected:
+                    errors.append(f"promotion non-regression {field} mismatch")
+            if actual_non_regression.get("state") != "PASS" or actual_non_regression.get("exit_status") != 0:
+                errors.append("promotion active non-regression replay did not pass")
+            errors.extend(_receipt_window_errors(non_regression, "promotion.non_regression"))
+            errors.extend(_bound_json_receipt_errors(
+                non_regression.get("evidence"), "promotion.non_regression.evidence", expected_non_regression
+            ))
         for claim in claims:
             if not isinstance(claim, dict) or claim.get("verdict") not in {"adopt", "adapt"}:
                 continue
@@ -2495,7 +2529,70 @@ def _bound_json_receipt_errors(value: object, label: str, expected: dict) -> lis
     for field, wanted in expected.items():
         if payload.get(field) != wanted:
             errors.append(f"{label} receipt {field} mismatch")
+    errors.extend(_receipt_window_errors(payload, f"{label} receipt"))
     return errors
+
+
+def _receipt_window_errors(value: object, label: str) -> list[str]:
+    if not isinstance(value, dict):
+        return [f"{label} receipt window missing"]
+    executed_at = _parse_time(value.get("executed_at"))
+    valid_until = _parse_time(value.get("valid_until"))
+    now = datetime.now(timezone.utc)
+    if executed_at is None or valid_until is None:
+        return [f"{label} receipt window is invalid"]
+    if executed_at > now or valid_until <= executed_at or valid_until <= now:
+        return [f"{label} receipt is future-dated or expired"]
+    return []
+
+
+def _boundary_review_subject_identity(value: object) -> str:
+    volatile = {
+        "measured_at", "last_checked_at", "valid_until", "executed_at",
+        "expires_at", "retracted_at", "evaluated_at",
+    }
+
+    def freeze(node: object) -> object:
+        if isinstance(node, dict):
+            return {key: freeze(item) for key, item in node.items() if key not in volatile}
+        if isinstance(node, list):
+            return [freeze(item) for item in node]
+        return node
+
+    return _stable_sha(freeze(value))
+
+
+def _promotion_non_regression() -> dict:
+    validator_path = Path(__file__).resolve()
+    cases_path = (PACKAGE_ROOT / CASES_TARGET).resolve()
+    try:
+        manifest = _read_json(PACKAGE_ROOT / MANIFEST_NAME)
+    except (OSError, json.JSONDecodeError):
+        manifest = {}
+    package_check = verify_package(PACKAGE_ROOT)
+    suite_input = {
+        "case_ids": list(PROMOTION_NON_REGRESSION_CASES),
+        "package_identity": manifest.get("package_sha"),
+        "validator_identity": _sha256(validator_path),
+        "cases_identity": _sha256(cases_path) if cases_path.is_file() else None,
+    }
+    outcome = run_cases(_active_workspace(), PACKAGE_ROOT, list(PROMOTION_NON_REGRESSION_CASES))
+    suite_output = {
+        "ok": outcome.get("ok"),
+        "cases": outcome.get("cases"),
+        "residual": outcome.get("residual"),
+        "errors": outcome.get("errors"),
+        "degraded": outcome.get("degraded"),
+        "package_errors": package_check.get("errors"),
+    }
+    passed = package_check.get("ok") is True and outcome.get("ok") is True
+    return {
+        **suite_input,
+        "input_identity": _stable_sha(suite_input),
+        "output_identity": _stable_sha(suite_output),
+        "state": "PASS" if passed else "FAIL",
+        "exit_status": 0 if passed else 1,
+    }
 
 
 def _metric_expected_pass(metric: dict) -> bool | None:
@@ -4283,7 +4380,12 @@ def _hydrate_promotion_fixtures(node: object) -> None:
                     trial["evidence_refs"] = [script_ref]
             promotion = node.get("promotion") or {}
             promotion["validator_identity"] = validator_identity
-            promotion["independent_review"] = {"accepted": True, "reviewer_identity": "fixture-readonly-reviewer", "evidence": review_ref}
+            promotion["independent_review"] = {
+                "accepted": True,
+                "reviewer_identity": "fixture-readonly-reviewer",
+                "validator_identity": validator_identity,
+                "evidence": review_ref,
+            }
             promotion["non_regression"] = {"passed": True, "evidence": non_regression_ref}
             source_identity = _stable_sha(node.get("content_identity") or {})
             promoted_claims = [claim for claim in node.get("claims") or [] if isinstance(claim, dict) and claim.get("verdict") in {"adopt", "adapt"}]
@@ -4394,6 +4496,32 @@ def _hydrate_promotion_replays(node: object) -> None:
                 for claim in node.get("claims") or []:
                     if isinstance(claim, dict) and claim.get("verdict") in {"adopt", "adapt"}:
                         claim.setdefault("trial", {})["replay"] = dict(receipt)
+                review = promotion.get("independent_review")
+                if isinstance(review, dict):
+                    try:
+                        review_payload = _read_json(Path(str((review.get("evidence") or {}).get("path"))))
+                    except (OSError, json.JSONDecodeError, TypeError):
+                        review_payload = {}
+                    review.update({
+                        "reviewer_identity": "fixture-readonly-reviewer",
+                        "validator_identity": _sha256(Path(__file__).resolve()),
+                        "reproduction_input_identity": _boundary_review_subject_identity(boundary),
+                        "reproduction_output_identity": receipt["output_identity"],
+                        "executed_at": review_payload.get("executed_at", now.isoformat()),
+                        "valid_until": review_payload.get("valid_until", (now + timedelta(hours=1)).isoformat()),
+                    })
+                non_regression = promotion.get("non_regression")
+                if isinstance(non_regression, dict):
+                    try:
+                        nonreg_payload = _read_json(Path(str((non_regression.get("evidence") or {}).get("path"))))
+                    except (OSError, json.JSONDecodeError, TypeError):
+                        nonreg_payload = {}
+                    non_regression.update({
+                        "passed": True,
+                        **_promotion_non_regression(),
+                        "executed_at": nonreg_payload.get("executed_at", now.isoformat()),
+                        "valid_until": nonreg_payload.get("valid_until", (now + timedelta(hours=1)).isoformat()),
+                    })
         for value in node.values():
             _hydrate_promotion_replays(value)
     elif isinstance(node, list):

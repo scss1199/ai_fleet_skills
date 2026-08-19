@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.22.0",
-  "skill_gen": "2026-08-19.5",
+  "version": "1.23.2",
+  "skill_gen": "2026-08-19.8",
   "execution_order": [
     "FP",
     "MTM",
@@ -23,17 +23,17 @@
   },
   "source_git_commit": null,
   "files": {
-    "SKILL.md": "ccb63d28a81b6871ded4c800b5d7523d50281bc738298ea2196bf8bab2a22e14",
-    "references/cases.json": "6f315ae9fc829c78c6d92d4e78296360a720e65b2497f063897a27e5aa198266",
+    "SKILL.md": "d2f90c1ba21160649bf1f0eb65bfe3b757c510e83232a7438f3577d24ba8d5a3",
+    "references/cases.json": "196a4c53bf99d282732b64b4195cc28fc0fbaf8daef1fe82332430f3fc441dba",
     "references/hardware-compute.json": "e0792dce63c4894107fd63e43e3e0095ce4c4999686811279fd12543106a8df4",
     "references/production-web-delivery.json": "0f8edd3a24f856a4cc1a76ecd4490185bad414735c2bc1787104d619d0f0a251",
-    "references/protocols/fames-protocol.json": "3640ecb71472e3026121a159b133dd942c0b81f3396c4779d488b4f827d31aa9",
+    "references/protocols/fames-protocol.json": "6e08cf169fd941478c4c18c837bee8163003a7cfe02d8a2149440a2372e25c55",
     "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
     "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
     "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
     "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
     "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-    "scripts/fames_fleet.py": "07b70ae41cc7dd3d8b668dc2ebd217dd713238e52e16db455d25f2d5e029a9e3"
+    "scripts/fames_fleet.py": "bfdc0df8ed49672b42862613032e4b3d5668606b5e1327830ba3a621b2b1f76f"
   },
-  "package_sha": "f5c988506cbf733552849debadd327c60d75305bd6a58a559197a89cba300ef4"
+  "package_sha": "d33de853ec5b8c00d99d24dd7628f170c486b03933a41f4fd788137604552e74"
 }
