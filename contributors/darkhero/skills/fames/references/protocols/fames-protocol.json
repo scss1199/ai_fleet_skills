@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.21.1",
+  "version": "1.22.0",
   "updated": "2026-08-19",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -602,7 +602,7 @@
         "run_rule": "validate_run binds RB to the caller's exact goal hash, canonical result identity, task risk categories, and authority scope.",
         "interaction_rule": "validate_cognitive binds RB to a hash of the complete interaction_integrity record.",
         "promotion_rule": "validate_ingest binds RB to source content identity, sorted claim ids, landing-artifact identity, candidate identity, and ingest authority scope.",
-        "evidence_rule": "Promotion evidence is replayable only when its local path exists and the active validator recomputes the declared SHA-256. URI plus a well-formed hash is insufficient for promotion."
+        "evidence_rule": "Promotion evidence is replayable only when its local path exists and the active validator recomputes the declared SHA-256. Claim semantics include claim text, trust class, disposition, reason, and lands_in; landing artifact bytes are hashed and their path must resolve from lands_in. The trial receipt is accepted only after the active validator reruns the exact RB input and recomputes candidate, input, validator, output, time, state, and exit-status identities. Review and non-regression evidence are parsed JSON receipts bound to the same candidate and artifact identities."
       },
       "phase_relationship": {
         "FP": "Freeze the boundary cell, population identity, baseline, metrics, thresholds, authority, and expansion claim before execution.",

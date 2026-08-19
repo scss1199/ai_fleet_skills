@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-19.4
+FAMES-GEN: 2026-08-19.5
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -134,6 +134,9 @@ REGRESSED or RETRACTED monitor state makes prior support unusable.
 Caller binding prevents reuse of an unrelated PASS record: runs bind goal, result, risk,
 and authority; interaction records bind the full interaction hash; promotions bind source,
 claim ids, landing artifacts, candidate identity, and replayed local evidence hashes.
+Promotion candidate identity includes full claim semantics and current landing-artifact
+bytes. The active validator reruns the exact RB input and recomputes the execution receipt;
+review and non-regression JSON receipts must bind the same candidate and artifact.
 
 ### UT delivery truth and anti-handwave gate
 

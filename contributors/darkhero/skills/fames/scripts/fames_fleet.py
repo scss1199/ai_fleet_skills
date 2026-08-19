@@ -97,8 +97,12 @@ LOCAL_CAPABILITY_CASES = {
         "C-INTERACTION-BOUNDARY-MISMATCH",
         "C-INGEST-PROMOTION-BASE",
         "C-INGEST-PROMOTION-CANDIDATE",
+        "C-INGEST-PROMOTION-CLAIM-SEMANTICS",
+        "C-INGEST-PROMOTION-LANDING-BYTES",
         "C-INGEST-PROMOTION-SOURCE-BINDING",
         "C-INGEST-PROMOTION-TRIAL-HASH",
+        "C-INGEST-PROMOTION-UNRELATED-FILE",
+        "C-INGEST-PROMOTION-REPLAY-CANDIDATE",
         "C-INGEST-PROMOTION-REVIEW",
     ),
     "delivery-integrity": (
@@ -687,14 +691,33 @@ def validate_ingest(record: dict) -> dict:
         if adopted == 0:
             errors.append("promoted with no adopted claim")
         source_identity = _stable_sha(record.get("content_identity") or {})
+        promoted_claims = [claim for claim in claims if isinstance(claim, dict) and claim.get("verdict") in {"adopt", "adapt"}]
         claim_ids = sorted(str(claim.get("id")) for claim in claims if isinstance(claim, dict))
-        artifact_identity = _stable_sha([
-            {"id": claim.get("id"), "lands_in": claim.get("lands_in")}
-            for claim in claims if isinstance(claim, dict) and claim.get("verdict") in {"adopt", "adapt"}
-        ])
+        claim_semantics = sorted(({
+            "id": claim.get("id"),
+            "claim": claim.get("claim"),
+            "trust_class": claim.get("trust_class"),
+            "verdict": claim.get("verdict"),
+            "why": claim.get("why"),
+            "lands_in": claim.get("lands_in"),
+        } for claim in promoted_claims), key=lambda row: str(row.get("id")))
+        artifact_rows: list[dict] = []
+        for claim in promoted_claims:
+            landing = claim.get("landing_artifact")
+            errors.extend(_content_ref_errors(landing, f"claim {claim.get('id')}.landing_artifact", replay=True))
+            expected_path = (_active_workspace() / str(claim.get("lands_in") or "")).resolve()
+            if not isinstance(landing, dict) or Path(str(landing.get("path") or "")).resolve() != expected_path:
+                errors.append(f"claim {claim.get('id')}: landing artifact path does not match lands_in")
+            artifact_rows.append({
+                "id": claim.get("id"),
+                "lands_in": claim.get("lands_in"),
+                "path": landing.get("path") if isinstance(landing, dict) else None,
+                "sha256": landing.get("sha256") if isinstance(landing, dict) else None,
+            })
+        artifact_identity = _stable_sha(sorted(artifact_rows, key=lambda row: str(row.get("id"))))
         candidate_identity = _stable_sha({
             "source_identity": source_identity,
-            "claim_ids": claim_ids,
+            "claim_semantics": claim_semantics,
             "artifact_identity": artifact_identity,
         })
         if promotion.get("candidate_identity") != candidate_identity:
@@ -717,24 +740,61 @@ def validate_ingest(record: dict) -> dict:
         if not isinstance(review, dict) or review.get("accepted") is not True:
             errors.append("promotion lacks accepted independent review")
         else:
-            errors.extend(_content_ref_errors(review.get("evidence"), "promotion.independent_review.evidence", replay=True))
+            errors.extend(_bound_json_receipt_errors(review.get("evidence"), "promotion.independent_review.evidence", {
+                "kind": "independent_review",
+                "candidate_identity": candidate_identity,
+                "artifact_identity": artifact_identity,
+                "decision": "ACCEPT",
+            }))
         non_regression = promotion.get("non_regression")
         if not isinstance(non_regression, dict) or non_regression.get("passed") is not True:
             errors.append("promotion lacks passing non-regression evidence")
         else:
-            errors.extend(_content_ref_errors(non_regression.get("evidence"), "promotion.non_regression.evidence", replay=True))
+            errors.extend(_bound_json_receipt_errors(non_regression.get("evidence"), "promotion.non_regression.evidence", {
+                "kind": "non_regression",
+                "candidate_identity": candidate_identity,
+                "artifact_identity": artifact_identity,
+                "state": "PASS",
+            }))
+        boundary_input = ((promotion.get("cognitive_boundary_gate") or {}).get("record")
+                          if isinstance(promotion.get("cognitive_boundary_gate"), dict) else None)
+        replayed_outcome = validate_cognitive_boundary(boundary_input) if isinstance(boundary_input, dict) else {}
+        replay_input_identity = _stable_sha(boundary_input or {})
+        replay_output_identity = _stable_sha(replayed_outcome)
         for claim in claims:
             if not isinstance(claim, dict) or claim.get("verdict") not in {"adopt", "adapt"}:
                 continue
             trial = claim.get("trial") if isinstance(claim.get("trial"), dict) else {}
             if trial.get("validator_identity") != validator_identity:
                 errors.append(f"claim {claim.get('id')}: promoted trial validator identity mismatch")
+            replay = trial.get("replay")
+            if not isinstance(replay, dict):
+                errors.append(f"claim {claim.get('id')}: execution replay receipt missing")
+            else:
+                expected_replay = {
+                    "candidate_identity": candidate_identity,
+                    "input_identity": replay_input_identity,
+                    "validator_identity": validator_identity,
+                    "output_identity": replay_output_identity,
+                    "state": "PASS",
+                    "exit_status": 0,
+                }
+                for field, expected in expected_replay.items():
+                    if replay.get(field) != expected:
+                        errors.append(f"claim {claim.get('id')}: replay {field} mismatch")
+                executed_at = _parse_time(replay.get("executed_at"))
+                valid_until = _parse_time(replay.get("valid_until"))
+                now = datetime.now(timezone.utc)
+                if executed_at is None or valid_until is None or executed_at > now or valid_until <= now:
+                    errors.append(f"claim {claim.get('id')}: replay receipt is future-dated or expired")
             refs = trial.get("evidence_refs")
             if not isinstance(refs, list) or not refs:
                 errors.append(f"claim {claim.get('id')}: promoted trial lacks content-addressed evidence")
             else:
                 for ref_index, ref in enumerate(refs):
                     errors.extend(_content_ref_errors(ref, f"claim {claim.get('id')}.trial.evidence_refs[{ref_index}]", replay=True))
+                    if isinstance(ref, dict) and Path(str(ref.get("path") or "")).resolve() != Path(__file__).resolve():
+                        errors.append(f"claim {claim.get('id')}: trial evidence is not the executing validator source")
 
     for path in _forbidden_key_paths(record):
         errors.append(f"forbidden material key at {path}")
@@ -2408,6 +2468,27 @@ def _content_ref_errors(value: object, label: str, replay: bool = False) -> list
                 errors.append(f"{label}.path does not exist")
             elif SHA256_RE.fullmatch(str(value.get("sha256") or "").lower()) and _sha256(target) != str(value["sha256"]).lower():
                 errors.append(f"{label}.sha256 does not match replayed content")
+    return errors
+
+
+def _active_workspace() -> Path:
+    for candidate in (PACKAGE_ROOT, *PACKAGE_ROOT.parents):
+        if (candidate / "_registry" / "fames-protocol.json").is_file():
+            return candidate
+    return PACKAGE_ROOT.parents[2]
+
+
+def _bound_json_receipt_errors(value: object, label: str, expected: dict) -> list[str]:
+    errors = _content_ref_errors(value, label, replay=True)
+    if errors or not isinstance(value, dict):
+        return errors
+    try:
+        payload = _read_json(Path(str(value["path"])))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [*errors, f"{label} receipt unreadable ({exc.__class__.__name__})"]
+    for field, wanted in expected.items():
+        if payload.get(field) != wanted:
+            errors.append(f"{label} receipt {field} mismatch")
     return errors
 
 
@@ -4184,25 +4265,33 @@ def _hydrate_promotion_fixtures(node: object) -> None:
         if node.pop("auto_promotion_contract", False):
             validator_identity = _sha256(Path(__file__).resolve())
             script_ref = _local_content_ref(Path(__file__), "file://fames_fleet.py")
-            cases_ref = _local_content_ref(PACKAGE_ROOT / CASES_TARGET, "file://fames-cases.json")
+            workspace = PACKAGE_ROOT.parents[2]
+            review_ref = _local_content_ref(workspace / "_registry" / "fames-evidence" / "fixtures" / "promotion-review.json", "file://promotion-review.json")
+            non_regression_ref = _local_content_ref(workspace / "_registry" / "fames-evidence" / "fixtures" / "promotion-non-regression.json", "file://promotion-non-regression.json")
             for claim in node.get("claims") or []:
                 if isinstance(claim, dict) and claim.get("verdict") in {"adopt", "adapt"}:
+                    landing_path = (workspace / str(claim.get("lands_in") or "")).resolve()
+                    claim["landing_artifact"] = _local_content_ref(landing_path, f"file://{claim.get('lands_in')}")
                     trial = claim.setdefault("trial", {})
                     trial["validator_identity"] = validator_identity
                     trial["evidence_refs"] = [script_ref]
             promotion = node.get("promotion") or {}
             promotion["validator_identity"] = validator_identity
-            promotion["independent_review"] = {"accepted": True, "reviewer_identity": "fixture-readonly-reviewer", "evidence": cases_ref}
-            promotion["non_regression"] = {"passed": True, "evidence": script_ref}
+            promotion["independent_review"] = {"accepted": True, "reviewer_identity": "fixture-readonly-reviewer", "evidence": review_ref}
+            promotion["non_regression"] = {"passed": True, "evidence": non_regression_ref}
             source_identity = _stable_sha(node.get("content_identity") or {})
-            claim_ids = sorted(str(claim.get("id")) for claim in node.get("claims") or [] if isinstance(claim, dict))
-            artifact_identity = _stable_sha([
-                {"id": claim.get("id"), "lands_in": claim.get("lands_in")}
-                for claim in node.get("claims") or [] if isinstance(claim, dict) and claim.get("verdict") in {"adopt", "adapt"}
-            ])
+            promoted_claims = [claim for claim in node.get("claims") or [] if isinstance(claim, dict) and claim.get("verdict") in {"adopt", "adapt"}]
+            claim_semantics = sorted(({
+                "id": claim.get("id"), "claim": claim.get("claim"), "trust_class": claim.get("trust_class"),
+                "verdict": claim.get("verdict"), "why": claim.get("why"), "lands_in": claim.get("lands_in"),
+            } for claim in promoted_claims), key=lambda row: str(row.get("id")))
+            artifact_identity = _stable_sha(sorted(({
+                "id": claim.get("id"), "lands_in": claim.get("lands_in"),
+                "path": claim["landing_artifact"].get("path"), "sha256": claim["landing_artifact"].get("sha256"),
+            } for claim in promoted_claims), key=lambda row: str(row.get("id"))))
             promotion["candidate_identity"] = _stable_sha({
                 "source_identity": source_identity,
-                "claim_ids": claim_ids,
+                "claim_semantics": claim_semantics,
                 "artifact_identity": artifact_identity,
             })
         for value in node.values():
@@ -4255,10 +4344,13 @@ def _bind_fixture_gates(node: object) -> None:
         if isinstance(boundary, dict):
             source_identity = _stable_sha(node.get("content_identity") or {})
             claim_ids = sorted(str(claim.get("id")) for claim in node.get("claims") or [] if isinstance(claim, dict))
-            artifact_identity = _stable_sha([
-                {"id": claim.get("id"), "lands_in": claim.get("lands_in")}
-                for claim in node.get("claims") or [] if isinstance(claim, dict) and claim.get("verdict") in {"adopt", "adapt"}
-            ])
+            promoted_claims = [claim for claim in node.get("claims") or [] if isinstance(claim, dict) and claim.get("verdict") in {"adopt", "adapt"}]
+            artifact_identity = _stable_sha(sorted(({
+                "id": claim.get("id"),
+                "lands_in": claim.get("lands_in"),
+                "path": (claim.get("landing_artifact") or {}).get("path"),
+                "sha256": (claim.get("landing_artifact") or {}).get("sha256"),
+            } for claim in promoted_claims), key=lambda row: str(row.get("id"))))
             authority_scope = str((node.get("scope") or {}).get("authority_scope") or "read")
             _set_fixture_boundary_authority(boundary, authority_scope)
             binding = boundary.setdefault("binding", {})
@@ -4274,6 +4366,35 @@ def _bind_fixture_gates(node: object) -> None:
         _bind_fixture_gates(value)
 
 
+def _hydrate_promotion_replays(node: object) -> None:
+    if isinstance(node, dict):
+        if node.get("promoted") is True and isinstance(node.get("promotion"), dict):
+            promotion = node["promotion"]
+            boundary = ((promotion.get("cognitive_boundary_gate") or {}).get("record")
+                        if isinstance(promotion.get("cognitive_boundary_gate"), dict) else None)
+            if isinstance(boundary, dict):
+                outcome = validate_cognitive_boundary(boundary)
+                now = datetime.now(timezone.utc)
+                receipt = {
+                    "candidate_identity": promotion.get("candidate_identity"),
+                    "input_identity": _stable_sha(boundary),
+                    "validator_identity": _sha256(Path(__file__).resolve()),
+                    "output_identity": _stable_sha(outcome),
+                    "state": outcome.get("state"),
+                    "exit_status": 0 if outcome.get("ok") else 1,
+                    "executed_at": now.isoformat(),
+                    "valid_until": (now + timedelta(hours=1)).isoformat(),
+                }
+                for claim in node.get("claims") or []:
+                    if isinstance(claim, dict) and claim.get("verdict") in {"adopt", "adapt"}:
+                        claim.setdefault("trial", {})["replay"] = dict(receipt)
+        for value in node.values():
+            _hydrate_promotion_replays(value)
+    elif isinstance(node, list):
+        for value in node:
+            _hydrate_promotion_replays(value)
+
+
 def _prepare_input(fixtures: dict, case: dict) -> tuple[object, str]:
     ref = case.get("input_ref")
     if ref not in fixtures:
@@ -4282,6 +4403,7 @@ def _prepare_input(fixtures: dict, case: dict) -> tuple[object, str]:
     _hydrate_boundary_fixtures(record)
     _hydrate_promotion_fixtures(record)
     _bind_fixture_gates(record)
+    _hydrate_promotion_replays(record)
     auto = record.pop("auto_goal_hash", False) if isinstance(record, dict) else False
     for pointer in case.get("remove") or []:
         _pointer_del(record, pointer)
