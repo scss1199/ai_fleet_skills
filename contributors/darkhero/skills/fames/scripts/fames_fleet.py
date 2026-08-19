@@ -72,6 +72,12 @@ CONVERGE_DESC = "FAMES self-convergence: verified GitHub generation pull + heart
 CONVERGE_DIR = "_registry/fames-converge"
 CAPABILITY_DIR = "_registry/fames-capabilities"
 FLEET_HOSTS = ("darkhero", "scar3", "altos")
+PROMOTION_NON_REGRESSION_CASES = (
+    "C-BOUNDARY-BASE",
+    "C-BOUNDARY-SEMANTIC-DRIFT",
+    "C-BOUNDARY-DISTRIBUTION-DRIFT",
+    "C-RUN-BOUNDARY-MISSING",
+)
 LOCAL_CAPABILITY_CASES = {
     "contract-core": ("C-RUN-BASE", "C-RUN-HASH", "C-PARITY"),
     "cognitive-boundary": (
