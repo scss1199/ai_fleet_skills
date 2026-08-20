@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.24.0",
+  "version": "1.25.0",
   "updated": "2026-08-20",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -201,6 +201,71 @@
           "why_it_was_not_caught": "zt-foreground-guard.py derived its scan set from HubClock riders, hooks, and skill engines, and substituted a hardcoded floor list for Task Scheduler on the written assumption that OS tasks are few and operator-gated to create. That assumption was false -- agents created them anyway -- so the guard reported green across the entire breach window.",
           "fix": "CHECK 4 enumerates live non-Microsoft scheduled tasks at runtime and classifies periodic console hosts as RED; the five offending tasks were exported to _delete/2026-08-20-schtasks-popup-purge/ with REVERT.md and unregistered on 2026-08-20."
         }
+      },
+      {
+        "id": "RL-POPUP-OAUTH-ONLY",
+        "declared_by": "operator",
+        "declared_on": "2026-08-20",
+        "statement_verbatim": "\u6211\u73fe\u5728\u56b4\u683c\u8981\u6c42\u53ea\u6709 Oauth \u53ef\u4ee5\u662f\u5f48\u7a97\u4f86\u8655\u7406\u5176\u4ed6\u4e00\u5f8b\u4e0d\u5141\u8a31",
+        "statement_en": "Only OAuth may be handled by presenting a window. Every other popup is disallowed outright.",
+        "authority": "operator_only",
+        "relation": {
+          "tightens": "RL-PERIODIC-FOREGROUND-POPUP",
+          "delta": "the earlier line forbade PERIODIC ps/cmd popups absent permission. This one drops both qualifiers. Periodicity is no longer part of the test, and the permission carve-out is replaced by a single standing exception (OAuth). A one-shot popup, an on-demand task, a logon-trigger task and an interactive elevation prompt are all now INSIDE the prohibition.",
+          "both_stand": "RL-PERIODIC-FOREGROUND-POPUP is not superseded away. RED_LINE_PRECEDENCE forbids removing a red line; the two are evaluated together and the stricter verdict wins."
+        },
+        "covers": [
+          "any Windows scheduled task whose action executes powershell.exe, pwsh.exe, cmd.exe, python.exe, conhost.exe or a .bat/.cmd file, at ANY trigger -- repetition, Daily, Weekly, Monthly, AtLogon, AtStartup, OnEvent, or no trigger at all (on-demand)",
+          "any Run-key, Startup-folder or service autostart that produces the same console",
+          "any HubClock rider whose command is a console host rather than pythonw or wscript SW_HIDE",
+          "any console child spawned by a windowless parent without CREATE_NO_WINDOW (STARTF_USESHOWWINDOW / SW_HIDE), because Windows allocates a NEW VISIBLE console for it -- see _skill/technique_output/70-pitfalls/pythonw-child-console-window-flash.md",
+          "any interactive dialog raised by agent code, including UAC elevation prompts via ShellExecuteW runas, MessageBox, and GUI pickers"
+        ],
+        "sole_exception": {
+          "name": "OAuth",
+          "scope": "a browser or system window opened for the express purpose of completing an OAuth / OIDC authorisation flow that structurally requires the human to authenticate and consent in a window the agent cannot and must not impersonate",
+          "narrowest_reading": "the exception is the OAuth consent surface itself. It does not extend to work performed before it, after it, or alongside it, and it does not convert an unrelated act into a permitted popup because that act eventually leads to a token.",
+          "still_forbidden_inside_the_exception": [
+            "typing credentials, card numbers, or tokens into the window on the operator's behalf",
+            "putting the OAuth window on a schedule so that it recurs",
+            "using the OAuth exception as cover for a console window that is not the consent surface"
+          ]
+        },
+        "rulings": [
+          {
+            "subject": "UAC elevation prompt (ShellExecuteW verb=runas)",
+            "reading": "FORBIDDEN for the agent to raise unprompted",
+            "why": "a UAC consent dialog is a window and it is not OAuth. NO_SCOPE_EXPANSION_ONTO_RED_LINES requires the narrowest defensible reading, and the narrowest reading of 'only OAuth may be a window' excludes UAC.",
+            "known_site": "ai_darkhero/tray/scripts/run_register_aura_task.py -- one-shot, nShowCmd=0, but the runas verb itself raises the consent dialog",
+            "operator_may_relax": true,
+            "agent_may_relax": false
+          },
+          {
+            "subject": "powershell.exe -WindowStyle Hidden",
+            "reading": "FORBIDDEN by name, unchanged from RL-PERIODIC-FOREGROUND-POPUP",
+            "why": "it still allocates a conhost and steals focus before self-hiding, so it is a popup in fact even though it is labelled hidden. Source: _registry/workspace-seat-contract.json .forbidden[1]."
+          },
+          {
+            "subject": "a task that is Disabled, or whose target script no longer exists",
+            "reading": "still a breach",
+            "why": "RED_LINE_PRECEDENCE.not_exceptions already rejects 'it was already dead' and 'it is only temporary'. An armed schedule pointing at a missing file opened a visible console every 2 minutes purely to fail -- that is the 2026-05-07..2026-08-20 breach, not a hypothetical."
+          }
+        ],
+        "sanctioned_route": "pythonw.exe with CREATE_NO_WINDOW (0x08000000) plus STARTUPINFO STARTF_USESHOWWINDOW / wShowWindow=SW_HIDE, or wscript.exe running a .vbs that calls Run(cmd, 0, False). For periodic work the carrier is a HubClock rider, never schtasks. Shared helper: _skill/engines/_subproc_win.py run_hidden; reference implementation _skill/engines/sessions_scan.py _hidden().",
+        "enforced_by_machine_check": true,
+        "check_token": "--popup-check",
+        "check_owner": "_skill/engines/zt-foreground-guard.py CHECK 5",
+        "check_semantics": {
+          "exit_0": "clean -- no window-creating action found in any fleet-owned scheduled task, autostart entry, or HubClock rider, at any trigger",
+          "exit_1": "violation -- each offending action is printed with its trigger and executable",
+          "exit_2": "probe failed -- UNKNOWN, which blocks. A failed probe is never read as a pass."
+        },
+        "why_the_earlier_line_was_not_enough": "RL-PERIODIC-FOREGROUND-POPUP was written around periodicity because the breach that produced it was periodic. Two agent-created tasks survived that purge purely on the 'not periodic' reading -- \\FanControl (AtLogon) and \\ai-darkhero-aura (on-demand) -- both executing powershell.exe -WindowStyle Hidden. Keeping them was itself an instance of reading a red line at its narrowest extent rather than reading the PERMISSION at its narrowest extent. The operator closed that gap on 2026-08-20.",
+        "open_items": [
+          "\\FanControl -- AtLogon, powershell.exe -WindowStyle Hidden, TR string authored by ai_darkhero/tray/fancontrol_task.py task_tr(). Carries real function (stops AsusFan, launches FanControl), so the repair is to convert the action to the sanctioned hidden route, not to delete it.",
+          "\\ai-darkhero-aura -- no trigger, powershell.exe -WindowStyle Hidden, registered by ai_darkhero/tray/scripts/run_register_aura_task.py.",
+          "\\HWiNFO64_AutoLog and \\run_trading_scheduler are operator/vendor tasks outside fleet-owned paths; they are reported, never modified by an agent."
+        ]
       }
     ]
   },

@@ -1,14 +1,14 @@
 ﻿{
   "schema": 1,
   "id": "SEAL",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "full_en": "systematic-evidence-alignment-loop",
   "zh": "封環 — 儀器／閘門／消費回饋對齊後再跑 Krylov；第一性原理減肥偏離；世代鎖綁定 Outcome↔g↔AGC↔FP",
   "parent": "FAMES",
   "fames_phase": "SEAL",
   "fames_ref": "_registry/fames-protocol.json",
   "rung": "GUARD",
-  "updated": "2026-08-10",
+  "updated": "2026-08-20",
   "phases": ["SENSE", "EXEC", "AUDIT", "LOCK"],
   "phase_meaning": {
     "SENSE": "讀儀器真相（hubpulse heartbeat、pptt/EFF、brownfield、R_aex）+ Outcome 第一性",
@@ -36,6 +36,23 @@
       "id": "SEAL-EV-1",
       "zh": "完成宣稱需 evidence.jsonl verify/tool；否則 HARD DENY",
       "engine": "_skill/engines/seal-session-ledger.py"
+    },
+    "artifact_path": {
+      "id": "SEAL-AP-1",
+      "zh": "可引用工件路徑：每個完成宣稱必須附至少一個驗證者能直接開啟的 artifact 路徑（檔案、報告、registry receipt、或 commit hash+repo 身分）。宣稱當下路徑不存在或只有敘述 = UNKNOWN fail-closed。",
+      "en": "Citable artifact path: every completion claim must carry at least one artifact path a verifier can open directly (file, report, registry receipt, or commit hash with repo identity). A claim whose cited path does not exist at claim time, or that is prose-only, is UNKNOWN and fails closed.",
+      "allows": [
+        "repo-relative or absolute file paths that exist at claim time",
+        "registry receipts (e.g. _registry/fames-session/<agent>.json)",
+        "commit hash paired with repo identity",
+        "report/state files written by a verified engine run"
+      ],
+      "forbids": [
+        "prose-only completion claims with no openable artifact",
+        "citing a path that does not exist when the claim is made",
+        "citing the generator's own unverified output as the sole artifact"
+      ],
+      "enforcement": "contract rule applied at SEAL AUDIT review; no dedicated enforcement engine exists yet — do not cite one as enforcing this rule until it exists and its enforcement is verified"
     },
     "generation_lock": {
       "id": "SEAL-GL-1",
@@ -68,7 +85,8 @@
     "p_verified_without_verify_event",
     "goal_diverge_without_prune",
     "missing_seat_outcome",
-    "outcome_g_agc_fp_generation_drift"
+    "outcome_g_agc_fp_generation_drift",
+    "completion_claim_without_citable_artifact_path"
   ],
   "engines": {
     "audit": "_skill/engines/seal-audit.py",

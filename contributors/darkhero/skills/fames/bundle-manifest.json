@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.24.0",
-  "skill_gen": "2026-08-19.8",
+  "version": "1.25.0",
+  "skill_gen": "2026-08-20.9",
   "execution_order": [
     "FP",
     "MTM",
@@ -23,17 +23,17 @@
   },
   "source_git_commit": null,
   "files": {
-    "SKILL.md": "d2f90c1ba21160649bf1f0eb65bfe3b757c510e83232a7438f3577d24ba8d5a3",
+    "SKILL.md": "d9bc3798110f745cc360f7f4fdf8bdf6fa5104b11c549dc854d1f3300bc5e8eb",
     "references/cases.json": "6abbcd0d1bac5fd078125b9f1f639a29a0e88ef2710faea14a386a48ce8b8d27",
     "references/hardware-compute.json": "e0792dce63c4894107fd63e43e3e0095ce4c4999686811279fd12543106a8df4",
     "references/production-web-delivery.json": "0f8edd3a24f856a4cc1a76ecd4490185bad414735c2bc1787104d619d0f0a251",
-    "references/protocols/fames-protocol.json": "c8fc2c516ea0df10a0208bf6b7c152c919af36469dad263b750828a6faf805b3",
+    "references/protocols/fames-protocol.json": "93a3ddd71a9b151222bcf047457e78b830366869426b40cb20da42032b648d19",
     "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
     "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
     "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
     "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
-    "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
+    "references/protocols/seal-protocol.json": "7de5562242692e0827a64bbc94f7a5a71fc418601558f51dc54371a11820b9a4",
     "scripts/fames_fleet.py": "bfdc0df8ed49672b42862613032e4b3d5668606b5e1327830ba3a621b2b1f76f"
   },
-  "package_sha": "94d049965ac955ab16b65df5c77488c756789b0c078e6d70163bbb98f236f058"
+  "package_sha": "0e5b3f62fc472ec1ec5f0c76a222b798bd451179d2028bfa7aa7961a70cdf020"
 }
