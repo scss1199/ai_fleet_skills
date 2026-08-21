@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.26.0",
+  "version": "1.26.1",
   "updated": "2026-08-21",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -413,12 +413,12 @@
       "purpose": "Make the same FAMES policy loadable and mechanically auditable from every registered AI harness without allowing a harness name to own policy.",
       "execution_topology": "decentralized local execution and verification over one content-addressed contract; promotion remains single-writer so decentralization cannot become policy drift",
       "registered_population_source": "_registry/agent-surfaces.json",
-      "required_surface_receipt_fields": ["surface_id", "discovery_path", "package_sha", "load_receipt", "behavior_probe", "local_verification", "read_back", "turn_refresh_event", "session_identity_sha", "prompt_identity", "prompt_contract_identity", "turn_adapter_identity", "turn_rule_or_context_identity", "turn_read_back"],
+      "required_surface_receipt_fields": ["surface_id", "discovery_path", "package_sha", "load_receipt", "behavior_probe", "local_verification", "read_back", "turn_refresh_event", "session_identity_sha", "prompt_identity", "prompt_contract_identity", "turn_adapter_identity", "turn_rule_or_context_identity", "runtime_event_observed", "turn_read_back"],
       "selection_predicates": ["capability", "availability", "authority", "safety", "evidence_freshness", "cost"],
       "forbidden_predicates": ["harness_name", "product_name", "model_name", "vendor_name", "ide_name", "adapter_name", "skill_name"],
       "rename_invariance": "Changing only a surface or harness label must not change eligibility, route, terminal state, validator identity, or authority.",
-      "coverage_rule": "A compliance claim covers exactly the surfaces registered and freshly read back for both package load and a current user turn. An unregistered, unloaded, stale, unprobed, or turn-unrefreshed harness is UNKNOWN, never implicitly compliant.",
-      "next_turn_rule": "Every registered surface supplies either same-turn context injection or an always-applied rule with pre-submit read-back. A block-only hook is a gate, not an injector. Session, prompt, prompt-contract, adapter, and rule/context identities are required for the claimed turn.",
+      "coverage_rule": "A compliance claim covers exactly the surfaces registered and freshly read back for both package load and an actually observed current user-turn lifecycle event. An unregistered, unloaded, stale, unprobed, hook-untrusted, hook-skipped, synthetic-only, or turn-unrefreshed harness is UNKNOWN, never implicitly compliant.",
+      "next_turn_rule": "Every registered surface supplies either same-turn context injection or an always-applied rule with pre-submit read-back. A block-only hook is a gate, not an injector. Session, prompt, prompt-contract, adapter, rule/context, and actual runtime-event identities are required for the claimed turn; configuration read-back alone cannot prove an already-open conversation reloaded or trusted the hook.",
       "authority_rule": "A harness may execute and verify locally but may not rewrite canonical policy, weaken a validator, or add authority. Canonical promotion retains exactly one writer.",
       "validator": "python scripts/fames_fleet.py validate-harness --input <record.json> --json"
     },
@@ -800,11 +800,13 @@
           "event": "every user prompt before model execution",
           "freshness": "Resolve the on-disk package, protocol parity, and prompt-contract identity on every turn. A conversation-open receipt cannot substitute for this read.",
           "supported_adapters": ["same_turn_context_injection", "always_apply_rule_with_pre_submit_read_back"],
-          "receipt_fields": ["surface_id", "session_identity_sha", "prompt_identity", "skill_gen", "package_sha", "prompt_contract_identity", "adapter_identity", "rule_or_context_identity", "read_back", "raw_prompt_persisted"],
-          "failure_rule": "Missing session identity, missing prompt identity, stale or mismatched rule/context identity, unreadable package, parity drift, or adapter failure is UNKNOWN and blocks a completion claim. An adapter that can only block cannot claim it injected context.",
+          "receipt_fields": ["surface_id", "session_identity_sha", "prompt_identity", "skill_gen", "package_sha", "prompt_contract_identity", "adapter_identity", "rule_or_context_identity", "runtime_event_observed", "activation_evidence", "read_back", "raw_prompt_persisted"],
+          "failure_rule": "Missing session identity, missing prompt identity, stale or mismatched rule/context identity, unreadable package, parity drift, missing actual lifecycle-event execution, untrusted or skipped hook, or adapter failure is UNKNOWN and blocks a completion claim. An adapter that can only block cannot claim it injected context.",
+          "hook_trust_rule": "Configuration write-back, a direct script probe, and a synthetic hook payload do not prove that a live conversation executed a hook. Where the host has hook review or trust, only an observed lifecycle event bound to the current session and prompt can prove activation; otherwise that live conversation remains UNKNOWN.",
+          "completion_scope_rule": "An all-open-conversations or next-turn guarantee is admissible only when every claimed live conversation produces a fresh prompt-bound runtime receipt from its actual lifecycle event. Package parity and host-level hook deployment are necessary but not sufficient.",
           "privacy_rule": "The receipt stores no raw prompt, attachment body, credential, cookie, token, or session value. Conversation and prompt identities are one-way SHA-256 values."
         },
-        "unknown_rule": "Unknown prompt identity, session identity, generation, intent coverage, clause coverage, Ti binding, terminal state, authority conservation, or turn-refresh read-back is UNKNOWN and fails closed."
+        "unknown_rule": "Unknown prompt identity, session identity, generation, intent coverage, clause coverage, Ti binding, terminal state, authority conservation, lifecycle-event execution, hook trust, or turn-refresh read-back is UNKNOWN and fails closed."
       },
       "phase_relationship": {
         "FP": "Freeze the boundary cell, population identity, baseline, metrics, thresholds, authority, and expansion claim before execution.",

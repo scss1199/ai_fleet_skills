@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-21.2
+FAMES-GEN: 2026-08-21.3
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -165,6 +165,13 @@ prompt. A same-turn context adapter injects the compact contract directly; a sur
 inject per-turn context must use an always-applied rule plus a pre-submit identity/read-back gate.
 Blocking or rewriting a prompt is not evidence of injection. Receipts store hashes and counts only,
 never raw prompts or secrets.
+
+For a host that reviews or trusts lifecycle hooks, writing the hook file, reading it back, or invoking
+the adapter with a synthetic payload is not evidence that an already-open conversation ran it. Mark
+that conversation `PASS` only after its actual next lifecycle event creates a fresh receipt bound to
+that session and prompt. Until then the per-conversation activation state is `UNKNOWN`, even when the
+package, hook configuration, and standalone behavior probe pass. Never bypass the host trust boundary
+or turn a host-level deployment claim into an all-open-conversations claim.
 
 ### UT delivery truth and anti-handwave gate
 

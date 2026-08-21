@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.26.0",
-  "skill_gen": "2026-08-21.2",
+  "version": "1.26.1",
+  "skill_gen": "2026-08-21.3",
   "execution_order": [
     "FP",
     "MTM",
@@ -23,17 +23,17 @@
   },
   "source_git_commit": null,
   "files": {
-    "SKILL.md": "48a346f5ca5f3cde4af258934efe4989ff48311389d4a13d55a04481d058e9ee",
-    "references/cases.json": "6fddbe97fe592a9f64e158e95b2961139e0634cc8b3674eeaeda44e6a7bc3eee",
+    "SKILL.md": "aea8ed8cb28e48be33881cbda215ae051965f7437495ce763301df60b5df7864",
+    "references/cases.json": "eb30ac8475394f8bf2b72ff16ef9b971b48402ffba351b5e0cdfeb5006324ff4",
     "references/hardware-compute.json": "e0792dce63c4894107fd63e43e3e0095ce4c4999686811279fd12543106a8df4",
     "references/production-web-delivery.json": "0f8edd3a24f856a4cc1a76ecd4490185bad414735c2bc1787104d619d0f0a251",
-    "references/protocols/fames-protocol.json": "fcaedfaf223f43e8a51a1d074895e32aa56a3180bbf3a67fe59566d40ebb5843",
+    "references/protocols/fames-protocol.json": "4d176bd2b0ab44f47cbd75d04e15fefd230f2ee3bc1f396cd47851703b638e65",
     "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
     "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
     "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
     "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
     "references/protocols/seal-protocol.json": "7de5562242692e0827a64bbc94f7a5a71fc418601558f51dc54371a11820b9a4",
-    "scripts/fames_fleet.py": "0b84276138758b9ee057aac366d0fcdbd25c78a5815bc5102ce5920ff1ec2ba3"
+    "scripts/fames_fleet.py": "6ffe638a33298fe32628a2225d7b72e856393c48933241ca4f6431981070c696"
   },
-  "package_sha": "0ccf68c89b6fdcee10ec850d0704ad2b62124141b709de1d8d4232f51244b887"
+  "package_sha": "11b4030440039bb306c6fdbd1e2d737e5a99cfede8eddb8f7ae76813411a410f"
 }

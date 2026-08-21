@@ -906,6 +906,8 @@ def validate_harness(record: dict) -> dict:
         for field in ("load_receipt", "behavior_probe", "local_verification", "read_back"):
             if receipt.get(field) is not True:
                 errors.append(f"{here}: {field} did not pass")
+        if receipt.get("runtime_event_observed") is not True:
+            errors.append(f"{here}: actual prompt lifecycle event was not observed")
         if receipt.get("turn_read_back") is not True:
             errors.append(f"{here}: per-turn rule or context did not read back")
         if not isinstance(receipt.get("turn_refresh_event"), str) or not receipt["turn_refresh_event"].strip():
@@ -2661,6 +2663,10 @@ def _prompt_compilation_findings(
             errors.append("prompt compilation generation is stale")
     if receipt.get("read_back") is not True:
         errors.append("prompt compilation rule or context was not read back")
+    if receipt.get("runtime_event_observed") is not True:
+        errors.append("prompt compilation actual lifecycle event was not observed")
+    if receipt.get("activation_evidence") not in {"lifecycle_hook", "always_apply_rule_gate"}:
+        errors.append("prompt compilation activation evidence is not a live hook event")
     if receipt.get("raw_prompt_persisted") is not False:
         errors.append("prompt compilation receipt persisted raw prompt material")
 
