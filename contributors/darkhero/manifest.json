@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-21T11:06:09Z",
-  "manifest_sha": "79ccb37288450e7b",
+  "generated_at": "2026-08-21T11:10:37Z",
+  "manifest_sha": "6a1c1fb547537bd3",
   "required": [
     "fames",
     "independent-review",
@@ -339,12 +339,12 @@
       "sha": "fbb45ceb569d3b87",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "12f91886f5f8c6ce1151c8044923b3e0a7c1b85eae0ff7e4ae4ec91212201035",
+      "package_sha": "18e79d2505b8b2bc7fbc747e5a6d538f654e6c4fe0d084b29b6e6afee4d9b723",
       "files": {
         "SKILL.md": "fbb45ceb569d3b878025dbe61e15a5e89658ca51d0d10c844b82899f6e42f6a1",
         "agents/openai.yaml": "3e6775a97aeefe019b1c41ea53d1801934988be12922960e7eb2a345b6c92265",
         "references/concept-map.md": "889f919398e94745d31314ca9835ed21758d193e6c351e0e4fc512ade6499044",
-        "scripts/claude_session_hook.py": "cee24ce87bef768539eaa398946e8facd85bf389b58b69d07b87af86224b149d",
+        "scripts/claude_session_hook.py": "49a3b565669c3eaa8422592fa7b77ae8933eac7bc8fe9333ce2d9d6b0efef9a6",
         "scripts/preflight.py": "969d214be3867a61d8d58c5ec73d5b9173358d41efbadc9396a8adc090c23437"
       }
     },

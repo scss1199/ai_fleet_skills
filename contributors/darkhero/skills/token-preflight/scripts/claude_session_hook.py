@@ -38,9 +38,13 @@ def main():
                     and str(doc.get("model") or "").strip()
                     and str(doc.get("permission_mode") or "").strip()
                     and "transcript_path" in doc and str(doc.get("cwd") or "").strip()
+                    and doc.get("fames_probe_mode") not in {"direct", "synthetic"}
                 )
             else:
-                runtime_event_observed=bool(session_id.strip() and prompt.strip() and str(doc.get("cwd") or "").strip())
+                runtime_event_observed=bool(
+                    session_id.strip() and prompt.strip() and str(doc.get("cwd") or "").strip()
+                    and doc.get("fames_probe_mode") not in {"direct", "synthetic"}
+                )
             result=harness.turn_context(
                 agent,
                 Path(cwd),
