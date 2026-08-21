@@ -6,14 +6,40 @@ Pass an already-configured client; never pass or log an API key here.
 """
 from __future__ import annotations
 
+import importlib.util
+from pathlib import Path
+import sys
+from types import ModuleType
 from typing import Any, AsyncIterator
 
-from scripts.adaptive_response_controller import (
-    AttemptRequest,
-    RetryableAdapterError,
-    StreamChunk,
-    TerminalAdapterError,
-)
+
+try:
+    from scripts.adaptive_response_controller import (
+        AttemptRequest,
+        RetryableAdapterError,
+        StreamChunk,
+        TerminalAdapterError,
+    )
+except ModuleNotFoundError:
+    scripts_dir = Path(__file__).resolve().parents[1] / "scripts"
+    package = sys.modules.get("scripts")
+    if package is None:
+        package = ModuleType("scripts")
+        package.__path__ = [str(scripts_dir)]
+        sys.modules["scripts"] = package
+    spec = importlib.util.spec_from_file_location(
+        "scripts.adaptive_response_controller",
+        scripts_dir / "adaptive_response_controller.py",
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load the FAMES adaptive response controller")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    AttemptRequest = module.AttemptRequest
+    RetryableAdapterError = module.RetryableAdapterError
+    StreamChunk = module.StreamChunk
+    TerminalAdapterError = module.TerminalAdapterError
 
 
 class AnthropicAsyncMessagesAdapter:
@@ -57,4 +83,3 @@ class AnthropicAsyncMessagesAdapter:
             if name in {"AuthenticationError", "PermissionDeniedError", "BadRequestError", "NotFoundError"}:
                 raise TerminalAdapterError("PROVIDER_REQUEST_REJECTED") from exc
             raise
-

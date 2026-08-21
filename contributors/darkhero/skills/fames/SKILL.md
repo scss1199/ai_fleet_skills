@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-21.5
+FAMES-GEN: 2026-08-21.8
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -109,14 +109,18 @@ variance after a sanitized transient error, empty output, measured quality resid
 repeated non-progress. Temperature never changes policy, authority, safety, privacy,
 evidence, or terminal-state semantics. A safety, authorization, policy, privacy, or
 capability boundary is preserved as `HANDOFF` and is not retried to force a different
-answer.
+answer. Adapters express `CLEAR` or `BOUNDARY` as typed, provider-neutral metadata;
+`BOUNDARY` is terminal before any assessor, and non-empty content is retryable only after
+typed `CLEAR`. Unknown boundary state fails closed as `HANDOFF`; text matching is fallback
+classification, not retry authority.
 
 The optional
 [`examples/anthropic_async_adapter.py`](examples/anthropic_async_adapter.py) shows the
 current async streaming adapter boundary without making a vendor or model a canonical
 selection predicate. Pass an already configured client; never place an API key in the
-prompt, command line, exception receipt, or adapter log. Count provider-reported usage,
-not stream events. When usage or a comparison baseline is absent, cost and savings stay
+prompt, command line, exception receipt, or adapter log. Count only provider-reported,
+non-boolean, non-negative, non-decreasing integer usage—not stream events. When usage or
+a comparison baseline is absent or invalid, cost and savings stay
 `UNKNOWN` / `UNMEASURED`. Never use persona erasure, legal threats, alignment override,
 forbidden-token prompts, silent exceptions, access-control bypass, or DRM key acquisition
 as a retry strategy.

@@ -2,7 +2,7 @@
   "schema": 1,
   "id": "FAMES",
   "version": "1.27.0",
-  "skill_gen": "2026-08-21.5",
+  "skill_gen": "2026-08-21.8",
   "execution_order": [
     "FP",
     "MTM",
@@ -23,19 +23,19 @@
   },
   "source_git_commit": null,
   "files": {
-    "SKILL.md": "d076002a151a65d5fe28ff57b424acf2dd08d41d740ed453f43b3b5b2599af1b",
-    "examples/anthropic_async_adapter.py": "43701d7ba3bf8ca07b3bece8258649fd214cd4c9e1fd23d4bb1ef47495b1b6c1",
+    "SKILL.md": "52fa4b9b5a696420c60b850c50f5f3f0f705810265955e06aa0d07aaee39e238",
+    "examples/anthropic_async_adapter.py": "47f7b9869bcd32b4647bbcdff7520023e4438825662a6366b9269dc7f0b8ea2f",
     "references/cases.json": "eb30ac8475394f8bf2b72ff16ef9b971b48402ffba351b5e0cdfeb5006324ff4",
     "references/hardware-compute.json": "e0792dce63c4894107fd63e43e3e0095ce4c4999686811279fd12543106a8df4",
     "references/production-web-delivery.json": "0f8edd3a24f856a4cc1a76ecd4490185bad414735c2bc1787104d619d0f0a251",
-    "references/protocols/fames-protocol.json": "683b5d3942602fb29507191893da741bb8a8b95b0dc49ab9d1197dedfc34d388",
+    "references/protocols/fames-protocol.json": "08813fd578592ef82106e2369f820ddccb51a002a3c19f01a4eaec13d7e4f6b9",
     "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
     "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
     "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
     "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
     "references/protocols/seal-protocol.json": "7de5562242692e0827a64bbc94f7a5a71fc418601558f51dc54371a11820b9a4",
-    "scripts/adaptive_response_controller.py": "99b0b78c188ce42d0c198cd219f1b7c9ef34c84c8cd7300d81013a5a0549a998",
+    "scripts/adaptive_response_controller.py": "4f1a01055a06877d71fa475a2980516ee34c4299793a2b9ee1d73fc7c400c4dc",
     "scripts/fames_fleet.py": "6a2b95cc17270ac71274d8aeb0a2c9982b842cd682d12d71c3c2519f4684da4a"
   },
-  "package_sha": "3b26134ad1dd32f473ad7178e23d128b55d927dda674fc73b2b2c6a5bdf97f94"
+  "package_sha": "267a22812c71f100000edf33bccc1782c0d50549d1d56e3c72bad51e477ab38f"
 }

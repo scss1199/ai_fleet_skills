@@ -419,10 +419,10 @@
         "default_temperature_schedule": [0.5, 0.2, 0.0],
         "rule": "Temperature is a response-variance and cost-control parameter only. Lowering it never changes authority, safety, evidence requirements, terminal-state semantics, or the truth of a response."
       },
-      "retryable_classes": ["sanitized transient adapter error", "empty output", "measured response-quality residual", "repeated non-progress"],
+      "retryable_classes": ["sanitized transient adapter error", "empty output", "measured response-quality residual with typed boundary_state CLEAR", "repeated non-progress after typed boundary_state CLEAR"],
       "non_retryable_classes": ["safety boundary", "authorization or access-control boundary", "policy conflict", "privacy boundary", "capability limit", "terminal provider request error", "local output-budget exhaustion"],
-      "stream_rule": "A controller may close a stream after a measured local output limit or repeated normalized prefix, but a stream delta count is not a token count. Provider-reported usage is the only token-accounting evidence.",
-      "boundary_rule": "A refusal or boundary response is preserved as HANDOFF and is never classified as waste or retried to elicit a prohibited answer. Safe alternatives may be requested only as a new authorized task.",
+      "stream_rule": "A controller may close a stream after a measured local output limit or repeated normalized prefix, but a stream delta count is not a token count. Provider-reported non-boolean, non-negative, non-decreasing integer usage is the only token-accounting evidence; invalid or absent usage remains UNKNOWN.",
+      "boundary_rule": "Adapters carry provider-neutral typed boundary_state CLEAR or BOUNDARY metadata. BOUNDARY is terminal before any assessor. A non-empty response may be retried only after typed CLEAR; unknown boundary state fails closed as HANDOFF. Text matching is fallback classification, never the authority for retry eligibility. A refusal or boundary response is preserved and is never classified as waste or retried to elicit a prohibited answer.",
       "prompt_rule": "Repair instructions name the measured residual and preserve higher-priority policy, safety, authorization, privacy, and evidence boundaries. Coercion, legal threats, persona erasure, alignment override, and forbidden-token prompts are prohibited.",
       "exception_rule": "Never silently swallow exceptions. Return a typed FAIL or UNKNOWN category without persisting raw exception text, payloads, outputs, credentials, or session material.",
       "cost_rule": "A savings percentage is UNKNOWN unless provider usage and a valid comparison baseline are both measured. Early stream closure alone does not prove billed-token savings.",

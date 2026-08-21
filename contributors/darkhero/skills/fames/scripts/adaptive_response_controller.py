@@ -24,6 +24,7 @@ _BOUNDARY_PREFIX = re.compile(
     r"\b(?:authorization|permission|credential|access) (?:is|required|missing)\b)",
     re.IGNORECASE,
 )
+_SAFE_CODE = re.compile(r"[A-Z][A-Z0-9_]{0,63}")
 
 
 def _sha256_text(value: str) -> str:
@@ -41,6 +42,9 @@ class StreamChunk:
     text: str = ""
     input_tokens: int | None = None
     output_tokens: int | None = None
+    boundary_state: str | None = None
+    boundary_category: str | None = None
+    boundary_reason_code: str | None = None
 
 
 @dataclass(frozen=True)
@@ -62,6 +66,8 @@ class ResponseAssessment:
     def __post_init__(self) -> None:
         if self.decision not in {ACCEPT, RETRY, TERMINAL}:
             raise ValueError("assessment decision must be ACCEPT, RETRY, or TERMINAL")
+        if _SAFE_CODE.fullmatch(self.category) is None or _SAFE_CODE.fullmatch(self.reason_code) is None:
+            raise ValueError("assessment category and reason_code must be sanitized codes")
 
 
 class ResponseAdapter(Protocol):
@@ -75,16 +81,18 @@ class RetryableAdapterError(RuntimeError):
     """A sanitized adapter failure that may be retried within the attempt budget."""
 
     def __init__(self, reason_code: str) -> None:
-        super().__init__(reason_code)
-        self.reason_code = reason_code
+        safe = reason_code if _SAFE_CODE.fullmatch(reason_code) else "INVALID_REASON_CODE"
+        super().__init__(safe)
+        self.reason_code = safe
 
 
 class TerminalAdapterError(RuntimeError):
     """A sanitized adapter failure that must not be retried."""
 
     def __init__(self, reason_code: str) -> None:
-        super().__init__(reason_code)
-        self.reason_code = reason_code
+        safe = reason_code if _SAFE_CODE.fullmatch(reason_code) else "INVALID_REASON_CODE"
+        super().__init__(safe)
+        self.reason_code = safe
 
 
 def default_assessor(text: str, _request: AttemptRequest) -> ResponseAssessment:
@@ -169,8 +177,13 @@ class AdaptiveResponseController:
         attempts: list[dict],
     ) -> dict:
         usage_known = bool(attempts) and all(
-            isinstance(item.get("input_tokens"), int)
+            item.get("usage_valid") is True
+            and isinstance(item.get("input_tokens"), int)
+            and not isinstance(item.get("input_tokens"), bool)
+            and item["input_tokens"] >= 0
             and isinstance(item.get("output_tokens"), int)
+            and not isinstance(item.get("output_tokens"), bool)
+            and item["output_tokens"] >= 0
             for item in attempts
         )
         return {
@@ -211,21 +224,61 @@ class AdaptiveResponseController:
                 max_output_tokens=self.max_output_tokens,
                 repair_instruction=self._repair_instruction(attempt, prior_assessment),
             )
-            iterator = adapter.stream(request)
             parts: list[str] = []
             input_tokens: int | None = None
             output_tokens: int | None = None
+            usage_valid = True
+            boundary_state: str | None = None
+            boundary_category: str | None = None
+            boundary_reason_code: str | None = None
             closed_early = False
             early_category: str | None = None
 
             try:
+                iterator = adapter.stream(request)
+                if not hasattr(iterator, "__aiter__"):
+                    raise TerminalAdapterError("INVALID_STREAM_ITERATOR")
                 async for chunk in iterator:
                     if not isinstance(chunk, StreamChunk):
                         raise TerminalAdapterError("INVALID_STREAM_CHUNK")
                     if chunk.input_tokens is not None:
-                        input_tokens = chunk.input_tokens
+                        if (
+                            isinstance(chunk.input_tokens, bool)
+                            or not isinstance(chunk.input_tokens, int)
+                            or chunk.input_tokens < 0
+                            or (input_tokens is not None and chunk.input_tokens < input_tokens)
+                        ):
+                            usage_valid = False
+                            input_tokens = None
+                        elif usage_valid:
+                            input_tokens = chunk.input_tokens
                     if chunk.output_tokens is not None:
-                        output_tokens = chunk.output_tokens
+                        if (
+                            isinstance(chunk.output_tokens, bool)
+                            or not isinstance(chunk.output_tokens, int)
+                            or chunk.output_tokens < 0
+                            or (output_tokens is not None and chunk.output_tokens < output_tokens)
+                        ):
+                            usage_valid = False
+                            output_tokens = None
+                        elif usage_valid:
+                            output_tokens = chunk.output_tokens
+                    if chunk.boundary_state is not None:
+                        if chunk.boundary_state not in {"CLEAR", "BOUNDARY"}:
+                            raise TerminalAdapterError("INVALID_BOUNDARY_STATE")
+                        if boundary_state is not None and boundary_state != chunk.boundary_state:
+                            raise TerminalAdapterError("CONFLICTING_BOUNDARY_STATE")
+                        if (
+                            chunk.boundary_category is not None
+                            and _SAFE_CODE.fullmatch(chunk.boundary_category) is None
+                        ) or (
+                            chunk.boundary_reason_code is not None
+                            and _SAFE_CODE.fullmatch(chunk.boundary_reason_code) is None
+                        ):
+                            raise TerminalAdapterError("INVALID_BOUNDARY_METADATA")
+                        boundary_state = chunk.boundary_state
+                        boundary_category = chunk.boundary_category
+                        boundary_reason_code = chunk.boundary_reason_code
                     if chunk.text:
                         parts.append(chunk.text)
                     current = "".join(parts)
@@ -240,6 +293,49 @@ class AdaptiveResponseController:
                             closed_early = await self._close_stream(iterator)
                             break
             except RetryableAdapterError as exc:
+                text = "".join(parts)
+                if boundary_state == "BOUNDARY":
+                    assessment = ResponseAssessment(
+                        TERMINAL,
+                        boundary_category or "BOUNDARY_RESPONSE",
+                        boundary_reason_code or "TYPED_BOUNDARY_PRESERVED",
+                    )
+                    attempts.append({
+                        "attempt": attempt,
+                        "temperature": temperature,
+                        "state": "HANDOFF",
+                        "category": assessment.category,
+                        "reason_code": assessment.reason_code,
+                        "output_sha256": _sha256_text(text),
+                        "output_chars": len(text),
+                        "input_tokens": input_tokens,
+                        "output_tokens": output_tokens,
+                        "usage_valid": usage_valid,
+                        "closed_early": False,
+                    })
+                    receipt = self._receipt(payload, state="HANDOFF", category=assessment.category, attempts=attempts)
+                    return {"state": "HANDOFF", "category": assessment.category, "text": text, "receipt": receipt}
+                if text.strip() and boundary_state != "CLEAR":
+                    assessment = ResponseAssessment(
+                        TERMINAL,
+                        "UNVERIFIED_RETRY_ELIGIBILITY",
+                        "TYPED_BOUNDARY_CLEARANCE_REQUIRED",
+                    )
+                    attempts.append({
+                        "attempt": attempt,
+                        "temperature": temperature,
+                        "state": "HANDOFF",
+                        "category": assessment.category,
+                        "reason_code": assessment.reason_code,
+                        "output_sha256": _sha256_text(text),
+                        "output_chars": len(text),
+                        "input_tokens": input_tokens,
+                        "output_tokens": output_tokens,
+                        "usage_valid": usage_valid,
+                        "closed_early": False,
+                    })
+                    receipt = self._receipt(payload, state="HANDOFF", category=assessment.category, attempts=attempts)
+                    return {"state": "HANDOFF", "category": assessment.category, "text": text, "receipt": receipt}
                 assessment = ResponseAssessment(RETRY, "ADAPTER_RETRYABLE", exc.reason_code)
                 attempts.append({
                     "attempt": attempt,
@@ -247,44 +343,50 @@ class AdaptiveResponseController:
                     "state": "RETRY",
                     "category": assessment.category,
                     "reason_code": assessment.reason_code,
-                    "output_sha256": _sha256_text(""),
-                    "output_chars": 0,
+                    "output_sha256": _sha256_text(text),
+                    "output_chars": len(text),
                     "input_tokens": input_tokens,
                     "output_tokens": output_tokens,
+                    "usage_valid": usage_valid,
                     "closed_early": False,
                 })
+                prior_text = text
                 prior_assessment = assessment
                 continue
             except TerminalAdapterError as exc:
+                text = "".join(parts)
                 attempts.append({
                     "attempt": attempt,
                     "temperature": temperature,
                     "state": "FAIL",
                     "category": "ADAPTER_TERMINAL",
                     "reason_code": exc.reason_code,
-                    "output_sha256": _sha256_text(""),
-                    "output_chars": 0,
+                    "output_sha256": _sha256_text(text),
+                    "output_chars": len(text),
                     "input_tokens": input_tokens,
                     "output_tokens": output_tokens,
+                    "usage_valid": usage_valid,
                     "closed_early": False,
                 })
                 receipt = self._receipt(payload, state="FAIL", category="ADAPTER_TERMINAL", attempts=attempts)
-                return {"state": "FAIL", "category": "ADAPTER_TERMINAL", "text": "", "receipt": receipt}
+                return {"state": "FAIL", "category": "ADAPTER_TERMINAL", "text": text, "receipt": receipt}
             except Exception as exc:  # fail closed without persisting exception text
+                text = "".join(parts)
                 attempts.append({
                     "attempt": attempt,
                     "temperature": temperature,
                     "state": "UNKNOWN",
                     "category": "UNCLASSIFIED_ADAPTER_ERROR",
                     "reason_code": exc.__class__.__name__,
-                    "output_sha256": _sha256_text(""),
-                    "output_chars": 0,
+                    "output_sha256": _sha256_text(text),
+                    "output_chars": len(text),
                     "input_tokens": input_tokens,
                     "output_tokens": output_tokens,
+                    "usage_valid": usage_valid,
                     "closed_early": False,
                 })
                 receipt = self._receipt(payload, state="UNKNOWN", category="UNCLASSIFIED_ADAPTER_ERROR", attempts=attempts)
-                return {"state": "UNKNOWN", "category": "UNCLASSIFIED_ADAPTER_ERROR", "text": "", "receipt": receipt}
+                return {"state": "UNKNOWN", "category": "UNCLASSIFIED_ADAPTER_ERROR", "text": text, "receipt": receipt}
 
             text = "".join(parts)
             if early_category == "OUTPUT_BUDGET_EXHAUSTED":
@@ -298,12 +400,19 @@ class AdaptiveResponseController:
                     "output_chars": len(text),
                     "input_tokens": input_tokens,
                     "output_tokens": output_tokens,
+                    "usage_valid": usage_valid,
                     "closed_early": closed_early,
                 })
                 receipt = self._receipt(payload, state="HANDOFF", category=early_category, attempts=attempts)
                 return {"state": "HANDOFF", "category": early_category, "text": text, "receipt": receipt}
 
-            if early_category == "REPEATED_NON_PROGRESS":
+            if boundary_state == "BOUNDARY":
+                assessment = ResponseAssessment(
+                    TERMINAL,
+                    boundary_category or "BOUNDARY_RESPONSE",
+                    boundary_reason_code or "TYPED_BOUNDARY_PRESERVED",
+                )
+            elif early_category == "REPEATED_NON_PROGRESS":
                 assessment = ResponseAssessment(RETRY, early_category, "IDENTICAL_NORMALIZED_PREFIX")
             else:
                 try:
@@ -321,13 +430,20 @@ class AdaptiveResponseController:
                         "reason_code": exc.__class__.__name__,
                         "output_sha256": _sha256_text(text),
                         "output_chars": len(text),
-                        "input_tokens": input_tokens,
-                        "output_tokens": output_tokens,
-                        "closed_early": closed_early,
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "usage_valid": usage_valid,
+                    "closed_early": closed_early,
                     })
                     receipt = self._receipt(payload, state="UNKNOWN", category="ASSESSOR_ERROR", attempts=attempts)
                     return {"state": "UNKNOWN", "category": "ASSESSOR_ERROR", "text": text, "receipt": receipt}
 
+            if assessment.decision == RETRY and text.strip() and boundary_state != "CLEAR":
+                assessment = ResponseAssessment(
+                    TERMINAL,
+                    "UNVERIFIED_RETRY_ELIGIBILITY",
+                    "TYPED_BOUNDARY_CLEARANCE_REQUIRED",
+                )
             attempt_state = {ACCEPT: "PASS", RETRY: "RETRY", TERMINAL: "HANDOFF"}[assessment.decision]
             attempts.append({
                 "attempt": attempt,
@@ -339,6 +455,7 @@ class AdaptiveResponseController:
                 "output_chars": len(text),
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
+                "usage_valid": usage_valid,
                 "closed_early": closed_early,
             })
             if assessment.decision == ACCEPT:
