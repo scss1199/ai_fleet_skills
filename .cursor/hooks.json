@@ -46,7 +46,8 @@
     "beforeSubmitPrompt": [
       {
         "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-fames-hot-refresh.py",
-        "timeout": 20
+        "timeout": 20,
+        "failClosed": true
       },
       {
         "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-fleet-inbox-auto.py",

@@ -23,7 +23,7 @@ Debug: `python C:\\ai_workspace\\_skill\\engines\\agent-session-open.py`
 
 Standalone `FAMES` means the full `FP -> MTM -> SCF -> AEX -> SEAL` contract; report every phase, fail closed on UNKNOWN, and never expand user authority. SSOT: `_registry/fames-protocol.json`; Skill: `fames`.
 
-FAMES is the always-on conversation harness for `ai_fleet_skills`. SessionStart must produce `_registry/fames-session/ai_fleet_skills.json` through the existing session-open orchestrator, with zero model/API calls. Every non-trivial task, continuation, and resumed session executes the task-adaptive FAMES envelope without requiring a trigger. FP and MTM activate at task intake; SCF and AEX remain predicate-gated; SEAL closes every completion claim. This changes completeness only and never expands task scope, credential access, destructive authority, or safety boundaries.
+FAMES is the always-on conversation harness for `ai_fleet_skills`. SessionStart must produce `_registry/fames-session/ai_fleet_skills.json` through the existing session-open orchestrator, with zero model/API calls. Every non-trivial task, continuation, and resumed session executes the task-adaptive FAMES envelope without requiring a trigger. FP and MTM activate at task intake; SCF and AEX remain predicate-gated; SEAL closes every completion claim. On every user turn, resolve FAMES from disk and compile the exact current prompt through RB SOURCE→INTENT→PROMPT→Ti→EXECUTE→PRESENT: every load-bearing intent maps to a prompt clause, and every clause maps to a Ti invariant, counterexample, discriminating test, stop rule, and verified/UNKNOWN/FORBIDDEN terminal state. Unmapped meaning fails closed. This changes completeness only; authority_after stays a subset of authority_before and task scope, credentials, destructive authority, and safety boundaries never expand.
 
 
 ## Standing rules (portal rules tab = this source)
@@ -50,13 +50,6 @@ STANDING RULES (_registry/rules-blueprint.json — portal rules tab = this sourc
 **PFKT HARD DENY（beforeSubmitPrompt 硬阻擋）**：複雜/多步驟先 `pfkt-fragment.py mint`；平行 Task 前先 `pfkt-wave.py plan`；未 mint/plan 的 prompt 會被 deny（非警告）；`skip pfkt` 可豁免；singleton 見 `parallel-gates.json`  
 **MTM/MTO（SessionStart+每 session 1x remind 已注入）**：任務前 `prework.py`+`ztm-task-router.py` · Skill `mtm-mto-first` · 禁 TRN Read/Shell 迴圈 · `mtm-token-waste-scan.py --brief`  
 **AGC（auto-goal-compact 已注入）**：長 session 讀 `_registry/agc-compact/ai_fleet_skills.md` 勿重讀 chat · Skill `agc-auto-goal-compact` · `agc-should-compact.py --agent ai_fleet_skills`  
-**平行**：獨立 ZTM 葉 → Multitask/Task 同 wave 全開；禁止無 merge 就宣稱完成  
-**零前景**：pythonw + CREATE_NO_WINDOW；禁止 `-WindowStyle Hidden`  
-路由：`python %AI_WORKSPACE%\_skill\engines\ztm-task-router.py "<keywords>"`  
-SSOT：`_registry/ztm-task-routes.json` · `_registry/workspace-seat-contract.json`
-
-## 多 agent 並行 + 確認即上線
-
 
 <!-- truncated to 5120 bytes -->
 
