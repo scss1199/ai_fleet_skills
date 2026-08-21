@@ -537,7 +537,7 @@ def _forbidden_key_paths(node: object, trail: str = "") -> list[str]:
         for key, value in node.items():
             here = f"{trail}/{key}" if trail else str(key)
             safe_identity = (
-                str(key).lower().endswith("_identity")
+                str(key).lower().endswith(("_identity", "_identity_sha"))
                 and isinstance(value, str)
                 and SHA256_RE.fullmatch(value.lower()) is not None
             )
@@ -906,6 +906,16 @@ def validate_harness(record: dict) -> dict:
         for field in ("load_receipt", "behavior_probe", "local_verification", "read_back"):
             if receipt.get(field) is not True:
                 errors.append(f"{here}: {field} did not pass")
+        if receipt.get("turn_read_back") is not True:
+            errors.append(f"{here}: per-turn rule or context did not read back")
+        if not isinstance(receipt.get("turn_refresh_event"), str) or not receipt["turn_refresh_event"].strip():
+            unknowns.append(f"{here}: turn refresh event missing")
+        for field in (
+            "session_identity_sha", "prompt_identity", "prompt_contract_identity",
+            "turn_adapter_identity", "turn_rule_or_context_identity",
+        ):
+            if field in receipt and not SHA256_RE.fullmatch(str(receipt.get(field) or "").lower()):
+                errors.append(f"{here}: {field} is not SHA-256")
     if registered and set(receipt_ids) != set(registered):
         errors.append("harness receipts do not cover the exact registered population")
     if len(receipt_ids) != len(set(receipt_ids)):

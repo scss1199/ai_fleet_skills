@@ -148,9 +148,9 @@
       "selection_predicates": ["capability", "availability", "authority", "safety", "evidence_freshness", "cost"],
       "registered_surface_ids": ["surface-a", "surface-b", "surface-c"],
       "surface_receipts": [
-        {"surface_id": "surface-a", "discovery_path": "path:a", "package_sha": "sha256:fames-package-fixture", "load_receipt": true, "behavior_probe": true, "local_verification": true, "read_back": true},
-        {"surface_id": "surface-b", "discovery_path": "path:b", "package_sha": "sha256:fames-package-fixture", "load_receipt": true, "behavior_probe": true, "local_verification": true, "read_back": true},
-        {"surface_id": "surface-c", "discovery_path": "path:c", "package_sha": "sha256:fames-package-fixture", "load_receipt": true, "behavior_probe": true, "local_verification": true, "read_back": true}
+        {"surface_id": "surface-a", "discovery_path": "path:a", "package_sha": "sha256:fames-package-fixture", "load_receipt": true, "behavior_probe": true, "local_verification": true, "read_back": true, "turn_refresh_event": "prompt-event-a", "session_identity_sha": "1111111111111111111111111111111111111111111111111111111111111111", "prompt_identity": "2222222222222222222222222222222222222222222222222222222222222222", "prompt_contract_identity": "3333333333333333333333333333333333333333333333333333333333333333", "turn_adapter_identity": "4444444444444444444444444444444444444444444444444444444444444444", "turn_rule_or_context_identity": "5555555555555555555555555555555555555555555555555555555555555555", "turn_read_back": true},
+        {"surface_id": "surface-b", "discovery_path": "path:b", "package_sha": "sha256:fames-package-fixture", "load_receipt": true, "behavior_probe": true, "local_verification": true, "read_back": true, "turn_refresh_event": "prompt-event-b", "session_identity_sha": "6666666666666666666666666666666666666666666666666666666666666666", "prompt_identity": "7777777777777777777777777777777777777777777777777777777777777777", "prompt_contract_identity": "8888888888888888888888888888888888888888888888888888888888888888", "turn_adapter_identity": "9999999999999999999999999999999999999999999999999999999999999999", "turn_rule_or_context_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "turn_read_back": true},
+        {"surface_id": "surface-c", "discovery_path": "path:c", "package_sha": "sha256:fames-package-fixture", "load_receipt": true, "behavior_probe": true, "local_verification": true, "read_back": true, "turn_refresh_event": "prompt-event-c", "session_identity_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "prompt_identity": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "prompt_contract_identity": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "turn_adapter_identity": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "turn_rule_or_context_identity": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "turn_read_back": true}
       ],
       "rename_probe": {"name_changed": true, "capability_identity_unchanged": true, "before_decision": "eligible", "after_decision": "eligible"},
       "promotion_writer_count": 1,
@@ -337,6 +337,67 @@
           }
         }
       ],
+      "prompt_compilation": {
+        "state": "PASS",
+        "turn_receipt": {
+          "surface_id": "fixture-surface",
+          "session_identity_sha": "1010101010101010101010101010101010101010101010101010101010101010",
+          "prompt_identity": "2020202020202020202020202020202020202020202020202020202020202020",
+          "skill_gen": "auto",
+          "package_sha": "auto",
+          "prompt_contract_identity": "auto",
+          "adapter_identity": "3030303030303030303030303030303030303030303030303030303030303030",
+          "rule_or_context_identity": "4040404040404040404040404040404040404040404040404040404040404040",
+          "read_back": true,
+          "raw_prompt_persisted": false
+        },
+        "source": {
+          "prompt_identity": "auto",
+          "prompt_chars": 100,
+          "goal_identity": "auto"
+        },
+        "intent_ledger": [
+          {
+            "id": "intent-1",
+            "kind": "outcome",
+            "source_spans": [{"start": 0, "end": 64}],
+            "statement": "Preserve the complete user outcome through the execution prompt and Ti boundary.",
+            "load_bearing": true,
+            "prompt_clause_ids": ["clause-outcome", "clause-state", "clause-invariant", "clause-counterexample", "clause-tests", "clause-red-lines", "clause-completion"]
+          }
+        ],
+        "prompt_clauses": [
+          {"id": "clause-outcome", "section": "outcome_verification", "intent_ids": ["intent-1"], "requirement": "Freeze outcome and verification.", "evidence_required": "source", "authority_effect": "conserve", "ti_invariant_ids": ["ti-1"]},
+          {"id": "clause-state", "section": "current_state", "intent_ids": ["intent-1"], "requirement": "Measure fresh current state.", "evidence_required": "measured", "authority_effect": "none", "ti_invariant_ids": ["ti-1"]},
+          {"id": "clause-invariant", "section": "invariants", "intent_ids": ["intent-1"], "requirement": "State load-bearing invariants.", "evidence_required": "source", "authority_effect": "conserve", "ti_invariant_ids": ["ti-1"]},
+          {"id": "clause-counterexample", "section": "counterexamples", "intent_ids": ["intent-1"], "requirement": "Search bounded counterexamples.", "evidence_required": "measured", "authority_effect": "none", "ti_invariant_ids": ["ti-1"]},
+          {"id": "clause-tests", "section": "tests", "intent_ids": ["intent-1"], "requirement": "Run decisive positive and negative tests.", "evidence_required": "measured", "authority_effect": "none", "ti_invariant_ids": ["ti-1"]},
+          {"id": "clause-red-lines", "section": "red_lines", "intent_ids": ["intent-1"], "requirement": "Preserve red lines and authority.", "evidence_required": "source", "authority_effect": "narrow", "ti_invariant_ids": ["ti-1"]},
+          {"id": "clause-completion", "section": "completion", "intent_ids": ["intent-1"], "requirement": "Close only on fresh evidence.", "evidence_required": "measured", "authority_effect": "none", "ti_invariant_ids": ["ti-1"]}
+        ],
+        "ti_invariants": [
+          {
+            "id": "ti-1",
+            "clause_ids": ["clause-outcome", "clause-state", "clause-invariant", "clause-counterexample", "clause-tests", "clause-red-lines", "clause-completion"],
+            "invariant": "No load-bearing user intent is dropped and authority never expands.",
+            "counterexample": "A generated prompt omits a constraint or treats UNKNOWN as permission.",
+            "discriminating_test": "Reconcile intent, prompt-clause, Ti, evidence, and authority ledgers.",
+            "stop_rule": "Stop at verified closure or explicit UNKNOWN/FORBIDDEN.",
+            "terminal_state": "verified"
+          }
+        ],
+        "coverage": {
+          "load_bearing_intent_count": 1,
+          "mapped_load_bearing_intent_count": 1,
+          "prompt_clause_count": 7,
+          "ti_bound_prompt_clause_count": 7,
+          "unmapped_load_bearing_ids": [],
+          "unbound_prompt_clause_ids": []
+        },
+        "authority_before": ["read", "validate"],
+        "authority_after": ["read", "validate"],
+        "uncertainties": []
+      },
       "interface": {
         "canonical_result_identity": "auto",
         "canonical_fields": {"outcome": "RB validator accepts the frozen record", "evidence": ["receipt://rb/base-pass"], "uncertainty": [], "blockers": [], "risk": "none", "action_state": "verified", "authority": ["read", "validate"], "next_action": "monitor until expiry"},
@@ -496,7 +557,14 @@
     {"id": "C-BOUNDARY-FORBIDDEN-INFERENCE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/interface/forbidden_inferences": ["stable intelligence trait"]}, "expect_ok": false, "expect_state": "FAIL", "why": "a nonempty stable-trait inference ledger is rejected"},
     {"id": "C-BOUNDARY-PROFILE-OUTLIVES-TASK", "kind": "validator_probe", "charges": "R_FRESHNESS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/interface/profile_receipt/expires_at": "2099-01-01T00:00:00Z"}, "expect_ok": false, "expect_state": "FAIL", "why": "a task-local profile cannot survive the boundary record"},
     {"id": "C-BOUNDARY-CURRENT-RETRACTED", "kind": "validator_probe", "charges": "R_FRESHNESS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/monitor/retracted_at": "2026-08-19T00:00:00Z", "/monitor/retraction_reason": "contradictory fixture"}, "expect_ok": false, "expect_state": "FAIL", "why": "CURRENT cannot carry retraction metadata"},
+    {"id": "C-BOUNDARY-PROMPT-GOAL-BINDING", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/prompt_compilation/source/goal_identity": "different-goal"}, "expect_ok": false, "expect_state": "FAIL", "why": "a prompt compiled for one goal cannot be reused for another RB cell"},
+    {"id": "C-BOUNDARY-PROMPT-UNMAPPED-INTENT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/prompt_compilation/intent_ledger/0/prompt_clause_ids": []}, "expect_ok": false, "expect_state": "FAIL", "why": "every load-bearing user intent must reach at least one generated-prompt clause"},
+    {"id": "C-BOUNDARY-PROMPT-TI-COUNTEREXAMPLE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "remove": ["/prompt_compilation/ti_invariants/0/counterexample"], "expect_ok": false, "expect_state": "UNKNOWN", "why": "Ti cannot close a boundary without a bounded counterexample"},
+    {"id": "C-BOUNDARY-PROMPT-AUTHORITY", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/prompt_compilation/authority_after": ["read", "validate", "deploy"]}, "expect_ok": false, "expect_state": "FAIL", "why": "deeper RB or Ti reasoning never creates deployment authority"},
+    {"id": "C-BOUNDARY-PROMPT-RAW-PERSISTENCE", "kind": "validator_probe", "charges": "R_HYGIENE", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/prompt_compilation/turn_receipt/raw_prompt_persisted": true}, "expect_ok": false, "expect_state": "FAIL", "why": "turn receipts retain identities and counts, never the raw operator prompt"},
+    {"id": "C-BOUNDARY-PROMPT-STALE-PACKAGE", "kind": "validator_probe", "charges": "R_FRESHNESS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive_boundary", "input_ref": "cognitive_boundary_suite", "patch": {"/prompt_compilation/turn_receipt/package_sha": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}, "expect_ok": false, "expect_state": "FAIL", "why": "an old conversation must bind the package currently on disk, not the generation in its context"},
     {"id": "C-RUN-BOUNDARY-MISSING", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_run", "input_ref": "run_min", "remove": ["/cognitive_boundary_gate"], "expect_ok": false, "expect_state": "FAIL", "why": "every non-trivial FAMES run must replay RB rather than bypass it"},
+    {"id": "C-RUN-PROMPT-COMPILATION-MISSING", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_run", "input_ref": "run_min", "remove": ["/cognitive_boundary_gate/record/prompt_compilation"], "expect_ok": false, "expect_state": "FAIL", "why": "validate-run cannot bypass the current prompt-to-Ti reach contract"},
     {"id": "C-RUN-BOUNDARY-RESULT-MISMATCH", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_run", "input_ref": "run_min", "patch": {"/result/identity": "different-result"}, "expect_ok": false, "expect_state": "FAIL", "why": "an RB PASS for result A cannot be reused for result B"},
     {"id": "C-INTERACTION-BOUNDARY-MISSING", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "remove": ["/cognitive_boundary_gate"], "expect_ok": false, "expect_state": "FAIL", "why": "an interaction-bearing cognitive record cannot bypass RB"},
     {"id": "C-INTERACTION-BOUNDARY-MISMATCH", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_cognitive", "input_ref": "interaction_suite", "patch": {"/cognitive_boundary_gate/record/binding/interaction_identity": "different-interaction"}, "expect_ok": false, "expect_state": "FAIL", "why": "an interaction cannot reuse another interaction's RB PASS"},
@@ -900,6 +968,8 @@
     {"id": "C-HARNESS-MISSING-SURFACE", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_harness", "input_ref": "harness_suite", "remove": ["/surface_receipts/2"], "expect_ok": false, "expect_state": "FAIL", "why": "a compliance claim cannot hide a registered harness with no fresh receipt"},
     {"id": "C-HARNESS-NAME-POLICY", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_harness", "input_ref": "harness_suite", "patch": {"/selection_predicates/0": "harness_name"}, "expect_ok": false, "expect_state": "FAIL", "why": "canonical routing cannot select by a product or harness label"},
     {"id": "C-HARNESS-UNREGISTERED-PASS", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_harness", "input_ref": "harness_suite", "patch": {"/unregistered_harness_state": "PASS"}, "expect_ok": false, "expect_state": "FAIL", "why": "an unregistered or unprobed AI tool remains UNKNOWN rather than inheriting compliance by association"},
+    {"id": "C-HARNESS-TURN-MISSING", "kind": "validator_probe", "charges": "R_FRESHNESS", "fail_mode": "closed", "scope": "any", "validator": "validate_harness", "input_ref": "harness_suite", "remove": ["/surface_receipts/0/prompt_identity"], "expect_ok": false, "expect_state": "UNKNOWN", "why": "a package load receipt cannot substitute for a prompt-bound next-turn receipt"},
+    {"id": "C-HARNESS-TURN-READBACK", "kind": "validator_probe", "charges": "R_FRESHNESS", "fail_mode": "closed", "scope": "any", "validator": "validate_harness", "input_ref": "harness_suite", "patch": {"/surface_receipts/1/turn_read_back": false}, "expect_ok": false, "expect_state": "FAIL", "why": "an adapter cannot claim next-turn application when its rule or context was not read back"},
 
     {"id": "C-GUARD-EQUAL", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any",
      "validator": "regression_guard", "input_ref": "guard_base", "expect_ok": true,

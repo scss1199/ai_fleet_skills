@@ -1,8 +1,8 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.25.0",
-  "updated": "2026-08-20",
+  "version": "1.26.0",
+  "updated": "2026-08-21",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
   "legacy_umbrella_aliases": [
@@ -413,11 +413,12 @@
       "purpose": "Make the same FAMES policy loadable and mechanically auditable from every registered AI harness without allowing a harness name to own policy.",
       "execution_topology": "decentralized local execution and verification over one content-addressed contract; promotion remains single-writer so decentralization cannot become policy drift",
       "registered_population_source": "_registry/agent-surfaces.json",
-      "required_surface_receipt_fields": ["surface_id", "discovery_path", "package_sha", "load_receipt", "behavior_probe", "local_verification", "read_back"],
+      "required_surface_receipt_fields": ["surface_id", "discovery_path", "package_sha", "load_receipt", "behavior_probe", "local_verification", "read_back", "turn_refresh_event", "session_identity_sha", "prompt_identity", "prompt_contract_identity", "turn_adapter_identity", "turn_rule_or_context_identity", "turn_read_back"],
       "selection_predicates": ["capability", "availability", "authority", "safety", "evidence_freshness", "cost"],
       "forbidden_predicates": ["harness_name", "product_name", "model_name", "vendor_name", "ide_name", "adapter_name", "skill_name"],
       "rename_invariance": "Changing only a surface or harness label must not change eligibility, route, terminal state, validator identity, or authority.",
-      "coverage_rule": "A compliance claim covers exactly the surfaces registered and freshly read back. An unregistered, unloaded, stale, or unprobed harness is UNKNOWN, never implicitly compliant.",
+      "coverage_rule": "A compliance claim covers exactly the surfaces registered and freshly read back for both package load and a current user turn. An unregistered, unloaded, stale, unprobed, or turn-unrefreshed harness is UNKNOWN, never implicitly compliant.",
+      "next_turn_rule": "Every registered surface supplies either same-turn context injection or an always-applied rule with pre-submit read-back. A block-only hook is a gate, not an injector. Session, prompt, prompt-contract, adapter, and rule/context identities are required for the claimed turn.",
       "authority_rule": "A harness may execute and verify locally but may not rewrite canonical policy, weaken a validator, or add authority. Canonical promotion retains exactly one writer.",
       "validator": "python scripts/fames_fleet.py validate-harness --input <record.json> --json"
     },
@@ -779,6 +780,31 @@
         "interaction_rule": "validate_cognitive binds RB to a hash of the complete interaction_integrity record.",
         "promotion_rule": "validate_ingest binds RB to source content identity, sorted claim ids, landing-artifact identity, candidate identity, and ingest authority scope.",
         "evidence_rule": "Promotion evidence is replayable only when its local path exists and the active validator recomputes the declared SHA-256. Claim semantics include claim text, trust class, disposition, reason, and lands_in; landing artifact bytes are hashed and their path must resolve from lands_in. The trial receipt is accepted only after the active validator reruns the exact current RB input and recomputes candidate, input, validator, output, time, state, and exit-status identities. Independent review requires a reviewer identity distinct from builder and promoter authority, an unexpired content-addressed receipt, and reproduction of the frozen RB subject, predicates, evidence, and output with the active validator; execution timestamps are validated by the receipt window rather than treated as invariant subject matter. Non-regression PASS is never trusted from prose or a receipt alone: the active validator directly reruns the frozen case ids and binds package, validator, case-set, input, output, state, exit status, and validity window to the same candidate and artifact identities."
+      },
+      "prompt_compilation_contract": {
+        "purpose": "Carry the complete load-bearing meaning of the current user turn through the generated execution prompt and into Ti invariants without widening authority.",
+        "activation": "Every non-trivial user prompt, continuation, resumed session, and prompt received by a conversation that opened before the active FAMES generation.",
+        "pipeline": ["SOURCE", "INTENT", "PROMPT", "TI", "EXECUTE", "PRESENT"],
+        "source_rule": "Bind the exact current prompt identity, session identity, active generation, package identity, character count, and goal identity. Persist only bounded identities and counts; raw prompt text is not written to a receipt.",
+        "intent_kinds": ["outcome", "verification", "constraint", "non_goal", "authority", "preference", "context", "ambiguity"],
+        "required_prompt_sections": ["outcome_verification", "current_state", "invariants", "counterexamples", "tests", "red_lines", "completion"],
+        "required_ti_fields": ["invariant", "counterexample", "discriminating_test", "stop_rule", "terminal_state"],
+        "terminal_states": ["verified", "unknown", "forbidden"],
+        "evidence_requirements": ["measured", "source", "explicit_unknown", "not_applicable"],
+        "authority_effects": ["conserve", "narrow", "none"],
+        "reach_rule": "Every load-bearing intent atom maps to at least one prompt clause, every prompt clause maps to at least one Ti invariant, and every Ti invariant names a bounded counterexample, discriminating test, stop rule, and terminal state. Unmapped or unbound items fail closed.",
+        "semantic_rule": "The user utterance remains the source of task meaning. Templates may add structure, tests, evidence requirements, and explicit unknowns, but may not delete, soften, reverse, or silently invent load-bearing intent.",
+        "authority_rule": "authority_after must be a subset of authority_before. RB depth, prompt detail, Ti analysis, automation, and convenience never create permission.",
+        "uncertainty_rule": "Ambiguous or untestable intent is carried as an explicit ambiguity or UNKNOWN boundary; it is never guessed into a requirement or silently omitted.",
+        "turn_refresh_contract": {
+          "event": "every user prompt before model execution",
+          "freshness": "Resolve the on-disk package, protocol parity, and prompt-contract identity on every turn. A conversation-open receipt cannot substitute for this read.",
+          "supported_adapters": ["same_turn_context_injection", "always_apply_rule_with_pre_submit_read_back"],
+          "receipt_fields": ["surface_id", "session_identity_sha", "prompt_identity", "skill_gen", "package_sha", "prompt_contract_identity", "adapter_identity", "rule_or_context_identity", "read_back", "raw_prompt_persisted"],
+          "failure_rule": "Missing session identity, missing prompt identity, stale or mismatched rule/context identity, unreadable package, parity drift, or adapter failure is UNKNOWN and blocks a completion claim. An adapter that can only block cannot claim it injected context.",
+          "privacy_rule": "The receipt stores no raw prompt, attachment body, credential, cookie, token, or session value. Conversation and prompt identities are one-way SHA-256 values."
+        },
+        "unknown_rule": "Unknown prompt identity, session identity, generation, intent coverage, clause coverage, Ti binding, terminal state, authority conservation, or turn-refresh read-back is UNKNOWN and fails closed."
       },
       "phase_relationship": {
         "FP": "Freeze the boundary cell, population identity, baseline, metrics, thresholds, authority, and expansion claim before execution.",

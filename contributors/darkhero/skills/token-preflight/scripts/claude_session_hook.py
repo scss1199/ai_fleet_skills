@@ -4,7 +4,7 @@ import importlib.util
 import json, os, sys
 from datetime import datetime, timezone
 from pathlib import Path
-HUB=Path(os.environ.get("AI_WORKSPACE",r"C:\ai_workspace")); STATUS=HUB/"_registry"/"token-preflight"/"claude-hook-status.json"
+HUB=Path(os.environ.get("AI_WORKSPACE",r"C:\ai_workspace")); STATUS=HUB/"_registry"/"token-preflight"/"claude-hook-status.json"; CODEX_STATUS=HUB/"_registry"/"token-preflight"/"codex-hook-status.json"
 
 
 def _harness():
@@ -22,22 +22,30 @@ def main():
     except Exception: doc={}
     cwd=str(doc.get("cwd") or os.getcwd()); agent="ai_"+Path(cwd).name[3:] if Path(cwd).name.startswith("ai_") else Path(cwd).name
     event=str(doc.get("hook_event_name") or "SessionStart")
-    session_id=str(doc.get("session_id") or doc.get("conversation_id") or f"{agent}-unknown")
+    session_id=str(doc.get("session_id") or doc.get("conversation_id") or "")
+    surface_id="open-agent-standard" if doc.get("model") or doc.get("turn_id") else "claude"
     token_core=(f"TOKEN CORE {agent}: keep only outcome, verification, state, next action, blocker. "
                 "Run token-preflight before broad reads. PFKT only for independent units; "
                 "AEX only after verified residual. UNKNOWN is not clear.")
     try:
         harness=_harness()
         if event == "UserPromptSubmit":
-            result=harness.hot_refresh(
-                agent, Path(cwd), surface_id="claude", session_id=session_id, workspace=HUB
+            result=harness.turn_context(
+                agent,
+                Path(cwd),
+                prompt=str(doc.get("prompt") or doc.get("user_message") or doc.get("message") or ""),
+                surface_id=surface_id,
+                session_id=session_id,
+                adapter_mode="same_turn_context_injection",
+                adapter_path=Path(__file__),
+                workspace=HUB,
             )
-            context=(token_core+"\n"+result.get("plan_text", "")).strip() if result.get("should_inject") else ""
+            context=(token_core+"\n"+result.get("plan_text", "")).strip()
             state=result.get("state")
         else:
             result=harness.run_session(agent, Path(cwd), HUB)
             harness.hot_refresh(
-                agent, Path(cwd), surface_id="claude", session_id=session_id,
+                agent, Path(cwd), surface_id=surface_id, session_id=session_id,
                 workspace=HUB, acknowledge=True,
             )
             context=(token_core+"\n"+result.get("plan_text", "")).strip()
@@ -45,7 +53,8 @@ def main():
     except Exception as exc:
         state="UNKNOWN"
         context=token_core+f"\nFAMES ALWAYS-ON — UNKNOWN — {type(exc).__name__}"
-    STATUS.parent.mkdir(parents=True,exist_ok=True); STATUS.write_text(json.dumps({"schema":2,"last_fired":datetime.now(timezone.utc).isoformat(),"event":event,"cwd":cwd,"agent":agent,"fames_state":state},indent=2),encoding="utf-8")
+    status_path=CODEX_STATUS if surface_id == "open-agent-standard" else STATUS
+    status_path.parent.mkdir(parents=True,exist_ok=True); status_path.write_text(json.dumps({"schema":2,"last_fired":datetime.now(timezone.utc).isoformat(),"event":event,"cwd":cwd,"agent":agent,"surface_id":surface_id,"fames_state":state},indent=2),encoding="utf-8")
     if context:
         # ASCII JSON keeps the hook envelope valid under Windows cp950 consoles;
         # Claude decodes the \u escapes back into the original context text.
