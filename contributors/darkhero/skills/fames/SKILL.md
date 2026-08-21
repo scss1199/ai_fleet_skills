@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-21.8
+FAMES-GEN: 2026-08-21.10
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -124,6 +124,16 @@ a comparison baseline is absent or invalid, cost and savings stay
 `UNKNOWN` / `UNMEASURED`. Never use persona erasure, legal threats, alignment override,
 forbidden-token prompts, silent exceptions, access-control bypass, or DRM key acquisition
 as a retry strategy.
+
+Run `python scripts/claude_live_ab.py --workspace <root> --live --json` for the
+bounded real-Claude smoke suite in `references/claude-live-eval.json`. The runner
+uses the existing Claude Code authentication without reading it, compares the same
+model and prompt with and without the registered user hook, measures correctness,
+false aborts, usage, cost, and an actual prompt/session-bound lifecycle receipt, and
+persists no raw prompt or output. Its PASS covers only the frozen suite. Claude Code
+CLI does not expose temperature, so that surface records temperature as UNSUPPORTED;
+only the Messages SDK adapter may claim `temperature_applied=true`. Broader Claude
+task effectiveness stays UNKNOWN until an identity-bound task result and verifier pass.
 
 ### UT cognitive boundary (RB)
 

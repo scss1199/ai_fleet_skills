@@ -3462,7 +3462,9 @@ def build_bundle(
     expected_files = [
         "SKILL.md",
         "examples/anthropic_async_adapter.py",
+        "references/claude-live-eval.json",
         "scripts/adaptive_response_controller.py",
+        "scripts/claude_live_ab.py",
         "scripts/fames_fleet.py",
         CASES_TARGET,
         PRODUCTION_PROFILE_TARGET,

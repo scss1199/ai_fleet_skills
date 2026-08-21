@@ -7,6 +7,28 @@ from pathlib import Path
 HUB=Path(os.environ.get("AI_WORKSPACE",r"C:\ai_workspace")); STATUS=HUB/"_registry"/"token-preflight"/"claude-hook-status.json"; CODEX_STATUS=HUB/"_registry"/"token-preflight"/"codex-hook-status.json"
 
 
+def _read_hook_input(stream) -> dict:
+    """Decode Claude's UTF-8 hook pipe independently of Windows cp950."""
+    raw = stream.buffer.read() if hasattr(stream, "buffer") else stream.read()
+    if isinstance(raw, bytes):
+        text = None
+        for encoding in ("utf-8-sig", "utf-16", "cp950"):
+            try:
+                text = raw.decode(encoding)
+                break
+            except UnicodeDecodeError:
+                continue
+        if text is None:
+            return {}
+    else:
+        text = str(raw)
+    try:
+        doc = json.loads(text)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
 def _harness():
     path = HUB / "_harness" / "runtime" / "fames_session_harness.py"
     spec = importlib.util.spec_from_file_location("fames_session_harness", path)
@@ -18,16 +40,19 @@ def _harness():
 
 
 def main():
-    try: doc=json.load(sys.stdin)
-    except Exception: doc={}
+    doc=_read_hook_input(sys.stdin)
     cwd=str(doc.get("cwd") or os.getcwd()); agent="ai_"+Path(cwd).name[3:] if Path(cwd).name.startswith("ai_") else Path(cwd).name
     event=str(doc.get("hook_event_name") or "SessionStart")
     session_id=str(doc.get("session_id") or doc.get("conversation_id") or "")
-    codex_marked=bool(doc.get("model") or doc.get("turn_id") or "permission_mode" in doc or "transcript_path" in doc)
+    # Claude Code's native hook payload also carries transcript_path,
+    # permission_mode, and may carry model.  turn_id is the discriminating
+    # Open Agent field; treating the common fields as vendor identity sends a
+    # real Claude event to the wrong surface and makes its receipt UNKNOWN.
+    codex_marked=bool(str(doc.get("turn_id") or "").strip())
     surface_id="open-agent-standard" if codex_marked else "claude"
-    token_core=(f"TOKEN CORE {agent}: keep only outcome, verification, state, next action, blocker. "
-                "Run token-preflight before broad reads. PFKT only for independent units; "
-                "AEX only after verified residual. UNKNOWN is not clear.")
+    token_core=(f"TOKEN CORE {agent}: outcome | verification | state | next action | blocker. "
+                "Preflight before broad reads; PFKT only independent units; "
+                "AEX only measured residual; UNKNOWN fails closed.")
     try:
         harness=_harness()
         if event == "UserPromptSubmit":

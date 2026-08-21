@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.27.0",
+  "version": "1.28.1",
   "updated": "2026-08-21",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -414,6 +414,8 @@
       "policy_owner": "provider-neutral FAMES controller",
       "reference_implementation": "scripts/adaptive_response_controller.py",
       "host_adapter_examples": ["examples/anthropic_async_adapter.py"],
+      "live_eval_runner": "scripts/claude_live_ab.py",
+      "live_eval_suite": "references/claude-live-eval.json",
       "attempt_budget": {
         "maximum": 3,
         "default_temperature_schedule": [0.5, 0.2, 0.0],
@@ -426,7 +428,8 @@
       "prompt_rule": "Repair instructions name the measured residual and preserve higher-priority policy, safety, authorization, privacy, and evidence boundaries. Coercion, legal threats, persona erasure, alignment override, and forbidden-token prompts are prohibited.",
       "exception_rule": "Never silently swallow exceptions. Return a typed FAIL or UNKNOWN category without persisting raw exception text, payloads, outputs, credentials, or session material.",
       "cost_rule": "A savings percentage is UNKNOWN unless provider usage and a valid comparison baseline are both measured. Early stream closure alone does not prove billed-token savings.",
-      "required_receipt_fields": ["payload_sha256", "payload_chars", "attempt_count", "attempts", "state", "category", "cost_state", "savings_claim", "raw_payload_persisted", "raw_output_persisted"],
+      "live_proof_rule": "A real-provider claim requires a bounded metered call, provider/session identity, exact model evidence, cost and usage, deterministic correctness oracle, false-abort result, and an actual current lifecycle receipt. A CLI surface that cannot apply temperature records UNSUPPORTED rather than inheriting the SDK adapter claim. A smoke suite supports only its frozen cases; broader Claude effectiveness remains UNKNOWN.",
+      "required_receipt_fields": ["payload_sha256", "payload_chars", "attempt_count", "attempts", "state", "category", "cost_state", "savings_claim", "raw_payload_persisted", "raw_output_persisted", "provider_request_id_sha256", "provider_stop_reason", "provider_model_sha256", "temperature_applied"],
       "terminal_states": ["PASS", "HANDOFF", "UNKNOWN", "FAIL"]
     },
     "harness_contract": {
