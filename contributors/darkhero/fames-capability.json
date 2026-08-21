@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "11b4030440039bb306c6fdbd1e2d737e5a99cfede8eddb8f7ae76813411a410f",
+  "package_sha": "267a22812c71f100000edf33bccc1782c0d50549d1d56e3c72bad51e477ab38f",
   "capability_set_sha": "cd06263ad5694c9a37e4c2d71606bfdad96062631849328bcffd5a5b57d66590",
-  "validator_set_sha": "7697f0aec0d3f3d89b357a6a583f72d3ffccc079edebbfdbcaef70ca4b157b97",
+  "validator_set_sha": "c1fa230df6e348a2c2d9cc07f09ccb3c3a95bd998993246a0ee5c3766fee414f",
   "runner_state": "armed",
-  "observed_at": "2026-08-21T13:52:32.863381+00:00",
+  "observed_at": "2026-08-21T14:54:01.873176+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
