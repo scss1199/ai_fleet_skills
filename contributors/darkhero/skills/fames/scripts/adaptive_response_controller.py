@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import inspect
+import math
 import re
 from dataclasses import dataclass
 from typing import AsyncIterator, Awaitable, Callable, Protocol
@@ -45,6 +46,11 @@ class StreamChunk:
     boundary_state: str | None = None
     boundary_category: str | None = None
     boundary_reason_code: str | None = None
+    provider_request_id_sha256: str | None = None
+    provider_stop_reason: str | None = None
+    provider_model_sha256: str | None = None
+    provider_cost_usd: float | None = None
+    temperature_applied: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -231,8 +237,22 @@ class AdaptiveResponseController:
             boundary_state: str | None = None
             boundary_category: str | None = None
             boundary_reason_code: str | None = None
+            provider_request_id_sha256: str | None = None
+            provider_stop_reason: str | None = None
+            provider_model_sha256: str | None = None
+            provider_cost_usd: float | None = None
+            temperature_applied: bool | None = None
             closed_early = False
             early_category: str | None = None
+
+            def provider_evidence() -> dict:
+                return {
+                    "provider_request_id_sha256": provider_request_id_sha256,
+                    "provider_stop_reason": provider_stop_reason,
+                    "provider_model_sha256": provider_model_sha256,
+                    "provider_cost_usd": provider_cost_usd,
+                    "temperature_applied": temperature_applied,
+                }
 
             try:
                 iterator = adapter.stream(request)
@@ -279,6 +299,51 @@ class AdaptiveResponseController:
                         boundary_state = chunk.boundary_state
                         boundary_category = chunk.boundary_category
                         boundary_reason_code = chunk.boundary_reason_code
+                    for candidate in (
+                        chunk.provider_request_id_sha256,
+                        chunk.provider_model_sha256,
+                    ):
+                        if candidate is not None and re.fullmatch(r"[a-f0-9]{64}", candidate) is None:
+                            raise TerminalAdapterError("INVALID_PROVIDER_IDENTITY")
+                    if chunk.provider_request_id_sha256 is not None:
+                        if (
+                            provider_request_id_sha256 is not None
+                            and provider_request_id_sha256 != chunk.provider_request_id_sha256
+                        ):
+                            raise TerminalAdapterError("CONFLICTING_PROVIDER_REQUEST_IDENTITY")
+                        provider_request_id_sha256 = chunk.provider_request_id_sha256
+                    if chunk.provider_model_sha256 is not None:
+                        if (
+                            provider_model_sha256 is not None
+                            and provider_model_sha256 != chunk.provider_model_sha256
+                        ):
+                            raise TerminalAdapterError("CONFLICTING_PROVIDER_MODEL_IDENTITY")
+                        provider_model_sha256 = chunk.provider_model_sha256
+                    if chunk.provider_stop_reason is not None:
+                        if _SAFE_CODE.fullmatch(chunk.provider_stop_reason) is None:
+                            raise TerminalAdapterError("INVALID_PROVIDER_STOP_REASON")
+                        if provider_stop_reason is not None and provider_stop_reason != chunk.provider_stop_reason:
+                            raise TerminalAdapterError("CONFLICTING_PROVIDER_STOP_REASON")
+                        provider_stop_reason = chunk.provider_stop_reason
+                    if chunk.provider_cost_usd is not None:
+                        if (
+                            isinstance(chunk.provider_cost_usd, bool)
+                            or not isinstance(chunk.provider_cost_usd, (int, float))
+                            or not math.isfinite(float(chunk.provider_cost_usd))
+                            or chunk.provider_cost_usd < 0
+                            or (
+                                provider_cost_usd is not None
+                                and chunk.provider_cost_usd < provider_cost_usd
+                            )
+                        ):
+                            raise TerminalAdapterError("INVALID_PROVIDER_COST")
+                        provider_cost_usd = float(chunk.provider_cost_usd)
+                    if chunk.temperature_applied is not None:
+                        if not isinstance(chunk.temperature_applied, bool):
+                            raise TerminalAdapterError("INVALID_TEMPERATURE_EVIDENCE")
+                        if temperature_applied is not None and temperature_applied != chunk.temperature_applied:
+                            raise TerminalAdapterError("CONFLICTING_TEMPERATURE_EVIDENCE")
+                        temperature_applied = chunk.temperature_applied
                     if chunk.text:
                         parts.append(chunk.text)
                     current = "".join(parts)
@@ -312,6 +377,7 @@ class AdaptiveResponseController:
                         "output_tokens": output_tokens,
                         "usage_valid": usage_valid,
                         "closed_early": False,
+                        **provider_evidence(),
                     })
                     receipt = self._receipt(payload, state="HANDOFF", category=assessment.category, attempts=attempts)
                     return {"state": "HANDOFF", "category": assessment.category, "text": text, "receipt": receipt}
@@ -333,6 +399,7 @@ class AdaptiveResponseController:
                         "output_tokens": output_tokens,
                         "usage_valid": usage_valid,
                         "closed_early": False,
+                        **provider_evidence(),
                     })
                     receipt = self._receipt(payload, state="HANDOFF", category=assessment.category, attempts=attempts)
                     return {"state": "HANDOFF", "category": assessment.category, "text": text, "receipt": receipt}
@@ -349,6 +416,7 @@ class AdaptiveResponseController:
                     "output_tokens": output_tokens,
                     "usage_valid": usage_valid,
                     "closed_early": False,
+                    **provider_evidence(),
                 })
                 prior_text = text
                 prior_assessment = assessment
@@ -367,6 +435,7 @@ class AdaptiveResponseController:
                     "output_tokens": output_tokens,
                     "usage_valid": usage_valid,
                     "closed_early": False,
+                    **provider_evidence(),
                 })
                 receipt = self._receipt(payload, state="FAIL", category="ADAPTER_TERMINAL", attempts=attempts)
                 return {"state": "FAIL", "category": "ADAPTER_TERMINAL", "text": text, "receipt": receipt}
@@ -384,6 +453,7 @@ class AdaptiveResponseController:
                     "output_tokens": output_tokens,
                     "usage_valid": usage_valid,
                     "closed_early": False,
+                    **provider_evidence(),
                 })
                 receipt = self._receipt(payload, state="UNKNOWN", category="UNCLASSIFIED_ADAPTER_ERROR", attempts=attempts)
                 return {"state": "UNKNOWN", "category": "UNCLASSIFIED_ADAPTER_ERROR", "text": text, "receipt": receipt}
@@ -402,6 +472,7 @@ class AdaptiveResponseController:
                     "output_tokens": output_tokens,
                     "usage_valid": usage_valid,
                     "closed_early": closed_early,
+                    **provider_evidence(),
                 })
                 receipt = self._receipt(payload, state="HANDOFF", category=early_category, attempts=attempts)
                 return {"state": "HANDOFF", "category": early_category, "text": text, "receipt": receipt}
@@ -434,6 +505,7 @@ class AdaptiveResponseController:
                     "output_tokens": output_tokens,
                     "usage_valid": usage_valid,
                     "closed_early": closed_early,
+                    **provider_evidence(),
                     })
                     receipt = self._receipt(payload, state="UNKNOWN", category="ASSESSOR_ERROR", attempts=attempts)
                     return {"state": "UNKNOWN", "category": "ASSESSOR_ERROR", "text": text, "receipt": receipt}
@@ -457,6 +529,7 @@ class AdaptiveResponseController:
                 "output_tokens": output_tokens,
                 "usage_valid": usage_valid,
                 "closed_early": closed_early,
+                **provider_evidence(),
             })
             if assessment.decision == ACCEPT:
                 receipt = self._receipt(payload, state="PASS", category=assessment.category, attempts=attempts)

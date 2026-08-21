@@ -5,6 +5,7 @@ Anthropic async streaming boundary into the canonical StreamChunk contract.
 Pass an already-configured client; never pass or log an API key here.
 """
 from __future__ import annotations
+import hashlib
 
 import importlib.util
 from pathlib import Path
@@ -72,9 +73,40 @@ class AnthropicAsyncMessagesAdapter:
                     yield StreamChunk(text=text)
                 message = await stream.get_final_message()
                 usage = getattr(message, "usage", None)
+                stop_reason = str(getattr(message, "stop_reason", "") or "").strip()
+                stop_code = stop_reason.upper() if stop_reason else None
+                boundary_state = None
+                boundary_category = None
+                boundary_reason_code = None
+                if stop_reason == "refusal":
+                    boundary_state = "BOUNDARY"
+                    boundary_category = "SAFETY_BOUNDARY"
+                    boundary_reason_code = "PROVIDER_STOP_REASON_REFUSAL"
+                elif stop_reason in {
+                    "end_turn",
+                    "max_tokens",
+                    "stop_sequence",
+                    "tool_use",
+                    "pause_turn",
+                    "model_context_window_exceeded",
+                }:
+                    boundary_state = "CLEAR"
+                    boundary_category = "PROVIDER_COMPLETION"
+                    boundary_reason_code = f"PROVIDER_STOP_REASON_{stop_code}"
+                message_id = str(getattr(message, "id", "") or "")
                 yield StreamChunk(
                     input_tokens=getattr(usage, "input_tokens", None),
                     output_tokens=getattr(usage, "output_tokens", None),
+                    boundary_state=boundary_state,
+                    boundary_category=boundary_category,
+                    boundary_reason_code=boundary_reason_code,
+                    provider_request_id_sha256=(
+                        hashlib.sha256(message_id.encode("utf-8")).hexdigest()
+                        if message_id else None
+                    ),
+                    provider_stop_reason=stop_code,
+                    provider_model_sha256=hashlib.sha256(self.model.encode("utf-8")).hexdigest(),
+                    temperature_applied=True,
                 )
         except Exception as exc:
             name = exc.__class__.__name__
