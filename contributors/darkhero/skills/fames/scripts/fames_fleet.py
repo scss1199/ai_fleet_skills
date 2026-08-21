@@ -2605,6 +2605,245 @@ def _metric_expected_pass(metric: dict) -> bool | None:
     return {"ge": value >= threshold, "le": value <= threshold, "eq": value == threshold}.get(comparator)
 
 
+def _prompt_compilation_findings(
+    record: object,
+    policy: dict,
+    *,
+    goal_identity: object,
+) -> tuple[list[str], list[str]]:
+    """Validate RB reach from the current user prompt through Ti.
+
+    The receipt is deliberately content-free: it binds prompt/session identities and
+    coverage structure without persisting the operator's raw prompt.
+    """
+    errors: list[str] = []
+    unknowns: list[str] = []
+    if not isinstance(record, dict):
+        return errors, ["prompt compilation record missing"]
+    if record.get("state") != "PASS":
+        errors.append("prompt compilation state is not PASS")
+
+    receipt = record.get("turn_receipt")
+    if not isinstance(receipt, dict):
+        receipt = {}
+        unknowns.append("prompt compilation turn receipt missing")
+    required_receipt = tuple(((policy.get("turn_refresh_contract") or {}).get("receipt_fields") or ()))
+    for field in required_receipt:
+        if field not in receipt or receipt.get(field) in (None, "", []):
+            unknowns.append(f"prompt compilation turn_receipt.{field} missing")
+    for field in (
+        "session_identity_sha", "prompt_identity", "package_sha",
+        "prompt_contract_identity", "adapter_identity", "rule_or_context_identity",
+    ):
+        if field in receipt and not SHA256_RE.fullmatch(str(receipt.get(field) or "").lower()):
+            errors.append(f"prompt compilation turn_receipt.{field} is not SHA-256")
+    if receipt.get("prompt_contract_identity") != _stable_sha(policy):
+        errors.append("prompt compilation contract identity differs from active policy")
+    try:
+        manifest = _read_json(PACKAGE_ROOT / MANIFEST_NAME)
+    except (OSError, json.JSONDecodeError):
+        manifest = {}
+        unknowns.append("prompt compilation package manifest unreadable")
+    if manifest:
+        if receipt.get("package_sha") != manifest.get("package_sha"):
+            errors.append("prompt compilation package identity is stale")
+        if receipt.get("skill_gen") != manifest.get("skill_gen"):
+            errors.append("prompt compilation generation is stale")
+    if receipt.get("read_back") is not True:
+        errors.append("prompt compilation rule or context was not read back")
+    if receipt.get("raw_prompt_persisted") is not False:
+        errors.append("prompt compilation receipt persisted raw prompt material")
+
+    source = record.get("source")
+    if not isinstance(source, dict):
+        source = {}
+        unknowns.append("prompt compilation source binding missing")
+    prompt_chars = source.get("prompt_chars")
+    if not isinstance(prompt_chars, int) or isinstance(prompt_chars, bool) or prompt_chars <= 0:
+        unknowns.append("prompt compilation source.prompt_chars invalid")
+        prompt_chars = 0
+    if source.get("prompt_identity") != receipt.get("prompt_identity"):
+        errors.append("prompt compilation source and turn prompt identities differ")
+    if source.get("goal_identity") != goal_identity:
+        errors.append("prompt compilation source goal identity mismatch")
+
+    intents = record.get("intent_ledger")
+    if not isinstance(intents, list) or not intents:
+        intents = []
+        unknowns.append("prompt compilation intent ledger missing")
+    intent_kinds = set(policy.get("intent_kinds") or ())
+    intent_ids: set[str] = set()
+    load_bearing_ids: set[str] = set()
+    intent_to_clauses: dict[str, set[str]] = {}
+    for index, intent in enumerate(intents):
+        here = f"prompt compilation intent_ledger[{index}]"
+        if not isinstance(intent, dict):
+            unknowns.append(f"{here} invalid")
+            continue
+        intent_id = intent.get("id")
+        if not isinstance(intent_id, str) or not intent_id:
+            unknowns.append(f"{here}.id missing")
+            continue
+        if intent_id in intent_ids:
+            errors.append(f"{here}.id duplicated")
+        intent_ids.add(intent_id)
+        if intent.get("kind") not in intent_kinds:
+            errors.append(f"{here}.kind undeclared")
+        if not isinstance(intent.get("statement"), str) or not intent["statement"].strip():
+            unknowns.append(f"{here}.statement missing")
+        if not isinstance(intent.get("load_bearing"), bool):
+            unknowns.append(f"{here}.load_bearing invalid")
+        elif intent["load_bearing"]:
+            load_bearing_ids.add(intent_id)
+        spans = intent.get("source_spans")
+        if not isinstance(spans, list) or not spans:
+            unknowns.append(f"{here}.source_spans missing")
+        else:
+            for span_index, span in enumerate(spans):
+                if (
+                    not isinstance(span, dict)
+                    or not isinstance(span.get("start"), int)
+                    or isinstance(span.get("start"), bool)
+                    or not isinstance(span.get("end"), int)
+                    or isinstance(span.get("end"), bool)
+                    or span.get("start", -1) < 0
+                    or span.get("end", 0) <= span.get("start", -1)
+                    or (prompt_chars and span.get("end", 0) > prompt_chars)
+                ):
+                    errors.append(f"{here}.source_spans[{span_index}] is outside the prompt")
+        mapped = intent.get("prompt_clause_ids")
+        if not isinstance(mapped, list):
+            mapped = []
+            unknowns.append(f"{here}.prompt_clause_ids invalid")
+        intent_to_clauses[intent_id] = {str(item) for item in mapped if isinstance(item, str) and item}
+        if intent_id in load_bearing_ids and not intent_to_clauses[intent_id]:
+            errors.append(f"{here} load-bearing intent is not mapped to a prompt clause")
+
+    clauses = record.get("prompt_clauses")
+    if not isinstance(clauses, list) or not clauses:
+        clauses = []
+        unknowns.append("prompt compilation prompt clauses missing")
+    required_sections = set(policy.get("required_prompt_sections") or ())
+    allowed_evidence = set(policy.get("evidence_requirements") or ())
+    allowed_authority_effects = set(policy.get("authority_effects") or ())
+    clause_ids: set[str] = set()
+    sections_seen: set[str] = set()
+    clause_to_ti: dict[str, set[str]] = {}
+    for index, clause in enumerate(clauses):
+        here = f"prompt compilation prompt_clauses[{index}]"
+        if not isinstance(clause, dict):
+            unknowns.append(f"{here} invalid")
+            continue
+        clause_id = clause.get("id")
+        if not isinstance(clause_id, str) or not clause_id:
+            unknowns.append(f"{here}.id missing")
+            continue
+        if clause_id in clause_ids:
+            errors.append(f"{here}.id duplicated")
+        clause_ids.add(clause_id)
+        section = clause.get("section")
+        if section not in required_sections:
+            errors.append(f"{here}.section undeclared")
+        else:
+            sections_seen.add(str(section))
+        if not isinstance(clause.get("requirement"), str) or not clause["requirement"].strip():
+            unknowns.append(f"{here}.requirement missing")
+        linked_intents = clause.get("intent_ids")
+        if not isinstance(linked_intents, list) or not linked_intents:
+            unknowns.append(f"{here}.intent_ids missing")
+        elif any(item not in intent_ids for item in linked_intents):
+            errors.append(f"{here} names an unknown intent")
+        if clause.get("evidence_required") not in allowed_evidence:
+            errors.append(f"{here}.evidence_required undeclared")
+        if clause.get("authority_effect") not in allowed_authority_effects:
+            errors.append(f"{here}.authority_effect undeclared or expanding")
+        ti_ids = clause.get("ti_invariant_ids")
+        if not isinstance(ti_ids, list) or not ti_ids:
+            ti_ids = []
+            errors.append(f"{here} is not bound to Ti")
+        clause_to_ti[clause_id] = {str(item) for item in ti_ids if isinstance(item, str) and item}
+    missing_sections = sorted(required_sections - sections_seen)
+    if missing_sections:
+        unknowns.append("prompt compilation sections missing " + ", ".join(missing_sections))
+    for intent_id, mapped in intent_to_clauses.items():
+        if any(clause_id not in clause_ids for clause_id in mapped):
+            errors.append(f"prompt compilation intent {intent_id} names an unknown clause")
+
+    invariants = record.get("ti_invariants")
+    if not isinstance(invariants, list) or not invariants:
+        invariants = []
+        unknowns.append("prompt compilation Ti invariants missing")
+    ti_ids: set[str] = set()
+    ti_clause_links: set[str] = set()
+    required_ti_fields = set(policy.get("required_ti_fields") or ())
+    terminal_states = set(policy.get("terminal_states") or ())
+    for index, invariant in enumerate(invariants):
+        here = f"prompt compilation ti_invariants[{index}]"
+        if not isinstance(invariant, dict):
+            unknowns.append(f"{here} invalid")
+            continue
+        invariant_id = invariant.get("id")
+        if not isinstance(invariant_id, str) or not invariant_id:
+            unknowns.append(f"{here}.id missing")
+            continue
+        if invariant_id in ti_ids:
+            errors.append(f"{here}.id duplicated")
+        ti_ids.add(invariant_id)
+        linked_clauses = invariant.get("clause_ids")
+        if not isinstance(linked_clauses, list) or not linked_clauses:
+            unknowns.append(f"{here}.clause_ids missing")
+        else:
+            if any(item not in clause_ids for item in linked_clauses):
+                errors.append(f"{here} names an unknown prompt clause")
+            ti_clause_links.update(str(item) for item in linked_clauses if isinstance(item, str))
+        for field in required_ti_fields - {"terminal_state"}:
+            if not isinstance(invariant.get(field), str) or not invariant[field].strip():
+                unknowns.append(f"{here}.{field} missing")
+        if invariant.get("terminal_state") not in terminal_states:
+            errors.append(f"{here}.terminal_state undeclared")
+    for clause_id, mapped in clause_to_ti.items():
+        if any(ti_id not in ti_ids for ti_id in mapped):
+            errors.append(f"prompt compilation clause {clause_id} names an unknown Ti invariant")
+        if clause_id not in ti_clause_links:
+            errors.append(f"prompt compilation clause {clause_id} has no reciprocal Ti binding")
+
+    coverage = record.get("coverage")
+    if not isinstance(coverage, dict):
+        coverage = {}
+        unknowns.append("prompt compilation coverage ledger missing")
+    mapped_load_bearing = {intent_id for intent_id in load_bearing_ids if intent_to_clauses.get(intent_id)}
+    ti_bound_clauses = {clause_id for clause_id in clause_ids if clause_to_ti.get(clause_id) and clause_id in ti_clause_links}
+    expected_counts = {
+        "load_bearing_intent_count": len(load_bearing_ids),
+        "mapped_load_bearing_intent_count": len(mapped_load_bearing),
+        "prompt_clause_count": len(clause_ids),
+        "ti_bound_prompt_clause_count": len(ti_bound_clauses),
+    }
+    for field, expected in expected_counts.items():
+        if coverage.get(field) != expected:
+            errors.append(f"prompt compilation coverage.{field} does not reconcile")
+    expected_unmapped = sorted(load_bearing_ids - mapped_load_bearing)
+    if coverage.get("unmapped_load_bearing_ids") != expected_unmapped:
+        errors.append("prompt compilation unmapped intent ledger does not reconcile")
+    expected_unbound = sorted(clause_ids - ti_bound_clauses)
+    if coverage.get("unbound_prompt_clause_ids") != expected_unbound:
+        errors.append("prompt compilation unbound clause ledger does not reconcile")
+    if expected_unmapped or expected_unbound:
+        errors.append("prompt compilation reach is not closed")
+
+    before, after = record.get("authority_before"), record.get("authority_after")
+    if (
+        not isinstance(before, list) or not isinstance(after, list)
+        or any(not isinstance(item, str) or not item or "*" in item or "?" in item for item in (before or []) + (after or []))
+    ):
+        unknowns.append("prompt compilation authority ledger invalid")
+    elif not set(after).issubset(set(before)):
+        errors.append("prompt compilation expanded authority")
+    if not isinstance(record.get("uncertainties"), list):
+        unknowns.append("prompt compilation uncertainty ledger missing")
+    return errors, unknowns
+
+
 def validate_cognitive_boundary(record: dict) -> dict:
     """Validate a replayable, expiring RB map and truth-preserving interface."""
     layer, problem = _cognitive_contract()
@@ -2961,6 +3200,17 @@ def validate_cognitive_boundary(record: dict) -> dict:
         errors.append("caller authority scope is absent from the boundary grant set")
     if binding.get("risk_categories") != categories:
         errors.append("caller binding risk categories mismatch")
+
+    prompt_record = record.get("prompt_compilation")
+    prompt_required = binding.get("caller") in {"validate_run", "validate_cognitive"}
+    if prompt_required or prompt_record is not None:
+        prompt_errors, prompt_unknowns = _prompt_compilation_findings(
+            prompt_record,
+            policy.get("prompt_compilation_contract") or {},
+            goal_identity=record.get("goal_identity"),
+        )
+        errors.extend(prompt_errors)
+        unknowns.extend(prompt_unknowns)
 
     monitor = record.get("monitor")
     if not isinstance(monitor, dict):
@@ -4271,6 +4521,9 @@ def _inject_goal_hash(record: dict) -> None:
         boundary["goal_identity"] = digest
         if isinstance(boundary.get("binding"), dict):
             boundary["binding"]["goal_identity"] = digest
+        prompt_compilation = boundary.get("prompt_compilation")
+        if isinstance(prompt_compilation, dict) and isinstance(prompt_compilation.get("source"), dict):
+            prompt_compilation["source"]["goal_identity"] = digest
         interface = boundary.get("interface")
         if isinstance(interface, dict) and isinstance(interface.get("profile_receipt"), dict):
             interface["profile_receipt"]["task_identity"] = digest
@@ -4325,6 +4578,22 @@ def _hydrate_boundary_fixtures(node: object) -> None:
             monitor = node.get("monitor") or {}
             monitor["validator_identity"] = node["validator_identity"]
             monitor["last_checked_at"], monitor["valid_until"] = now_text, expires_text
+            prompt_compilation = node.get("prompt_compilation")
+            if isinstance(prompt_compilation, dict):
+                prompt_policy = policy.get("prompt_compilation_contract") or {}
+                turn_receipt = prompt_compilation.get("turn_receipt") or {}
+                try:
+                    manifest = _read_json(PACKAGE_ROOT / MANIFEST_NAME)
+                except (OSError, json.JSONDecodeError):
+                    manifest = {}
+                turn_receipt["skill_gen"] = manifest.get("skill_gen")
+                turn_receipt["package_sha"] = manifest.get("package_sha")
+                turn_receipt["prompt_contract_identity"] = _stable_sha(prompt_policy)
+                prompt_compilation["turn_receipt"] = turn_receipt
+                source = prompt_compilation.get("source") or {}
+                source["prompt_identity"] = turn_receipt.get("prompt_identity")
+                source["goal_identity"] = node.get("goal_identity")
+                prompt_compilation["source"] = source
             authority = (interface.get("authority_after") or ["read"])[0]
             node["binding"] = {
                 "caller": "validate_cognitive_boundary",
@@ -4357,6 +4626,10 @@ def _set_fixture_boundary_authority(boundary: dict, authority_scope: str) -> Non
     if isinstance(boundary.get("binding"), dict):
         boundary["binding"]["authority_scope"] = authority_scope
         boundary["binding"]["result_identity"] = canonical_identity
+    prompt_compilation = boundary.get("prompt_compilation")
+    if isinstance(prompt_compilation, dict):
+        prompt_compilation["authority_before"] = list(grants)
+        prompt_compilation["authority_after"] = list(grants)
 
 
 def _local_content_ref(path: Path, uri: str) -> dict:

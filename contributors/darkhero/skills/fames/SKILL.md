@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-20.9
+FAMES-GEN: 2026-08-21.1
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -144,6 +144,27 @@ matter. The
 active promotion validator directly reruns the frozen non-regression cases; a PASS string or
 self-authored receipt cannot substitute for package-, validator-, case-, input-, output-,
 state-, exit-, candidate-, and artifact-bound evidence.
+
+#### RB -> prompt -> Ti reach closure
+
+Every non-trivial user turn is compiled from the exact current prompt, including turns in
+conversations that opened before the active generation. Bind the prompt and session identities,
+then carry every load-bearing intent atom through `SOURCE -> INTENT -> PROMPT -> TI -> EXECUTE ->
+PRESENT`. The intent ledger covers outcome, verification, constraints, non-goals, authority,
+preferences, context, and ambiguities. Each load-bearing atom maps to a generated-prompt clause;
+each clause maps to a Ti invariant with a bounded counterexample, discriminating test, stop rule,
+and `verified`, `unknown`, or `forbidden` terminal state. Missing mappings fail closed.
+
+The reusable prompt architecture contains outcome/verification, fresh current state, invariants,
+counterexamples, tests, red lines, and completion criteria. This structure may deepen evidence and
+clarity but never delete or reverse user meaning, invent a requirement, or widen authority. Preserve
+ambiguity as explicit `UNKNOWN`; `authority_after` remains a subset of `authority_before`.
+
+The turn adapter resolves the package, parity, and prompt-contract identity from disk on every user
+prompt. A same-turn context adapter injects the compact contract directly; a surface that cannot
+inject per-turn context must use an always-applied rule plus a pre-submit identity/read-back gate.
+Blocking or rewriting a prompt is not evidence of injection. Receipts store hashes and counts only,
+never raw prompts or secrets.
 
 ### UT delivery truth and anti-handwave gate
 
