@@ -307,7 +307,11 @@ class AdaptiveResponseController:
                 assessment = ResponseAssessment(RETRY, early_category, "IDENTICAL_NORMALIZED_PREFIX")
             else:
                 try:
-                    assessment = await self._assess(assessor, text, request)
+                    boundary_assessment = default_assessor(text, request)
+                    if boundary_assessment.decision == TERMINAL:
+                        assessment = boundary_assessment
+                    else:
+                        assessment = await self._assess(assessor, text, request)
                 except Exception as exc:  # assessor failure is evidence failure, not permission to accept
                     attempts.append({
                         "attempt": attempt,

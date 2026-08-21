@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.26.1",
+  "version": "1.27.0",
   "updated": "2026-08-21",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -408,6 +408,26 @@
       "secret_boundary": "Platform adaptation never authorizes password, MFA, CAPTCHA, cookie, profile, payment, recovery data, or secret values to enter agent-visible channels.",
       "allowed_platform_names": ["adapter inventory", "host adapter implementation", "dated evidence ledger", "compatibility alias"],
       "forbidden_platform_names": ["canonical selection predicate", "completion prerequisite", "validator exception", "authority expansion"]
+    },
+    "adaptive_response_cost_control": {
+      "purpose": "Bound response cost and retry measured transport or quality residuals without retrying or suppressing a safety, authorization, policy, privacy, or capability boundary.",
+      "policy_owner": "provider-neutral FAMES controller",
+      "reference_implementation": "scripts/adaptive_response_controller.py",
+      "host_adapter_examples": ["examples/anthropic_async_adapter.py"],
+      "attempt_budget": {
+        "maximum": 3,
+        "default_temperature_schedule": [0.5, 0.2, 0.0],
+        "rule": "Temperature is a response-variance and cost-control parameter only. Lowering it never changes authority, safety, evidence requirements, terminal-state semantics, or the truth of a response."
+      },
+      "retryable_classes": ["sanitized transient adapter error", "empty output", "measured response-quality residual", "repeated non-progress"],
+      "non_retryable_classes": ["safety boundary", "authorization or access-control boundary", "policy conflict", "privacy boundary", "capability limit", "terminal provider request error", "local output-budget exhaustion"],
+      "stream_rule": "A controller may close a stream after a measured local output limit or repeated normalized prefix, but a stream delta count is not a token count. Provider-reported usage is the only token-accounting evidence.",
+      "boundary_rule": "A refusal or boundary response is preserved as HANDOFF and is never classified as waste or retried to elicit a prohibited answer. Safe alternatives may be requested only as a new authorized task.",
+      "prompt_rule": "Repair instructions name the measured residual and preserve higher-priority policy, safety, authorization, privacy, and evidence boundaries. Coercion, legal threats, persona erasure, alignment override, and forbidden-token prompts are prohibited.",
+      "exception_rule": "Never silently swallow exceptions. Return a typed FAIL or UNKNOWN category without persisting raw exception text, payloads, outputs, credentials, or session material.",
+      "cost_rule": "A savings percentage is UNKNOWN unless provider usage and a valid comparison baseline are both measured. Early stream closure alone does not prove billed-token savings.",
+      "required_receipt_fields": ["payload_sha256", "payload_chars", "attempt_count", "attempts", "state", "category", "cost_state", "savings_claim", "raw_payload_persisted", "raw_output_persisted"],
+      "terminal_states": ["PASS", "HANDOFF", "UNKNOWN", "FAIL"]
     },
     "harness_contract": {
       "purpose": "Make the same FAMES policy loadable and mechanically auditable from every registered AI harness without allowing a harness name to own policy.",
