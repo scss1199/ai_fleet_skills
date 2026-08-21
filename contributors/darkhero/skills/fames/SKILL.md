@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-21.3
+FAMES-GEN: 2026-08-21.4
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -100,6 +100,26 @@ with higher-priority policy, safety, or user authority. Measure success by an ac
 instruction, a repaired artifact, or an evidence-backed refusal—not obedience alone.
 Validate these records through `validate-cognitive`; missing evidence, authority, or
 method identity is `UNKNOWN` and fails closed.
+
+### Adaptive response and cost control
+
+Use [`scripts/adaptive_response_controller.py`](scripts/adaptive_response_controller.py)
+for bounded response retries. Its default `0.5 -> 0.2 -> 0.0` schedule may reduce
+variance after a sanitized transient error, empty output, measured quality residual, or
+repeated non-progress. Temperature never changes policy, authority, safety, privacy,
+evidence, or terminal-state semantics. A safety, authorization, policy, privacy, or
+capability boundary is preserved as `HANDOFF` and is not retried to force a different
+answer.
+
+The optional
+[`examples/anthropic_async_adapter.py`](examples/anthropic_async_adapter.py) shows the
+current async streaming adapter boundary without making a vendor or model a canonical
+selection predicate. Pass an already configured client; never place an API key in the
+prompt, command line, exception receipt, or adapter log. Count provider-reported usage,
+not stream events. When usage or a comparison baseline is absent, cost and savings stay
+`UNKNOWN` / `UNMEASURED`. Never use persona erasure, legal threats, alignment override,
+forbidden-token prompts, silent exceptions, access-control bypass, or DRM key acquisition
+as a retry strategy.
 
 ### UT cognitive boundary (RB)
 

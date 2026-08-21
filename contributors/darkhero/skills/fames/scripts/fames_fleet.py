@@ -3461,6 +3461,8 @@ def build_bundle(
     fames = _read_json(package_root / PROTOCOL_TARGETS["FAMES"])
     expected_files = [
         "SKILL.md",
+        "examples/anthropic_async_adapter.py",
+        "scripts/adaptive_response_controller.py",
         "scripts/fames_fleet.py",
         CASES_TARGET,
         PRODUCTION_PROFILE_TARGET,
