@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-21.10
+FAMES-GEN: 2026-08-21.11
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -134,6 +134,15 @@ persists no raw prompt or output. Its PASS covers only the frozen suite. Claude 
 CLI does not expose temperature, so that surface records temperature as UNSUPPORTED;
 only the Messages SDK adapter may claim `temperature_applied=true`. Broader Claude
 task effectiveness stays UNKNOWN until an identity-bound task result and verifier pass.
+
+Before an operator starts a real Claude task, run `python
+scripts/claude_task_acceptance.py arm --workspace <root> --agent <seat> --json`.
+After the task stops, run the same command with `verify`. PASS requires a post-arm
+main Stop receipt with at least one supported load-bearing claim, the exact current
+prompt/session lifecycle receipt, matching FAMES package and generation, unchanged
+prompt and Stop hook identities, and both raw-prompt/raw-message persistence flags
+false. `ARMED` is readiness, not task completion; no matching post-arm receipt remains
+UNKNOWN.
 
 ### UT cognitive boundary (RB)
 

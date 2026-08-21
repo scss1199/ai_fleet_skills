@@ -3465,6 +3465,7 @@ def build_bundle(
         "references/claude-live-eval.json",
         "scripts/adaptive_response_controller.py",
         "scripts/claude_live_ab.py",
+        "scripts/claude_task_acceptance.py",
         "scripts/fames_fleet.py",
         CASES_TARGET,
         PRODUCTION_PROFILE_TARGET,
