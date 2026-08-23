@@ -1089,19 +1089,20 @@ def _context_load_event_expected(
     executed_at: object,
     valid_until: object,
 ) -> dict:
+    def _string_population(value: object) -> list[str]:
+        if not isinstance(value, list):
+            return []
+        return sorted(item for item in value if isinstance(item, str))
+
     input_payload = {
         "manifest_identity": manifest_identity,
         "goal_identity": record.get("goal_identity"),
         "project_identity": record.get("project_identity"),
-        "expected_asset_ids": sorted(
-            item for item in (receipt.get("expected_asset_ids") or ()) if isinstance(item, str)
-        ),
+        "expected_asset_ids": _string_population(receipt.get("expected_asset_ids")),
     }
     output_payload = {
         "manifest_identity": manifest_identity,
-        "loaded_asset_ids": sorted(
-            item for item in (receipt.get("loaded_asset_ids") or ()) if isinstance(item, str)
-        ),
+        "loaded_asset_ids": _string_population(receipt.get("loaded_asset_ids")),
         "loaded_asset_identities": receipt.get("loaded_asset_identities"),
         "unknown_count": receipt.get("unknown_count"),
         "provider_neutral": receipt.get("provider_neutral"),
