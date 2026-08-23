@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-21.11
+FAMES-GEN: 2026-08-23.1
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -232,6 +232,21 @@ loop, deletion, commit, connection, deployment, and failure ledgers are the port
 structure learned from the fracdigi case. Project-specific counts and business rules must
 come from the target project and remain `UNKNOWN` until measured; never copy the example's
 numbers as universal facts.
+
+For any claimed external effect, separate transport acceptance from the effect itself.
+Require both a downstream outcome check and an execution trace, plus typed caller state
+and sanitized status/error evidence. Run a controlled negative result while holding the
+upstream transport constant; success and failure must produce different caller observations.
+An identical result shape is evaluation blindness and `FAIL`; missing outcome or trace
+evidence is `UNKNOWN` and fails closed. Validate the frozen record with:
+
+```
+python scripts/fames_fleet.py validate-effect --input <record.json> --json
+```
+
+This validator proves only caller-visible separation for the recorded controls. It does
+not turn an HTTP 200, webhook acknowledgement, queue receipt, or synthetic test into proof
+that a live provider effect occurred.
 
 A rejection must emit a structured repair request naming the shared goal, exact failed
 invariant, observed evidence, missing proof, smallest discriminating next test, acceptance

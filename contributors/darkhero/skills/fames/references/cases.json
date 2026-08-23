@@ -15,7 +15,7 @@
     "path_exists": "path (workspace-relative), expect present|absent",
     "file_size_max": "path, max_bytes, missing_ok -- measures size only, never reads content",
     "json_probe": "select (list of workspace-relative globs), pointer (slash path, * wildcard segment), expect all_equal|all_equal_ref|all_in, ref canonical_package_sha|canonical_version, values, missing_ok",
-    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|validate_cognitive_boundary|validate_harness|validate_background|validate_compute|validate_autonomic|regression_guard|contributor_id, input_ref into fixtures, remove, patch, expect_ok, optional expect_state",
+    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|validate_cognitive_boundary|validate_harness|validate_background|validate_effect|validate_compute|validate_autonomic|regression_guard|contributor_id, input_ref into fixtures, remove, patch, expect_ok, optional expect_state",
     "parity": "bundle and registry describe the same protocol generations",
     "newest_age_max": "select globs, max_age_h, missing_ok -- newest match must be younger than the ceiling",
     "forbidden_text": "paths, forbidden strings, and optional expect_clean -- canonical policy files must not contain platform identifiers"
@@ -463,6 +463,42 @@
       "sync": {"expected_package_sha": "fixture-package-sha", "expected_capability_set_sha": "fixture-capabilities-sha", "expected_validator_set_sha": "fixture-validators-sha", "atomic": true, "idempotent": true, "readbacks": [{"host": "darkhero", "package_sha": "fixture-package-sha", "capability_set_sha": "fixture-capabilities-sha", "validator_set_sha": "fixture-validators-sha", "capability_state": "PASS", "runner_state": "armed", "state": "PASS"}, {"host": "scar3", "package_sha": "old-package-sha", "capability_set_sha": "old-capabilities-sha", "validator_set_sha": "old-validators-sha", "capability_state": "UNKNOWN", "runner_state": "armed", "state": "UNKNOWN"}], "unknown_hosts": ["scar3"], "full_convergence_claim": false},
       "observation": {"self_check_state": "PASS", "residuals": ["scar3 remains UNKNOWN"], "feedback_enqueued": true, "next_action": "retry follower convergence after rate limit clears"}
     },
+    "effect_observability_suite": {
+      "operation_id": "fixture-effect-operation",
+      "effect_class": "external_message_reply",
+      "claim_scope": "caller_effect_observability",
+      "transport_acceptance_is_effect": false,
+      "trace_complete": true,
+      "outcome_checked": true,
+      "raw_payload_persisted": false,
+      "raw_output_persisted": false,
+      "controlled_perturbation": {
+        "dimension": "downstream_result",
+        "upstream_transport_held_constant": true
+      },
+      "positive_control": {
+        "downstream_state": "PASS",
+        "caller_state": "PASS",
+        "upstream_transport_state": "ACCEPTED",
+        "downstream_status": 200,
+        "error_type": null,
+        "caller_observation": {"effect_state": "PASS", "downstream_status": 200},
+        "outcome_evidence_ref": "fixture://effect/outcome/pass",
+        "trace_evidence_ref": "fixture://effect/trace/pass",
+        "sanitized": true
+      },
+      "negative_control": {
+        "downstream_state": "FAIL",
+        "caller_state": "FAIL",
+        "upstream_transport_state": "ACCEPTED",
+        "downstream_status": 401,
+        "error_type": "http.401",
+        "caller_observation": {"effect_state": "FAIL", "downstream_status": 401, "error_type": "http.401"},
+        "outcome_evidence_ref": "fixture://effect/outcome/fail",
+        "trace_evidence_ref": "fixture://effect/trace/fail",
+        "sanitized": true
+      }
+    },
     "background_suite": {
       "background": true,
       "full_descendant_policy_applied": true,
@@ -530,6 +566,12 @@
     }
   },
   "cases": [
+    {"id": "C-EFFECT-BASE", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_effect", "input_ref": "effect_observability_suite", "expect_ok": true, "expect_state": "PASS", "why": "an effectful caller exposes a typed downstream outcome, trace, and outcome evidence while a controlled downstream failure remains observable through the same accepted upstream transport"},
+    {"id": "C-EFFECT-IDENTICAL-OBSERVATION", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_effect", "input_ref": "effect_observability_suite", "patch": {"/negative_control/caller_observation": {"effect_state": "PASS", "downstream_status": 200}}, "expect_ok": false, "expect_state": "FAIL", "why": "a monitor is blind when downstream success and failure produce the same caller observation"},
+    {"id": "C-EFFECT-FAIL-AS-PASS", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_effect", "input_ref": "effect_observability_suite", "patch": {"/negative_control/caller_state": "PASS"}, "expect_ok": false, "expect_state": "FAIL", "why": "a caller cannot classify a measured downstream failure as PASS"},
+    {"id": "C-EFFECT-OUTCOME-MISSING", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_effect", "input_ref": "effect_observability_suite", "remove": ["/negative_control/outcome_evidence_ref"], "expect_ok": false, "expect_state": "UNKNOWN", "why": "trace shape alone cannot substitute for an observed downstream outcome"},
+    {"id": "C-EFFECT-TRANSPORT-AS-EFFECT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_effect", "input_ref": "effect_observability_suite", "patch": {"/transport_acceptance_is_effect": true}, "expect_ok": false, "expect_state": "FAIL", "why": "webhook or HTTP acceptance is not proof that the requested external effect occurred"},
+    {"id": "C-EFFECT-TRACE-MISSING", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_effect", "input_ref": "effect_observability_suite", "patch": {"/trace_complete": false}, "expect_ok": false, "expect_state": "FAIL", "why": "outcome checks and execution traces catch different failure classes and neither may be silently omitted"},
     {"id": "C-BACKGROUND-BASE", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_background", "input_ref": "background_suite", "expect_ok": true, "expect_state": "PASS", "why": "scheduled work and every descendant use hidden non-interactive launch controls with zero measured windows and focus steals"},
     {"id": "C-BACKGROUND-CHILD-FLAGS", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_background", "input_ref": "background_suite", "remove": ["/windows_console_flags/2"], "expect_ok": false, "expect_state": "FAIL", "why": "pythonw or a hidden parent does not protect a console-capable child without SW_HIDE"},
     {"id": "C-BACKGROUND-DETACHED-ONLY", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_background", "input_ref": "background_suite", "patch": {"/detached_process_only": true}, "expect_ok": false, "expect_state": "FAIL", "why": "DETACHED_PROCESS alone may still flash and is forbidden"},
