@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.29.0",
-  "skill_gen": "2026-08-23.1",
+  "version": "1.29.1",
+  "skill_gen": "2026-08-23.2",
   "execution_order": [
     "FP",
     "MTM",
@@ -23,13 +23,13 @@
   },
   "source_git_commit": null,
   "files": {
-    "SKILL.md": "d9baedb1fdcfe140c56ac703fe873c1cde0972cce97726f844610697b8ceef5f",
+    "SKILL.md": "2b132c567fe89511484322e96471e4edab43bf5f950b36644ea94dc19570a2f8",
     "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
-    "references/cases.json": "6fbe99d6044bdee0f3231b69e7e07e874c8c525a562840902516a912b72f8f1c",
+    "references/cases.json": "63bdb91d1929217ee1e4bea635b3d70a9f975774c3ff1cdb02239f5abaed847a",
     "references/claude-live-eval.json": "8946d081f4c71be8b82004e8253c9cda9aa301ef4f09b277dc8a9fb981431a86",
     "references/hardware-compute.json": "e0792dce63c4894107fd63e43e3e0095ce4c4999686811279fd12543106a8df4",
     "references/production-web-delivery.json": "0f8edd3a24f856a4cc1a76ecd4490185bad414735c2bc1787104d619d0f0a251",
-    "references/protocols/fames-protocol.json": "227e96aed8487b07d076613ee1f74a70a8e860ebd02cf36cba088463d0c73d74",
+    "references/protocols/fames-protocol.json": "9ac1625cd10393e6bf998a4aab4c8c0eeef2ed4a7a305dd6388bf543292a65ee",
     "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
     "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
     "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
@@ -40,5 +40,5 @@
     "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
     "scripts/fames_fleet.py": "9adedb69ce9209829afcb0cb8883dbfb5a18fe4d1673247b3b999e94b4d34f10"
   },
-  "package_sha": "bbc36ee008d405f2d45185520590bdab8e3bc06bd96c8c1abdf3a6a684ade681"
+  "package_sha": "f8d462a443e94f07506169e5e7342d7cceba408906fb40bc91afb484f8c8a445"
 }

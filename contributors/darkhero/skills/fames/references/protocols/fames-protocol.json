@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.29.0",
+  "version": "1.29.1",
   "updated": "2026-08-23",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -1005,11 +1005,15 @@
       "purpose": "Prevent an accepted transport, plausible trace, or success-shaped caller result from hiding a failed external effect.",
       "activation": "Any claim that a message, write, webhook side effect, deployment, transaction, notification, or other externally observable action succeeded.",
       "claim_scope": "The validator proves caller-visible separation and evidence completeness for the frozen controls; it does not by itself prove a live provider effect outside those controls.",
+      "allowed_claim_scopes": ["caller_effect_observability"],
       "required_evidence": ["outcome evidence", "execution trace", "typed caller state", "downstream status or error type", "controlled negative result"],
       "controlled_perturbation_rule": "Hold upstream transport constant, change the downstream result from PASS to FAIL, and require the caller observation and typed state to change. Identical observations are evaluation blindness and FAIL.",
       "transport_rule": "HTTP, queue, webhook, or request acceptance is transport evidence only and never proves the requested effect.",
       "outcome_trace_rule": "Outcome checks and trace checks are complementary. Missing either is UNKNOWN or FAIL according to whether evidence is absent or contradicted.",
       "privacy_rule": "Receipts are sanitized and do not persist raw payloads, raw outputs, credentials, cookies, tokens, or session material.",
+      "evidence_identity_rule": "Outcome and trace references are local content-addressed artifacts whose hashes replay at validation time; a URI or label alone is not evidence.",
+      "semantic_separation_rule": "Only typed effect_state, downstream_status, and error_type distinguish caller observations; timestamps, nonces, request ids, labels, and unrelated fields cannot make two effect states separable.",
+      "precedence_rule": "A confirmed contradiction, privacy breach, scope inflation, or false effect claim is FAIL even when another required field is missing; UNKNOWN cannot wash out a measured violation.",
       "terminal_states": ["PASS", "FAIL", "UNKNOWN"],
       "validator": "python scripts/fames_fleet.py validate-effect --input <record.json> --json"
     }

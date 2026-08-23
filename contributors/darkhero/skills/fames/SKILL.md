@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-23.1
+FAMES-GEN: 2026-08-23.2
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -234,11 +234,13 @@ come from the target project and remain `UNKNOWN` until measured; never copy the
 numbers as universal facts.
 
 For any claimed external effect, separate transport acceptance from the effect itself.
-Require both a downstream outcome check and an execution trace, plus typed caller state
-and sanitized status/error evidence. Run a controlled negative result while holding the
+Require both a content-addressed downstream outcome check and execution trace, plus typed
+caller state and sanitized status/error evidence. Run a controlled negative result while holding the
 upstream transport constant; success and failure must produce different caller observations.
-An identical result shape is evaluation blindness and `FAIL`; missing outcome or trace
-evidence is `UNKNOWN` and fails closed. Validate the frozen record with:
+Only typed effect state, downstream status, and error type count as separation; a nonce or
+label difference does not. An identical result shape, scope inflation, unverifiable evidence,
+or actual raw/secret material is `FAIL`; missing evidence alone is `UNKNOWN` and fails closed.
+When both occur, the confirmed violation remains `FAIL`. Validate the frozen record with:
 
 ```
 python scripts/fames_fleet.py validate-effect --input <record.json> --json
