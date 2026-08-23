@@ -200,6 +200,10 @@ LOCAL_CAPABILITY_CASES = {
         "C-CONTEXT-ASSETS-HIDDEN-ROUTING",
         "C-CONTEXT-ASSETS-SUBJECT-KIND",
         "C-CONTEXT-ASSETS-LOAD-EVENT",
+        "C-CONTEXT-ASSETS-LAYER-FIELD",
+        "C-CONTEXT-ASSETS-INDEX-FIELD",
+        "C-CONTEXT-ASSETS-SCHEMA-VERSION",
+        "C-CONTEXT-ASSETS-EVENT-WINDOW",
     ),
     "background-execution-enforcement": (
         "C-BACKGROUND-BASE",
@@ -1116,6 +1120,8 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
     unexpected_manifest_fields = sorted(set(record) - CONTEXT_MANIFEST_FIELDS)
     if unexpected_manifest_fields:
         errors.append(f"context manifest contains undeclared fields: {', '.join(unexpected_manifest_fields)}")
+    if record.get("schema") != 1:
+        errors.append("context manifest schema version is unsupported")
     project_identity = record.get("project_identity")
     if not isinstance(project_identity, str) or not project_identity.strip():
         unknowns.append("project identity missing")
@@ -1155,13 +1161,21 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
         if not isinstance(asset, dict):
             unknowns.append(f"{here}: asset is not an object")
             continue
-        unexpected_asset_fields = sorted(set(asset) - CONTEXT_ASSET_ALLOWED_FIELDS)
+        layer, role = asset.get("layer"), asset.get("role")
+        allowed_asset_fields = set(CONTEXT_ASSET_FIELDS)
+        if layer in {"project_context", "runtime_context"}:
+            allowed_asset_fields.add("project_identity")
+        if layer == "runtime_context":
+            allowed_asset_fields.add("expires_at")
+        if role == "feedback":
+            allowed_asset_fields.update({"promotion_state", "measured_trial"})
+        unexpected_asset_fields = sorted(set(asset) - allowed_asset_fields)
         if unexpected_asset_fields:
             errors.append(f"{here}: undeclared fields {', '.join(unexpected_asset_fields)}")
         missing = [field for field in CONTEXT_ASSET_FIELDS if asset.get(field) in (None, "", [])]
         if missing:
             unknowns.append(f"{here}: missing {', '.join(missing)}")
-        asset_id, layer, role = asset.get("id"), asset.get("layer"), asset.get("role")
+        asset_id = asset.get("id")
         if isinstance(asset_id, str) and asset_id:
             ids.append(asset_id)
             by_id[asset_id] = asset
@@ -1273,7 +1287,11 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
         if entry.get("index") not in (None, "", []) and not isinstance(entry.get("index"), dict):
             errors.append("project_entry.index must be an object")
         index_map = entry.get("index") if isinstance(entry.get("index"), dict) else {}
-        for role in ("project_preferences", "references", "examples", "feedback"):
+        required_index_roles = {"project_preferences", "references", "examples", "feedback"}
+        unexpected_index_fields = sorted(set(index_map) - required_index_roles)
+        if unexpected_index_fields:
+            errors.append(f"project_entry.index contains undeclared fields: {', '.join(unexpected_index_fields)}")
+        for role in required_index_roles:
             target_id = index_map.get(role)
             if not isinstance(target_id, str) or not target_id:
                 unknowns.append(f"project_entry.index.{role} missing")
@@ -1444,6 +1462,13 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
                 if load_event.get(field) != expected:
                     errors.append(f"context load event {field} mismatch")
             errors.extend(_receipt_window_errors(load_event, "context load event"))
+            event_executed = _parse_time(load_event.get("executed_at"))
+            event_valid_until = _parse_time(load_event.get("valid_until"))
+            if event_executed is not None and event_valid_until is not None:
+                if event_valid_until - event_executed > timedelta(hours=1):
+                    errors.append("context load event validity window exceeds one hour")
+                if datetime.now(timezone.utc) - event_executed > timedelta(minutes=5):
+                    unknowns.append("context load event is older than five minutes")
 
     errors.extend(f"forbidden material key at {path}" for path in _forbidden_key_paths(record))
     errors.extend(f"raw context payload persisted at {path}" for path in _forbidden_context_payload_paths(record))
