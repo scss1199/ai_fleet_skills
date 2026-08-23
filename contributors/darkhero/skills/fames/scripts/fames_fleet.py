@@ -206,6 +206,9 @@ LOCAL_CAPABILITY_CASES = {
         "C-CONTEXT-ASSETS-EVENT-WINDOW",
         "C-CONTEXT-ASSETS-SYNTHETIC-LIVE",
         "C-CONTEXT-ASSETS-PREDICATE-TYPE",
+        "C-CONTEXT-ASSETS-LAYER-TYPE",
+        "C-CONTEXT-ASSETS-SENSITIVITY-TYPE",
+        "C-CONTEXT-ASSETS-POPULATION-TYPE",
     ),
     "background-execution-enforcement": (
         "C-BACKGROUND-BASE",
@@ -1090,11 +1093,15 @@ def _context_load_event_expected(
         "manifest_identity": manifest_identity,
         "goal_identity": record.get("goal_identity"),
         "project_identity": record.get("project_identity"),
-        "expected_asset_ids": sorted(receipt.get("expected_asset_ids") or ()),
+        "expected_asset_ids": sorted(
+            item for item in (receipt.get("expected_asset_ids") or ()) if isinstance(item, str)
+        ),
     }
     output_payload = {
         "manifest_identity": manifest_identity,
-        "loaded_asset_ids": sorted(receipt.get("loaded_asset_ids") or ()),
+        "loaded_asset_ids": sorted(
+            item for item in (receipt.get("loaded_asset_ids") or ()) if isinstance(item, str)
+        ),
         "loaded_asset_identities": receipt.get("loaded_asset_identities"),
         "unknown_count": receipt.get("unknown_count"),
         "provider_neutral": receipt.get("provider_neutral"),
@@ -1235,10 +1242,7 @@ def validate_context_assets(
                             errors.append(f"{here}: content_sha256 is malformed")
                         elif digest and _sha256(target) != digest:
                             errors.append(f"{here}: content identity does not replay")
-                        if (
-                            isinstance(asset.get("locator"), str)
-                            and not _locator_replays(target, asset.get("locator"))
-                        ):
+                        if isinstance(asset.get("locator"), str) and not _locator_replays(target, asset.get("locator")):
                             errors.append(f"{here}: locator does not replay against the content-addressed source")
 
         sensitivity, disclosure = asset.get("sensitivity"), asset.get("disclosure")
@@ -1246,11 +1250,7 @@ def validate_context_assets(
             errors.append(f"{here}: sensitivity is not declared")
         if not isinstance(disclosure, str) or disclosure not in CONTEXT_DISCLOSURE:
             errors.append(f"{here}: disclosure is not declared")
-        if (
-            isinstance(sensitivity, str)
-            and sensitivity in CONTEXT_PRIVATE_SENSITIVITY
-            and disclosure == "public"
-        ):
+        if isinstance(sensitivity, str) and sensitivity in CONTEXT_PRIVATE_SENSITIVITY and disclosure == "public":
             errors.append(f"{here}: private context cannot use public disclosure")
 
         expected_authority = authority_by_layer.get(layer) if isinstance(layer, str) else None
@@ -1261,7 +1261,7 @@ def validate_context_assets(
                 errors.append(f"{here}: durable core is not global scoped")
             if asset.get("project_identity") not in (None, ""):
                 errors.append(f"{here}: durable core is polluted by a project identity")
-        elif layer in {"project_context", "runtime_context"}:
+        elif isinstance(layer, str) and layer in {"project_context", "runtime_context"}:
             if asset.get("scope") != "project":
                 errors.append(f"{here}: project-bound asset lacks project scope")
             if asset.get("project_identity") != project_identity:
@@ -1443,25 +1443,31 @@ def validate_context_assets(
         elif receipt_goal_identity != goal_identity:
             errors.append("load receipt goal identity is not bound to the manifest goal")
         expected_ids, loaded_ids = receipt.get("expected_asset_ids"), receipt.get("loaded_asset_ids")
-        if (
-            not isinstance(expected_ids, list)
-            or not expected_ids
-            or any(not isinstance(item, str) or not item for item in expected_ids)
-        ):
+        expected_ids_valid = (
+            isinstance(expected_ids, list)
+            and bool(expected_ids)
+            and all(isinstance(item, str) and bool(item) for item in expected_ids)
+        )
+        if not isinstance(expected_ids, list) or not expected_ids:
             unknowns.append("load receipt expected population missing")
+        elif not expected_ids_valid:
+            errors.append("load receipt expected population must contain non-empty string ids")
         elif len(expected_ids) != len(set(expected_ids)):
             errors.append("load receipt expected population has duplicates")
         elif set(expected_ids) != set(ids):
             errors.append("load receipt expected population differs from manifest")
-        if (
-            not isinstance(loaded_ids, list)
-            or not loaded_ids
-            or any(not isinstance(item, str) or not item for item in loaded_ids)
-        ):
+        loaded_ids_valid = (
+            isinstance(loaded_ids, list)
+            and bool(loaded_ids)
+            and all(isinstance(item, str) and bool(item) for item in loaded_ids)
+        )
+        if not isinstance(loaded_ids, list) or not loaded_ids:
             unknowns.append("load receipt loaded population missing")
+        elif not loaded_ids_valid:
+            errors.append("load receipt loaded population must contain non-empty string ids")
         elif len(loaded_ids) != len(set(loaded_ids)):
             errors.append("load receipt loaded population has duplicates")
-        elif isinstance(expected_ids, list) and set(loaded_ids) != set(expected_ids):
+        elif expected_ids_valid and set(loaded_ids) != set(expected_ids):
             errors.append("load receipt does not cover the exact expected population")
         loaded_identities = receipt.get("loaded_asset_identities")
         if not isinstance(loaded_identities, dict) or not loaded_identities:
@@ -1492,7 +1498,7 @@ def validate_context_assets(
             loader_identity = load_event.get("loader_identity")
             loader_source_ref = load_event.get("loader_source_ref")
             validator_identity = _sha256(Path(__file__).resolve())
-            if attestation_kind not in CONTEXT_LOAD_EVENT_KINDS:
+            if not isinstance(attestation_kind, str) or attestation_kind not in CONTEXT_LOAD_EVENT_KINDS:
                 errors.append("context load event attestation kind is not declared")
             elif attestation_kind == "case_fixture":
                 if not allow_test_fixture:
