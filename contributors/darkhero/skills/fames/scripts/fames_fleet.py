@@ -5650,6 +5650,8 @@ def _hydrate_context_trial_case(node: object) -> None:
             if not isinstance(trial, dict):
                 continue
             target = PACKAGE_ROOT.parents[2] / str(trial.get("source_ref") or "")
+            if not target.is_file():
+                target = PACKAGE_ROOT / str(trial.get("source_ref") or "")
             if trial.get("content_sha256") == "auto" and target.is_file():
                 trial["content_sha256"] = _sha256(target)
             replacements = {
