@@ -1196,12 +1196,15 @@ def validate_context_assets(
         missing = [field for field in CONTEXT_ASSET_FIELDS if asset.get(field) in (None, "", [])]
         if missing:
             unknowns.append(f"{here}: missing {', '.join(missing)}")
+        for field in CONTEXT_ASSET_FIELDS:
+            if asset.get(field) not in (None, "", []) and not isinstance(asset.get(field), str):
+                errors.append(f"{here}: {field} must be a non-empty string")
         if isinstance(asset_id, str) and asset_id:
             ids.append(asset_id)
             by_id[asset_id] = asset
-        if layer not in CONTEXT_REQUIRED_ROLES:
+        if not isinstance(layer, str) or layer not in CONTEXT_REQUIRED_ROLES:
             errors.append(f"{here}: undeclared context layer")
-        elif role not in CONTEXT_REQUIRED_ROLES[layer]:
+        elif not isinstance(role, str) or role not in CONTEXT_REQUIRED_ROLES[layer]:
             errors.append(f"{here}: role does not belong to layer")
         else:
             roles_by_layer[layer].append(str(role))
@@ -1232,18 +1235,25 @@ def validate_context_assets(
                             errors.append(f"{here}: content_sha256 is malformed")
                         elif digest and _sha256(target) != digest:
                             errors.append(f"{here}: content identity does not replay")
-                        if not _locator_replays(target, asset.get("locator")):
+                        if (
+                            isinstance(asset.get("locator"), str)
+                            and not _locator_replays(target, asset.get("locator"))
+                        ):
                             errors.append(f"{here}: locator does not replay against the content-addressed source")
 
         sensitivity, disclosure = asset.get("sensitivity"), asset.get("disclosure")
-        if sensitivity not in CONTEXT_SENSITIVITY:
+        if not isinstance(sensitivity, str) or sensitivity not in CONTEXT_SENSITIVITY:
             errors.append(f"{here}: sensitivity is not declared")
-        if disclosure not in CONTEXT_DISCLOSURE:
+        if not isinstance(disclosure, str) or disclosure not in CONTEXT_DISCLOSURE:
             errors.append(f"{here}: disclosure is not declared")
-        if sensitivity in CONTEXT_PRIVATE_SENSITIVITY and disclosure == "public":
+        if (
+            isinstance(sensitivity, str)
+            and sensitivity in CONTEXT_PRIVATE_SENSITIVITY
+            and disclosure == "public"
+        ):
             errors.append(f"{here}: private context cannot use public disclosure")
 
-        expected_authority = authority_by_layer.get(layer)
+        expected_authority = authority_by_layer.get(layer) if isinstance(layer, str) else None
         if expected_authority and asset.get("authority_source") != expected_authority:
             errors.append(f"{here}: authority source does not match its layer")
         if layer == "durable_core":
@@ -1257,7 +1267,7 @@ def validate_context_assets(
             if asset.get("project_identity") != project_identity:
                 errors.append(f"{here}: project identity leaks across context boundaries")
         if layer == "runtime_context":
-            expires = _parse_time(asset.get("expires_at"))
+            expires = _parse_time(asset.get("expires_at")) if isinstance(asset.get("expires_at"), str) else None
             if expires is None:
                 unknowns.append(f"{here}: runtime expiry missing or invalid")
             elif expires <= datetime.now(timezone.utc):
@@ -1334,7 +1344,7 @@ def validate_context_assets(
     feedback = by_role.get("feedback")
     if isinstance(feedback, dict):
         state = feedback.get("promotion_state")
-        if state not in {"candidate", "promoted", "rejected"}:
+        if not isinstance(state, str) or state not in {"candidate", "promoted", "rejected"}:
             unknowns.append("feedback promotion state missing or invalid")
         if state == "promoted":
             trial = feedback.get("measured_trial")
