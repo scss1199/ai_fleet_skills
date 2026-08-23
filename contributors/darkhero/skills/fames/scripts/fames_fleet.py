@@ -209,6 +209,8 @@ LOCAL_CAPABILITY_CASES = {
         "C-CONTEXT-ASSETS-LAYER-TYPE",
         "C-CONTEXT-ASSETS-SENSITIVITY-TYPE",
         "C-CONTEXT-ASSETS-POPULATION-TYPE",
+        "C-CONTEXT-ASSETS-EXPECTED-POPULATION-SCALAR",
+        "C-CONTEXT-ASSETS-LOADED-POPULATION-SCALAR",
     ),
     "background-execution-enforcement": (
         "C-BACKGROUND-BASE",
@@ -1449,8 +1451,10 @@ def validate_context_assets(
             and bool(expected_ids)
             and all(isinstance(item, str) and bool(item) for item in expected_ids)
         )
-        if not isinstance(expected_ids, list) or not expected_ids:
+        if expected_ids is None or expected_ids == []:
             unknowns.append("load receipt expected population missing")
+        elif not isinstance(expected_ids, list):
+            errors.append("load receipt expected population must be a list")
         elif not expected_ids_valid:
             errors.append("load receipt expected population must contain non-empty string ids")
         elif len(expected_ids) != len(set(expected_ids)):
@@ -1462,8 +1466,10 @@ def validate_context_assets(
             and bool(loaded_ids)
             and all(isinstance(item, str) and bool(item) for item in loaded_ids)
         )
-        if not isinstance(loaded_ids, list) or not loaded_ids:
+        if loaded_ids is None or loaded_ids == []:
             unknowns.append("load receipt loaded population missing")
+        elif not isinstance(loaded_ids, list):
+            errors.append("load receipt loaded population must be a list")
         elif not loaded_ids_valid:
             errors.append("load receipt loaded population must contain non-empty string ids")
         elif len(loaded_ids) != len(set(loaded_ids)):
