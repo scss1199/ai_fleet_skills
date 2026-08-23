@@ -204,6 +204,8 @@ LOCAL_CAPABILITY_CASES = {
         "C-CONTEXT-ASSETS-INDEX-FIELD",
         "C-CONTEXT-ASSETS-SCHEMA-VERSION",
         "C-CONTEXT-ASSETS-EVENT-WINDOW",
+        "C-CONTEXT-ASSETS-SYNTHETIC-LIVE",
+        "C-CONTEXT-ASSETS-PREDICATE-TYPE",
     ),
     "background-execution-enforcement": (
         "C-BACKGROUND-BASE",
@@ -406,7 +408,11 @@ CONTEXT_LOAD_RECEIPT_FIELDS = {
     "load_event",
 }
 CONTEXT_LOAD_EVENT_FIELDS = {
+    "attestation_kind",
     "loader_identity",
+    "loader_source_ref",
+    "receipt_source_ref",
+    "receipt_content_sha256",
     "input_identity",
     "output_identity",
     "state",
@@ -417,6 +423,7 @@ CONTEXT_LOAD_EVENT_FIELDS = {
     "valid_until",
     "event_identity",
 }
+CONTEXT_LOAD_EVENT_KINDS = {"case_fixture", "turn_adapter"}
 CONTEXT_FEEDBACK_TRIAL_FIELDS = {
     "source_ref",
     "content_sha256",
@@ -1073,6 +1080,9 @@ def _context_load_event_expected(
     record: dict,
     receipt: dict,
     manifest_identity: str,
+    attestation_kind: object,
+    loader_identity: object,
+    loader_source_ref: object,
     executed_at: object,
     valid_until: object,
 ) -> dict:
@@ -1091,7 +1101,8 @@ def _context_load_event_expected(
         "raw_content_persisted": receipt.get("raw_content_persisted"),
     }
     event = {
-        "loader_identity": _sha256(Path(__file__).resolve()),
+        "attestation_kind": attestation_kind,
+        "loader_identity": loader_identity,
         "input_identity": _stable_sha(input_payload),
         "output_identity": _stable_sha(output_payload),
         "state": "PASS",
@@ -1101,11 +1112,18 @@ def _context_load_event_expected(
         "executed_at": executed_at,
         "valid_until": valid_until,
     }
+    if loader_source_ref not in (None, ""):
+        event["loader_source_ref"] = loader_source_ref
     event["event_identity"] = _stable_sha(event)
     return event
 
 
-def validate_context_assets(record: dict, workspace: Path | None = None) -> dict:
+def validate_context_assets(
+    record: dict,
+    workspace: Path | None = None,
+    *,
+    allow_test_fixture: bool = False,
+) -> dict:
     """Validate a portable, scope-separated context asset manifest and load receipt."""
     try:
         protocol = _read_json(PACKAGE_ROOT / PROTOCOL_TARGETS["FAMES"])
@@ -1144,6 +1162,8 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
     predicates = record.get("selection_predicates")
     if not isinstance(predicates, list) or not predicates:
         unknowns.append("context selection predicates missing")
+    elif any(not isinstance(item, str) or not item.strip() for item in predicates):
+        errors.append("context selection predicates must be non-empty strings")
     else:
         if any(item not in allowed for item in predicates):
             errors.append("context manifest uses an undeclared selection predicate")
