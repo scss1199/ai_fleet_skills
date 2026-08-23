@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "590d275c522c6f7dddbb89cebd1749160e5feaa0f58fc53cf8594800dbab7d2b",
-  "capability_set_sha": "7c14f6cf076e1646f1d4cc380124368d36352438fe88f74efe78b1bb5d7fd0c6",
-  "validator_set_sha": "a26e2775db6b8c900f0296872717510f9867873fd7fa32a0f67bffbebab26fc4",
+  "package_sha": "f72fb894f6a435883956243da0ef277259bbf382cfee3f6f6f67c4c517f75409",
+  "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
+  "validator_set_sha": "8224c5aa344684dc003928e5ef8b2750b6a7ba61bc9433ad8b6af56f722ebd4e",
   "runner_state": "armed",
-  "observed_at": "2026-08-23T07:01:15.025360+00:00",
+  "observed_at": "2026-08-23T07:33:56.066501+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -72,6 +72,16 @@
       "capability_id": "harness-contract-enforcement",
       "contract_version": "1",
       "validator_identity": "fames-cases:harness-contract-enforcement:v1",
+      "required_hosts": [
+        "darkhero",
+        "scar3",
+        "altos"
+      ]
+    },
+    {
+      "capability_id": "context-asset-portability",
+      "contract_version": "1",
+      "validator_identity": "fames-cases:context-asset-portability:v1",
       "required_hosts": [
         "darkhero",
         "scar3",
@@ -256,6 +266,26 @@
         "case://C-HARNESS-MISSING-SURFACE",
         "case://C-HARNESS-NAME-POLICY",
         "case://C-HARNESS-UNREGISTERED-PASS"
+      ]
+    },
+    {
+      "capability_id": "context-asset-portability",
+      "state": "PASS",
+      "validator_exit": 0,
+      "positive_control": true,
+      "negative_control_rejected": true,
+      "caller_backed": true,
+      "evidence_refs": [
+        "case://C-CONTEXT-ASSETS-BASE",
+        "case://C-CONTEXT-ASSETS-MISSING-CORE",
+        "case://C-CONTEXT-ASSETS-ABSOLUTE-PATH",
+        "case://C-CONTEXT-ASSETS-SCOPE-LEAK",
+        "case://C-CONTEXT-ASSETS-REDLINE-PRECEDENCE",
+        "case://C-CONTEXT-ASSETS-FEEDBACK-PROMOTION",
+        "case://C-CONTEXT-ASSETS-LOAD-MISMATCH",
+        "case://C-CONTEXT-ASSETS-HOST-PREDICATE",
+        "case://C-CONTEXT-ASSETS-SECRET-MATERIAL",
+        "case://C-CONTEXT-ASSETS-EXPIRED-RUNTIME"
       ]
     },
     {
