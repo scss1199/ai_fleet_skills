@@ -188,6 +188,17 @@ LOCAL_CAPABILITY_CASES = {
         "C-CONTEXT-ASSETS-HOST-PREDICATE",
         "C-CONTEXT-ASSETS-SECRET-MATERIAL",
         "C-CONTEXT-ASSETS-EXPIRED-RUNTIME",
+        "C-CONTEXT-ASSETS-BOGUS-LOCATOR",
+        "C-CONTEXT-ASSETS-RAW-CONTENT",
+        "C-CONTEXT-ASSETS-FEEDBACK-BOOLEAN",
+        "C-CONTEXT-ASSETS-GOAL-BINDING",
+        "C-CONTEXT-ASSETS-PUBLIC-DISCLOSURE",
+        "C-CONTEXT-ASSETS-ENTRY-TYPES",
+        "C-CONTEXT-ASSETS-LOADED-IDENTITY",
+        "C-CONTEXT-ASSETS-UNKNOWN-ASSET-FIELD",
+        "C-CONTEXT-ASSETS-FORGED-TRIAL",
+        "C-CONTEXT-ASSETS-HIDDEN-ROUTING",
+        "C-CONTEXT-ASSETS-SUBJECT-KIND",
     ),
     "background-execution-enforcement": (
         "C-BACKGROUND-BASE",
@@ -353,6 +364,50 @@ CONTEXT_FORBIDDEN_RAW_KEYS = {
     "transcript_text",
     "full_text",
     "payload",
+}
+CONTEXT_MANIFEST_FIELDS = {
+    "schema",
+    "subject_kind",
+    "project_identity",
+    "goal_identity",
+    "manifest_identity",
+    "provider_neutral",
+    "selection_predicates",
+    "assets",
+    "project_entry",
+    "precedence",
+    "load_receipt",
+}
+CONTEXT_ASSET_ALLOWED_FIELDS = set(CONTEXT_ASSET_FIELDS) | {
+    "project_identity",
+    "expires_at",
+    "promotion_state",
+    "measured_trial",
+}
+CONTEXT_PROJECT_ENTRY_FIELDS = {"asset_id", "purpose", "audience", "acceptance", "avoidance", "index"}
+CONTEXT_LOAD_RECEIPT_FIELDS = {
+    "manifest_identity",
+    "goal_identity",
+    "project_identity",
+    "expected_asset_ids",
+    "loaded_asset_ids",
+    "loaded_asset_identities",
+    "unknown_count",
+    "provider_neutral",
+    "raw_content_persisted",
+}
+CONTEXT_FEEDBACK_TRIAL_FIELDS = {
+    "source_ref",
+    "content_sha256",
+    "kind",
+    "feedback_asset_id",
+    "goal_identity",
+    "candidate_identity",
+    "validator_identity",
+    "state",
+    "exit_status",
+    "executed_at",
+    "valid_until",
 }
 
 
@@ -1008,11 +1063,17 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
     root = (workspace or _active_workspace()).resolve()
     errors: list[str] = []
     unknowns: list[str] = []
+    unexpected_manifest_fields = sorted(set(record) - CONTEXT_MANIFEST_FIELDS)
+    if unexpected_manifest_fields:
+        errors.append(f"context manifest contains undeclared fields: {', '.join(unexpected_manifest_fields)}")
     project_identity = record.get("project_identity")
     if not isinstance(project_identity, str) or not project_identity.strip():
         unknowns.append("project identity missing")
-    if not isinstance(record.get("subject_kind"), str) or not record["subject_kind"].strip():
+    subject_kind = record.get("subject_kind")
+    if not isinstance(subject_kind, str) or not subject_kind.strip():
         unknowns.append("context subject kind missing")
+    elif subject_kind not in set(policy.get("subject_kinds") or ()):
+        errors.append("context subject kind is not declared by the active contract")
     goal_identity = str(record.get("goal_identity") or "").lower()
     if not SHA256_RE.fullmatch(goal_identity):
         unknowns.append("context goal identity missing or malformed")
@@ -1044,6 +1105,9 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
         if not isinstance(asset, dict):
             unknowns.append(f"{here}: asset is not an object")
             continue
+        unexpected_asset_fields = sorted(set(asset) - CONTEXT_ASSET_ALLOWED_FIELDS)
+        if unexpected_asset_fields:
+            errors.append(f"{here}: undeclared fields {', '.join(unexpected_asset_fields)}")
         missing = [field for field in CONTEXT_ASSET_FIELDS if asset.get(field) in (None, "", [])]
         if missing:
             unknowns.append(f"{here}: missing {', '.join(missing)}")
@@ -1137,6 +1201,9 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
     if not isinstance(entry, dict):
         unknowns.append("project entry contract missing")
     else:
+        unexpected_entry_fields = sorted(set(entry) - CONTEXT_PROJECT_ENTRY_FIELDS)
+        if unexpected_entry_fields:
+            errors.append(f"project entry contains undeclared fields: {', '.join(unexpected_entry_fields)}")
         for field in ("asset_id", "purpose", "audience", "acceptance", "avoidance", "index"):
             if entry.get(field) in (None, "", []):
                 unknowns.append(f"project_entry.{field} missing")
@@ -1167,7 +1234,11 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
     if not isinstance(precedence, dict):
         unknowns.append("context precedence ledger missing")
     else:
-        for field in policy.get("required_precedence") or ():
+        required_precedence = set(policy.get("required_precedence") or ())
+        unexpected_precedence_fields = sorted(set(precedence) - required_precedence)
+        if unexpected_precedence_fields:
+            errors.append(f"context precedence contains undeclared fields: {', '.join(unexpected_precedence_fields)}")
+        for field in required_precedence:
             if field not in precedence:
                 unknowns.append(f"precedence.{field} missing")
             elif precedence.get(field) is not True:
@@ -1228,6 +1299,9 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
     if not isinstance(receipt, dict):
         unknowns.append("context load receipt missing")
     else:
+        unexpected_receipt_fields = sorted(set(receipt) - CONTEXT_LOAD_RECEIPT_FIELDS)
+        if unexpected_receipt_fields:
+            errors.append(f"context load receipt contains undeclared fields: {', '.join(unexpected_receipt_fields)}")
         if receipt.get("manifest_identity") != manifest_identity:
             errors.append("load receipt manifest identity mismatch")
         if receipt.get("project_identity") != project_identity:
