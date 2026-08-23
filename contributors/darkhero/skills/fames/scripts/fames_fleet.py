@@ -145,6 +145,16 @@ LOCAL_CAPABILITY_CASES = {
         "C-EFFECT-SESSION-MATERIAL",
         "C-EFFECT-RAW-CAMELCASE",
         "C-EFFECT-BEARER",
+        "C-EFFECT-TOKEN-PERSISTED",
+        "C-EFFECT-COOKIE-PERSISTED",
+        "C-EFFECT-SESSION-PERSISTED",
+        "C-EFFECT-AUTHORIZATION-PERSISTED",
+        "C-EFFECT-BEARER-PERSISTED",
+        "C-EFFECT-MALFORMED-SECRET-SHA",
+        "C-EFFECT-MALFORMED-SESSION-IDENTITY",
+        "C-EFFECT-MALFORMED-COOKIE-PRESENT",
+        "C-EFFECT-MALFORMED-CREDENTIAL-COUNT",
+        "C-EFFECT-SAFE-SECRET-METADATA",
     ),
     "capability-convergence": (
         "C-CAPABILITY-SYNC-BASE",
@@ -1084,9 +1094,22 @@ def _effect_sensitive_material_paths(node: object, trail: str = "") -> list[str]
                 "credential", "password", "secret", "authorization", "bearer", "session",
                 "apikey",
             )
-            safe_metadata = normalized.endswith(("sha256", "identity", "count", "present", "persisted"))
-            if normalized not in allowed and not safe_metadata and any(marker in normalized for marker in forbidden):
-                found.append(here)
+            if any(marker in normalized for marker in forbidden):
+                safe_metadata = False
+                if normalized in allowed:
+                    safe_metadata = trail == "" and value is False
+                elif normalized.endswith(("sha256", "identity")):
+                    safe_metadata = isinstance(value, str) and SHA256_RE.fullmatch(value.lower()) is not None
+                elif normalized.endswith("count"):
+                    safe_metadata = (
+                        isinstance(value, int) and not isinstance(value, bool) and value >= 0
+                    )
+                elif normalized.endswith("present"):
+                    safe_metadata = isinstance(value, bool)
+                elif normalized.endswith("persisted"):
+                    safe_metadata = value is False
+                if not safe_metadata:
+                    found.append(here)
             found.extend(_effect_sensitive_material_paths(value, here))
     elif isinstance(node, list):
         for index, value in enumerate(node):
