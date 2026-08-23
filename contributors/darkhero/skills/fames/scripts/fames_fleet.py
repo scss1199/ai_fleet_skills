@@ -177,6 +177,18 @@ LOCAL_CAPABILITY_CASES = {
         "C-HARNESS-NAME-POLICY",
         "C-HARNESS-UNREGISTERED-PASS",
     ),
+    "context-asset-portability": (
+        "C-CONTEXT-ASSETS-BASE",
+        "C-CONTEXT-ASSETS-MISSING-CORE",
+        "C-CONTEXT-ASSETS-ABSOLUTE-PATH",
+        "C-CONTEXT-ASSETS-SCOPE-LEAK",
+        "C-CONTEXT-ASSETS-REDLINE-PRECEDENCE",
+        "C-CONTEXT-ASSETS-FEEDBACK-PROMOTION",
+        "C-CONTEXT-ASSETS-LOAD-MISMATCH",
+        "C-CONTEXT-ASSETS-HOST-PREDICATE",
+        "C-CONTEXT-ASSETS-SECRET-MATERIAL",
+        "C-CONTEXT-ASSETS-EXPIRED-RUNTIME",
+    ),
     "background-execution-enforcement": (
         "C-BACKGROUND-BASE",
         "C-BACKGROUND-CHILD-FLAGS",
@@ -299,6 +311,35 @@ INGEST_SOURCE_CHANNELS = {"skill_registry", "line_ingest", "background_web_inges
 INGEST_FORBIDDEN_KEYS = (
     "token", "cookie", "credential", "api_key", "apikey", "password",
     "secret", "authorization", "session_id",
+)
+CONTEXT_REQUIRED_ROLES = {
+    "durable_core": {
+        "about",
+        "background_capabilities",
+        "long_term_goals",
+        "expression_preferences",
+        "principles_redlines",
+    },
+    "project_context": {
+        "project_entry",
+        "project_preferences",
+        "references",
+        "examples",
+        "feedback",
+    },
+    "runtime_context": {"task_goal", "current_state", "evidence"},
+}
+CONTEXT_ASSET_FIELDS = (
+    "id",
+    "layer",
+    "role",
+    "source_ref",
+    "locator",
+    "content_sha256",
+    "scope",
+    "authority_source",
+    "sensitivity",
+    "disclosure",
 )
 
 
@@ -875,6 +916,228 @@ def validate_ingest(record: dict) -> dict:
         "adopted": adopted,
         "promoted": record.get("promoted") is True,
         "errors": errors,
+    }
+
+
+def _context_manifest_identity(record: dict) -> str:
+    assets = record.get("assets") if isinstance(record.get("assets"), list) else []
+    return _stable_sha({
+        "schema": record.get("schema"),
+        "subject_kind": record.get("subject_kind"),
+        "project_identity": record.get("project_identity"),
+        "provider_neutral": record.get("provider_neutral"),
+        "selection_predicates": record.get("selection_predicates"),
+        "assets": sorted(
+            (item for item in assets if isinstance(item, dict)),
+            key=lambda item: str(item.get("id") or ""),
+        ),
+        "project_entry": record.get("project_entry"),
+        "precedence": record.get("precedence"),
+    })
+
+
+def validate_context_assets(record: dict, workspace: Path | None = None) -> dict:
+    """Validate a portable, scope-separated context asset manifest and load receipt."""
+    try:
+        protocol = _read_json(PACKAGE_ROOT / PROTOCOL_TARGETS["FAMES"])
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"ok": False, "state": "UNKNOWN", "errors": [f"context asset policy unreadable: {exc}"]}
+    policy = ((protocol.get("architecture_standard") or {}).get("context_asset_contract") or {})
+    if not policy:
+        return {"ok": False, "state": "UNKNOWN", "errors": ["context asset contract missing"]}
+    if not isinstance(record, dict):
+        return {"ok": False, "state": "UNKNOWN", "errors": ["context asset record is not an object"]}
+
+    root = (workspace or _active_workspace()).resolve()
+    errors: list[str] = []
+    unknowns: list[str] = []
+    project_identity = record.get("project_identity")
+    if not isinstance(project_identity, str) or not project_identity.strip():
+        unknowns.append("project identity missing")
+    if not isinstance(record.get("subject_kind"), str) or not record["subject_kind"].strip():
+        unknowns.append("context subject kind missing")
+    if record.get("provider_neutral") is not True:
+        errors.append("context manifest is not provider neutral")
+
+    allowed = set(policy.get("selection_predicates") or ())
+    forbidden = set(policy.get("forbidden_predicates") or ())
+    predicates = record.get("selection_predicates")
+    if not isinstance(predicates, list) or not predicates:
+        unknowns.append("context selection predicates missing")
+    else:
+        if any(item not in allowed for item in predicates):
+            errors.append("context manifest uses an undeclared selection predicate")
+        if set(predicates) & forbidden:
+            errors.append("context manifest selects by a forbidden host identity")
+
+    assets = record.get("assets")
+    if not isinstance(assets, list) or not assets:
+        unknowns.append("context assets missing")
+        assets = []
+    ids: list[str] = []
+    roles_by_layer = {layer: [] for layer in CONTEXT_REQUIRED_ROLES}
+    by_id: dict[str, dict] = {}
+    by_role: dict[str, dict] = {}
+    authority_by_layer = policy.get("authority_sources") or {}
+    for index, asset in enumerate(assets):
+        here = f"assets[{index}]"
+        if not isinstance(asset, dict):
+            unknowns.append(f"{here}: asset is not an object")
+            continue
+        missing = [field for field in CONTEXT_ASSET_FIELDS if asset.get(field) in (None, "", [])]
+        if missing:
+            unknowns.append(f"{here}: missing {', '.join(missing)}")
+        asset_id, layer, role = asset.get("id"), asset.get("layer"), asset.get("role")
+        if isinstance(asset_id, str) and asset_id:
+            ids.append(asset_id)
+            by_id[asset_id] = asset
+        if layer not in CONTEXT_REQUIRED_ROLES:
+            errors.append(f"{here}: undeclared context layer")
+        elif role not in CONTEXT_REQUIRED_ROLES[layer]:
+            errors.append(f"{here}: role does not belong to layer")
+        else:
+            roles_by_layer[layer].append(str(role))
+            by_role[str(role)] = asset
+
+        source_ref = asset.get("source_ref")
+        if isinstance(source_ref, str) and source_ref:
+            parts = source_ref.split("/")
+            nonportable = (
+                source_ref.startswith("/") or "\\" in source_ref
+                or re.match(r"^[A-Za-z]:", source_ref)
+                or any(part in {"", ".", ".."} for part in parts)
+            )
+            if nonportable:
+                errors.append(f"{here}: source_ref is not a portable workspace-relative path")
+            else:
+                target = (root / source_ref).resolve()
+                try:
+                    target.relative_to(root)
+                except ValueError:
+                    errors.append(f"{here}: source_ref escapes the workspace")
+                else:
+                    if not target.is_file():
+                        unknowns.append(f"{here}: source_ref is missing")
+                    else:
+                        digest = str(asset.get("content_sha256") or "").lower()
+                        if digest and not SHA256_RE.fullmatch(digest):
+                            errors.append(f"{here}: content_sha256 is malformed")
+                        elif digest and _sha256(target) != digest:
+                            errors.append(f"{here}: content identity does not replay")
+
+        expected_authority = authority_by_layer.get(layer)
+        if expected_authority and asset.get("authority_source") != expected_authority:
+            errors.append(f"{here}: authority source does not match its layer")
+        if layer == "durable_core":
+            if asset.get("scope") != "global":
+                errors.append(f"{here}: durable core is not global scoped")
+            if asset.get("project_identity") not in (None, ""):
+                errors.append(f"{here}: durable core is polluted by a project identity")
+        elif layer in {"project_context", "runtime_context"}:
+            if asset.get("scope") != "project":
+                errors.append(f"{here}: project-bound asset lacks project scope")
+            if asset.get("project_identity") != project_identity:
+                errors.append(f"{here}: project identity leaks across context boundaries")
+        if layer == "runtime_context":
+            expires = _parse_time(asset.get("expires_at"))
+            if expires is None:
+                unknowns.append(f"{here}: runtime expiry missing or invalid")
+            elif expires <= datetime.now(timezone.utc):
+                unknowns.append(f"{here}: runtime context is expired")
+
+    if len(ids) != len(set(ids)):
+        errors.append("context asset ids are not unique")
+    for layer, required_roles in CONTEXT_REQUIRED_ROLES.items():
+        observed = roles_by_layer[layer]
+        if len(observed) != len(set(observed)):
+            errors.append(f"{layer}: role is duplicated")
+        missing_roles = sorted(required_roles - set(observed))
+        if missing_roles:
+            unknowns.append(f"{layer}: missing roles {', '.join(missing_roles)}")
+
+    entry = record.get("project_entry")
+    if not isinstance(entry, dict):
+        unknowns.append("project entry contract missing")
+    else:
+        for field in ("asset_id", "purpose", "audience", "acceptance", "avoidance", "index"):
+            if entry.get(field) in (None, "", []):
+                unknowns.append(f"project_entry.{field} missing")
+        if by_id.get(str(entry.get("asset_id") or ""), {}).get("role") != "project_entry":
+            errors.append("project entry points at the wrong asset role")
+        index_map = entry.get("index") if isinstance(entry.get("index"), dict) else {}
+        for role in ("project_preferences", "references", "examples", "feedback"):
+            target_id = index_map.get(role)
+            if not isinstance(target_id, str) or not target_id:
+                unknowns.append(f"project_entry.index.{role} missing")
+            elif by_id.get(target_id, {}).get("role") != role:
+                errors.append(f"project_entry.index.{role} points at the wrong role")
+
+    precedence = record.get("precedence")
+    if not isinstance(precedence, dict):
+        unknowns.append("context precedence ledger missing")
+    else:
+        for field in policy.get("required_precedence") or ():
+            if field not in precedence:
+                unknowns.append(f"precedence.{field} missing")
+            elif precedence.get(field) is not True:
+                errors.append(f"precedence.{field} is not enforced")
+
+    feedback = by_role.get("feedback")
+    if isinstance(feedback, dict):
+        state = feedback.get("promotion_state")
+        if state not in {"candidate", "promoted", "rejected"}:
+            unknowns.append("feedback promotion state missing or invalid")
+        if state == "promoted" and feedback.get("measured_trial") is not True:
+            errors.append("feedback was promoted without a measured trial")
+
+    expected_identity = _context_manifest_identity(record)
+    manifest_identity = str(record.get("manifest_identity") or "").lower()
+    if not manifest_identity:
+        unknowns.append("context manifest identity missing")
+    elif not SHA256_RE.fullmatch(manifest_identity):
+        errors.append("context manifest identity is malformed")
+    elif manifest_identity != expected_identity:
+        errors.append("context manifest identity does not match its assets and policy")
+
+    receipt = record.get("load_receipt")
+    if not isinstance(receipt, dict):
+        unknowns.append("context load receipt missing")
+    else:
+        if receipt.get("manifest_identity") != manifest_identity:
+            errors.append("load receipt manifest identity mismatch")
+        if receipt.get("project_identity") != project_identity:
+            errors.append("load receipt project identity mismatch")
+        if not SHA256_RE.fullmatch(str(receipt.get("goal_identity") or "").lower()):
+            unknowns.append("load receipt goal identity missing or malformed")
+        expected_ids, loaded_ids = receipt.get("expected_asset_ids"), receipt.get("loaded_asset_ids")
+        if not isinstance(expected_ids, list) or not expected_ids:
+            unknowns.append("load receipt expected population missing")
+        elif len(expected_ids) != len(set(expected_ids)):
+            errors.append("load receipt expected population has duplicates")
+        elif set(expected_ids) != set(ids):
+            errors.append("load receipt expected population differs from manifest")
+        if not isinstance(loaded_ids, list) or not loaded_ids:
+            unknowns.append("load receipt loaded population missing")
+        elif len(loaded_ids) != len(set(loaded_ids)):
+            errors.append("load receipt loaded population has duplicates")
+        elif isinstance(expected_ids, list) and set(loaded_ids) != set(expected_ids):
+            errors.append("load receipt does not cover the exact expected population")
+        if receipt.get("unknown_count") != 0:
+            errors.append("load receipt hides unknown context assets")
+        if receipt.get("provider_neutral") is not True:
+            errors.append("load receipt is not provider neutral")
+        if receipt.get("raw_content_persisted") is not False:
+            errors.append("load receipt may persist raw context content")
+
+    errors.extend(f"forbidden material key at {path}" for path in _forbidden_key_paths(record))
+    state = "FAIL" if errors else ("UNKNOWN" if unknowns else "PASS")
+    return {
+        "ok": state == "PASS",
+        "state": state,
+        "manifest_identity": expected_identity,
+        "asset_count": len(ids),
+        "layers": {key: len(value) for key, value in roles_by_layer.items()},
+        "errors": errors + unknowns,
     }
 
 
@@ -5032,6 +5295,31 @@ def _hydrate_effect_fixtures(node: object) -> None:
             _hydrate_effect_fixtures(value)
 
 
+def _hydrate_context_asset_fixtures(node: object) -> None:
+    if isinstance(node, dict):
+        for asset in node.get("assets") or ():
+            if not isinstance(asset, dict) or asset.get("content_sha256") != "auto":
+                continue
+            target = PACKAGE_ROOT / str(asset.get("source_ref") or "")
+            if target.is_file():
+                asset["content_sha256"] = _sha256(target)
+        for value in node.values():
+            _hydrate_context_asset_fixtures(value)
+    elif isinstance(node, list):
+        for value in node:
+            _hydrate_context_asset_fixtures(value)
+
+
+def _inject_context_manifest_identity(record: object) -> None:
+    if not isinstance(record, dict):
+        return
+    identity = _context_manifest_identity(record)
+    record["manifest_identity"] = identity
+    receipt = record.get("load_receipt")
+    if isinstance(receipt, dict):
+        receipt["manifest_identity"] = identity
+
+
 def _prepare_input(fixtures: dict, case: dict) -> tuple[object, str]:
     ref = case.get("input_ref")
     if ref not in fixtures:
@@ -5043,12 +5331,16 @@ def _prepare_input(fixtures: dict, case: dict) -> tuple[object, str]:
     _hydrate_promotion_replays(record)
     _hydrate_effect_fixtures(record)
     auto = record.pop("auto_goal_hash", False) if isinstance(record, dict) else False
+    auto_context = record.pop("auto_context_manifest", False) if isinstance(record, dict) else False
+    _hydrate_context_asset_fixtures(record)
     for pointer in case.get("remove") or []:
         _pointer_del(record, pointer)
     for pointer, value in (case.get("patch") or {}).items():
         _pointer_set(record, pointer, value)
     if case.get("auto_goal_hash", auto) and isinstance(record, dict):
         _inject_goal_hash(record)
+    if case.get("auto_context_manifest", auto_context) and isinstance(record, dict):
+        _inject_context_manifest_identity(record)
     return record, ""
 
 
@@ -5243,6 +5535,9 @@ def _evaluate_case(
             ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
         elif validator == "validate_harness":
             outcome = validate_harness(record)
+            ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
+        elif validator == "validate_context_assets":
+            outcome = validate_context_assets(record, package_root)
             ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
         elif validator == "validate_background":
             outcome = validate_background(record)
@@ -5450,13 +5745,13 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-background", "validate-effect", "measure-compute", "plan-compute", "validate-compute", "validate-local-compute", "validate-autonomic", "validate-capability-sync", "attest-capabilities", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-context-assets", "validate-background", "validate-effect", "measure-compute", "plan-compute", "validate-compute", "validate-local-compute", "validate-autonomic", "validate-capability-sync", "attest-capabilities", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
         if name in {"verify-package", "parity", "status", "run-cases", "self-check"}:
             command.add_argument("--skill-dir", type=Path, default=PACKAGE_ROOT)
-        if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-background", "validate-effect", "plan-compute", "validate-compute", "validate-autonomic", "validate-capability-sync"}:
+        if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-context-assets", "validate-background", "validate-effect", "plan-compute", "validate-compute", "validate-autonomic", "validate-capability-sync"}:
             command.add_argument("--input", type=Path, required=True)
         if name == "validate-local-compute":
             command.add_argument("--input", type=Path)
@@ -5541,6 +5836,13 @@ def main() -> int:
             payload = {"ok": False, "state": "UNKNOWN", "errors": [f"harness input unreadable: {exc}"]}
             return _emit(payload, args.json)
         return _emit(validate_harness(payload), args.json)
+    if args.command == "validate-context-assets":
+        try:
+            payload = _read_json(args.input)
+        except (OSError, json.JSONDecodeError) as exc:
+            payload = {"ok": False, "state": "UNKNOWN", "errors": [f"context asset input unreadable: {exc}"]}
+            return _emit(payload, args.json)
+        return _emit(validate_context_assets(payload, args.workspace), args.json)
     if args.command == "validate-background":
         try:
             payload = _read_json(args.input)

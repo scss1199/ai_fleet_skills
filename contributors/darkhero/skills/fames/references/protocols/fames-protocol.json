@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.29.5",
+  "version": "1.30.1",
   "updated": "2026-08-23",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -445,6 +445,47 @@
       "next_turn_rule": "Every registered surface supplies either same-turn context injection or an always-applied rule with pre-submit read-back. A block-only hook is a gate, not an injector. Session, prompt, prompt-contract, adapter, rule/context, and actual runtime-event identities are required for the claimed turn; configuration read-back alone cannot prove an already-open conversation reloaded or trusted the hook.",
       "authority_rule": "A harness may execute and verify locally but may not rewrite canonical policy, weaken a validator, or add authority. Canonical promotion retains exactly one writer.",
       "validator": "python scripts/fames_fleet.py validate-harness --input <record.json> --json"
+    },
+    "context_asset_contract": {
+      "purpose": "Make durable operator context, project context, and ephemeral task context one portable, content-addressed asset graph rather than host memory or an unverified pile of files.",
+      "relationship": "This is a context-loading contract inside MTM and RB prompt compilation. It does not add a FAMES phase, infer a personal profile, or make context truth merely because a file exists.",
+      "subject_kinds": ["fleet_seat", "project", "joint_human_ai_system"],
+      "layers": {
+        "durable_core": {
+          "roles": ["about", "background_capabilities", "long_term_goals", "expression_preferences", "principles_redlines"],
+          "scope": "global",
+          "authority_source": "operator_explicit",
+          "rule": "Durable context is explicit operator-owned input. FAMES never infers stable intelligence, personality, biography, disability, demographics, secrets, or private cross-domain facts to fill a missing role; the role remains UNKNOWN."
+        },
+        "project_context": {
+          "roles": ["project_entry", "project_preferences", "references", "examples", "feedback"],
+          "scope": "project",
+          "authority_source": "project_owner",
+          "rule": "Project context is identity-bound and expires or is archived with the project. It may narrow global behavior but cannot weaken operator red lines or mutate durable core."
+        },
+        "runtime_context": {
+          "roles": ["task_goal", "current_state", "evidence"],
+          "scope": "project",
+          "authority_source": "task_request",
+          "rule": "Runtime context is task-bound, carries an expiry, and never promotes itself into project or durable context."
+        }
+      },
+      "required_asset_fields": ["id", "layer", "role", "source_ref", "locator", "content_sha256", "scope", "authority_source", "sensitivity", "disclosure"],
+      "project_entry_fields": ["asset_id", "purpose", "audience", "acceptance", "avoidance", "index"],
+      "project_index_roles": ["project_preferences", "references", "examples", "feedback"],
+      "selection_predicates": ["capability", "availability", "authority", "safety", "evidence_freshness", "cost"],
+      "forbidden_predicates": ["harness_name", "product_name", "model_name", "vendor_name", "ide_name", "adapter_name", "skill_name"],
+      "authority_sources": {"durable_core": "operator_explicit", "project_context": "project_owner", "runtime_context": "task_request"},
+      "required_precedence": ["operator_red_lines_first", "project_can_narrow_not_weaken_core", "runtime_cannot_mutate_durable_core", "feedback_requires_measured_trial_before_promotion", "authority_after_subset"],
+      "load_receipt": {
+        "required": ["manifest_identity", "goal_identity", "project_identity", "expected_asset_ids", "loaded_asset_ids", "unknown_count", "provider_neutral", "raw_content_persisted"],
+        "rule": "A directory, file copy, prompt instruction, or package install is not active context. PASS requires exact expected-versus-loaded population closure, matching manifest and goal identities, zero UNKNOWN assets, provider-neutral routing, and raw_content_persisted=false."
+      },
+      "feedback_rule": "Feedback remains candidate or rejected until a measured trial supports promotion. A successful-looking output, user tone, repetition, model memory, or one host's preference cannot silently become durable canon.",
+      "portability_rule": "Every source_ref is a workspace-relative forward-slash path whose normalized content hash replays. Machine-absolute paths, parent traversal, host-name routing, missing files, stale runtime assets, and hash mismatches fail closed.",
+      "privacy_rule": "The manifest stores identities, roles, locators, scope and disclosure metadata, not raw credentials, cookies, tokens, sessions, or secret material. Sensitive domains remain project-scoped unless the operator explicitly grants a narrower cross-project use.",
+      "terminal_states": ["PASS", "UNKNOWN", "FAIL"],
+      "validator": "python scripts/fames_fleet.py validate-context-assets --workspace <root> --input <manifest.json> --json"
     },
     "background_execution_contract": {
       "scope": "Every scheduled task, rider, daemon, watchdog, updater, and its full descendant process tree.",

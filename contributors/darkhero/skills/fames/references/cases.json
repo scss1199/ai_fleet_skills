@@ -15,7 +15,7 @@
     "path_exists": "path (workspace-relative), expect present|absent",
     "file_size_max": "path, max_bytes, missing_ok -- measures size only, never reads content",
     "json_probe": "select (list of workspace-relative globs), pointer (slash path, * wildcard segment), expect all_equal|all_equal_ref|all_in, ref canonical_package_sha|canonical_version, values, missing_ok",
-    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|validate_cognitive_boundary|validate_harness|validate_background|validate_effect|validate_compute|validate_autonomic|regression_guard|contributor_id, input_ref into fixtures, remove, patch, expect_ok, optional expect_state",
+    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|validate_cognitive_boundary|validate_harness|validate_context_assets|validate_background|validate_effect|validate_compute|validate_autonomic|regression_guard|contributor_id, input_ref into fixtures, remove, patch, expect_ok, optional expect_state",
     "parity": "bundle and registry describe the same protocol generations",
     "newest_age_max": "select globs, max_age_h, missing_ok -- newest match must be younger than the ceiling",
     "forbidden_text": "paths, forbidden strings, and optional expect_clean -- canonical policy files must not contain platform identifiers"
@@ -141,6 +141,55 @@
       },
       "verdict": "reject",
       "promoted": false
+    },
+    "context_asset_suite": {
+      "auto_context_manifest": true,
+      "schema": 1,
+      "subject_kind": "fleet_seat",
+      "project_identity": "fixture-project",
+      "manifest_identity": "auto",
+      "provider_neutral": true,
+      "selection_predicates": ["capability", "availability", "authority", "safety", "evidence_freshness", "cost"],
+      "assets": [
+        {"id": "core.about", "layer": "durable_core", "role": "about", "source_ref": "SKILL.md", "locator": "FAMES", "content_sha256": "auto", "scope": "global", "authority_source": "operator_explicit", "sensitivity": "internal", "disclosure": "local_only"},
+        {"id": "core.background", "layer": "durable_core", "role": "background_capabilities", "source_ref": "SKILL.md", "locator": "Cognitive operator quality layer", "content_sha256": "auto", "scope": "global", "authority_source": "operator_explicit", "sensitivity": "internal", "disclosure": "local_only"},
+        {"id": "core.goals", "layer": "durable_core", "role": "long_term_goals", "source_ref": "SKILL.md", "locator": "Execute the contract", "content_sha256": "auto", "scope": "global", "authority_source": "operator_explicit", "sensitivity": "internal", "disclosure": "local_only"},
+        {"id": "core.preferences", "layer": "durable_core", "role": "expression_preferences", "source_ref": "SKILL.md", "locator": "Completion truth", "content_sha256": "auto", "scope": "global", "authority_source": "operator_explicit", "sensitivity": "internal", "disclosure": "local_only"},
+        {"id": "core.redlines", "layer": "durable_core", "role": "principles_redlines", "source_ref": "references/protocols/fames-protocol.json", "locator": "integrity_invariants", "content_sha256": "auto", "scope": "global", "authority_source": "operator_explicit", "sensitivity": "internal", "disclosure": "local_only"},
+        {"id": "project.entry", "layer": "project_context", "role": "project_entry", "source_ref": "SKILL.md", "locator": "FAMES", "content_sha256": "auto", "scope": "project", "project_identity": "fixture-project", "authority_source": "project_owner", "sensitivity": "internal", "disclosure": "local_only"},
+        {"id": "project.preferences", "layer": "project_context", "role": "project_preferences", "source_ref": "SKILL.md", "locator": "Completion truth", "content_sha256": "auto", "scope": "project", "project_identity": "fixture-project", "authority_source": "project_owner", "sensitivity": "internal", "disclosure": "local_only"},
+        {"id": "project.references", "layer": "project_context", "role": "references", "source_ref": "references/protocols/fames-protocol.json", "locator": "architecture_standard", "content_sha256": "auto", "scope": "project", "project_identity": "fixture-project", "authority_source": "project_owner", "sensitivity": "internal", "disclosure": "local_only"},
+        {"id": "project.examples", "layer": "project_context", "role": "examples", "source_ref": "references/cases.json", "locator": "fixtures", "content_sha256": "auto", "scope": "project", "project_identity": "fixture-project", "authority_source": "project_owner", "sensitivity": "internal", "disclosure": "local_only"},
+        {"id": "project.feedback", "layer": "project_context", "role": "feedback", "source_ref": "references/cases.json", "locator": "cases", "content_sha256": "auto", "scope": "project", "project_identity": "fixture-project", "authority_source": "project_owner", "sensitivity": "internal", "disclosure": "local_only", "promotion_state": "candidate", "measured_trial": false},
+        {"id": "runtime.goal", "layer": "runtime_context", "role": "task_goal", "source_ref": "references/cases.json", "locator": "run_min.goal", "content_sha256": "auto", "scope": "project", "project_identity": "fixture-project", "authority_source": "task_request", "sensitivity": "internal", "disclosure": "local_only", "expires_at": "2099-01-01T00:00:00Z"},
+        {"id": "runtime.state", "layer": "runtime_context", "role": "current_state", "source_ref": "scripts/fames_fleet.py", "locator": "status", "content_sha256": "auto", "scope": "project", "project_identity": "fixture-project", "authority_source": "task_request", "sensitivity": "internal", "disclosure": "local_only", "expires_at": "2099-01-01T00:00:00Z"},
+        {"id": "runtime.evidence", "layer": "runtime_context", "role": "evidence", "source_ref": "references/cases.json", "locator": "cases", "content_sha256": "auto", "scope": "project", "project_identity": "fixture-project", "authority_source": "task_request", "sensitivity": "internal", "disclosure": "local_only", "expires_at": "2099-01-01T00:00:00Z"}
+      ],
+      "project_entry": {
+        "asset_id": "project.entry",
+        "purpose": "exercise the portable context contract",
+        "audience": "registered agent harnesses",
+        "acceptance": ["all context roles load with matching identities"],
+        "avoidance": ["scope leakage", "silent feedback promotion"],
+        "index": {"project_preferences": "project.preferences", "references": "project.references", "examples": "project.examples", "feedback": "project.feedback"}
+      },
+      "precedence": {
+        "operator_red_lines_first": true,
+        "project_can_narrow_not_weaken_core": true,
+        "runtime_cannot_mutate_durable_core": true,
+        "feedback_requires_measured_trial_before_promotion": true,
+        "authority_after_subset": true
+      },
+      "load_receipt": {
+        "manifest_identity": "auto",
+        "goal_identity": "7777777777777777777777777777777777777777777777777777777777777777",
+        "project_identity": "fixture-project",
+        "expected_asset_ids": ["core.about", "core.background", "core.goals", "core.preferences", "core.redlines", "project.entry", "project.preferences", "project.references", "project.examples", "project.feedback", "runtime.goal", "runtime.state", "runtime.evidence"],
+        "loaded_asset_ids": ["core.about", "core.background", "core.goals", "core.preferences", "core.redlines", "project.entry", "project.preferences", "project.references", "project.examples", "project.feedback", "runtime.goal", "runtime.state", "runtime.evidence"],
+        "unknown_count": 0,
+        "provider_neutral": true,
+        "raw_content_persisted": false
+      }
     },
     "harness_suite": {
       "registry_identity": "sha256:agent-surfaces-fixture",
@@ -1031,6 +1080,16 @@
     {"id": "C-INGEST-ACADEMIC-REFERENCE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_ingest", "input_ref": "academic_ingest", "remove": ["/academic_citation/references/0/persistent_id"], "expect_ok": false, "expect_state": "FAIL", "why": "an academic reference must carry a stable identifier that can be resolved and reproduced"},
     {"id": "C-INGEST-OUT-OF-SCOPE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_ingest", "input_ref": "academic_ingest", "patch": {"/scope/in_scope": false}, "expect_ok": false, "expect_state": "FAIL", "why": "Ne may not absorb an ingest outside the frozen user and authority scope"},
 
+    {"id": "C-CONTEXT-ASSETS-BASE", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "expect_ok": true, "expect_state": "PASS", "why": "durable, project and runtime context roles are content-addressed, scope-separated, provider-neutral and covered by one exact load receipt"},
+    {"id": "C-CONTEXT-ASSETS-MISSING-CORE", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "remove": ["/assets/0/content_sha256"], "expect_ok": false, "expect_state": "UNKNOWN", "why": "a named durable-core role without content identity is UNKNOWN rather than silently inherited from model memory"},
+    {"id": "C-CONTEXT-ASSETS-ABSOLUTE-PATH", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "patch": {"/assets/0/source_ref": "C:/machine-only/profile.md"}, "expect_ok": false, "expect_state": "FAIL", "why": "a machine-absolute path makes the context asset non-portable even when its prose is useful"},
+    {"id": "C-CONTEXT-ASSETS-SCOPE-LEAK", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "patch": {"/assets/5/project_identity": "different-project"}, "expect_ok": false, "expect_state": "FAIL", "why": "project context must not leak into another project identity"},
+    {"id": "C-CONTEXT-ASSETS-REDLINE-PRECEDENCE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "patch": {"/precedence/operator_red_lines_first": false}, "expect_ok": false, "expect_state": "FAIL", "why": "project or runtime context can narrow behavior but never override operator red lines"},
+    {"id": "C-CONTEXT-ASSETS-FEEDBACK-PROMOTION", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "patch": {"/assets/9/promotion_state": "promoted"}, "expect_ok": false, "expect_state": "FAIL", "why": "task feedback is a candidate until a measured trial supports promotion into durable context"},
+    {"id": "C-CONTEXT-ASSETS-LOAD-MISMATCH", "kind": "validator_probe", "charges": "R_FRESHNESS", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "remove": ["/load_receipt/loaded_asset_ids/12"], "expect_ok": false, "expect_state": "FAIL", "why": "a manifest is not active context unless the exact expected asset population was read back"},
+    {"id": "C-CONTEXT-ASSETS-HOST-PREDICATE", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "patch": {"/selection_predicates": ["capability", "availability", "authority", "safety", "evidence_freshness", "cost", "harness_name"]}, "expect_ok": false, "expect_state": "FAIL", "why": "the same context bundle must route by capabilities and evidence rather than an AI product name"},
+    {"id": "C-CONTEXT-ASSETS-SECRET-MATERIAL", "kind": "validator_probe", "charges": "R_HYGIENE", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "patch": {"/assets/0/api_key": "fixture-sensitive-material"}, "expect_ok": false, "expect_state": "FAIL", "why": "portable context assets must not carry raw credentials or secret material"},
+    {"id": "C-CONTEXT-ASSETS-EXPIRED-RUNTIME", "kind": "validator_probe", "charges": "R_FRESHNESS", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "patch": {"/assets/10/expires_at": "2020-01-01T00:00:00Z"}, "expect_ok": false, "expect_state": "UNKNOWN", "why": "expired task context cannot silently survive as current state"},
     {"id": "C-HARNESS-BASE", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_harness", "input_ref": "harness_suite", "expect_ok": true, "expect_state": "PASS", "why": "all registered surfaces independently load, probe and read back the same content-addressed FAMES contract"},
     {"id": "C-HARNESS-MISSING-SURFACE", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_harness", "input_ref": "harness_suite", "remove": ["/surface_receipts/2"], "expect_ok": false, "expect_state": "FAIL", "why": "a compliance claim cannot hide a registered harness with no fresh receipt"},
     {"id": "C-HARNESS-NAME-POLICY", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_harness", "input_ref": "harness_suite", "patch": {"/selection_predicates/0": "harness_name"}, "expect_ok": false, "expect_state": "FAIL", "why": "canonical routing cannot select by a product or harness label"},
