@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "ee1bee6ea50ba6f5311d0fa8066361ee7c641990980262fcec926afd95c84993",
+  "package_sha": "58ee55e800d0972ead6e5b38b4306e25929f9bc3bfe56e3eb147dcac142d2541",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
-  "validator_set_sha": "f9c3e6a421c4b1e34177baef1b1fe16c0aedf48be43ec407f2533ee9937049a1",
+  "validator_set_sha": "15d717d5c237ef9583f492cfbba0f82e12e324c4f79a937174512eea8dd39958",
   "runner_state": "armed",
-  "observed_at": "2026-08-23T07:48:54.269489+00:00",
+  "observed_at": "2026-08-23T08:16:24.995874+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -297,7 +297,13 @@
         "case://C-CONTEXT-ASSETS-FORGED-TRIAL",
         "case://C-CONTEXT-ASSETS-HIDDEN-ROUTING",
         "case://C-CONTEXT-ASSETS-SUBJECT-KIND",
-        "case://C-CONTEXT-ASSETS-LOAD-EVENT"
+        "case://C-CONTEXT-ASSETS-LOAD-EVENT",
+        "case://C-CONTEXT-ASSETS-LAYER-FIELD",
+        "case://C-CONTEXT-ASSETS-INDEX-FIELD",
+        "case://C-CONTEXT-ASSETS-SCHEMA-VERSION",
+        "case://C-CONTEXT-ASSETS-EVENT-WINDOW",
+        "case://C-CONTEXT-ASSETS-SYNTHETIC-LIVE",
+        "case://C-CONTEXT-ASSETS-PREDICATE-TYPE"
       ]
     },
     {
