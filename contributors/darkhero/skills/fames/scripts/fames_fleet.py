@@ -141,6 +141,10 @@ LOCAL_CAPABILITY_CASES = {
         "C-EFFECT-NONCE-ONLY",
         "C-EFFECT-ERROR-TYPE-ONLY",
         "C-EFFECT-FAIL-DOMINATES-UNKNOWN",
+        "C-EFFECT-NUMERIC-TOKEN",
+        "C-EFFECT-SESSION-MATERIAL",
+        "C-EFFECT-RAW-CAMELCASE",
+        "C-EFFECT-BEARER",
     ),
     "capability-convergence": (
         "C-CAPABILITY-SYNC-BASE",
@@ -1066,6 +1070,30 @@ def validate_background(record: dict) -> dict:
     }
 
 
+def _effect_sensitive_material_paths(node: object, trail: str = "") -> list[str]:
+    """Find secret/raw receipt fields independent of spelling and value type."""
+    found: list[str] = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            here = f"{trail}/{key}" if trail else str(key)
+            normalized = re.sub(r"[^a-z0-9]", "", str(key).casefold())
+            allowed = {"rawpayloadpersisted", "rawoutputpersisted"}
+            forbidden = (
+                "rawpayload", "rawoutput", "rawbody", "rawmessage", "rawcontent",
+                "accesstoken", "refreshtoken", "idtoken", "token", "cookie",
+                "credential", "password", "secret", "authorization", "bearer", "session",
+                "apikey",
+            )
+            safe_metadata = normalized.endswith(("sha256", "identity", "count", "present", "persisted"))
+            if normalized not in allowed and not safe_metadata and any(marker in normalized for marker in forbidden):
+                found.append(here)
+            found.extend(_effect_sensitive_material_paths(value, here))
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            found.extend(_effect_sensitive_material_paths(value, f"{trail}[{index}]"))
+    return found
+
+
 def validate_effect(record: dict) -> dict:
     """Prove that a caller can distinguish a downstream effect from its failure."""
     try:
@@ -1084,6 +1112,9 @@ def validate_effect(record: dict) -> dict:
     for field in ("operation_id", "effect_class", "claim_scope"):
         if not isinstance(record.get(field), str) or not record[field].strip():
             unknowns.append(f"effect {field} missing")
+    allowed_scopes = set(policy.get("allowed_claim_scopes") or ())
+    if record.get("claim_scope") not in allowed_scopes:
+        errors.append("effect claim_scope exceeds the caller-observability contract")
     if record.get("transport_acceptance_is_effect") is not False:
         errors.append("transport acceptance was used as effect evidence")
     if record.get("trace_complete") is not True:
@@ -1094,6 +1125,8 @@ def validate_effect(record: dict) -> dict:
         errors.append("effect receipt persisted or did not classify the raw payload")
     if record.get("raw_output_persisted") is not False:
         errors.append("effect receipt persisted or did not classify the raw output")
+    for path in _effect_sensitive_material_paths(record):
+        errors.append(f"forbidden sensitive or raw material key at {path}")
 
     perturbation = record.get("controlled_perturbation")
     if not isinstance(perturbation, dict):
@@ -1104,7 +1137,7 @@ def validate_effect(record: dict) -> dict:
     if perturbation.get("upstream_transport_held_constant") is not True:
         errors.append("negative control did not hold upstream transport constant")
 
-    observations: dict[str, object] = {}
+    observations: dict[str, dict] = {}
     upstream_states: dict[str, object] = {}
     for name, expected_downstream in (("positive_control", "PASS"), ("negative_control", "FAIL")):
         control = record.get(name)
@@ -1119,14 +1152,38 @@ def validate_effect(record: dict) -> dict:
             unknowns.append(f"{name} caller_state is unknown")
         elif caller != expected_downstream:
             errors.append(f"{name} caller_state does not expose downstream {expected_downstream}")
-        if "caller_observation" not in control:
+        observation = control.get("caller_observation")
+        if not isinstance(observation, dict):
             unknowns.append(f"{name} caller_observation missing")
         else:
-            observations[name] = control.get("caller_observation")
-        if not isinstance(control.get("outcome_evidence_ref"), str) or not control["outcome_evidence_ref"].strip():
+            required_observation = {"effect_state", "error_type"}
+            if name == "positive_control" or "downstream_status" in control:
+                required_observation.add("downstream_status")
+            if not required_observation.issubset(observation):
+                unknowns.append(f"{name} caller_observation lacks typed effect fields")
+            observations[name] = {
+                "effect_state": observation.get("effect_state"),
+                "downstream_status": observation.get("downstream_status"),
+                "error_type": observation.get("error_type"),
+            }
+            if observation.get("effect_state") != caller:
+                errors.append(f"{name} caller_observation effect_state mismatch")
+            if observation.get("downstream_status") != control.get("downstream_status"):
+                errors.append(f"{name} caller_observation downstream_status mismatch")
+            if observation.get("error_type") != control.get("error_type"):
+                errors.append(f"{name} caller_observation error_type mismatch")
+        if control.get("outcome_evidence_ref") is None:
             unknowns.append(f"{name} outcome evidence missing")
-        if not isinstance(control.get("trace_evidence_ref"), str) or not control["trace_evidence_ref"].strip():
+        else:
+            errors.extend(_content_ref_errors(
+                control.get("outcome_evidence_ref"), f"{name}.outcome_evidence_ref", replay=True
+            ))
+        if control.get("trace_evidence_ref") is None:
             unknowns.append(f"{name} trace evidence missing")
+        else:
+            errors.extend(_content_ref_errors(
+                control.get("trace_evidence_ref"), f"{name}.trace_evidence_ref", replay=True
+            ))
         if control.get("sanitized") is not True:
             errors.append(f"{name} evidence is not marked sanitized")
         upstream_states[name] = control.get("upstream_transport_state")
@@ -1138,10 +1195,10 @@ def validate_effect(record: dict) -> dict:
             if error_type not in (None, ""):
                 errors.append("positive_control unexpectedly carries error_type")
         else:
-            if not isinstance(status, int) or isinstance(status, bool) or status < 400:
-                errors.append("negative_control downstream_status does not expose failure")
-            if not isinstance(error_type, str) or not error_type.strip():
-                errors.append("negative_control error_type missing")
+            status_failure = isinstance(status, int) and not isinstance(status, bool) and status >= 400
+            typed_failure = isinstance(error_type, str) and bool(error_type.strip())
+            if not (status_failure or typed_failure):
+                errors.append("negative_control exposes neither failing downstream_status nor error_type")
 
     if set(observations) == {"positive_control", "negative_control"}:
         if _stable_sha(observations["positive_control"]) == _stable_sha(observations["negative_control"]):
@@ -1149,15 +1206,15 @@ def validate_effect(record: dict) -> dict:
     if set(upstream_states) == {"positive_control", "negative_control"}:
         if upstream_states["positive_control"] != upstream_states["negative_control"]:
             errors.append("upstream transport changed during the controlled perturbation")
-        if upstream_states["positive_control"] not in {"ACCEPTED", "REJECTED", "UNKNOWN"}:
-            unknowns.append("upstream transport state is unknown")
+        if upstream_states["positive_control"] != "ACCEPTED":
+            errors.append("controlled effect probe requires accepted upstream transport")
 
     return {
         "ok": not errors and not unknowns,
-        "state": "UNKNOWN" if unknowns else ("PASS" if not errors else "FAIL"),
-        "observationally_separable": not (
+        "state": "FAIL" if errors else ("UNKNOWN" if unknowns else "PASS"),
+        "observationally_separable": (
             set(observations) == {"positive_control", "negative_control"}
-            and _stable_sha(observations["positive_control"]) == _stable_sha(observations["negative_control"])
+            and _stable_sha(observations["positive_control"]) != _stable_sha(observations["negative_control"])
         ),
         "errors": errors + unknowns,
     }
@@ -4935,6 +4992,23 @@ def _hydrate_promotion_replays(node: object) -> None:
             _hydrate_promotion_replays(value)
 
 
+def _hydrate_effect_fixtures(node: object) -> None:
+    if isinstance(node, dict):
+        if node.pop("auto_effect_evidence", False):
+            outcome_ref = _local_content_ref(Path(__file__), "file://fames_fleet.py")
+            trace_ref = _local_content_ref(PACKAGE_ROOT / CASES_TARGET, "file://cases.json")
+            for name in ("positive_control", "negative_control"):
+                control = node.get(name)
+                if isinstance(control, dict):
+                    control["outcome_evidence_ref"] = dict(outcome_ref)
+                    control["trace_evidence_ref"] = dict(trace_ref)
+        for value in node.values():
+            _hydrate_effect_fixtures(value)
+    elif isinstance(node, list):
+        for value in node:
+            _hydrate_effect_fixtures(value)
+
+
 def _prepare_input(fixtures: dict, case: dict) -> tuple[object, str]:
     ref = case.get("input_ref")
     if ref not in fixtures:
@@ -4944,6 +5018,7 @@ def _prepare_input(fixtures: dict, case: dict) -> tuple[object, str]:
     _hydrate_promotion_fixtures(record)
     _bind_fixture_gates(record)
     _hydrate_promotion_replays(record)
+    _hydrate_effect_fixtures(record)
     auto = record.pop("auto_goal_hash", False) if isinstance(record, dict) else False
     for pointer in case.get("remove") or []:
         _pointer_del(record, pointer)

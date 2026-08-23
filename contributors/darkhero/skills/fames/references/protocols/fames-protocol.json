@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.29.1",
+  "version": "1.29.4",
   "updated": "2026-08-23",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -1010,7 +1010,7 @@
       "controlled_perturbation_rule": "Hold upstream transport constant, change the downstream result from PASS to FAIL, and require the caller observation and typed state to change. Identical observations are evaluation blindness and FAIL.",
       "transport_rule": "HTTP, queue, webhook, or request acceptance is transport evidence only and never proves the requested effect.",
       "outcome_trace_rule": "Outcome checks and trace checks are complementary. Missing either is UNKNOWN or FAIL according to whether evidence is absent or contradicted.",
-      "privacy_rule": "Receipts are sanitized and do not persist raw payloads, raw outputs, credentials, cookies, tokens, or session material.",
+      "privacy_rule": "Receipts are sanitized and do not persist raw payloads, raw outputs, credentials, cookies, tokens, authorization or bearer material, or sessions. Sensitive-key detection is spelling-normalized and independent of the value type; numeric and boolean values do not bypass it.",
       "evidence_identity_rule": "Outcome and trace references are local content-addressed artifacts whose hashes replay at validation time; a URI or label alone is not evidence.",
       "semantic_separation_rule": "Only typed effect_state, downstream_status, and error_type distinguish caller observations; timestamps, nonces, request ids, labels, and unrelated fields cannot make two effect states separable.",
       "precedence_rule": "A confirmed contradiction, privacy breach, scope inflation, or false effect claim is FAIL even when another required field is missing; UNKNOWN cannot wash out a measured violation.",
