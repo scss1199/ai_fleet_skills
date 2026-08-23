@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "267a22812c71f100000edf33bccc1782c0d50549d1d56e3c72bad51e477ab38f",
-  "capability_set_sha": "cd06263ad5694c9a37e4c2d71606bfdad96062631849328bcffd5a5b57d66590",
-  "validator_set_sha": "c1fa230df6e348a2c2d9cc07f09ccb3c3a95bd998993246a0ee5c3766fee414f",
+  "package_sha": "bbc36ee008d405f2d45185520590bdab8e3bc06bd96c8c1abdf3a6a684ade681",
+  "capability_set_sha": "7c14f6cf076e1646f1d4cc380124368d36352438fe88f74efe78b1bb5d7fd0c6",
+  "validator_set_sha": "f82c3a579dd0a41b0d78ee9b35c90d5f6fe95c3e5b7c8d4b684ccb2b20810269",
   "runner_state": "armed",
-  "observed_at": "2026-08-21T14:54:01.873176+00:00",
+  "observed_at": "2026-08-23T02:45:41.312031+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -32,6 +32,16 @@
       "capability_id": "delivery-integrity",
       "contract_version": "1",
       "validator_identity": "fames-cases:delivery-integrity:v1",
+      "required_hosts": [
+        "darkhero",
+        "scar3",
+        "altos"
+      ]
+    },
+    {
+      "capability_id": "effect-observability",
+      "contract_version": "1",
+      "validator_identity": "fames-cases:effect-observability:v1",
       "required_hosts": [
         "darkhero",
         "scar3",
@@ -164,6 +174,22 @@
         "case://C-DELIVERY-PASS-WITH-DEFECT",
         "case://C-REPAIR-NO-NEXT-TEST",
         "case://C-REPAIR-BUDGET"
+      ]
+    },
+    {
+      "capability_id": "effect-observability",
+      "state": "PASS",
+      "validator_exit": 0,
+      "positive_control": true,
+      "negative_control_rejected": true,
+      "caller_backed": true,
+      "evidence_refs": [
+        "case://C-EFFECT-BASE",
+        "case://C-EFFECT-IDENTICAL-OBSERVATION",
+        "case://C-EFFECT-FAIL-AS-PASS",
+        "case://C-EFFECT-OUTCOME-MISSING",
+        "case://C-EFFECT-TRANSPORT-AS-EFFECT",
+        "case://C-EFFECT-TRACE-MISSING"
       ]
     },
     {
