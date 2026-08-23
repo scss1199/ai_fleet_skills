@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "bbc36ee008d405f2d45185520590bdab8e3bc06bd96c8c1abdf3a6a684ade681",
+  "package_sha": "590d275c522c6f7dddbb89cebd1749160e5feaa0f58fc53cf8594800dbab7d2b",
   "capability_set_sha": "7c14f6cf076e1646f1d4cc380124368d36352438fe88f74efe78b1bb5d7fd0c6",
-  "validator_set_sha": "f82c3a579dd0a41b0d78ee9b35c90d5f6fe95c3e5b7c8d4b684ccb2b20810269",
+  "validator_set_sha": "a26e2775db6b8c900f0296872717510f9867873fd7fa32a0f67bffbebab26fc4",
   "runner_state": "armed",
-  "observed_at": "2026-08-23T02:45:59.921258+00:00",
+  "observed_at": "2026-08-23T03:16:05.364829+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -189,7 +189,28 @@
         "case://C-EFFECT-FAIL-AS-PASS",
         "case://C-EFFECT-OUTCOME-MISSING",
         "case://C-EFFECT-TRANSPORT-AS-EFFECT",
-        "case://C-EFFECT-TRACE-MISSING"
+        "case://C-EFFECT-TRACE-MISSING",
+        "case://C-EFFECT-PRIVACY-MATERIAL",
+        "case://C-EFFECT-SCOPE-INFLATION",
+        "case://C-EFFECT-UNKNOWN-TRANSPORT",
+        "case://C-EFFECT-BOGUS-EVIDENCE",
+        "case://C-EFFECT-NONCE-ONLY",
+        "case://C-EFFECT-ERROR-TYPE-ONLY",
+        "case://C-EFFECT-FAIL-DOMINATES-UNKNOWN",
+        "case://C-EFFECT-NUMERIC-TOKEN",
+        "case://C-EFFECT-SESSION-MATERIAL",
+        "case://C-EFFECT-RAW-CAMELCASE",
+        "case://C-EFFECT-BEARER",
+        "case://C-EFFECT-TOKEN-PERSISTED",
+        "case://C-EFFECT-COOKIE-PERSISTED",
+        "case://C-EFFECT-SESSION-PERSISTED",
+        "case://C-EFFECT-AUTHORIZATION-PERSISTED",
+        "case://C-EFFECT-BEARER-PERSISTED",
+        "case://C-EFFECT-MALFORMED-SECRET-SHA",
+        "case://C-EFFECT-MALFORMED-SESSION-IDENTITY",
+        "case://C-EFFECT-MALFORMED-COOKIE-PRESENT",
+        "case://C-EFFECT-MALFORMED-CREDENTIAL-COUNT",
+        "case://C-EFFECT-SAFE-SECRET-METADATA"
       ]
     },
     {
