@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "f72fb894f6a435883956243da0ef277259bbf382cfee3f6f6f67c4c517f75409",
+  "package_sha": "ee1bee6ea50ba6f5311d0fa8066361ee7c641990980262fcec926afd95c84993",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
-  "validator_set_sha": "8224c5aa344684dc003928e5ef8b2750b6a7ba61bc9433ad8b6af56f722ebd4e",
+  "validator_set_sha": "f9c3e6a421c4b1e34177baef1b1fe16c0aedf48be43ec407f2533ee9937049a1",
   "runner_state": "armed",
-  "observed_at": "2026-08-23T07:33:56.066501+00:00",
+  "observed_at": "2026-08-23T07:48:54.269489+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -285,7 +285,19 @@
         "case://C-CONTEXT-ASSETS-LOAD-MISMATCH",
         "case://C-CONTEXT-ASSETS-HOST-PREDICATE",
         "case://C-CONTEXT-ASSETS-SECRET-MATERIAL",
-        "case://C-CONTEXT-ASSETS-EXPIRED-RUNTIME"
+        "case://C-CONTEXT-ASSETS-EXPIRED-RUNTIME",
+        "case://C-CONTEXT-ASSETS-BOGUS-LOCATOR",
+        "case://C-CONTEXT-ASSETS-RAW-CONTENT",
+        "case://C-CONTEXT-ASSETS-FEEDBACK-BOOLEAN",
+        "case://C-CONTEXT-ASSETS-GOAL-BINDING",
+        "case://C-CONTEXT-ASSETS-PUBLIC-DISCLOSURE",
+        "case://C-CONTEXT-ASSETS-ENTRY-TYPES",
+        "case://C-CONTEXT-ASSETS-LOADED-IDENTITY",
+        "case://C-CONTEXT-ASSETS-UNKNOWN-ASSET-FIELD",
+        "case://C-CONTEXT-ASSETS-FORGED-TRIAL",
+        "case://C-CONTEXT-ASSETS-HIDDEN-ROUTING",
+        "case://C-CONTEXT-ASSETS-SUBJECT-KIND",
+        "case://C-CONTEXT-ASSETS-LOAD-EVENT"
       ]
     },
     {
