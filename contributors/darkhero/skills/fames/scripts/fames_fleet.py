@@ -127,6 +127,14 @@ LOCAL_CAPABILITY_CASES = {
         "C-REPAIR-NO-NEXT-TEST",
         "C-REPAIR-BUDGET",
     ),
+    "effect-observability": (
+        "C-EFFECT-BASE",
+        "C-EFFECT-IDENTICAL-OBSERVATION",
+        "C-EFFECT-FAIL-AS-PASS",
+        "C-EFFECT-OUTCOME-MISSING",
+        "C-EFFECT-TRANSPORT-AS-EFFECT",
+        "C-EFFECT-TRACE-MISSING",
+    ),
     "capability-convergence": (
         "C-CAPABILITY-SYNC-BASE",
         "C-CAPABILITY-SYNC-MISSING-HOST",
@@ -1047,6 +1055,103 @@ def validate_background(record: dict) -> dict:
     return {
         "ok": not errors and not unknowns,
         "state": "UNKNOWN" if unknowns else ("PASS" if not errors else "FAIL"),
+        "errors": errors + unknowns,
+    }
+
+
+def validate_effect(record: dict) -> dict:
+    """Prove that a caller can distinguish a downstream effect from its failure."""
+    try:
+        protocol = _read_json(PACKAGE_ROOT / PROTOCOL_TARGETS["FAMES"])
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"ok": False, "state": "UNKNOWN", "errors": [f"effect policy unreadable: {exc}"]}
+    policy = (((protocol.get("production_delivery_assurance") or {})
+               .get("effect_observability_contract")) or {})
+    if not policy:
+        return {"ok": False, "state": "UNKNOWN", "errors": ["effect observability contract missing"]}
+    if not isinstance(record, dict):
+        return {"ok": False, "state": "UNKNOWN", "errors": ["effect record is not an object"]}
+
+    errors: list[str] = []
+    unknowns: list[str] = []
+    for field in ("operation_id", "effect_class", "claim_scope"):
+        if not isinstance(record.get(field), str) or not record[field].strip():
+            unknowns.append(f"effect {field} missing")
+    if record.get("transport_acceptance_is_effect") is not False:
+        errors.append("transport acceptance was used as effect evidence")
+    if record.get("trace_complete") is not True:
+        errors.append("effect trace is incomplete")
+    if record.get("outcome_checked") is not True:
+        errors.append("effect outcome was not checked")
+    if record.get("raw_payload_persisted") is not False:
+        errors.append("effect receipt persisted or did not classify the raw payload")
+    if record.get("raw_output_persisted") is not False:
+        errors.append("effect receipt persisted or did not classify the raw output")
+
+    perturbation = record.get("controlled_perturbation")
+    if not isinstance(perturbation, dict):
+        unknowns.append("controlled perturbation missing")
+        perturbation = {}
+    if not isinstance(perturbation.get("dimension"), str) or not perturbation["dimension"].strip():
+        unknowns.append("controlled perturbation dimension missing")
+    if perturbation.get("upstream_transport_held_constant") is not True:
+        errors.append("negative control did not hold upstream transport constant")
+
+    observations: dict[str, object] = {}
+    upstream_states: dict[str, object] = {}
+    for name, expected_downstream in (("positive_control", "PASS"), ("negative_control", "FAIL")):
+        control = record.get(name)
+        if not isinstance(control, dict):
+            unknowns.append(f"{name} missing")
+            continue
+        downstream = control.get("downstream_state")
+        caller = control.get("caller_state")
+        if downstream != expected_downstream:
+            errors.append(f"{name} downstream_state must be {expected_downstream}")
+        if caller not in {"PASS", "FAIL", "UNKNOWN"}:
+            unknowns.append(f"{name} caller_state is unknown")
+        elif caller != expected_downstream:
+            errors.append(f"{name} caller_state does not expose downstream {expected_downstream}")
+        if "caller_observation" not in control:
+            unknowns.append(f"{name} caller_observation missing")
+        else:
+            observations[name] = control.get("caller_observation")
+        if not isinstance(control.get("outcome_evidence_ref"), str) or not control["outcome_evidence_ref"].strip():
+            unknowns.append(f"{name} outcome evidence missing")
+        if not isinstance(control.get("trace_evidence_ref"), str) or not control["trace_evidence_ref"].strip():
+            unknowns.append(f"{name} trace evidence missing")
+        if control.get("sanitized") is not True:
+            errors.append(f"{name} evidence is not marked sanitized")
+        upstream_states[name] = control.get("upstream_transport_state")
+        status = control.get("downstream_status")
+        error_type = control.get("error_type")
+        if name == "positive_control":
+            if not isinstance(status, int) or isinstance(status, bool) or not 200 <= status < 300:
+                errors.append("positive_control downstream_status is not successful")
+            if error_type not in (None, ""):
+                errors.append("positive_control unexpectedly carries error_type")
+        else:
+            if not isinstance(status, int) or isinstance(status, bool) or status < 400:
+                errors.append("negative_control downstream_status does not expose failure")
+            if not isinstance(error_type, str) or not error_type.strip():
+                errors.append("negative_control error_type missing")
+
+    if set(observations) == {"positive_control", "negative_control"}:
+        if _stable_sha(observations["positive_control"]) == _stable_sha(observations["negative_control"]):
+            errors.append("positive and negative caller observations are identical")
+    if set(upstream_states) == {"positive_control", "negative_control"}:
+        if upstream_states["positive_control"] != upstream_states["negative_control"]:
+            errors.append("upstream transport changed during the controlled perturbation")
+        if upstream_states["positive_control"] not in {"ACCEPTED", "REJECTED", "UNKNOWN"}:
+            unknowns.append("upstream transport state is unknown")
+
+    return {
+        "ok": not errors and not unknowns,
+        "state": "UNKNOWN" if unknowns else ("PASS" if not errors else "FAIL"),
+        "observationally_separable": not (
+            set(observations) == {"positive_control", "negative_control"}
+            and _stable_sha(observations["positive_control"]) == _stable_sha(observations["negative_control"])
+        ),
         "errors": errors + unknowns,
     }
 
@@ -5037,6 +5142,9 @@ def _evaluate_case(
         elif validator == "validate_background":
             outcome = validate_background(record)
             ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
+        elif validator == "validate_effect":
+            outcome = validate_effect(record)
+            ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
         elif validator == "validate_compute":
             outcome = validate_compute(record)
             ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
@@ -5237,13 +5345,13 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-background", "measure-compute", "plan-compute", "validate-compute", "validate-local-compute", "validate-autonomic", "validate-capability-sync", "attest-capabilities", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-background", "validate-effect", "measure-compute", "plan-compute", "validate-compute", "validate-local-compute", "validate-autonomic", "validate-capability-sync", "attest-capabilities", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
         if name in {"verify-package", "parity", "status", "run-cases", "self-check"}:
             command.add_argument("--skill-dir", type=Path, default=PACKAGE_ROOT)
-        if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-background", "plan-compute", "validate-compute", "validate-autonomic", "validate-capability-sync"}:
+        if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-background", "validate-effect", "plan-compute", "validate-compute", "validate-autonomic", "validate-capability-sync"}:
             command.add_argument("--input", type=Path, required=True)
         if name == "validate-local-compute":
             command.add_argument("--input", type=Path)
@@ -5335,6 +5443,13 @@ def main() -> int:
             payload = {"ok": False, "state": "UNKNOWN", "errors": [f"background input unreadable: {exc}"]}
             return _emit(payload, args.json)
         return _emit(validate_background(payload), args.json)
+    if args.command == "validate-effect":
+        try:
+            payload = _read_json(args.input)
+        except (OSError, json.JSONDecodeError) as exc:
+            payload = {"ok": False, "state": "UNKNOWN", "errors": [f"effect input unreadable: {exc}"]}
+            return _emit(payload, args.json)
+        return _emit(validate_effect(payload), args.json)
     if args.command == "measure-compute":
         return _emit(measure_compute_topology(args.workspace), args.json)
     if args.command == "plan-compute":

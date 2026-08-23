@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-21T15:33:20Z",
-  "manifest_sha": "a76c80805a0072c0",
+  "generated_at": "2026-08-23T02:38:48Z",
+  "manifest_sha": "3fd6c4bdade6ce9d",
   "required": [
     "fames",
     "independent-review",
@@ -23,7 +23,7 @@
     "ztm-fleet-intelligence",
     "token-preflight"
   ],
-  "skill_count": 43,
+  "skill_count": 42,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -123,32 +123,6 @@
         "scripts/selftest_fames_ship_gate.py": "4a0f106e00e791ad33e589426f42fd657ef308c0d3a6ff343253122b640e3804",
         "scripts/selftest_quick_validate.py": "41d345f312b0737b9df9e45fb0acb4eb4233c28c460214cd3810e349cfebd503",
         "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37"
-      }
-    },
-    {
-      "name": "fames",
-      "sha": "f824488b31f3d726",
-      "required": true,
-      "lane": null,
-      "package_sha": "9ae9e77aad1830e86acb82bba6e2bc2030494fb53621fea6c9af51f31ea98401",
-      "files": {
-        "SKILL.md": "f824488b31f3d7263791e9b36d9ba33d466eb2fc55b6d06387cfb5b64596f147",
-        "bundle-manifest.json": "62fc4e1f8dd806a1ceae319905652e2898c9c1e2049ca5f72c93b90368d6c9e8",
-        "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
-        "references/cases.json": "eb30ac8475394f8bf2b72ff16ef9b971b48402ffba351b5e0cdfeb5006324ff4",
-        "references/claude-live-eval.json": "8946d081f4c71be8b82004e8253c9cda9aa301ef4f09b277dc8a9fb981431a86",
-        "references/hardware-compute.json": "e0792dce63c4894107fd63e43e3e0095ce4c4999686811279fd12543106a8df4",
-        "references/production-web-delivery.json": "0f8edd3a24f856a4cc1a76ecd4490185bad414735c2bc1787104d619d0f0a251",
-        "references/protocols/fames-protocol.json": "db0103088eccc217a66e9b60b3e5dd6af10ab3d0957e3035b06937c9862940f9",
-        "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
-        "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
-        "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
-        "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
-        "references/protocols/seal-protocol.json": "7de5562242692e0827a64bbc94f7a5a71fc418601558f51dc54371a11820b9a4",
-        "scripts/adaptive_response_controller.py": "07a19c6e0bda90f25800617a274d5f641709676d0d71cdfae8e17dec91e0d911",
-        "scripts/claude_live_ab.py": "3aaa4276c505e1eceea33207c6c4baeb190b6319b737f081fd53fbc055834261",
-        "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
-        "scripts/fames_fleet.py": "81851fecf0e460eb8e75734cc174bf8dbe60ae3e2b7b18a0688140704402f980"
       }
     },
     {
