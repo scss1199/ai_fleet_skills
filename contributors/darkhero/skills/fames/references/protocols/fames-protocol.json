@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.30.3",
+  "version": "1.30.4",
   "updated": "2026-08-23",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -472,6 +472,7 @@
       },
       "required_asset_fields": ["id", "layer", "role", "source_ref", "locator", "content_sha256", "scope", "authority_source", "sensitivity", "disclosure"],
       "required_manifest_fields": ["subject_kind", "project_identity", "goal_identity", "provider_neutral", "selection_predicates", "assets", "project_entry", "precedence", "load_receipt"],
+      "closed_schema_rule": "The manifest, each asset, project_entry, precedence ledger, load receipt, load event, and feedback trial are field-allowlisted. Undeclared fields fail so raw-context aliases and hidden provider routing cannot bypass named-key checks.",
       "project_entry_fields": ["asset_id", "purpose", "audience", "acceptance", "avoidance", "index"],
       "project_index_roles": ["project_preferences", "references", "examples", "feedback"],
       "selection_predicates": ["capability", "availability", "authority", "safety", "evidence_freshness", "cost"],
@@ -484,8 +485,9 @@
       },
       "required_precedence": ["operator_red_lines_first", "project_can_narrow_not_weaken_core", "runtime_cannot_mutate_durable_core", "feedback_requires_measured_trial_before_promotion", "authority_after_subset"],
       "load_receipt": {
-        "required": ["manifest_identity", "goal_identity", "project_identity", "expected_asset_ids", "loaded_asset_ids", "loaded_asset_identities", "unknown_count", "provider_neutral", "raw_content_persisted"],
-        "rule": "A directory, file copy, prompt instruction, or package install is not active context. PASS requires exact expected-versus-loaded population and content-identity closure, a manifest goal identity equal to the task_goal asset identity, zero UNKNOWN assets, provider-neutral routing, and raw_content_persisted=false."
+        "required": ["manifest_identity", "goal_identity", "project_identity", "expected_asset_ids", "loaded_asset_ids", "loaded_asset_identities", "unknown_count", "provider_neutral", "raw_content_persisted", "load_event"],
+        "event_required": ["loader_identity", "input_identity", "output_identity", "state", "exit_status", "read_back", "runtime_event_observed", "executed_at", "valid_until", "event_identity"],
+        "rule": "A directory, file copy, prompt instruction, or package install is not active context. PASS requires exact expected-versus-loaded population and content-identity closure, a manifest goal identity equal to the task_goal asset identity, zero UNKNOWN assets, provider-neutral routing, raw_content_persisted=false, and a fresh load event bound to the executing validator, input identity, output identity, runtime observation, and read-back."
       },
       "feedback_rule": "Feedback remains candidate or rejected until a content-addressed measured trial supports promotion with a passing state, zero exit status, and validator identity. A boolean assertion, successful-looking output, user tone, repetition, model memory, or one host's preference cannot silently become durable canon.",
       "portability_rule": "Every source_ref is a workspace-relative forward-slash path whose normalized content hash replays, and every locator must resolve within that exact content-addressed source. Machine-absolute paths, parent traversal, bogus locators, host-name routing, missing files, stale runtime assets, and hash mismatches fail closed.",

@@ -199,6 +199,7 @@ LOCAL_CAPABILITY_CASES = {
         "C-CONTEXT-ASSETS-FORGED-TRIAL",
         "C-CONTEXT-ASSETS-HIDDEN-ROUTING",
         "C-CONTEXT-ASSETS-SUBJECT-KIND",
+        "C-CONTEXT-ASSETS-LOAD-EVENT",
     ),
     "background-execution-enforcement": (
         "C-BACKGROUND-BASE",
@@ -395,6 +396,19 @@ CONTEXT_LOAD_RECEIPT_FIELDS = {
     "unknown_count",
     "provider_neutral",
     "raw_content_persisted",
+    "load_event",
+}
+CONTEXT_LOAD_EVENT_FIELDS = {
+    "loader_identity",
+    "input_identity",
+    "output_identity",
+    "state",
+    "exit_status",
+    "read_back",
+    "runtime_event_observed",
+    "executed_at",
+    "valid_until",
+    "event_identity",
 }
 CONTEXT_FEEDBACK_TRIAL_FIELDS = {
     "source_ref",
@@ -1048,6 +1062,42 @@ def _context_manifest_identity(record: dict) -> str:
     })
 
 
+def _context_load_event_expected(
+    record: dict,
+    receipt: dict,
+    manifest_identity: str,
+    executed_at: object,
+    valid_until: object,
+) -> dict:
+    input_payload = {
+        "manifest_identity": manifest_identity,
+        "goal_identity": record.get("goal_identity"),
+        "project_identity": record.get("project_identity"),
+        "expected_asset_ids": sorted(receipt.get("expected_asset_ids") or ()),
+    }
+    output_payload = {
+        "manifest_identity": manifest_identity,
+        "loaded_asset_ids": sorted(receipt.get("loaded_asset_ids") or ()),
+        "loaded_asset_identities": receipt.get("loaded_asset_identities"),
+        "unknown_count": receipt.get("unknown_count"),
+        "provider_neutral": receipt.get("provider_neutral"),
+        "raw_content_persisted": receipt.get("raw_content_persisted"),
+    }
+    event = {
+        "loader_identity": _sha256(Path(__file__).resolve()),
+        "input_identity": _stable_sha(input_payload),
+        "output_identity": _stable_sha(output_payload),
+        "state": "PASS",
+        "exit_status": 0,
+        "read_back": True,
+        "runtime_event_observed": True,
+        "executed_at": executed_at,
+        "valid_until": valid_until,
+    }
+    event["event_identity"] = _stable_sha(event)
+    return event
+
+
 def validate_context_assets(record: dict, workspace: Path | None = None) -> dict:
     """Validate a portable, scope-separated context asset manifest and load receipt."""
     try:
@@ -1254,13 +1304,26 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
             if not isinstance(trial, dict):
                 errors.append("feedback was promoted without a content-addressed measured trial")
             else:
-                for field in ("source_ref", "content_sha256", "validator_identity", "state", "exit_status"):
+                unexpected_trial_fields = sorted(set(trial) - CONTEXT_FEEDBACK_TRIAL_FIELDS)
+                if unexpected_trial_fields:
+                    errors.append(f"feedback measured trial contains undeclared fields: {', '.join(unexpected_trial_fields)}")
+                for field in CONTEXT_FEEDBACK_TRIAL_FIELDS:
                     if trial.get(field) in (None, ""):
                         unknowns.append(f"feedback measured_trial.{field} missing")
                 if trial.get("state") != "PASS" or trial.get("exit_status") != 0:
                     errors.append("feedback measured trial did not pass")
-                if not SHA256_RE.fullmatch(str(trial.get("validator_identity") or "").lower()):
-                    errors.append("feedback measured trial validator identity is malformed")
+                expected_validator_identity = _sha256(Path(__file__).resolve())
+                if trial.get("validator_identity") != expected_validator_identity:
+                    errors.append("feedback measured trial validator identity does not match the executing validator")
+                if trial.get("kind") != "context_feedback_trial":
+                    errors.append("feedback measured trial kind is not context_feedback_trial")
+                if trial.get("feedback_asset_id") != feedback.get("id"):
+                    errors.append("feedback measured trial asset identity mismatch")
+                if trial.get("goal_identity") != goal_identity:
+                    errors.append("feedback measured trial goal identity mismatch")
+                if trial.get("candidate_identity") != feedback.get("content_sha256"):
+                    errors.append("feedback measured trial candidate identity mismatch")
+                errors.extend(_receipt_window_errors(trial, "feedback measured_trial"))
                 trial_ref = str(trial.get("source_ref") or "")
                 trial_parts = trial_ref.split("/")
                 if (
@@ -1281,10 +1344,31 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
                         trial_sha = str(trial.get("content_sha256") or "").lower()
                         if not trial_path.is_file():
                             unknowns.append("feedback measured trial source_ref is missing")
+                        elif trial_path.suffix.lower() != ".json":
+                            errors.append("feedback measured trial source is not a JSON receipt")
                         elif not SHA256_RE.fullmatch(trial_sha):
                             errors.append("feedback measured trial content_sha256 is malformed")
                         elif _sha256(trial_path) != trial_sha:
                             errors.append("feedback measured trial content identity does not replay")
+                        else:
+                            try:
+                                trial_payload = _read_json(trial_path)
+                            except (OSError, json.JSONDecodeError):
+                                errors.append("feedback measured trial JSON receipt is unreadable")
+                            else:
+                                expected_trial_payload = {
+                                    "kind": "context_feedback_trial",
+                                    "feedback_asset_id": feedback.get("id"),
+                                    "goal_identity": goal_identity,
+                                    "candidate_identity": feedback.get("content_sha256"),
+                                    "validator_identity": expected_validator_identity,
+                                    "state": "PASS",
+                                    "exit_status": 0,
+                                    "executed_at": trial.get("executed_at"),
+                                    "valid_until": trial.get("valid_until"),
+                                }
+                                if trial_payload != expected_trial_payload:
+                                    errors.append("feedback measured trial JSON receipt does not match the bound trial")
 
     expected_identity = _context_manifest_identity(record)
     manifest_identity = str(record.get("manifest_identity") or "").lower()
@@ -1342,6 +1426,24 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
             errors.append("load receipt is not provider neutral")
         if receipt.get("raw_content_persisted") is not False:
             errors.append("load receipt may persist raw context content")
+        load_event = receipt.get("load_event")
+        if not isinstance(load_event, dict):
+            unknowns.append("load receipt lacks a bound runtime load event")
+        else:
+            unexpected_event_fields = sorted(set(load_event) - CONTEXT_LOAD_EVENT_FIELDS)
+            if unexpected_event_fields:
+                errors.append(f"context load event contains undeclared fields: {', '.join(unexpected_event_fields)}")
+            expected_event = _context_load_event_expected(
+                record,
+                receipt,
+                expected_identity,
+                load_event.get("executed_at"),
+                load_event.get("valid_until"),
+            )
+            for field, expected in expected_event.items():
+                if load_event.get(field) != expected:
+                    errors.append(f"context load event {field} mismatch")
+            errors.extend(_receipt_window_errors(load_event, "context load event"))
 
     errors.extend(f"forbidden material key at {path}" for path in _forbidden_key_paths(record))
     errors.extend(f"raw context payload persisted at {path}" for path in _forbidden_context_payload_paths(record))
@@ -5539,6 +5641,39 @@ def _hydrate_context_asset_fixtures(node: object) -> None:
             _hydrate_context_asset_fixtures(value)
 
 
+def _hydrate_context_trial_case(node: object) -> None:
+    if isinstance(node, dict):
+        for asset in node.get("assets") or ():
+            if not isinstance(asset, dict):
+                continue
+            trial = asset.get("measured_trial")
+            if not isinstance(trial, dict):
+                continue
+            target = PACKAGE_ROOT.parents[2] / str(trial.get("source_ref") or "")
+            if trial.get("content_sha256") == "auto" and target.is_file():
+                trial["content_sha256"] = _sha256(target)
+            replacements = {
+                "kind": "context_feedback_trial",
+                "feedback_asset_id": asset.get("id"),
+                "goal_identity": node.get("goal_identity"),
+                "candidate_identity": asset.get("content_sha256"),
+                "validator_identity": _sha256(Path(__file__).resolve()),
+            }
+            for field, value in replacements.items():
+                if trial.get(field) == "auto":
+                    trial[field] = value
+            now = datetime.now(timezone.utc)
+            if trial.get("executed_at") == "auto":
+                trial["executed_at"] = now.isoformat()
+            if trial.get("valid_until") == "auto":
+                trial["valid_until"] = (now + timedelta(hours=1)).isoformat()
+        for value in node.values():
+            _hydrate_context_trial_case(value)
+    elif isinstance(node, list):
+        for value in node:
+            _hydrate_context_trial_case(value)
+
+
 def _inject_context_manifest_identity(record: object) -> None:
     if not isinstance(record, dict):
         return
@@ -5547,6 +5682,23 @@ def _inject_context_manifest_identity(record: object) -> None:
     receipt = record.get("load_receipt")
     if isinstance(receipt, dict):
         receipt["manifest_identity"] = identity
+        load_event = receipt.get("load_event")
+        if isinstance(load_event, dict):
+            now = datetime.now(timezone.utc)
+            if load_event.get("executed_at") == "auto":
+                load_event["executed_at"] = now.isoformat()
+            if load_event.get("valid_until") == "auto":
+                load_event["valid_until"] = (now + timedelta(hours=1)).isoformat()
+            expected_event = _context_load_event_expected(
+                record,
+                receipt,
+                identity,
+                load_event.get("executed_at"),
+                load_event.get("valid_until"),
+            )
+            for field, expected in expected_event.items():
+                if load_event.get(field) == "auto":
+                    load_event[field] = expected
 
 
 def _prepare_input(fixtures: dict, case: dict) -> tuple[object, str]:
@@ -5566,6 +5718,7 @@ def _prepare_input(fixtures: dict, case: dict) -> tuple[object, str]:
         _pointer_del(record, pointer)
     for pointer, value in (case.get("patch") or {}).items():
         _pointer_set(record, pointer, value)
+    _hydrate_context_trial_case(record)
     if case.get("auto_goal_hash", auto) and isinstance(record, dict):
         _inject_goal_hash(record)
     if case.get("auto_context_manifest", auto_context) and isinstance(record, dict):

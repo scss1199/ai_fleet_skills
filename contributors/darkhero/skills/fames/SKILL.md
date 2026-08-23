@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-23.10
+FAMES-GEN: 2026-08-23.11
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -435,7 +435,8 @@ scripts/fames_fleet.py validate-context-assets --workspace <root> --input
 that resolve inside the content-addressed sources, replayed content hashes, exact
 expected-versus-loaded population and identity closure, a goal identity bound to the
 `task_goal` asset, zero unknown assets, provider-neutral routing, matching
-project/goal/manifest identities, typed acceptance and avoidance lists, valid
+project/goal/manifest identities, a fresh validator-bound runtime load event with
+input/output identities and read-back, typed acceptance and avoidance lists, valid
 sensitivity/disclosure combinations, and no embedded raw context or secret persistence.
 Copying files, pointing a model at a directory, or installing the package is not load
 evidence.

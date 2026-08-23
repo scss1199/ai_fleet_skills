@@ -190,7 +190,19 @@
         "loaded_asset_identities": "auto",
         "unknown_count": 0,
         "provider_neutral": true,
-        "raw_content_persisted": false
+        "raw_content_persisted": false,
+        "load_event": {
+          "loader_identity": "auto",
+          "input_identity": "auto",
+          "output_identity": "auto",
+          "state": "PASS",
+          "exit_status": 0,
+          "read_back": true,
+          "runtime_event_observed": true,
+          "executed_at": "auto",
+          "valid_until": "auto",
+          "event_identity": "auto"
+        }
       }
     },
     "harness_suite": {
@@ -1099,6 +1111,11 @@
     {"id": "C-CONTEXT-ASSETS-PUBLIC-DISCLOSURE", "kind": "validator_probe", "charges": "R_HYGIENE", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "patch": {"/assets/0/sensitivity": "secret", "/assets/0/disclosure": "public"}, "expect_ok": false, "expect_state": "FAIL", "why": "private context cannot declare public disclosure even when the file itself contains no raw credential"},
     {"id": "C-CONTEXT-ASSETS-ENTRY-TYPES", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "patch": {"/project_entry/acceptance": "looks good", "/project_entry/avoidance": 1}, "expect_ok": false, "expect_state": "FAIL", "why": "acceptance and avoidance must be non-empty string lists rather than truthy unstructured values"},
     {"id": "C-CONTEXT-ASSETS-LOADED-IDENTITY", "kind": "validator_probe", "charges": "R_FRESHNESS", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "patch": {"/load_receipt/loaded_asset_identities/core.about": "0000000000000000000000000000000000000000000000000000000000000000"}, "expect_ok": false, "expect_state": "FAIL", "why": "loaded names alone do not prove exact load; each read-back identity must match its manifest asset"},
+    {"id": "C-CONTEXT-ASSETS-UNKNOWN-ASSET-FIELD", "kind": "validator_probe", "charges": "R_HYGIENE", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "patch": {"/assets/0/profile_text": "fixture context body"}, "expect_ok": false, "expect_state": "FAIL", "why": "an asset schema allowlist prevents raw profile aliases from bypassing a blacklist"},
+    {"id": "C-CONTEXT-ASSETS-FORGED-TRIAL", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "patch": {"/assets/9/promotion_state": "promoted", "/assets/9/measured_trial": {"source_ref": "_skill/fleet-skills/fames/SKILL.md", "content_sha256": "auto", "kind": "auto", "feedback_asset_id": "auto", "goal_identity": "auto", "candidate_identity": "auto", "validator_identity": "auto", "state": "PASS", "exit_status": 0, "executed_at": "auto", "valid_until": "auto"}}, "expect_ok": false, "expect_state": "FAIL", "why": "a correctly hashed ordinary file and self-declared PASS are not a replayable JSON feedback-trial receipt"},
+    {"id": "C-CONTEXT-ASSETS-HIDDEN-ROUTING", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "patch": {"/routing_policy": {"model_name": "fixture-model"}}, "expect_ok": false, "expect_state": "FAIL", "why": "a closed manifest schema prevents undeclared provider routing from hiding outside selection_predicates"},
+    {"id": "C-CONTEXT-ASSETS-SUBJECT-KIND", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "patch": {"/subject_kind": "undeclared_profile"}, "expect_ok": false, "expect_state": "FAIL", "why": "subject_kind must be one of the contract's explicit non-inferred subjects"},
+    {"id": "C-CONTEXT-ASSETS-LOAD-EVENT", "kind": "validator_probe", "charges": "R_FRESHNESS", "fail_mode": "closed", "scope": "any", "validator": "validate_context_assets", "input_ref": "context_asset_suite", "patch": {"/load_receipt/load_event/runtime_event_observed": false}, "expect_ok": false, "expect_state": "FAIL", "why": "exact names and hashes are insufficient without a prompt-bound runtime load event and read-back identity"},
     {"id": "C-HARNESS-BASE", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_harness", "input_ref": "harness_suite", "expect_ok": true, "expect_state": "PASS", "why": "all registered surfaces independently load, probe and read back the same content-addressed FAMES contract"},
     {"id": "C-HARNESS-MISSING-SURFACE", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_harness", "input_ref": "harness_suite", "remove": ["/surface_receipts/2"], "expect_ok": false, "expect_state": "FAIL", "why": "a compliance claim cannot hide a registered harness with no fresh receipt"},
     {"id": "C-HARNESS-NAME-POLICY", "kind": "validator_probe", "charges": "R_CAPABILITY", "fail_mode": "closed", "scope": "any", "validator": "validate_harness", "input_ref": "harness_suite", "patch": {"/selection_predicates/0": "harness_name"}, "expect_ok": false, "expect_state": "FAIL", "why": "canonical routing cannot select by a product or harness label"},
