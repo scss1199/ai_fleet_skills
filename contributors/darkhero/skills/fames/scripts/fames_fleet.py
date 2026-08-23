@@ -1433,13 +1433,21 @@ def validate_context_assets(
         elif receipt_goal_identity != goal_identity:
             errors.append("load receipt goal identity is not bound to the manifest goal")
         expected_ids, loaded_ids = receipt.get("expected_asset_ids"), receipt.get("loaded_asset_ids")
-        if not isinstance(expected_ids, list) or not expected_ids:
+        if (
+            not isinstance(expected_ids, list)
+            or not expected_ids
+            or any(not isinstance(item, str) or not item for item in expected_ids)
+        ):
             unknowns.append("load receipt expected population missing")
         elif len(expected_ids) != len(set(expected_ids)):
             errors.append("load receipt expected population has duplicates")
         elif set(expected_ids) != set(ids):
             errors.append("load receipt expected population differs from manifest")
-        if not isinstance(loaded_ids, list) or not loaded_ids:
+        if (
+            not isinstance(loaded_ids, list)
+            or not loaded_ids
+            or any(not isinstance(item, str) or not item for item in loaded_ids)
+        ):
             unknowns.append("load receipt loaded population missing")
         elif len(loaded_ids) != len(set(loaded_ids)):
             errors.append("load receipt loaded population has duplicates")
@@ -1470,10 +1478,58 @@ def validate_context_assets(
             unexpected_event_fields = sorted(set(load_event) - CONTEXT_LOAD_EVENT_FIELDS)
             if unexpected_event_fields:
                 errors.append(f"context load event contains undeclared fields: {', '.join(unexpected_event_fields)}")
+            attestation_kind = load_event.get("attestation_kind")
+            loader_identity = load_event.get("loader_identity")
+            loader_source_ref = load_event.get("loader_source_ref")
+            validator_identity = _sha256(Path(__file__).resolve())
+            if attestation_kind not in CONTEXT_LOAD_EVENT_KINDS:
+                errors.append("context load event attestation kind is not declared")
+            elif attestation_kind == "case_fixture":
+                if not allow_test_fixture:
+                    errors.append("case fixture load event is not live activation evidence")
+                if loader_identity != validator_identity:
+                    errors.append("case fixture loader identity does not match the validator")
+                if any(load_event.get(field) not in (None, "") for field in (
+                    "loader_source_ref", "receipt_source_ref", "receipt_content_sha256"
+                )):
+                    errors.append("case fixture load event carries live attestation fields")
+            elif attestation_kind == "turn_adapter":
+                registered_loaders = set(
+                    ((policy.get("load_receipt") or {}).get("registered_loader_sources") or ())
+                )
+                if not isinstance(loader_source_ref, str) or not loader_source_ref:
+                    unknowns.append("turn-adapter loader source is missing")
+                elif loader_source_ref not in registered_loaders:
+                    errors.append("turn-adapter loader source is not registered by the active contract")
+                else:
+                    loader_parts = loader_source_ref.split("/")
+                    if (
+                        loader_source_ref.startswith("/")
+                        or "\\" in loader_source_ref
+                        or re.match(r"^[A-Za-z]:", loader_source_ref)
+                        or any(part in {"", ".", ".."} for part in loader_parts)
+                    ):
+                        errors.append("turn-adapter loader source is not portable")
+                    else:
+                        loader_path = (root / loader_source_ref).resolve()
+                        try:
+                            loader_path.relative_to(root)
+                        except ValueError:
+                            errors.append("turn-adapter loader source escapes the workspace")
+                        else:
+                            if not loader_path.is_file():
+                                unknowns.append("turn-adapter loader source is missing")
+                            elif loader_identity != _sha256(loader_path):
+                                errors.append("turn-adapter loader identity does not match its registered source")
+                            elif loader_identity == validator_identity:
+                                errors.append("turn-adapter loader is not identity-separated from the validator")
             expected_event = _context_load_event_expected(
                 record,
                 receipt,
                 expected_identity,
+                attestation_kind,
+                loader_identity,
+                loader_source_ref,
                 load_event.get("executed_at"),
                 load_event.get("valid_until"),
             )
@@ -1494,6 +1550,43 @@ def validate_context_assets(
                 and datetime.now(timezone.utc) - event_executed_at > timedelta(minutes=5)
             ):
                 unknowns.append("context load event is older than five minutes")
+            if attestation_kind == "turn_adapter":
+                receipt_ref = load_event.get("receipt_source_ref")
+                receipt_sha = str(load_event.get("receipt_content_sha256") or "").lower()
+                if not isinstance(receipt_ref, str) or not receipt_ref:
+                    unknowns.append("turn-adapter receipt source is missing")
+                else:
+                    receipt_parts = receipt_ref.split("/")
+                    if (
+                        receipt_ref.startswith("/")
+                        or "\\" in receipt_ref
+                        or re.match(r"^[A-Za-z]:", receipt_ref)
+                        or any(part in {"", ".", ".."} for part in receipt_parts)
+                    ):
+                        errors.append("turn-adapter receipt source is not portable")
+                    else:
+                        event_path = (root / receipt_ref).resolve()
+                        try:
+                            event_path.relative_to(root)
+                        except ValueError:
+                            errors.append("turn-adapter receipt source escapes the workspace")
+                        else:
+                            if not event_path.is_file():
+                                unknowns.append("turn-adapter receipt source is missing")
+                            elif event_path.suffix.lower() != ".json":
+                                errors.append("turn-adapter receipt source is not JSON")
+                            elif not SHA256_RE.fullmatch(receipt_sha):
+                                errors.append("turn-adapter receipt content identity is malformed")
+                            elif _sha256(event_path) != receipt_sha:
+                                errors.append("turn-adapter receipt content identity does not replay")
+                            else:
+                                try:
+                                    event_payload = _read_json(event_path)
+                                except (OSError, json.JSONDecodeError):
+                                    errors.append("turn-adapter receipt JSON is unreadable")
+                                else:
+                                    if event_payload != expected_event:
+                                        errors.append("turn-adapter receipt does not match the bound load event")
 
     errors.extend(f"forbidden material key at {path}" for path in _forbidden_key_paths(record))
     errors.extend(f"raw context payload persisted at {path}" for path in _forbidden_context_payload_paths(record))
@@ -5737,6 +5830,10 @@ def _inject_context_manifest_identity(record: object) -> None:
         load_event = receipt.get("load_event")
         if isinstance(load_event, dict):
             now = datetime.now(timezone.utc)
+            if load_event.get("attestation_kind") in (None, "auto"):
+                load_event["attestation_kind"] = "case_fixture"
+            if load_event.get("loader_identity") == "auto":
+                load_event["loader_identity"] = _sha256(Path(__file__).resolve())
             if load_event.get("executed_at") == "auto":
                 load_event["executed_at"] = now.isoformat()
             if load_event.get("valid_until") == "auto":
@@ -5745,6 +5842,9 @@ def _inject_context_manifest_identity(record: object) -> None:
                 record,
                 receipt,
                 identity,
+                load_event.get("attestation_kind"),
+                load_event.get("loader_identity"),
+                load_event.get("loader_source_ref"),
                 load_event.get("executed_at"),
                 load_event.get("valid_until"),
             )
@@ -5971,7 +6071,11 @@ def _evaluate_case(
             outcome = validate_harness(record)
             ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
         elif validator == "validate_context_assets":
-            outcome = validate_context_assets(record, package_root)
+            outcome = validate_context_assets(
+                record,
+                package_root,
+                allow_test_fixture=case.get("context_fixture_mode", True) is True,
+            )
             ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
         elif validator == "validate_background":
             outcome = validate_background(record)

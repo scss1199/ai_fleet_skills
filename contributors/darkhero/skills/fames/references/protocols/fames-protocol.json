@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.30.7",
+  "version": "1.30.8",
   "updated": "2026-08-23",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -484,10 +484,13 @@
         "rule": "Internal, confidential, restricted, or secret context cannot declare public disclosure; secret-bearing fields remain forbidden regardless of metadata."
       },
       "required_precedence": ["operator_red_lines_first", "project_can_narrow_not_weaken_core", "runtime_cannot_mutate_durable_core", "feedback_requires_measured_trial_before_promotion", "authority_after_subset"],
-      "load_receipt": {
+    "load_receipt": {
+      "registered_loader_sources": [
+        "_skill/engines/agent-session-open.py"
+      ],
         "required": ["manifest_identity", "goal_identity", "project_identity", "expected_asset_ids", "loaded_asset_ids", "loaded_asset_identities", "unknown_count", "provider_neutral", "raw_content_persisted", "load_event"],
         "event_required": ["loader_identity", "input_identity", "output_identity", "state", "exit_status", "read_back", "runtime_event_observed", "executed_at", "valid_until", "event_identity"],
-        "rule": "A directory, file copy, prompt instruction, or package install is not active context. PASS requires exact expected-versus-loaded population and content-identity closure, a manifest goal identity equal to the task_goal asset identity, zero UNKNOWN assets, provider-neutral routing, raw_content_persisted=false, and a load event no older than five minutes with at most a one-hour validity window, bound to the executing validator, input identity, output identity, runtime observation, and read-back. A validator-generated fixture event proves only the contract; live harness activation still requires its actual lifecycle receipt."
+      "rule": "A directory, file copy, prompt instruction, or package install is not active context. PASS requires exact expected-versus-loaded population and content-identity closure, a manifest goal identity equal to the task_goal asset identity, zero UNKNOWN assets, provider-neutral routing, raw_content_persisted=false, and a load event no older than five minutes with at most a one-hour validity window. A live event must be emitted by a registered, identity-separated turn adapter and replay from an external content-addressed JSON receipt bound to its input, output, runtime observation, and read-back. A validator-generated case_fixture is admitted only inside the case runner and is rejected by the normal validation surface, so it can prove contract behavior but never live activation."
       },
       "feedback_rule": "Feedback remains candidate or rejected until a content-addressed measured trial supports promotion with a passing state, zero exit status, and validator identity. A boolean assertion, successful-looking output, user tone, repetition, model memory, or one host's preference cannot silently become durable canon.",
       "portability_rule": "Every source_ref is a workspace-relative forward-slash path whose normalized content hash replays, and every locator must resolve within that exact content-addressed source. Machine-absolute paths, parent traversal, bogus locators, host-name routing, missing files, stale runtime assets, and hash mismatches fail closed.",
