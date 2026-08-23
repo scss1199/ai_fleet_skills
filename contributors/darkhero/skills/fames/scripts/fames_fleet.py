@@ -341,6 +341,19 @@ CONTEXT_ASSET_FIELDS = (
     "sensitivity",
     "disclosure",
 )
+CONTEXT_SENSITIVITY = {"public", "internal", "confidential", "restricted", "secret"}
+CONTEXT_DISCLOSURE = {"public", "project_only", "local_only"}
+CONTEXT_PRIVATE_SENSITIVITY = {"internal", "confidential", "restricted", "secret"}
+CONTEXT_FORBIDDEN_RAW_KEYS = {
+    "raw_content",
+    "raw_prompt",
+    "content_body",
+    "body_text",
+    "prompt_text",
+    "transcript_text",
+    "full_text",
+    "payload",
+}
 
 
 def _sha256(path: Path) -> str:
@@ -353,6 +366,49 @@ def _sha256(path: Path) -> str:
 def _stable_sha(payload: object) -> str:
     body = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(body.encode("utf-8")).hexdigest()
+
+
+def _json_locator_exists(node: object, parts: tuple[str, ...]) -> bool:
+    if not parts:
+        return True
+    if isinstance(node, dict):
+        if parts[0] in node and _json_locator_exists(node[parts[0]], parts[1:]):
+            return True
+        return any(_json_locator_exists(value, parts) for value in node.values())
+    if isinstance(node, list):
+        return any(_json_locator_exists(value, parts) for value in node)
+    return False
+
+
+def _locator_replays(path: Path, locator: object) -> bool:
+    if not isinstance(locator, str) or not locator.strip() or len(locator) > 256:
+        return False
+    selector = locator.strip()
+    if any(char in selector for char in ("\r", "\n", "\x00")):
+        return False
+    try:
+        if path.suffix.lower() == ".json":
+            value = _read_json(path)
+            parts = tuple(part for part in selector.split(".") if part)
+            return bool(parts) and _json_locator_exists(value, parts)
+        return selector.casefold() in path.read_text(encoding="utf-8", errors="replace").casefold()
+    except (OSError, json.JSONDecodeError):
+        return False
+
+
+def _forbidden_context_payload_paths(node: object, trail: str = "") -> list[str]:
+    found: list[str] = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            here = f"{trail}.{key}" if trail else str(key)
+            normalized = re.sub(r"[^a-z0-9]+", "_", str(key).lower()).strip("_")
+            if normalized in CONTEXT_FORBIDDEN_RAW_KEYS:
+                found.append(here)
+            found.extend(_forbidden_context_payload_paths(value, here))
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            found.extend(_forbidden_context_payload_paths(value, f"{trail}[{index}]"))
+    return found
 
 
 def _version_tuple(value: object) -> tuple[int, ...] | None:
@@ -925,6 +981,7 @@ def _context_manifest_identity(record: dict) -> str:
         "schema": record.get("schema"),
         "subject_kind": record.get("subject_kind"),
         "project_identity": record.get("project_identity"),
+        "goal_identity": record.get("goal_identity"),
         "provider_neutral": record.get("provider_neutral"),
         "selection_predicates": record.get("selection_predicates"),
         "assets": sorted(
@@ -956,6 +1013,9 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
         unknowns.append("project identity missing")
     if not isinstance(record.get("subject_kind"), str) or not record["subject_kind"].strip():
         unknowns.append("context subject kind missing")
+    goal_identity = str(record.get("goal_identity") or "").lower()
+    if not SHA256_RE.fullmatch(goal_identity):
+        unknowns.append("context goal identity missing or malformed")
     if record.get("provider_neutral") is not True:
         errors.append("context manifest is not provider neutral")
 
@@ -1024,6 +1084,16 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
                             errors.append(f"{here}: content_sha256 is malformed")
                         elif digest and _sha256(target) != digest:
                             errors.append(f"{here}: content identity does not replay")
+                        if not _locator_replays(target, asset.get("locator")):
+                            errors.append(f"{here}: locator does not replay against the content-addressed source")
+
+        sensitivity, disclosure = asset.get("sensitivity"), asset.get("disclosure")
+        if sensitivity not in CONTEXT_SENSITIVITY:
+            errors.append(f"{here}: sensitivity is not declared")
+        if disclosure not in CONTEXT_DISCLOSURE:
+            errors.append(f"{here}: disclosure is not declared")
+        if sensitivity in CONTEXT_PRIVATE_SENSITIVITY and disclosure == "public":
+            errors.append(f"{here}: private context cannot use public disclosure")
 
         expected_authority = authority_by_layer.get(layer)
         if expected_authority and asset.get("authority_source") != expected_authority:
@@ -1055,6 +1125,14 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
         if missing_roles:
             unknowns.append(f"{layer}: missing roles {', '.join(missing_roles)}")
 
+    task_goal = by_role.get("task_goal")
+    if (
+        SHA256_RE.fullmatch(goal_identity)
+        and isinstance(task_goal, dict)
+        and str(task_goal.get("content_sha256") or "").lower() != goal_identity
+    ):
+        errors.append("context goal identity is not bound to the task_goal content identity")
+
     entry = record.get("project_entry")
     if not isinstance(entry, dict):
         unknowns.append("project entry contract missing")
@@ -1062,8 +1140,21 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
         for field in ("asset_id", "purpose", "audience", "acceptance", "avoidance", "index"):
             if entry.get(field) in (None, "", []):
                 unknowns.append(f"project_entry.{field} missing")
+        for field in ("asset_id", "purpose", "audience"):
+            if field in entry and not isinstance(entry.get(field), str):
+                errors.append(f"project_entry.{field} must be a non-empty string")
+        for field in ("acceptance", "avoidance"):
+            value = entry.get(field)
+            if value not in (None, "", []) and (
+                not isinstance(value, list)
+                or not value
+                or any(not isinstance(item, str) or not item.strip() for item in value)
+            ):
+                errors.append(f"project_entry.{field} must be a non-empty string list")
         if by_id.get(str(entry.get("asset_id") or ""), {}).get("role") != "project_entry":
             errors.append("project entry points at the wrong asset role")
+        if entry.get("index") not in (None, "", []) and not isinstance(entry.get("index"), dict):
+            errors.append("project_entry.index must be an object")
         index_map = entry.get("index") if isinstance(entry.get("index"), dict) else {}
         for role in ("project_preferences", "references", "examples", "feedback"):
             target_id = index_map.get(role)
@@ -1087,8 +1178,42 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
         state = feedback.get("promotion_state")
         if state not in {"candidate", "promoted", "rejected"}:
             unknowns.append("feedback promotion state missing or invalid")
-        if state == "promoted" and feedback.get("measured_trial") is not True:
-            errors.append("feedback was promoted without a measured trial")
+        if state == "promoted":
+            trial = feedback.get("measured_trial")
+            if not isinstance(trial, dict):
+                errors.append("feedback was promoted without a content-addressed measured trial")
+            else:
+                for field in ("source_ref", "content_sha256", "validator_identity", "state", "exit_status"):
+                    if trial.get(field) in (None, ""):
+                        unknowns.append(f"feedback measured_trial.{field} missing")
+                if trial.get("state") != "PASS" or trial.get("exit_status") != 0:
+                    errors.append("feedback measured trial did not pass")
+                if not SHA256_RE.fullmatch(str(trial.get("validator_identity") or "").lower()):
+                    errors.append("feedback measured trial validator identity is malformed")
+                trial_ref = str(trial.get("source_ref") or "")
+                trial_parts = trial_ref.split("/")
+                if (
+                    not trial_ref
+                    or trial_ref.startswith("/")
+                    or "\\" in trial_ref
+                    or re.match(r"^[A-Za-z]:", trial_ref)
+                    or any(part in {"", ".", ".."} for part in trial_parts)
+                ):
+                    errors.append("feedback measured trial source_ref is not portable")
+                else:
+                    trial_path = (root / trial_ref).resolve()
+                    try:
+                        trial_path.relative_to(root)
+                    except ValueError:
+                        errors.append("feedback measured trial source_ref escapes the workspace")
+                    else:
+                        trial_sha = str(trial.get("content_sha256") or "").lower()
+                        if not trial_path.is_file():
+                            unknowns.append("feedback measured trial source_ref is missing")
+                        elif not SHA256_RE.fullmatch(trial_sha):
+                            errors.append("feedback measured trial content_sha256 is malformed")
+                        elif _sha256(trial_path) != trial_sha:
+                            errors.append("feedback measured trial content identity does not replay")
 
     expected_identity = _context_manifest_identity(record)
     manifest_identity = str(record.get("manifest_identity") or "").lower()
@@ -1107,8 +1232,11 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
             errors.append("load receipt manifest identity mismatch")
         if receipt.get("project_identity") != project_identity:
             errors.append("load receipt project identity mismatch")
-        if not SHA256_RE.fullmatch(str(receipt.get("goal_identity") or "").lower()):
+        receipt_goal_identity = str(receipt.get("goal_identity") or "").lower()
+        if not SHA256_RE.fullmatch(receipt_goal_identity):
             unknowns.append("load receipt goal identity missing or malformed")
+        elif receipt_goal_identity != goal_identity:
+            errors.append("load receipt goal identity is not bound to the manifest goal")
         expected_ids, loaded_ids = receipt.get("expected_asset_ids"), receipt.get("loaded_asset_ids")
         if not isinstance(expected_ids, list) or not expected_ids:
             unknowns.append("load receipt expected population missing")
@@ -1122,6 +1250,18 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
             errors.append("load receipt loaded population has duplicates")
         elif isinstance(expected_ids, list) and set(loaded_ids) != set(expected_ids):
             errors.append("load receipt does not cover the exact expected population")
+        loaded_identities = receipt.get("loaded_asset_identities")
+        if not isinstance(loaded_identities, dict) or not loaded_identities:
+            unknowns.append("load receipt loaded asset identities missing")
+        elif set(loaded_identities) != set(ids):
+            errors.append("load receipt identity population differs from the manifest")
+        else:
+            for asset_id, loaded_sha in loaded_identities.items():
+                expected_sha = str((by_id.get(asset_id) or {}).get("content_sha256") or "").lower()
+                if not SHA256_RE.fullmatch(expected_sha):
+                    unknowns.append(f"load receipt identity for {asset_id} cannot be checked without a manifest content identity")
+                elif str(loaded_sha or "").lower() != expected_sha:
+                    errors.append(f"load receipt identity for {asset_id} does not match the loaded asset")
         if receipt.get("unknown_count") != 0:
             errors.append("load receipt hides unknown context assets")
         if receipt.get("provider_neutral") is not True:
@@ -1130,6 +1270,7 @@ def validate_context_assets(record: dict, workspace: Path | None = None) -> dict
             errors.append("load receipt may persist raw context content")
 
     errors.extend(f"forbidden material key at {path}" for path in _forbidden_key_paths(record))
+    errors.extend(f"raw context payload persisted at {path}" for path in _forbidden_context_payload_paths(record))
     state = "FAIL" if errors else ("UNKNOWN" if unknowns else "PASS")
     return {
         "ok": state == "PASS",
@@ -5303,6 +5444,20 @@ def _hydrate_context_asset_fixtures(node: object) -> None:
             target = PACKAGE_ROOT / str(asset.get("source_ref") or "")
             if target.is_file():
                 asset["content_sha256"] = _sha256(target)
+        assets = [item for item in node.get("assets") or () if isinstance(item, dict)]
+        task_goal = next((item for item in assets if item.get("role") == "task_goal"), None)
+        if node.get("goal_identity") == "auto" and isinstance(task_goal, dict):
+            node["goal_identity"] = task_goal.get("content_sha256")
+        receipt = node.get("load_receipt")
+        if isinstance(receipt, dict):
+            if receipt.get("goal_identity") == "auto":
+                receipt["goal_identity"] = node.get("goal_identity")
+            if receipt.get("loaded_asset_identities") == "auto":
+                receipt["loaded_asset_identities"] = {
+                    str(item.get("id")): item.get("content_sha256")
+                    for item in assets
+                    if isinstance(item.get("id"), str)
+                }
         for value in node.values():
             _hydrate_context_asset_fixtures(value)
     elif isinstance(node, list):

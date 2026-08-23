@@ -11,7 +11,7 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-08-23.8
+FAMES-GEN: 2026-08-23.10
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -425,15 +425,20 @@ The project entry names purpose, audience, acceptance, avoidance, and an index t
 project roles. Operator red lines retain precedence; project context may narrow but not
 weaken durable constraints; runtime state cannot mutate durable core. Feedback remains a
 candidate until a measured trial supports promotion. Sensitive personal domains remain
-project-scoped unless the operator explicitly grants a narrower cross-project use.
+project-scoped unless the operator explicitly grants a narrower cross-project use. A
+promotion boolean is not evidence: promoted feedback must bind a passing measured-trial
+receipt, validator identity, source identity, and exit status.
 
 Validate an identity-bound manifest and exact load receipt with `python
 scripts/fames_fleet.py validate-context-assets --workspace <root> --input
-<manifest.json> --json`. PASS requires portable workspace-relative references, replayed
-content hashes, exact expected-versus-loaded population closure, zero unknown assets,
-provider-neutral routing, matching project/goal/manifest identities, and no raw context or
-secret persistence. Copying files, pointing a model at a directory, or installing the
-package is not load evidence.
+<manifest.json> --json`. PASS requires portable workspace-relative references, locators
+that resolve inside the content-addressed sources, replayed content hashes, exact
+expected-versus-loaded population and identity closure, a goal identity bound to the
+`task_goal` asset, zero unknown assets, provider-neutral routing, matching
+project/goal/manifest identities, typed acceptance and avoidance lists, valid
+sensitivity/disclosure combinations, and no embedded raw context or secret persistence.
+Copying files, pointing a model at a directory, or installing the package is not load
+evidence.
 
 AI-host neutrality is a required invariant, not a preference. Canonical policy may inspect only
 capabilities, availability, authority, safety, evidence freshness, and cost. Product, model, vendor,

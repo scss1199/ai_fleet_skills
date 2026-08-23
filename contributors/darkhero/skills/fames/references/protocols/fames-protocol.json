@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.30.1",
+  "version": "1.30.3",
   "updated": "2026-08-23",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -471,19 +471,25 @@
         }
       },
       "required_asset_fields": ["id", "layer", "role", "source_ref", "locator", "content_sha256", "scope", "authority_source", "sensitivity", "disclosure"],
+      "required_manifest_fields": ["subject_kind", "project_identity", "goal_identity", "provider_neutral", "selection_predicates", "assets", "project_entry", "precedence", "load_receipt"],
       "project_entry_fields": ["asset_id", "purpose", "audience", "acceptance", "avoidance", "index"],
       "project_index_roles": ["project_preferences", "references", "examples", "feedback"],
       "selection_predicates": ["capability", "availability", "authority", "safety", "evidence_freshness", "cost"],
       "forbidden_predicates": ["harness_name", "product_name", "model_name", "vendor_name", "ide_name", "adapter_name", "skill_name"],
       "authority_sources": {"durable_core": "operator_explicit", "project_context": "project_owner", "runtime_context": "task_request"},
+      "sensitivity_disclosure": {
+        "sensitivity": ["public", "internal", "confidential", "restricted", "secret"],
+        "disclosure": ["public", "project_only", "local_only"],
+        "rule": "Internal, confidential, restricted, or secret context cannot declare public disclosure; secret-bearing fields remain forbidden regardless of metadata."
+      },
       "required_precedence": ["operator_red_lines_first", "project_can_narrow_not_weaken_core", "runtime_cannot_mutate_durable_core", "feedback_requires_measured_trial_before_promotion", "authority_after_subset"],
       "load_receipt": {
-        "required": ["manifest_identity", "goal_identity", "project_identity", "expected_asset_ids", "loaded_asset_ids", "unknown_count", "provider_neutral", "raw_content_persisted"],
-        "rule": "A directory, file copy, prompt instruction, or package install is not active context. PASS requires exact expected-versus-loaded population closure, matching manifest and goal identities, zero UNKNOWN assets, provider-neutral routing, and raw_content_persisted=false."
+        "required": ["manifest_identity", "goal_identity", "project_identity", "expected_asset_ids", "loaded_asset_ids", "loaded_asset_identities", "unknown_count", "provider_neutral", "raw_content_persisted"],
+        "rule": "A directory, file copy, prompt instruction, or package install is not active context. PASS requires exact expected-versus-loaded population and content-identity closure, a manifest goal identity equal to the task_goal asset identity, zero UNKNOWN assets, provider-neutral routing, and raw_content_persisted=false."
       },
-      "feedback_rule": "Feedback remains candidate or rejected until a measured trial supports promotion. A successful-looking output, user tone, repetition, model memory, or one host's preference cannot silently become durable canon.",
-      "portability_rule": "Every source_ref is a workspace-relative forward-slash path whose normalized content hash replays. Machine-absolute paths, parent traversal, host-name routing, missing files, stale runtime assets, and hash mismatches fail closed.",
-      "privacy_rule": "The manifest stores identities, roles, locators, scope and disclosure metadata, not raw credentials, cookies, tokens, sessions, or secret material. Sensitive domains remain project-scoped unless the operator explicitly grants a narrower cross-project use.",
+      "feedback_rule": "Feedback remains candidate or rejected until a content-addressed measured trial supports promotion with a passing state, zero exit status, and validator identity. A boolean assertion, successful-looking output, user tone, repetition, model memory, or one host's preference cannot silently become durable canon.",
+      "portability_rule": "Every source_ref is a workspace-relative forward-slash path whose normalized content hash replays, and every locator must resolve within that exact content-addressed source. Machine-absolute paths, parent traversal, bogus locators, host-name routing, missing files, stale runtime assets, and hash mismatches fail closed.",
+      "privacy_rule": "The manifest stores identities, roles, locators, scope and disclosure metadata, not raw content bodies, prompts, transcripts, credentials, cookies, tokens, sessions, or secret material. Sensitive domains remain project-scoped unless the operator explicitly grants a narrower cross-project use.",
       "terminal_states": ["PASS", "UNKNOWN", "FAIL"],
       "validator": "python scripts/fames_fleet.py validate-context-assets --workspace <root> --input <manifest.json> --json"
     },
