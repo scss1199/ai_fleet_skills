@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-24T12:03:37Z",
-  "manifest_sha": "b0863900d68ccd05",
+  "generated_at": "2026-08-24T12:15:09Z",
+  "manifest_sha": "68e08bb153d1f284",
   "required": [
     "fames",
     "independent-review",
@@ -103,12 +103,12 @@
     },
     {
       "name": "deploy-nextjs-cloudflare",
-      "sha": "424c4f6953b8f945",
+      "sha": "42c690accfa5320f",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "d8d286a09b84a15b5d1c4a188420aa53f464b541b5c2bda2dde84fdfc8fff432",
+      "package_sha": "f46f2668715be89d075c5dbe253b1e20183a907a1e7cfbb689ea60c5fad140f1",
       "files": {
-        "SKILL.md": "424c4f6953b8f9456baa112dae02d5e79c7260665b5e83a354f86f432e9c2ad8",
+        "SKILL.md": "42c690accfa5320fae30fb42ce05465d515eb6bd864e6211e52331094f165b96",
         "agents/openai.yaml": "138a80cd1780892c6b4f1f1b9395e3a601f80790782a4b8681deae98eadf5f39",
         "assets/claude-cloudflare-migration-prompt.md": "7b1ae8438ea664637a75f107c1797f2a0b5af89c710493bf572d2e35873dd5a9",
         "assets/fames-ship-receipt.template.json": "865456a3bd3511c884334446579f1f92bfef78106126830fb25162e0cf91681f",

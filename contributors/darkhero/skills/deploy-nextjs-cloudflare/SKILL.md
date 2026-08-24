@@ -164,6 +164,8 @@ For every new deployment failure:
    throwaway copy once per check and must stay at 8/8, otherwise a passing validator proves nothing.
 5. Retry from the failed stage and preserve before/after evidence.
 
+For an in-place canonical upgrade, `ADUS --existing` accepts either a content-addressed FAMES bundle with a bumped manifest/generation or a generic skill with a passing `scripts/quick_validate.py` and a changed `SKILL.md` identity. The verifier binds rollback to the current Git `HEAD`; promotion must fail if the canonical file changes after verification.
+
 Read `%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\references\known-failures.md` for observed fixes. Add only reproducible facts; never store credentials.
 
 For fleet-wide non-fracdigi migrations, start from `%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\assets\claude-cloudflare-migration-prompt.md` and keep its exclusions and account naming rules intact.
