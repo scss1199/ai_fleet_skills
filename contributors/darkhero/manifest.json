@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-24T07:15:14Z",
-  "manifest_sha": "8a985463c431179c",
+  "generated_at": "2026-08-24T12:03:37Z",
+  "manifest_sha": "b0863900d68ccd05",
   "required": [
     "fames",
     "independent-review",
@@ -103,12 +103,12 @@
     },
     {
       "name": "deploy-nextjs-cloudflare",
-      "sha": "d130393c4136ba31",
+      "sha": "424c4f6953b8f945",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "58029110ff3eadd3b2bec77f1cf49ac1a05fa85a5ca95b6c73291c05d01aee3e",
+      "package_sha": "d8d286a09b84a15b5d1c4a188420aa53f464b541b5c2bda2dde84fdfc8fff432",
       "files": {
-        "SKILL.md": "d130393c4136ba31cc4096b240603388451873274a762b33c7d780dfb41e4780",
+        "SKILL.md": "424c4f6953b8f9456baa112dae02d5e79c7260665b5e83a354f86f432e9c2ad8",
         "agents/openai.yaml": "138a80cd1780892c6b4f1f1b9395e3a601f80790782a4b8681deae98eadf5f39",
         "assets/claude-cloudflare-migration-prompt.md": "7b1ae8438ea664637a75f107c1797f2a0b5af89c710493bf572d2e35873dd5a9",
         "assets/fames-ship-receipt.template.json": "865456a3bd3511c884334446579f1f92bfef78106126830fb25162e0cf91681f",
@@ -122,9 +122,9 @@
         "scripts/record_failure.py": "87723a5609f6c0ef135da94d6208535c0784a0c2a38663a806f989bfd35a9d11",
         "scripts/selftest_fames_ship_gate.py": "1e3e783c5acc0a84ce9a42d50f3cac29305a8928aeccf3aad5f6abb7597436ce",
         "scripts/selftest_quick_validate.py": "41d345f312b0737b9df9e45fb0acb4eb4233c28c460214cd3810e349cfebd503",
-        "scripts/selftest_verify_ztm_recipe.py": "1a7478ba313683dd141738470fa2ac8ff58fe5df8ee22a07bbeffd11ecc3c717",
+        "scripts/selftest_verify_ztm_recipe.py": "56342e2c9a2c29c760ed57ef0d3c7152484604d7e1a0081a0b851111191239ad",
         "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37",
-        "scripts/verify_ztm_recipe.py": "6f069ecf5de32c68a75f7f33fd130273259178cd7fe568065c8a62b482cfa124"
+        "scripts/verify_ztm_recipe.py": "cd72c31caf74e72e17468406079555029a8a8e54c275e18686e606844018b44f"
       }
     },
     {

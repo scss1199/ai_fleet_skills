@@ -43,10 +43,10 @@ This is an R2 external-write workflow. Execute FAMES in order `FP -> MTM -> SCF 
 
 1. **FP / PREPARE** — define outcome, public verification, authority, non-goals, old deployment/version, exact rollback, and Free-plan CPU budget. Run fresh FAMES status/package/parity checks.
 2. **MTM / APPLY** — use an isolated clean worktree; build on local CPU; run local workerd and Wrangler dry-run; commit and push the verified source; then upload a Worker Version with `wrangler versions upload`, never an unversioned blind deploy.
-3. **SCF / VERIFY** — first deploy old version at 100% and new version at 0%. Read back both candidate percentages and require an application-specific service-binding readiness response before the exhaustive preview gate. Then verify the preview URL, expected auth statuses, immutable assets, and a version-scoped tail. CPU evidence must use Wrangler's millisecond `cpuTime` value without dividing by 1000.
+3. **SCF / VERIFY** — first deploy old version at 100% and new version at 0%. Read back both candidate percentages and require an application-specific service-binding readiness response before the exhaustive preview gate. Then verify the preview URL, expected auth statuses, immutable assets, and a version-scoped tail. Run authenticated verification both before and after the production CPU/tail probe; the post-CPU pass is the cold-start discriminator and is load-bearing. CPU evidence must use Wrangler's millisecond `cpuTime` value without dividing by 1000.
 4. **AEX** — PASS only when comparable prior-run evidence changed the workflow. Otherwise record `NOT_APPLICABLE` with `activation_predicate=false`; iteration inside one deployment is not AEX.
-5. **SEAL / COMMIT** — move the new version to 100% only after VERIFY passes, read the deployment back, re-run public and CPU checks, and validate the completed receipt with `fames_ship_gate.py` plus FAMES `validate-run`.
-6. **RECOVER** — on any post-upload failure, deploy the recorded old version back to 100%, read it back, record recovery evidence, and leave the failed new version at 0%. Never call a rollback command that was not prepared before APPLY.
+5. **SEAL / COMMIT** — move the new version to 100% only after VERIFY passes, read the deployment back, re-run public, CPU, and post-CPU authenticated checks, and validate the completed receipt with `fames_ship_gate.py` plus FAMES `validate-run`.
+6. **RECOVER** — on any post-upload failure, deploy the recorded old version back to 100%, require two consecutive deployment-source read-backs that both match the prepared old pair, record recovery evidence, and leave the failed new version at 0%. Never call a rollback command that was not prepared before APPLY.
 
 Run the fleet receipt gate before reporting completion:
 
@@ -130,6 +130,10 @@ CPU, authenticated-browser, read-back, or rollback evidence.
 
    Treat a URL mismatch as failure even if deployment succeeded. Declare expected `401`/`403` statuses for protected routes; never weaken application authorization to make a smoke test pass.
 
+   For browser-authenticated verification, disable service workers for the verification context, send `Cache-Control: no-cache` on the load-bearing navigation/API requests, clear only the application's scoped module cache, and navigate away before starting the causal observation window. Require either a fresh expected API response caused by that navigation or a stable terminal error observed for at least two seconds. A response or error emitted by a prior root prefetch is stale evidence and cannot pass or fail the candidate.
+
+   Retry a CPU/tail probe only when the sole failure is missing tail observation and the probe recorded zero bad HTTP outcomes. Preserve every full attempt receipt and bound the retry count. Do not retry real `5xx`, boundary, version, `exceededCpu`, or deployment-read-back failures; recover immediately. On Workers Free, a repeatable cold dynamic handler above the documented 10 ms CPU budget is not made viable by local compilation, and `limits.cpu_ms` upload rejection `100328` is a plan boundary, not a code fix. Move the workload to a verified local/hosted scheduler or obtain explicit authority for a paid-plan change; otherwise the site remains `UNKNOWN/BLOCKED`.
+
    If the site had an auth gate on Vercel, a root probe expecting `200` is the WRONG check and will
    score a missing gate as healthy — measured 2026-08-08 on `ai-darkhero`, where the Vercel Edge
    Middleware gate was never ported and `GET / -> 200` read as GREEN while the portal was public.
@@ -177,6 +181,8 @@ For fleet-wide non-fracdigi migrations, start from `%AI_WORKSPACE%\_skill\fleet-
 - `fames_ship_gate.py` accepted the completed R2 receipt, and `selftest_fames_ship_gate.py` rejected every negative control.
 - `verify_ztm_recipe.py` accepted the project recipe, and `selftest_verify_ztm_recipe.py` rejected every missing-delegation, missing-rollback, and visible-shell negative control.
 - The final deployment read-back names the expected version; version-scoped tail has at least one route, zero non-ok outcomes, zero `exceededCpu`, and p99 at or below the prepared budget.
+- A distinct post-CPU authenticated receipt proves fresh load-bearing API responses after browser/prefetch quiescence; a warm pre-CPU pass alone is insufficient.
+- If recovery ran, two consecutive read-backs name the prepared old router/server pair at the prepared percentages.
 - The PFKT fragment was completed with the public verification output as evidence.
 
 Do not report completion without the final working URL.

@@ -35,6 +35,26 @@ def main() -> int:
 
         write_good(root)
         orchestrator.write_text(
+            orchestrator.read_text(encoding="utf-8").replace(
+                '"authenticated_post_cpu"', '"authenticated_post_cpu_missing"'
+            ),
+            encoding="utf-8",
+        )
+        assert verify(root, "ship.ps1", "scripts/ztm-cloudflare-ship.py")["ok"] is False
+        checks += 1
+
+        write_good(root)
+        orchestrator.write_text(
+            orchestrator.read_text(encoding="utf-8").replace(
+                "consecutive_source_matches >= 2", "recovery_readback_missing"
+            ),
+            encoding="utf-8",
+        )
+        assert verify(root, "ship.ps1", "scripts/ztm-cloudflare-ship.py")["ok"] is False
+        checks += 1
+
+        write_good(root)
+        orchestrator.write_text(
             orchestrator.read_text(encoding="utf-8").replace("run_ship_receipt_gate", "ship_gate_missing"),
             encoding="utf-8",
         )
@@ -73,7 +93,7 @@ def main() -> int:
         assert verify(root, "ship.ps1", "scripts/ztm-cloudflare-ship.py")["ok"] is False
         checks += 1
 
-    print(f"PASS verify_ztm_recipe selftest {checks}/7")
+    print(f"PASS verify_ztm_recipe selftest {checks}/9")
     return 0
 
 
