@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "id": "FAMES-PRODUCTION-WEB-DELIVERY",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "purpose": "Provider-neutral assurance profile distilled from a production website repair: prove live behaviour, exhaustive coverage, bounded resource use, failure visibility, identity, rollback, and claim accuracy without importing project-specific counts into canon.",
   "activation": [
     "production_web_application",
@@ -102,6 +102,26 @@
     "failure_path_probe",
     "rollback_identity"
   ],
+  "mechanized_gates": {
+    "ztm_deployment_recipe": {
+      "command": "python %AI_WORKSPACE%/_skill/fleet-skills/deploy-nextjs-cloudflare/scripts/verify_ztm_recipe.py <project_root> --json",
+      "proves": [
+        "one delegated project entrypoint",
+        "hidden Windows subprocess policy",
+        "local CPU build and source push read-back",
+        "versioned 100/0 staging and preview",
+        "public, authenticated, immutable-asset, CPU, deployment read-back, and rollback coverage"
+      ],
+      "does_not_prove": [
+        "build success",
+        "provider authentication",
+        "preview behaviour",
+        "production behaviour",
+        "rollback execution"
+      ],
+      "rule": "Recipe coverage is a pre-mutation gate only. It never upgrades a planned command, source marker, or installed skill into live deployment evidence."
+    }
+  },
   "handoff_contract": {
     "required": ["outcome", "scope", "authority", "current_evidence", "unknowns", "exact_next_probe", "files_or_surfaces", "acceptance", "rollback", "forbidden_actions"],
     "rule": "Separate owner-only choices from agent-executable work. Continue safe independent branches and never ask the owner to perform mechanical verification."
