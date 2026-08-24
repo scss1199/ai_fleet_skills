@@ -23,6 +23,7 @@ ORCHESTRATOR_MARKERS = {
     "cpu_verification": "run_cpu_probe",
     "rollback": "rollback(",
     "failed_candidate_zero_recovery": "failed_candidates_staged_at_zero",
+    "ship_receipt_gate": "run_ship_receipt_gate",
     "deployment_read_back": "verify_deployed_pair",
     "receipt_write": "write_json(receipt_path",
     "prepare_state": '"PREPARE"',

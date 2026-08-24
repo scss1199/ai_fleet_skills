@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-24T07:00:15Z",
-  "manifest_sha": "7401b12d5beecc3b",
+  "generated_at": "2026-08-24T07:15:14Z",
+  "manifest_sha": "8a985463c431179c",
   "required": [
     "fames",
     "independent-review",
@@ -103,28 +103,28 @@
     },
     {
       "name": "deploy-nextjs-cloudflare",
-      "sha": "8bf24dffd8acf418",
+      "sha": "d130393c4136ba31",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "0bed24226304f0cd1ceff1b1de9447ad966eac4fc2b2e7b877f01033a255c857",
+      "package_sha": "58029110ff3eadd3b2bec77f1cf49ac1a05fa85a5ca95b6c73291c05d01aee3e",
       "files": {
-        "SKILL.md": "8bf24dffd8acf4188737d59e04bfb08fce895f93658e5ad8e645e33f44b63695",
+        "SKILL.md": "d130393c4136ba31cc4096b240603388451873274a762b33c7d780dfb41e4780",
         "agents/openai.yaml": "138a80cd1780892c6b4f1f1b9395e3a601f80790782a4b8681deae98eadf5f39",
         "assets/claude-cloudflare-migration-prompt.md": "7b1ae8438ea664637a75f107c1797f2a0b5af89c710493bf572d2e35873dd5a9",
         "assets/fames-ship-receipt.template.json": "865456a3bd3511c884334446579f1f92bfef78106126830fb25162e0cf91681f",
         "references/known-failures.md": "cb19875c353acb729da91f9673255127d98e06764e2caed983db1fe4786b92d8",
         "scripts/cf_secret_push.py": "c584ab31e54a8ce5a37ffb67c8715d6f44702f0698f726e6155c6ccf9cdb49de",
-        "scripts/fames_ship_gate.py": "3db4fea25ee0d178cc32a03e90affa7e604074c866ad7e444824df8fa9a769a6",
+        "scripts/fames_ship_gate.py": "195386185ebb55434c31bf5e5c4479887d5b0dc8677d6c41bbf208c1061973b1",
         "scripts/local_smoke.py": "2bfd81c2c7c8a3940083b21a39cd850fd957111800afa34e6c527c4684155320",
         "scripts/preflight.py": "437740c989ea5b8db53186d9caaecd98d299938890aa2fe53ca2969e58b2ece2",
         "scripts/prepare_project.py": "b7120579ebb77eae3bd8f53a0f314493cf1c4114de5ded92b1328d624f2da2ec",
         "scripts/quick_validate.py": "be293b71b766dcade8a380c867a325fed1a1f7a494d88e5fc37c804f5afae96c",
         "scripts/record_failure.py": "87723a5609f6c0ef135da94d6208535c0784a0c2a38663a806f989bfd35a9d11",
-        "scripts/selftest_fames_ship_gate.py": "4a0f106e00e791ad33e589426f42fd657ef308c0d3a6ff343253122b640e3804",
+        "scripts/selftest_fames_ship_gate.py": "1e3e783c5acc0a84ce9a42d50f3cac29305a8928aeccf3aad5f6abb7597436ce",
         "scripts/selftest_quick_validate.py": "41d345f312b0737b9df9e45fb0acb4eb4233c28c460214cd3810e349cfebd503",
-        "scripts/selftest_verify_ztm_recipe.py": "ce7f9c6a4ebd19de1a3c1c515813c0d4483c7f2e95371739462eda3abd980634",
+        "scripts/selftest_verify_ztm_recipe.py": "1a7478ba313683dd141738470fa2ac8ff58fe5df8ee22a07bbeffd11ecc3c717",
         "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37",
-        "scripts/verify_ztm_recipe.py": "e08cd09a90e4464dbe50d13cf499425f7ce7f2ec454da0e7dbed8cb7163d99d9"
+        "scripts/verify_ztm_recipe.py": "6f069ecf5de32c68a75f7f33fd130273259178cd7fe568065c8a62b482cfa124"
       }
     },
     {

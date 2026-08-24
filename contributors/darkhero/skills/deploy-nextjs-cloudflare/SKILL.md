@@ -51,11 +51,11 @@ This is an R2 external-write workflow. Execute FAMES in order `FP -> MTM -> SCF 
 Run the fleet receipt gate before reporting completion:
 
 ```powershell
-python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\fames_ship_gate.py" --input <completed-receipt.json>
-python "%AI_WORKSPACE%\_skill\fleet-skills\fames\scripts\fames_fleet.py" validate-run --workspace "%AI_WORKSPACE%" --input <completed-receipt.json> --json
+python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\fames_ship_gate.py" --input <completed-deploy-receipt.json>
+python "%AI_WORKSPACE%\_skill\fleet-skills\fames\scripts\fames_fleet.py" validate-run --workspace "%AI_WORKSPACE%" --input <completed-canonical-fames-run-ledger.json> --json
 ```
 
-The first gate verifies deploy-specific evidence; the second verifies the canonical FAMES ledger. Both must exit 0. A failed transaction restores old at 100% while retaining each successfully uploaded failed candidate at 0%; removing it from the active deployment can make a service-binding preview return a false `Server failed to respond` result and destroys version-scoped diagnostic continuity.
+The first gate verifies the compact deploy-specific receipt; the second verifies the canonical FAMES run ledger. Both must exit 0 for a FAMES completion claim. Do not pass the compact deploy receipt to `validate-run` unless it actually carries the full canonical goal, residual, complexity, R2 transaction, evidence, and live current-turn cognitive-boundary schema; a passing deploy gate is not a substitute for a current harness lifecycle receipt. A failed transaction restores old at 100% while retaining each successfully uploaded failed candidate at 0%; removing it from the active deployment can make a service-binding preview return a false `Server failed to respond` result and destroys version-scoped diagnostic continuity.
 
 For a project that exposes a `ship.ps1` queue recipe, verify that the wrapper and delegated
 orchestrator form one bounded ZT transaction before running it:

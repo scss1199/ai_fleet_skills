@@ -35,6 +35,14 @@ def main() -> int:
 
         write_good(root)
         orchestrator.write_text(
+            orchestrator.read_text(encoding="utf-8").replace("run_ship_receipt_gate", "ship_gate_missing"),
+            encoding="utf-8",
+        )
+        assert verify(root, "ship.ps1", "scripts/ztm-cloudflare-ship.py")["ok"] is False
+        checks += 1
+
+        write_good(root)
+        orchestrator.write_text(
             orchestrator.read_text(encoding="utf-8").replace("wait_for_preview_pair", "readiness_missing"),
             encoding="utf-8",
         )
@@ -65,7 +73,7 @@ def main() -> int:
         assert verify(root, "ship.ps1", "scripts/ztm-cloudflare-ship.py")["ok"] is False
         checks += 1
 
-    print(f"PASS verify_ztm_recipe selftest {checks}/6")
+    print(f"PASS verify_ztm_recipe selftest {checks}/7")
     return 0
 
 
