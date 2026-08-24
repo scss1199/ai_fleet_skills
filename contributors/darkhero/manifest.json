@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-23T08:31:08Z",
-  "manifest_sha": "b5c69db39463cedd",
+  "generated_at": "2026-08-24T05:00:10Z",
+  "manifest_sha": "7e4082ef753b2d3f",
   "required": [
     "fames",
     "independent-review",
@@ -103,12 +103,12 @@
     },
     {
       "name": "deploy-nextjs-cloudflare",
-      "sha": "abe8d2baa69402af",
+      "sha": "6d412527694028f4",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "43728b58235ecaf07b4c9574699a775de6874d3a4159fccd41ee35012816d124",
+      "package_sha": "590b8bfd87a6c27dd2c811ac35877c2e9f743a2f4a9810b26893cc464b9ceaf2",
       "files": {
-        "SKILL.md": "abe8d2baa69402afd9200bcbf36946eaee1fcbd8f519ac41a36358033000a6ab",
+        "SKILL.md": "6d412527694028f45c61a429423cca30f2de43873140359e48c5f8cc039e1671",
         "agents/openai.yaml": "138a80cd1780892c6b4f1f1b9395e3a601f80790782a4b8681deae98eadf5f39",
         "assets/claude-cloudflare-migration-prompt.md": "7b1ae8438ea664637a75f107c1797f2a0b5af89c710493bf572d2e35873dd5a9",
         "assets/fames-ship-receipt.template.json": "865456a3bd3511c884334446579f1f92bfef78106126830fb25162e0cf91681f",
@@ -122,7 +122,9 @@
         "scripts/record_failure.py": "87723a5609f6c0ef135da94d6208535c0784a0c2a38663a806f989bfd35a9d11",
         "scripts/selftest_fames_ship_gate.py": "4a0f106e00e791ad33e589426f42fd657ef308c0d3a6ff343253122b640e3804",
         "scripts/selftest_quick_validate.py": "41d345f312b0737b9df9e45fb0acb4eb4233c28c460214cd3810e349cfebd503",
-        "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37"
+        "scripts/selftest_verify_ztm_recipe.py": "26578a5c209184c9c77df016c6ec20c1d73c4b6875a4a74999dbc860b905aee0",
+        "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37",
+        "scripts/verify_ztm_recipe.py": "118fc8ac816b0c680eb712a376613c7a3ed15f9cb35b8cdaf089285529634079"
       }
     },
     {

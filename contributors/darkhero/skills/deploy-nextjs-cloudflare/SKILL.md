@@ -57,6 +57,16 @@ python "%AI_WORKSPACE%\_skill\fleet-skills\fames\scripts\fames_fleet.py" validat
 
 The first gate verifies deploy-specific evidence; the second verifies the canonical FAMES ledger. Both must exit 0.
 
+For a project that exposes a `ship.ps1` queue recipe, verify that the wrapper and delegated
+orchestrator form one bounded ZT transaction before running it:
+
+```powershell
+python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\verify_ztm_recipe.py" <app-root> --json
+```
+
+This gate proves recipe coverage only; it never substitutes for build, preview, production,
+CPU, authenticated-browser, read-back, or rollback evidence.
+
 1. Run the deterministic preflight:
 
    ```powershell
@@ -140,6 +150,7 @@ For every new deployment failure:
    ```powershell
    python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\quick_validate.py"
    python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\selftest_fames_ship_gate.py"
+   python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\selftest_verify_ztm_recipe.py"
    ```
 
    It checks the frontmatter contract AND that every `.py`/`.md` file named in a SKILL.md code
@@ -164,6 +175,7 @@ For fleet-wide non-fracdigi migrations, start from `%AI_WORKSPACE%\_skill\fleet-
 - If authentication exists, a real signed-in browser returned to the application and remained signed in after reopening the root URL, and `mtm-portal-gate-parity.py` reported `PARITY_BAD=0` — a signed-in browser cannot show that the gate rejects a signed-OUT visitor.
 - `quick_validate.py` exited 0 for this skill, and `selftest_quick_validate.py` reported 8/8.
 - `fames_ship_gate.py` accepted the completed R2 receipt, and `selftest_fames_ship_gate.py` rejected every negative control.
+- `verify_ztm_recipe.py` accepted the project recipe, and `selftest_verify_ztm_recipe.py` rejected every missing-delegation, missing-rollback, and visible-shell negative control.
 - The final deployment read-back names the expected version; version-scoped tail has at least one route, zero non-ok outcomes, zero `exceededCpu`, and p99 at or below the prepared budget.
 - The PFKT fragment was completed with the public verification output as evidence.
 
