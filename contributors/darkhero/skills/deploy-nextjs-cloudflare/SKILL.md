@@ -43,7 +43,7 @@ This is an R2 external-write workflow. Execute FAMES in order `FP -> MTM -> SCF 
 
 1. **FP / PREPARE** — define outcome, public verification, authority, non-goals, old deployment/version, exact rollback, and Free-plan CPU budget. Run fresh FAMES status/package/parity checks.
 2. **MTM / APPLY** — use an isolated clean worktree; build on local CPU; run local workerd and Wrangler dry-run; commit and push the verified source; then upload a Worker Version with `wrangler versions upload`, never an unversioned blind deploy.
-3. **SCF / VERIFY** — first deploy old version at 100% and new version at 0%. Read back both candidate percentages and require an application-specific service-binding readiness response before the exhaustive preview gate. Then verify the preview URL, expected auth statuses, immutable assets, and a version-scoped tail. Run authenticated verification both before and after the production CPU/tail probe; the post-CPU pass is the cold-start discriminator and is load-bearing. CPU evidence must use Wrangler's millisecond `cpuTime` value without dividing by 1000.
+3. **SCF / VERIFY** — first deploy old version at 100% and new version at 0%. Read back both candidate percentages and require an application-specific service-binding readiness response before the exhaustive preview gate. Then verify the preview URL, expected auth statuses, immutable assets, and a version-scoped tail. When the application has authentication, enter the browser verifier through the resident SSO realm adapter; do not create a parallel site-specific login path. Run authenticated verification both before and after the production CPU/tail probe; the post-CPU pass is the cold-start discriminator and is load-bearing. The verifier's atomically written JSON receipt is the outcome authority across nested process boundaries; adapter or child stdout and exit status alone are transport evidence. CPU evidence must use Wrangler's millisecond `cpuTime` value without dividing by 1000.
 4. **AEX** — PASS only when comparable prior-run evidence changed the workflow. Otherwise record `NOT_APPLICABLE` with `activation_predicate=false`; iteration inside one deployment is not AEX.
 5. **SEAL / COMMIT** — move the new version to 100% only after VERIFY passes, read the deployment back, re-run public, CPU, and post-CPU authenticated checks, and validate the completed receipt with `fames_ship_gate.py` plus FAMES `validate-run`.
 6. **RECOVER** — on any post-upload failure, deploy the recorded old version back to 100%, require two consecutive deployment-source read-backs that both match the prepared old pair, record recovery evidence, and leave the failed new version at 0%. Never call a rollback command that was not prepared before APPLY.
@@ -57,6 +57,8 @@ python "%AI_WORKSPACE%\_skill\fleet-skills\fames\scripts\fames_fleet.py" validat
 
 The first gate verifies the compact deploy-specific receipt; the second verifies the canonical FAMES run ledger. Both must exit 0 for a FAMES completion claim. Do not pass the compact deploy receipt to `validate-run` unless it actually carries the full canonical goal, residual, complexity, R2 transaction, evidence, and live current-turn cognitive-boundary schema; a passing deploy gate is not a substitute for a current harness lifecycle receipt. A failed transaction restores old at 100% while retaining each successfully uploaded failed candidate at 0%; removing it from the active deployment can make a service-binding preview return a false `Server failed to respond` result and destroys version-scoped diagnostic continuity.
 
+Every invocation starts a new evidence cycle. Before PREPARE, clear mutable remote transaction evidence and reset `SCF`, `AEX`, and `SEAL` to `PENDING`; a prior cycle's PASS, version identity, authenticated receipt, or recovery result cannot survive into the current claim. Preserve prior receipts as immutable history under distinct paths instead of using them as the live transaction state.
+
 For a project that exposes a `ship.ps1` queue recipe, verify that the wrapper and delegated
 orchestrator form one bounded ZT transaction before running it:
 
@@ -64,8 +66,9 @@ orchestrator form one bounded ZT transaction before running it:
 python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\verify_ztm_recipe.py" <app-root> --json
 ```
 
-This gate proves recipe coverage only; it never substitutes for build, preview, production,
-CPU, authenticated-browser, read-back, or rollback evidence.
+This gate proves recipe coverage only, including the resident-auth adapter, receipt read-back,
+and cycle-reset controls; it never substitutes for build, preview, production, CPU,
+authenticated-browser, read-back, or rollback evidence.
 
 1. Run the deterministic preflight:
 
@@ -184,6 +187,8 @@ For fleet-wide non-fracdigi migrations, start from `%AI_WORKSPACE%\_skill\fleet-
 - `verify_ztm_recipe.py` accepted the project recipe, and `selftest_verify_ztm_recipe.py` rejected every missing-delegation, missing-rollback, and visible-shell negative control.
 - The final deployment read-back names the expected version; version-scoped tail has at least one route, zero non-ok outcomes, zero `exceededCpu`, and p99 at or below the prepared budget.
 - A distinct post-CPU authenticated receipt proves fresh load-bearing API responses after browser/prefetch quiescence; a warm pre-CPU pass alone is insufficient.
+- The authenticated verifier ran through the resident SSO realm adapter and the parent read the verifier's atomically written receipt; stdout or a zero adapter exit was not used as outcome proof.
+- The current cycle began with mutable transaction evidence and `SCF`/`AEX`/`SEAL` reset to `PENDING`; no prior-cycle PASS remained load-bearing.
 - If recovery ran, two consecutive read-backs name the prepared old router/server pair at the prepared percentages.
 - The PFKT fragment was completed with the public verification output as evidence.
 

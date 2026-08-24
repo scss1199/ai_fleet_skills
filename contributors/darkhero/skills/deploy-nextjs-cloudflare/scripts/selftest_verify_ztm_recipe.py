@@ -88,12 +88,40 @@ def main() -> int:
         checks += 1
 
         write_good(root)
+        orchestrator.write_text(
+            orchestrator.read_text(encoding="utf-8").replace("sso_browser.py", "site_login.py"),
+            encoding="utf-8",
+        )
+        assert verify(root, "ship.ps1", "scripts/ztm-cloudflare-ship.py")["ok"] is False
+        checks += 1
+
+        write_good(root)
+        orchestrator.write_text(
+            orchestrator.read_text(encoding="utf-8").replace(
+                'out.read_text(encoding="utf-8")', "stdout_only_without_receipt"
+            ),
+            encoding="utf-8",
+        )
+        assert verify(root, "ship.ps1", "scripts/ztm-cloudflare-ship.py")["ok"] is False
+        checks += 1
+
+        write_good(root)
+        orchestrator.write_text(
+            orchestrator.read_text(encoding="utf-8").replace(
+                'for phase in ("SCF", "AEX", "SEAL")', "prior_cycle_phases_reused"
+            ),
+            encoding="utf-8",
+        )
+        assert verify(root, "ship.ps1", "scripts/ztm-cloudflare-ship.py")["ok"] is False
+        checks += 1
+
+        write_good(root)
         with orchestrator.open("a", encoding="utf-8") as handle:
             handle.write("\nshell=True\n")
         assert verify(root, "ship.ps1", "scripts/ztm-cloudflare-ship.py")["ok"] is False
         checks += 1
 
-    print(f"PASS verify_ztm_recipe selftest {checks}/9")
+    print(f"PASS verify_ztm_recipe selftest {checks}/12")
     return 0
 
 

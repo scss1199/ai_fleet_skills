@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.30.12",
-  "skill_gen": "2026-08-24.1",
+  "version": "1.30.13",
+  "skill_gen": "2026-08-24.2",
   "execution_order": [
     "FP",
     "MTM",
@@ -23,13 +23,13 @@
   },
   "source_git_commit": null,
   "files": {
-    "SKILL.md": "b60ed919811dbc0ba8248b362192409d1140c3f02570e1d437d93c714f96fd2e",
+    "SKILL.md": "b0d69ffeb5802fea927286d3f067d80d9f08e9e4e58a165ae0816b965d830f84",
     "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
     "references/cases.json": "604d2f78eff8e76e029b230158a73c57cf17002bb95835e0f21d8e934d3af85c",
     "references/claude-live-eval.json": "8946d081f4c71be8b82004e8253c9cda9aa301ef4f09b277dc8a9fb981431a86",
     "references/hardware-compute.json": "e0792dce63c4894107fd63e43e3e0095ce4c4999686811279fd12543106a8df4",
-    "references/production-web-delivery.json": "43c1913977d3b6a7a9481406542b269350fe2f44274ab8c34778f181f10d5676",
-    "references/protocols/fames-protocol.json": "c5786d2b77a8d37a1f4820aa4fe7dbec60c311fc25f269ad28c4761d396f9efa",
+    "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
+    "references/protocols/fames-protocol.json": "181df6c1e078d50e8f91ebc352dd0652cf441917be7df6a282ed3fb4dbd5a61c",
     "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
     "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
     "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
@@ -40,5 +40,5 @@
     "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
     "scripts/fames_fleet.py": "ef8c789496abc07af987ae7a57ffe37db5a2706e25f46fe3c373292dde1c4609"
   },
-  "package_sha": "f0202c668e64ee2dff70b56480efeee4a9dbd9e2008825d84a825519dd0b9f5e"
+  "package_sha": "6606d032d7129aa39870553151c2a73cb8b239ee980f398be788961a806baae7"
 }

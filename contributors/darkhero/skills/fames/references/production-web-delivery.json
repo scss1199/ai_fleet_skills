@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "id": "FAMES-PRODUCTION-WEB-DELIVERY",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "purpose": "Provider-neutral assurance profile distilled from a production website repair: prove live behaviour, exhaustive coverage, bounded resource use, failure visibility, identity, rollback, and claim accuracy without importing project-specific counts into canon.",
   "activation": [
     "production_web_application",
@@ -68,8 +68,8 @@
       "rule": "Prove whether limits truncate the population and whether filters discard usable connections."
     },
     "deployment_receipt": {
-      "fields": ["source_revision", "branch", "build_commands", "test_commands", "old_version", "new_version", "staged_traffic", "public_behaviour_read_back", "browser_or_protocol_read_back", "rollback_identity", "remote_source_read_back", "clean_isolated_tree", "verdict"],
-      "rule": "Build, upload, deploy, read-back, and source push are distinct states. Completion requires the state named by the outcome."
+      "fields": ["cycle_id", "cycle_started_at", "source_revision", "branch", "build_commands", "test_commands", "old_version", "new_version", "staged_traffic", "phase_reset", "resident_auth_gate", "public_behaviour_read_back", "authenticated_receipt_path", "post_cpu_authenticated_receipt_path", "browser_or_protocol_read_back", "rollback_identity", "remote_source_read_back", "clean_isolated_tree", "verdict"],
+      "rule": "Build, upload, deploy, read-back, and source push are distinct states. Mutable transaction evidence and SCF/AEX/SEAL are reset at the start of every cycle. Authenticated verification enters through the resident auth adapter and the atomically written verifier receipt, not nested-process stdout, is the outcome authority. Completion requires current-cycle evidence for the state named by the outcome."
     }
   },
   "forbidden_substitutions": [
@@ -79,7 +79,9 @@
     {"claim": "cpu_within_budget", "insufficient": ["wall_time", "bundle_size", "account_total_without_route_identity"]},
     {"claim": "authorization_active", "insufficient": ["scope_added_to_source", "old_token_exists"]},
     {"claim": "metric_valid", "insufficient": ["all_leads", "all_conversions", "total_revenue_without_attribution"]},
-    {"claim": "fleet_synchronized", "insufficient": ["authority_publish", "folder_name_match", "package_hash_without_capability_attestation"]}
+    {"claim": "fleet_synchronized", "insufficient": ["authority_publish", "folder_name_match", "package_hash_without_capability_attestation"]},
+    {"claim": "authenticated_behaviour_correct", "insufficient": ["resident_auth_transport_exit_zero", "stdout_only_without_receipt", "prior_cycle_authenticated_receipt"]},
+    {"claim": "current_cycle_complete", "insufficient": ["prior_cycle_phase_pass", "prior_cycle_version_identity", "prior_cycle_recovery_result"]}
   ],
   "failure_matrix": [
     "unauthorized",
@@ -100,7 +102,11 @@
     "destination_read_back",
     "behaviour_specific_probe",
     "failure_path_probe",
-    "rollback_identity"
+    "rollback_identity",
+    "current_cycle_identity",
+    "resident_auth_gate_receipt",
+    "pre_cpu_authenticated_receipt",
+    "post_cpu_authenticated_receipt"
   ],
   "mechanized_gates": {
     "ztm_deployment_recipe": {
@@ -110,7 +116,9 @@
         "hidden Windows subprocess policy",
         "local CPU build and source push read-back",
         "versioned 100/0 staging and preview",
-        "public, authenticated, immutable-asset, CPU, deployment read-back, and rollback coverage"
+        "public, authenticated, immutable-asset, CPU, deployment read-back, and rollback coverage",
+        "resident authentication adapter and verifier receipt read-back",
+        "current-cycle phase and mutable evidence reset"
       ],
       "does_not_prove": [
         "build success",
