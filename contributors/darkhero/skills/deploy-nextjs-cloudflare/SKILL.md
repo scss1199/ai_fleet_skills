@@ -43,7 +43,7 @@ This is an R2 external-write workflow. Execute FAMES in order `FP -> MTM -> SCF 
 
 1. **FP / PREPARE** — define outcome, public verification, authority, non-goals, old deployment/version, exact rollback, and Free-plan CPU budget. Run fresh FAMES status/package/parity checks.
 2. **MTM / APPLY** — use an isolated clean worktree; build on local CPU; run local workerd and Wrangler dry-run; commit and push the verified source; then upload a Worker Version with `wrangler versions upload`, never an unversioned blind deploy.
-3. **SCF / VERIFY** — first deploy old version at 100% and new version at 0%. Verify the preview URL, expected auth statuses, immutable assets, and a version-scoped tail. CPU evidence must use Wrangler's millisecond `cpuTime` value without dividing by 1000.
+3. **SCF / VERIFY** — first deploy old version at 100% and new version at 0%. Read back both candidate percentages and require an application-specific service-binding readiness response before the exhaustive preview gate. Then verify the preview URL, expected auth statuses, immutable assets, and a version-scoped tail. CPU evidence must use Wrangler's millisecond `cpuTime` value without dividing by 1000.
 4. **AEX** — PASS only when comparable prior-run evidence changed the workflow. Otherwise record `NOT_APPLICABLE` with `activation_predicate=false`; iteration inside one deployment is not AEX.
 5. **SEAL / COMMIT** — move the new version to 100% only after VERIFY passes, read the deployment back, re-run public and CPU checks, and validate the completed receipt with `fames_ship_gate.py` plus FAMES `validate-run`.
 6. **RECOVER** — on any post-upload failure, deploy the recorded old version back to 100%, read it back, record recovery evidence, and leave the failed new version at 0%. Never call a rollback command that was not prepared before APPLY.
@@ -55,7 +55,7 @@ python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\fame
 python "%AI_WORKSPACE%\_skill\fleet-skills\fames\scripts\fames_fleet.py" validate-run --workspace "%AI_WORKSPACE%" --input <completed-receipt.json> --json
 ```
 
-The first gate verifies deploy-specific evidence; the second verifies the canonical FAMES ledger. Both must exit 0.
+The first gate verifies deploy-specific evidence; the second verifies the canonical FAMES ledger. Both must exit 0. A failed transaction restores old at 100% while retaining each successfully uploaded failed candidate at 0%; removing it from the active deployment can make a service-binding preview return a false `Server failed to respond` result and destroys version-scoped diagnostic continuity.
 
 For a project that exposes a `ship.ps1` queue recipe, verify that the wrapper and delegated
 orchestrator form one bounded ZT transaction before running it:

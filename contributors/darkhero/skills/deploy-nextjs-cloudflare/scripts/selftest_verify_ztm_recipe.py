@@ -24,6 +24,7 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
         write_good(root)
+        orchestrator = root / "scripts" / "ztm-cloudflare-ship.py"
         assert verify(root, "ship.ps1", "scripts/ztm-cloudflare-ship.py")["ok"] is True
         checks += 1
 
@@ -33,7 +34,24 @@ def main() -> int:
         checks += 1
 
         write_good(root)
-        orchestrator = root / "scripts" / "ztm-cloudflare-ship.py"
+        orchestrator.write_text(
+            orchestrator.read_text(encoding="utf-8").replace("wait_for_preview_pair", "readiness_missing"),
+            encoding="utf-8",
+        )
+        assert verify(root, "ship.ps1", "scripts/ztm-cloudflare-ship.py")["ok"] is False
+        checks += 1
+
+        write_good(root)
+        orchestrator.write_text(
+            orchestrator.read_text(encoding="utf-8").replace(
+                "failed_candidates_staged_at_zero", "failed_candidate_recovery_missing"
+            ),
+            encoding="utf-8",
+        )
+        assert verify(root, "ship.ps1", "scripts/ztm-cloudflare-ship.py")["ok"] is False
+        checks += 1
+
+        write_good(root)
         orchestrator.write_text(
             orchestrator.read_text(encoding="utf-8").replace("rollback(", "rollback_missing"),
             encoding="utf-8",
@@ -47,7 +65,7 @@ def main() -> int:
         assert verify(root, "ship.ps1", "scripts/ztm-cloudflare-ship.py")["ok"] is False
         checks += 1
 
-    print(f"PASS verify_ztm_recipe selftest {checks}/4")
+    print(f"PASS verify_ztm_recipe selftest {checks}/6")
     return 0
 
 
