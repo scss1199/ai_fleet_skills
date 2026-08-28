@@ -5595,14 +5595,22 @@ def _local_content_ref(path: Path, uri: str) -> dict:
     return {"uri": uri, "path": str(path.resolve()), "sha256": _sha256(path.resolve())}
 
 
-def _hydrate_promotion_fixtures(node: object) -> None:
+def _hydrate_promotion_fixtures(node: object, fixture_root: Path) -> None:
     if isinstance(node, dict):
         if node.pop("auto_promotion_contract", False):
             validator_identity = _sha256(Path(__file__).resolve())
             script_ref = _local_content_ref(Path(__file__), "file://fames_fleet.py")
             workspace = PACKAGE_ROOT.parents[2]
-            review_ref = _local_content_ref(workspace / "_registry" / "fames-evidence" / "fixtures" / "promotion-review.json", "file://promotion-review.json")
-            non_regression_ref = _local_content_ref(workspace / "_registry" / "fames-evidence" / "fixtures" / "promotion-non-regression.json", "file://promotion-non-regression.json")
+            review_ref = {
+                "uri": "file://promotion-review.json",
+                "path": str((fixture_root / "promotion-review.json").resolve()),
+                "sha256": "0" * 64,
+            }
+            non_regression_ref = {
+                "uri": "file://promotion-non-regression.json",
+                "path": str((fixture_root / "promotion-non-regression.json").resolve()),
+                "sha256": "0" * 64,
+            }
             for claim in node.get("claims") or []:
                 if isinstance(claim, dict) and claim.get("verdict") in {"adopt", "adapt"}:
                     landing_path = (workspace / str(claim.get("lands_in") or "")).resolve()
@@ -5635,10 +5643,10 @@ def _hydrate_promotion_fixtures(node: object) -> None:
                 "artifact_identity": artifact_identity,
             })
         for value in node.values():
-            _hydrate_promotion_fixtures(value)
+            _hydrate_promotion_fixtures(value, fixture_root)
     elif isinstance(node, list):
         for value in node:
-            _hydrate_promotion_fixtures(value)
+            _hydrate_promotion_fixtures(value, fixture_root)
 
 
 def _bind_fixture_gates(node: object) -> None:
@@ -5706,7 +5714,7 @@ def _bind_fixture_gates(node: object) -> None:
         _bind_fixture_gates(value)
 
 
-def _hydrate_promotion_replays(node: object) -> None:
+def _hydrate_promotion_replays(node: object, fixture_root: Path) -> None:
     if isinstance(node, dict):
         if node.get("promoted") is True and isinstance(node.get("promotion"), dict):
             promotion = node["promotion"]
@@ -5730,35 +5738,49 @@ def _hydrate_promotion_replays(node: object) -> None:
                         claim.setdefault("trial", {})["replay"] = dict(receipt)
                 review = promotion.get("independent_review")
                 if isinstance(review, dict):
-                    try:
-                        review_payload = _read_json(Path(str((review.get("evidence") or {}).get("path"))))
-                    except (OSError, json.JSONDecodeError, TypeError):
-                        review_payload = {}
-                    review.update({
+                    review_payload = {
+                        "kind": "independent_review",
+                        "candidate_identity": promotion.get("candidate_identity"),
+                        "artifact_identity": boundary.get("binding", {}).get("artifact_identity"),
+                        "builder_identity": promotion.get("actor"),
                         "reviewer_identity": "fixture-readonly-reviewer",
                         "validator_identity": _sha256(Path(__file__).resolve()),
                         "reproduction_input_identity": _boundary_review_subject_identity(boundary),
                         "reproduction_output_identity": receipt["output_identity"],
-                        "executed_at": review_payload.get("executed_at", now.isoformat()),
-                        "valid_until": review_payload.get("valid_until", (now + timedelta(hours=1)).isoformat()),
+                        "decision": "ACCEPT",
+                        "executed_at": now.isoformat(),
+                        "valid_until": (now + timedelta(hours=1)).isoformat(),
+                    }
+                    review_path = fixture_root / "promotion-review.json"
+                    _write_json_atomic(review_path, review_payload)
+                    review.update({
+                        **review_payload,
+                        "accepted": True,
+                        "evidence": _local_content_ref(review_path, "file://promotion-review.json"),
                     })
                 non_regression = promotion.get("non_regression")
                 if isinstance(non_regression, dict):
-                    try:
-                        nonreg_payload = _read_json(Path(str((non_regression.get("evidence") or {}).get("path"))))
-                    except (OSError, json.JSONDecodeError, TypeError):
-                        nonreg_payload = {}
+                    active_non_regression = _promotion_non_regression()
+                    nonreg_payload = {
+                        "kind": "non_regression",
+                        "candidate_identity": promotion.get("candidate_identity"),
+                        "artifact_identity": boundary.get("binding", {}).get("artifact_identity"),
+                        **active_non_regression,
+                        "executed_at": now.isoformat(),
+                        "valid_until": (now + timedelta(hours=1)).isoformat(),
+                    }
+                    nonreg_path = fixture_root / "promotion-non-regression.json"
+                    _write_json_atomic(nonreg_path, nonreg_payload)
                     non_regression.update({
                         "passed": True,
-                        **_promotion_non_regression(),
-                        "executed_at": nonreg_payload.get("executed_at", now.isoformat()),
-                        "valid_until": nonreg_payload.get("valid_until", (now + timedelta(hours=1)).isoformat()),
+                        **nonreg_payload,
+                        "evidence": _local_content_ref(nonreg_path, "file://promotion-non-regression.json"),
                     })
         for value in node.values():
-            _hydrate_promotion_replays(value)
+            _hydrate_promotion_replays(value, fixture_root)
     elif isinstance(node, list):
         for value in node:
-            _hydrate_promotion_replays(value)
+            _hydrate_promotion_replays(value, fixture_root)
 
 
 def _hydrate_effect_fixtures(node: object) -> None:
@@ -5876,15 +5898,16 @@ def _inject_context_manifest_identity(record: object) -> None:
                     load_event[field] = expected
 
 
-def _prepare_input(fixtures: dict, case: dict) -> tuple[object, str]:
+def _prepare_input(fixtures: dict, case: dict) -> tuple[object, str, Path | None]:
     ref = case.get("input_ref")
     if ref not in fixtures:
-        return None, f"unknown input_ref {ref!r}"
+        return None, f"unknown input_ref {ref!r}", None
+    fixture_root = Path(tempfile.mkdtemp(prefix="fames-case-"))
     record = _resolve_fixture_refs(json.loads(json.dumps(fixtures[ref])), fixtures, (str(ref),))
     _hydrate_boundary_fixtures(record)
-    _hydrate_promotion_fixtures(record)
+    _hydrate_promotion_fixtures(record, fixture_root)
     _bind_fixture_gates(record)
-    _hydrate_promotion_replays(record)
+    _hydrate_promotion_replays(record, fixture_root)
     _hydrate_effect_fixtures(record)
     auto = record.pop("auto_goal_hash", False) if isinstance(record, dict) else False
     auto_context = record.pop("auto_context_manifest", False) if isinstance(record, dict) else False
@@ -5898,7 +5921,7 @@ def _prepare_input(fixtures: dict, case: dict) -> tuple[object, str]:
         _inject_goal_hash(record)
     if case.get("auto_context_manifest", auto_context) and isinstance(record, dict):
         _inject_context_manifest_identity(record)
-    return record, ""
+    return record, "", fixture_root
 
 
 def _evaluate_case(
@@ -6074,7 +6097,7 @@ def _evaluate_case(
         return "FAIL", "negative control did not detect a platform identifier"
 
     if kind == "validator_probe":
-        record, problem = _prepare_input(fixtures, case)
+        record, problem, fixture_root = _prepare_input(fixtures, case)
         if problem:
             return "UNKNOWN", problem
         validator = case.get("validator")
@@ -6135,21 +6158,27 @@ def _evaluate_case(
             ok = bool(record.get("aliases")) and not errors
             outcome = {"state": "PASS" if ok else "FAIL"}
         else:
+            if fixture_root is not None:
+                shutil.rmtree(fixture_root, ignore_errors=True)
             return "UNKNOWN", f"unknown validator {validator!r}"
         want = bool(case.get("expect_ok"))
         expected_state = case.get("expect_state")
         actual_state = outcome.get("state")
         if expected_state is not None and actual_state != expected_state:
-            return "FAIL", f"expected validator state {expected_state}, got {actual_state}"
-        if ok == want:
+            result = ("FAIL", f"expected validator state {expected_state}, got {actual_state}")
+        elif ok == want:
             detail = "accepted" if ok else f"refused ({len(errors)})"
             if expected_state is not None:
                 detail += f" as {actual_state}"
-            return "PASS", detail
-        if want:
+            result = ("PASS", detail)
+        elif want:
             # Only echo rule messages when a case that should have passed did not.
-            return "FAIL", "; ".join(str(e) for e in errors[:5])[:200]
-        return "FAIL", "accepted a record the rule must refuse"
+            result = ("FAIL", "; ".join(str(e) for e in errors[:5])[:200])
+        else:
+            result = ("FAIL", "accepted a record the rule must refuse")
+        if fixture_root is not None:
+            shutil.rmtree(fixture_root, ignore_errors=True)
+        return result
 
     return "UNKNOWN", f"unknown case kind {kind!r}"
 

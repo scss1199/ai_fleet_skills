@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-24T13:19:24Z",
-  "manifest_sha": "6a946dca3d0500e9",
+  "generated_at": "2026-08-28T04:46:31Z",
+  "manifest_sha": "4c65897cfb962acc",
   "required": [
     "fames",
     "independent-review",
@@ -129,19 +129,19 @@
     },
     {
       "name": "fames",
-      "sha": "b0d69ffeb5802fea",
+      "sha": "6ccb29bd91791633",
       "required": true,
       "lane": null,
-      "package_sha": "6606d032d7129aa39870553151c2a73cb8b239ee980f398be788961a806baae7",
+      "package_sha": "8ccf4b9778cd6c05b6ae4b7c97f1906010403ea1562b7ca2fbac5ade1c140eb2",
       "files": {
-        "SKILL.md": "b0d69ffeb5802fea927286d3f067d80d9f08e9e4e58a165ae0816b965d830f84",
-        "bundle-manifest.json": "3cfa38297887dd76042ca092183270bfebc6fd84bdf486a158d2b115f281742c",
+        "SKILL.md": "6ccb29bd91791633b13b79cb19c294d775f27b2b55324243af67016cb9e42016",
+        "bundle-manifest.json": "15d625f3dccdfb7a101ff9b5de950d062c41bca305f9d5c71a08a4e0f3fc6f21",
         "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
         "references/cases.json": "604d2f78eff8e76e029b230158a73c57cf17002bb95835e0f21d8e934d3af85c",
         "references/claude-live-eval.json": "8946d081f4c71be8b82004e8253c9cda9aa301ef4f09b277dc8a9fb981431a86",
         "references/hardware-compute.json": "e0792dce63c4894107fd63e43e3e0095ce4c4999686811279fd12543106a8df4",
         "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
-        "references/protocols/fames-protocol.json": "181df6c1e078d50e8f91ebc352dd0652cf441917be7df6a282ed3fb4dbd5a61c",
+        "references/protocols/fames-protocol.json": "60aad7ecc68d22f2f50628ca371cfcf4644a2fb9a643a7e94b326863483829b1",
         "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
         "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
         "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
@@ -150,7 +150,7 @@
         "scripts/adaptive_response_controller.py": "07a19c6e0bda90f25800617a274d5f641709676d0d71cdfae8e17dec91e0d911",
         "scripts/claude_live_ab.py": "3aaa4276c505e1eceea33207c6c4baeb190b6319b737f081fd53fbc055834261",
         "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
-        "scripts/fames_fleet.py": "ef8c789496abc07af987ae7a57ffe37db5a2706e25f46fe3c373292dde1c4609"
+        "scripts/fames_fleet.py": "e5af4e0be2350455777c6b6042835d413cef2b448f793e9381c5f03c32c3bdb8"
       }
     },
     {
