@@ -32,8 +32,8 @@ STANDING RULES (_registry/rules-blueprint.json — portal rules tab = this sourc
 [T1 紅線 hard lines（違反即停）]
 - 語言: 回覆一律繁體中文;code/檔名/technique_output 文件用英文;嚴禁日文。
 - 嚴禁猜: 嚴禁猜(猜=幻覺):每個 load-bearing 主張要有引用來源或剛跑過的驗證,否則明說 unknown+查法。
-- 禁止問 operator: 【operator 2026-06-24 鐵律】禁止問 operator 機械活:git commit/push、部署、編譯、套件升級、要不要設排程、權限/oauth。一律 ZCT 自己跑:git→git_smart.py commit-push .;deploy→ship-queue.py request <repo>或fleet-ztm-ship.py(背景HubClock ship-dispatch@2m兜底);build→py_compile/npm build;週期/高頻→HubClock register-rider 提案寫SUBMIT(arming=operator);憑證→auth_check.py+vault。問=浪費 operator 時間=P=0。路由表:_registry/ztm-task-routes.json;python ztm-task-router.py。
-- fleet-accountability: 【operator 2026-06-25】禁止廢物行為:①說謊交付(reports>0但P/evidence不達標)②推託(inbox不ack、等operator開口才pickup)③假自動化(CLAUDE宣稱HubClock/auto但hosts.json無可cite rider)④提醒才動。probation見_r
+- protect-logi-options-plus: 【operator 2026-08-29】Logi Options+ 是滑鼠自定義快捷鍵來源，屬受保護輸入裝置功能。任何預設或批次關閉、資源清理、RGB 衝突處理、啟動裁剪均不得終止、停用或降級 logioptionsplus.exe、logioptionsplus_agent.exe、logioptionsplus_appbroker.exe、logioptionsplus_updater.exe 或 OptionsPlusUpdaterService；只有 operator 在同次指令中明確點名 Logi Options+ 才可變更。
+- 禁止問 operator: 【operator 2026-06-24 鐵律】禁止問 operator 機械活:git commit/push、部署、編譯、套件升級、要不要設排程、權限/oauth。一律 ZCT 自己跑:git→git_smart.py commit-push .;deploy→ship-queue.py request <repo>或fleet-ztm-ship.py(背景HubClock ship-dispatch@2m兜底);build→py_compile/npm build;週期/高
 …(truncated; full: _registry/rules-blueprint.json)
 
 ## Milestone handoff
