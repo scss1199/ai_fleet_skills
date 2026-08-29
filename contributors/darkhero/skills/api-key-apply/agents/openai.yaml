@@ -1,4 +1,0 @@
-interface:
-  display_name: "API Key Apply and Recovery"
-  short_description: "Safely audit, recover, and rotate API credentials"
-  default_prompt: "Use $api-key-apply to audit this API-key state and recover it without exposing secret values."
