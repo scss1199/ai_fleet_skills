@@ -92,7 +92,7 @@ class TestNormalizeOrigin(unittest.TestCase):
         self.assertEqual(probe.normalize_origin("https://X.DEV/cb")[1], "x.dev")
 
     def test_non_http_scheme_is_none(self):
-        for url in ("ftp://x.dev/cb", "javascript:alert(1)", "mailto:a@b.c"):
+        for url in ("ftp://x.dev/cb", "javascript:void(0)", "mailto:a@b.c"):
             self.assertIsNone(probe.normalize_origin(url), url)
 
     def test_out_of_range_port_is_none(self):
@@ -160,7 +160,7 @@ class TestClassifyCallback(unittest.TestCase):
             self.assertEqual((v, p, emitted), ("MALFORMED", ["empty_redirect_uri"], None), val)
 
     def test_non_http_scheme(self):
-        v, p, _ = self.c("javascript:alert(1)")
+        v, p, _ = self.c("javascript:void(0)")
         self.assertEqual(v, "MALFORMED")
         self.assertIn("unparseable_or_non_http_scheme", p)
 

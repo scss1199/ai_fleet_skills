@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-28T04:46:31Z",
-  "manifest_sha": "4c65897cfb962acc",
+  "generated_at": "2026-08-30T03:45:07Z",
+  "manifest_sha": "915cf298f9176496",
   "required": [
     "fames",
     "independent-review",
@@ -433,7 +433,7 @@
       "sha": "38482e844475ac22",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "1834e93084d103fc853379119612343a2b2f83347e311ad758f2ad037f5c6c83",
+      "package_sha": "d5ccb533ca7aad7a390cb238939c7176bb8b6625241fc68d81a885a5d7fce4fa",
       "files": {
         "SKILL.md": "38482e844475ac22a161e19fc2841d2aa73770c6b07b82dc26bd0cdb92c7f3bd",
         "references/known-failures.md": "fa595164adf25da421eb54a9615e53cde6d7232833820e69f85ed891a179e74c",
@@ -444,7 +444,7 @@
         "scripts/probe_redirect_uri.py": "f2e2a892e5de7e7e39bdffe6efccb9e824211262f276c50e2686d919a1734610",
         "scripts/redirect_uri_fix_handoff.md": "eebde5add450a312fe295a4fb20ca7a8aba3e1a0aa1a3c395b558e79e55fe342",
         "scripts/redirect_uri_state.json": "5aee1a8811232bfd0c64b74b89c6de0623bb2e2a7302a10660095627d8a12cd4",
-        "scripts/test_redirect_uri.py": "d37e8d3cbd3d5888aca64db7a26fe92b66ec993963c68bdaad739fa8754c2887"
+        "scripts/test_redirect_uri.py": "dcb79c421021d3a019a001c25006dfbd56889aadea65b72edfbbde3ec9144302"
       }
     },
     {
