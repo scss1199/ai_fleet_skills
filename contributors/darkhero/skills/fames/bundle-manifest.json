@@ -29,7 +29,7 @@
     "references/claude-live-eval.json": "8946d081f4c71be8b82004e8253c9cda9aa301ef4f09b277dc8a9fb981431a86",
     "references/hardware-compute.json": "e0792dce63c4894107fd63e43e3e0095ce4c4999686811279fd12543106a8df4",
     "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
-    "references/protocols/fames-protocol.json": "092059daadb9297c5d04e53a341d253b4b6a88bf6cfa61836f3c2c4cbdeb54a5",
+    "references/protocols/fames-protocol.json": "065dd36a29b33f645edf6bb878bc2246e6232819aa5aa7bb5893d8d209f7d0b0",
     "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
     "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
     "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
@@ -40,5 +40,5 @@
     "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
     "scripts/fames_fleet.py": "78ebe9f0b76d7230d728b6a0388c3a94050b77fef7e22d3cd7b02b2e47c49b8b"
   },
-  "package_sha": "3d428c588ea0e18af9def2204b22c6a5cef791a0703e5aaf7c1d3a3e88b1f352"
+  "package_sha": "b41978670ae80c23707f5a969d92a1db718c0074218247214c58bb5cb8764b7b"
 }

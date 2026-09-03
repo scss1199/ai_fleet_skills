@@ -1030,6 +1030,49 @@
       "modelled": "produced by a model reading the material (ASR, OCR, translation, summary). Admissible as a rendering of the source, never as a fact about the world.",
       "asserted": "the source's own statement. Admissible only as a claim attributed to that source."
     },
+    "mechanisms": {
+      "message_math_understanding": {
+        "purpose": "Quantify an ingested message corpus with deterministic local statistics, so a claim about the shape of that corpus -- how much of it is content bearing, how concentrated its sources are, how fresh it is -- is measured rather than described by a model.",
+        "capability": "text.corpus_statistics",
+        "capability_rule": "The mechanism declares a capability, never a vendor. It is satisfied entirely by local arithmetic over already parsed records: zero model calls, zero API calls, no network.",
+        "trust_class": "measured",
+        "engine": "_skill/engines/kyloren-zt-absorb.py",
+        "required_instruments": [
+          "record_count",
+          "url_count",
+          "unique_host_count",
+          "type_entropy_bits",
+          "temporal_span_days",
+          "freshness_days",
+          "content_bearing_ratio"
+        ],
+        "definitions": {
+          "type_entropy_bits": "Shannon entropy of the record-type distribution in bits, published beside type_entropy_normalized, its value divided by log2(k) over the k occupied types.",
+          "host_hhi": "Herfindahl-Hirschman concentration over the URL-host distribution, in [1/k, 1]; 1 means a single host carries everything.",
+          "content_bearing_ratio": "records carrying at least one URL, divided by the record count.",
+          "freshness_days": "age of the newest parsed timestamp; a timestamp with no explicit offset is rejected rather than assumed to be local."
+        },
+        "undefined_rule": "An instrument computed over an empty or zero-total distribution returns null, never zero. A null among the required instruments is UNKNOWN and fails closed; it is never read as a low score.",
+        "self_test": "python _skill/engines/kyloren-zt-absorb.py selftest --json",
+        "self_test_rule": "The self test is offline and write free -- it touches neither the network nor the output directory -- and covers the instruments, the timestamp parser, the derived group key and the redactor. An instrument value published without a passing self test in the same run is UNKNOWN.",
+        "self_test_assertions": [
+          "_shannon([1, 1]) == (1.0, 1.0)",
+          "_shannon([]) == (None, None)",
+          "_hhi([1, 1]) == 0.5",
+          "_hhi([4]) == 1.0",
+          "_hhi([]) is None"
+        ],
+        "residual_keys": ["R_READ", "R_PARSE", "R_ABSORB", "R_DISTRIBUTE", "R_FRESHNESS"],
+        "record": "_registry/fames-evidence/ingest-<UTC date>-kyloren-zt-absorb.json",
+        "validator": "python scripts/fames_fleet.py validate-ingest --input <ingest record> --json",
+        "non_goals": [
+          "inferring intent, sentiment or meaning from a message; that is a rendering by a model, never a fact",
+          "retaining sender names, identifiers or session material; the record carries a derived group key, never the group",
+          "writing anything back to the source; the lane is read only"
+        ],
+        "does_not_expand_authority": true
+      }
+    },
     "admissibility_rule": "Only measured items may be cited as SEAL evidence. A modelled or asserted item enters as a candidate and requires a measured verification of its own before any phase may go PASS on it.",
     "record": {
       "path": "_registry/fames-evidence/ingest-<stamp>-<slug>.json",
