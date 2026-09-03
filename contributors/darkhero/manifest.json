@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-30T03:45:07Z",
-  "manifest_sha": "915cf298f9176496",
+  "generated_at": "2026-09-03T04:15:02Z",
+  "manifest_sha": "5a810843e91a153a",
   "required": [
     "fames",
     "independent-review",
@@ -57,12 +57,12 @@
     },
     {
       "name": "agc-auto-goal-compact",
-      "sha": "881779f57bf6321f",
+      "sha": "fbddf330e250f2be",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "418adcd08a8963b236be6d73c3af7187659f2ff2fba1b0a8d5448753a591743a",
+      "package_sha": "14fc455b70574e23c3bbf8d74454ddbdbe7b021cbcd42b82d9801aa82f8687e6",
       "files": {
-        "SKILL.md": "a892ace07cd4f0198c277c7305d7b089233d10a9bab11ea3450b6d4a5fde4d90"
+        "SKILL.md": "3ce156903389fea8a8db572e4e6438890b31f9f2ea5d2cb701dca5f5c23feaa3"
       }
     },
     {
@@ -129,19 +129,19 @@
     },
     {
       "name": "fames",
-      "sha": "6ccb29bd91791633",
+      "sha": "adc82b7c97849284",
       "required": true,
       "lane": null,
-      "package_sha": "8ccf4b9778cd6c05b6ae4b7c97f1906010403ea1562b7ca2fbac5ade1c140eb2",
+      "package_sha": "3d428c588ea0e18af9def2204b22c6a5cef791a0703e5aaf7c1d3a3e88b1f352",
       "files": {
-        "SKILL.md": "6ccb29bd91791633b13b79cb19c294d775f27b2b55324243af67016cb9e42016",
-        "bundle-manifest.json": "15d625f3dccdfb7a101ff9b5de950d062c41bca305f9d5c71a08a4e0f3fc6f21",
+        "SKILL.md": "adc82b7c978492844e478dc576369dbcc3bea899c890b3ecb3dbf12d3adc58a7",
+        "bundle-manifest.json": "a3c4e21d6603874fef853cfd17f55ac9797c034ff3cb53bdd1a8d3a810bb4139",
         "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
-        "references/cases.json": "604d2f78eff8e76e029b230158a73c57cf17002bb95835e0f21d8e934d3af85c",
+        "references/cases.json": "3d534780909c37b9c2850a053bb1b97264cd5cb2dc298696e4cab28f6e1aa3bc",
         "references/claude-live-eval.json": "8946d081f4c71be8b82004e8253c9cda9aa301ef4f09b277dc8a9fb981431a86",
         "references/hardware-compute.json": "e0792dce63c4894107fd63e43e3e0095ce4c4999686811279fd12543106a8df4",
         "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
-        "references/protocols/fames-protocol.json": "60aad7ecc68d22f2f50628ca371cfcf4644a2fb9a643a7e94b326863483829b1",
+        "references/protocols/fames-protocol.json": "092059daadb9297c5d04e53a341d253b4b6a88bf6cfa61836f3c2c4cbdeb54a5",
         "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
         "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
         "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
@@ -150,7 +150,7 @@
         "scripts/adaptive_response_controller.py": "07a19c6e0bda90f25800617a274d5f641709676d0d71cdfae8e17dec91e0d911",
         "scripts/claude_live_ab.py": "3aaa4276c505e1eceea33207c6c4baeb190b6319b737f081fd53fbc055834261",
         "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
-        "scripts/fames_fleet.py": "e5af4e0be2350455777c6b6042835d413cef2b448f793e9381c5f03c32c3bdb8"
+        "scripts/fames_fleet.py": "78ebe9f0b76d7230d728b6a0388c3a94050b77fef7e22d3cd7b02b2e47c49b8b"
       }
     },
     {

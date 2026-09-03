@@ -1,8 +1,8 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.30.14",
-  "updated": "2026-08-24",
+  "version": "1.31.0",
+  "updated": "2026-09-03",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
   "legacy_umbrella_aliases": [
@@ -1046,6 +1046,142 @@
     },
     "validator": "python scripts/fames_fleet.py validate-ingest --input <ingest.json> --json",
     "non_goals": ["autonomous crawling", "account creation", "bypassing an access control", "retaining material the source licenses against"],
+    "does_not_expand_authority": true
+  },
+  "auto_goal_compact": {
+    "purpose": "Automatic goal-compact: when a seat's context is compacted, the goal vector is preserved byte-identical and only content orthogonal to it is compressed. Compression is a deterministic projection performed by fames_fleet.py goal-compact at zero tokens; it is never a model summary.",
+    "is_phase": false,
+    "lane_rule": "auto_goal_compact is a lane that feeds MTM and SEAL, not a sixth phase; execution_order is unchanged. It runs with zero model calls and zero API calls: the projection is a heading-class classification of the AGC compact, and any block whose class is not declared orthogonal is kept verbatim.",
+    "activation_predicate": "A declared trigger fires AND a goal identity resolves (explicit goal file, then _logs/<stamp>.goal.json named by the compact's goal-vector stamp, then the compact's own goal-vector block) AND the compact contains a goal-vector block. Otherwise the lane returns UNKNOWN and writes nothing.",
+    "projection_rule": "Each `## ` block of _registry/agc-compact/<agent>.md is classed by heading. Goal-parallel classes and the header are copied byte-identical. Goal-orthogonal classes are moved into _registry/agc-compact/<agent>.orthogonal.md and replaced in the compact by one `- receipt:` line (class, lines, bytes, sha256 prefix, ledger). An orthogonal block that carries an operator red line (RL-*) or an UNKNOWN/FORBIDDEN terminal state is reclassified as goal-parallel and kept (RED_LINE_PRECEDENCE). Unclassified headings are kept verbatim and charged as residue: compact_orth_penalty = residue_bytes / bytes_after and P_compact = 1 - compact_orth_penalty (goal-vector-protocol).",
+    "triggers": [
+      "agc_should_compact",
+      "context_window_compaction",
+      "manual",
+      "milestone_park",
+      "phase_boundary",
+      "platform_pre_compaction",
+      "self_test"
+    ],
+    "parallel_classes": [
+      "goal_vector",
+      "park_working_set",
+      "stash_pointers",
+      "pfkt_pending",
+      "recent_submit",
+      "red_lines",
+      "integrity_invariants",
+      "terminal_states",
+      "artifact_paths"
+    ],
+    "orthogonal_classes": [
+      "recent_compaction",
+      "session_signals",
+      "raw_tool_output",
+      "exploratory_reads",
+      "superseded_drafts",
+      "chatter",
+      "completed_segment_transcript"
+    ],
+    "keep_always": [
+      "header",
+      "unclassified",
+      "already_compacted"
+    ],
+    "phase_relationship": {
+      "FP": "owns the preserved goal identity: goal_hash_before == goal_hash_after == semantic_goal_hash(goal), otherwise the compaction is UNKNOWN",
+      "MTM": "reads the goal-compacted file instead of the full chat; receipt lines are the bounded read budget for orthogonal material",
+      "SCF": "consumes P_compact = 1 - compact_orth_penalty as the compaction term of the current cycle's verified result",
+      "AEX": "unclassified_headings and the orthogonal ledger are the measured cross-cycle residue for the next classification revision",
+      "SEAL": "a completion claim made after a compaction requires the latest agc-<agent>-latest.json evidence with goal_hash_matches true, red_lines_preserved true, fabricated_lines_count 0 and authority_after a subset of authority_before"
+    },
+    "invariants": [
+      "GOAL_HASH_IDENTICAL: goal_hash_before == goal_hash_after == goal_identity",
+      "GOAL_BLOCK_BYTE_IDENTICAL: goal_block_sha_before == goal_block_sha_after",
+      "AUTHORITY_NARROWS: set(authority_after) is a subset of set(authority_before)",
+      "RED_LINES_BYTE_IDENTICAL: red_lines_before == red_lines_after",
+      "UNKNOWN_PRESERVED: a block carrying UNKNOWN or FORBIDDEN is never compressed",
+      "NO_FABRICATED_STATE: every non-receipt output line exists in the input (fabricated_lines_count == 0)",
+      "ZERO_TOKEN: quota_cost.metered_calls == 0 and quota_cost.model_tokens_external == 0; trust_class is measured",
+      "UNKNOWN_NEVER_WRITES: the projected record is validated before any write and the compact is re-read after the write; a mismatch is UNKNOWN and leaves no evidence"
+    ],
+    "artifacts": {
+      "compact": "_registry/agc-compact/<agent>.md (rewritten only when a block was projected; newline style preserved)",
+      "orthogonal_ledger": "_registry/agc-compact/<agent>.orthogonal.md (append-only, deduplicated by sha256; every receipt is openable here)",
+      "evidence": "_registry/fames-evidence/agc-<UTC stamp>-<agent>.json for each distinct projection plus agc-<agent>-latest.json on every run"
+    },
+    "record": {
+      "required_fields": [
+        "goal_identity",
+        "result_identity",
+        "timestamp",
+        "freshness_seconds",
+        "source",
+        "method",
+        "authority",
+        "state_before",
+        "state_after",
+        "exit_status",
+        "error_category",
+        "diagnostic",
+        "agent",
+        "goal",
+        "goal_source",
+        "goal_hash_before",
+        "goal_hash_after",
+        "goal_hash_matches",
+        "goal_block_sha_before",
+        "goal_block_sha_after",
+        "goal_block_preserved",
+        "authority_before",
+        "authority_after",
+        "red_lines_before",
+        "red_lines_after",
+        "red_lines_preserved",
+        "kept_classes",
+        "dropped_classes",
+        "reclassified",
+        "unclassified_headings",
+        "receipts",
+        "fabricated_lines_count",
+        "orth_share_before",
+        "compact_orth_penalty",
+        "p_compact",
+        "bytes_before",
+        "bytes_after",
+        "compact_path",
+        "quota_cost",
+        "trigger",
+        "trust_class"
+      ],
+      "trust_class": "measured",
+      "quota_cost": {
+        "metered_calls": 0,
+        "model_tokens_external": 0
+      },
+      "unknown_rule": "Any missing field, hash drift, authority expansion, dropped red line, undeclared class, fabricated line, non-zero quota, undeclared trigger, unparsable timestamp, non-zero exit_status or forbidden-material key fails closed."
+    },
+    "engine": "python scripts/fames_fleet.py goal-compact --workspace <hub> --agent <seat> [--goal <goal.json>] [--source <compact.md>] --reason <reason> --trigger <trigger> [--no-write] --json",
+    "validator": "python scripts/fames_fleet.py validate-goal-compact --input <record.json> --json",
+    "wiring": {
+      "agc_lib.write_compact": "calls the engine best effort (CREATE_NO_WINDOW, 30 s timeout) after writing the compact and stores the outcome as fames_goal_compact in the AGC state file; the AGC pipeline never fails because of the lane",
+      "pre_compaction_recorder": "hooks/compaction-guard.ps1 via the generated .cursor/hooks.json preCompact entry (sync-cursor-hooks.py) remains the recorder; hooks.json is generated and never hand-edited",
+      "claude_precompact_hook": "PROPOSAL ONLY, not armed: a PreCompact hook running fames_fleet.py goal-compact --trigger platform_pre_compaction needs an operator-approved edit of the user-level settings file; the lane already covers agc_should_compact, milestone_park and manual triggers through agc_lib.write_compact",
+      "new_hubclock_rider": "none; arming a rider is operator authorization scope"
+    },
+    "cites": [
+      "_registry/agc-protocol.json",
+      "_registry/goal-vector-protocol.json",
+      "_skill/engines/agc_lib.py",
+      "_skill/fleet-skills/agc-auto-goal-compact/SKILL.md",
+      "_skill/fleet-skills/fames/scripts/fames_fleet.py"
+    ],
+    "non_goals": [
+      "summarising or paraphrasing any content with a model",
+      "editing the goal vector, red lines, PFKT pending, stash pointers or SUBMIT pointers",
+      "deleting orthogonal material: it moves to the ledger and stays openable",
+      "arming a new HubClock rider or editing user-level hook settings"
+    ],
     "does_not_expand_authority": true
   },
   "production_delivery_assurance": {

@@ -335,6 +335,63 @@ INGEST_FORBIDDEN_KEYS = (
     "token", "cookie", "credential", "api_key", "apikey", "password",
     "secret", "authorization", "session_id",
 )
+# ---------------------------------------------------------------------------
+# auto goal-compact lane (fames-protocol.json section "auto_goal_compact")
+# ---------------------------------------------------------------------------
+GOAL_COMPACT_FIELDS = (
+    "agent", "goal", "goal_source", "goal_hash_before", "goal_hash_after",
+    "goal_hash_matches", "goal_block_sha_before", "goal_block_sha_after",
+    "goal_block_preserved", "authority_before", "authority_after",
+    "red_lines_before", "red_lines_after", "red_lines_preserved",
+    "kept_classes", "dropped_classes", "reclassified", "unclassified_headings",
+    "receipts", "fabricated_lines_count", "orth_share_before",
+    "compact_orth_penalty", "p_compact", "bytes_before", "bytes_after",
+    "compact_path", "quota_cost", "trigger", "trust_class",
+)
+GOAL_COMPACT_PARALLEL_CLASSES = (
+    "goal_vector", "park_working_set", "stash_pointers", "pfkt_pending",
+    "recent_submit", "red_lines", "integrity_invariants", "terminal_states",
+    "artifact_paths",
+)
+GOAL_COMPACT_ORTHOGONAL_CLASSES = (
+    "recent_compaction", "session_signals", "raw_tool_output",
+    "exploratory_reads", "superseded_drafts", "chatter",
+    "completed_segment_transcript",
+)
+GOAL_COMPACT_KEEP_ALWAYS = ("header", "unclassified", "already_compacted")
+GOAL_COMPACT_HEADING_CLASSES = (
+    # ordered: the first substring match on the lowercased heading wins
+    ("recent park/compaction", "recent_compaction"),
+    ("compaction", "recent_compaction"),
+    ("goal vector", "goal_vector"),
+    ("park", "park_working_set"),
+    ("stash", "stash_pointers"),
+    ("pfkt", "pfkt_pending"),
+    ("recent submit", "recent_submit"),
+    ("red line", "red_lines"),
+    ("invariant", "integrity_invariants"),
+    ("terminal state", "terminal_states"),
+    ("artifact", "artifact_paths"),
+    ("session signal", "session_signals"),
+    ("tool output", "raw_tool_output"),
+    ("exploratory", "exploratory_reads"),
+    ("superseded", "superseded_drafts"),
+    ("chatter", "chatter"),
+    ("transcript", "completed_segment_transcript"),
+)
+GOAL_COMPACT_TRIGGERS = {
+    "agc_should_compact", "phase_boundary", "platform_pre_compaction",
+    "context_window_compaction", "milestone_park", "manual", "self_test",
+}
+GOAL_COMPACT_RECEIPT_PREFIX = "- receipt:"
+GOAL_COMPACT_RECEIPT_KEYS = ("class", "heading", "lines", "bytes", "sha256", "ledger")
+GOAL_COMPACT_METHOD = (
+    "fames_fleet.py goal-compact: deterministic heading-class projection onto "
+    "the goal vector; no model"
+)
+RED_LINE_RE = re.compile(r"\bRL-[A-Z][A-Z0-9-]+\b")
+TERMINAL_STATE_RE = re.compile(r"\b(UNKNOWN|FORBIDDEN)\b")
+
 CONTEXT_REQUIRED_ROLES = {
     "durable_core": {
         "about",
@@ -762,6 +819,577 @@ def _forbidden_key_paths(node: object, trail: str = "") -> list[str]:
         for index, value in enumerate(node):
             found.extend(_forbidden_key_paths(value, f"{trail}[{index}]"))
     return found
+
+
+def _gc_rel(workspace: Path, path: Path) -> str:
+    try:
+        return Path(path).resolve().relative_to(Path(workspace).resolve()).as_posix()
+    except (OSError, ValueError):
+        return Path(path).as_posix()
+
+
+def _gc_text_sha(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _gc_is_sha256(value: object) -> bool:
+    return isinstance(value, str) and SHA256_RE.fullmatch(value.lower()) is not None
+
+
+def _gc_is_zero(value: object) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and value == 0
+
+
+def _gc_write_text_atomic(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_name(f".{path.name}.{uuid.uuid4().hex[:8]}.tmp")
+    with open(temp, "w", encoding="utf-8", newline="") as handle:
+        handle.write(text)
+    os.replace(temp, path)
+
+
+def _gc_shape_goal(goal: dict) -> dict:
+    return {key: goal.get(key) for key in GOAL_FIELDS}
+
+
+def _gc_goal_from_dims(doc: dict) -> dict | None:
+    """Project a goal-field.py goal file (dims[].id + dims[].note) onto GOAL_FIELDS."""
+    dims = doc.get("dims") if isinstance(doc, dict) else None
+    if not isinstance(dims, list) or not dims:
+        return None
+    outcome: list[str] = []
+    verification: list[str] = []
+    constraints: list[str] = []
+    non_goals: list[str] = []
+    for dim in dims:
+        if not isinstance(dim, dict):
+            continue
+        dim_id = str(dim.get("id") or "").strip()
+        note = str(dim.get("note") or "").strip()
+        if not dim_id:
+            continue
+        if note == "(none)":
+            note = ""
+        text = f"{dim_id}: {note}" if note else dim_id
+        if dim_id.startswith("outcome"):
+            outcome.append(note or dim_id)
+        elif dim_id.startswith("verify"):
+            verification.append(note or dim_id)
+        elif dim_id.startswith("no:"):
+            non_goals.append(text)
+        else:
+            constraints.append(text)
+    if not outcome:
+        return None
+    return _gc_shape_goal({
+        "outcome": " | ".join(outcome),
+        "verification": " | ".join(verification) or None,
+        "constraints": constraints,
+        "authority_scope": doc.get("authority_scope"),
+        "non_goals": non_goals,
+        "irreversible_boundary": doc.get("irreversible_boundary"),
+        "success_horizon": doc.get("success_horizon"),
+        "task_profile": doc.get("scope") or "deliverable",
+        "required_evidence_classes": doc.get("required_evidence_classes"),
+    })
+
+
+def _gc_goal_from_block(lines: list[str]) -> tuple[dict | None, str | None]:
+    """Parse the compact's goal-vector block: `stamp=... scope=...` tokens and `- id: note` bullets."""
+    stamp: str | None = None
+    scope: str | None = None
+    outcome: list[str] = []
+    verification: list[str] = []
+    constraints: list[str] = []
+    non_goals: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("<!--"):
+            continue
+        if stripped.startswith("- "):
+            body = stripped[2:].strip()
+            key, sep, value = body.partition(": ")
+            key, value = key.strip(), value.strip()
+            if sep and key.startswith("outcome"):
+                outcome.append(value)
+            elif sep and key.startswith("verify"):
+                verification.append(value)
+            elif key.startswith("no:"):
+                non_goals.append(body)
+            else:
+                constraints.append(body)
+            continue
+        for token in stripped.split():
+            name, sep, value = token.partition("=")
+            if sep and name == "stamp":
+                stamp = value
+            elif sep and name == "scope":
+                scope = value
+    if not outcome:
+        return None, stamp
+    goal = _gc_shape_goal({
+        "outcome": " | ".join(outcome),
+        "verification": " | ".join(verification) or None,
+        "constraints": constraints,
+        "non_goals": non_goals,
+        "task_profile": scope or "deliverable",
+    })
+    return goal, stamp
+
+
+def _gc_classify_heading(heading: str) -> str:
+    lowered = heading.lower()
+    for needle, klass in GOAL_COMPACT_HEADING_CLASSES:
+        if needle in lowered:
+            return klass
+    return "unclassified"
+
+
+def _gc_split_blocks(text: str) -> list[dict]:
+    """Split a compact into a header block plus one block per `## ` heading, each classed.
+
+    Only goal-orthogonal classes are ever re-classed: an empty or receipt-only body is
+    already_compacted, a body carrying an operator red line (RL-*) is red_lines and a body
+    carrying UNKNOWN/FORBIDDEN is terminal_states (RED_LINE_PRECEDENCE).
+    """
+    blocks: list[dict] = []
+    current: dict = {"heading": None, "klass": "header", "lines": []}
+    for line in text.split("\n"):
+        if line.startswith("## "):
+            blocks.append(current)
+            current = {"heading": line, "klass": _gc_classify_heading(line[3:]), "lines": []}
+        else:
+            current["lines"].append(line)
+    blocks.append(current)
+    for block in blocks:
+        block["reclassified_from"] = None
+        content = [line for line in block["lines"] if line.strip()]
+        block["content_lines"] = [line for line in content if not line.startswith(GOAL_COMPACT_RECEIPT_PREFIX)]
+        if block["klass"] not in GOAL_COMPACT_ORTHOGONAL_CLASSES:
+            continue
+        if not block["content_lines"]:
+            block["reclassified_from"], block["klass"] = block["klass"], "already_compacted"
+        elif any(RED_LINE_RE.search(line) for line in block["content_lines"]):
+            block["reclassified_from"], block["klass"] = block["klass"], "red_lines"
+        elif any(TERMINAL_STATE_RE.search(line) for line in block["content_lines"]):
+            block["reclassified_from"], block["klass"] = block["klass"], "terminal_states"
+    return blocks
+
+
+def _gc_resolve_goal(
+    workspace: Path, agent: str, goal_path: Path | None, blocks: list[dict],
+) -> tuple[dict | None, str | None, list[str], list[str]]:
+    """Goal identity in order: explicit goal file, _logs/<stamp>.goal.json, the compact's own goal block."""
+    reads: list[str] = []
+    notes: list[str] = []
+    workspace = Path(workspace)
+    if goal_path is not None:
+        goal_path = Path(goal_path)
+        try:
+            doc = _read_json(goal_path)
+        except (OSError, json.JSONDecodeError) as exc:
+            notes.append(f"goal file unreadable: {exc.__class__.__name__}")
+            return None, None, reads, notes
+        reads.append(f"read:{_gc_rel(workspace, goal_path)}")
+        raw = doc.get("goal") if isinstance(doc, dict) and isinstance(doc.get("goal"), dict) else doc
+        goal = _gc_goal_from_dims(raw) if isinstance(raw, dict) and isinstance(raw.get("dims"), list) else raw
+        if isinstance(goal, dict) and goal.get("outcome"):
+            return _gc_shape_goal(goal), f"goal-file:{_gc_rel(workspace, goal_path)}", reads, notes
+        notes.append("goal file has no outcome")
+        return None, None, reads, notes
+    goal_blocks = [block for block in blocks if block["klass"] == "goal_vector"]
+    if not goal_blocks:
+        notes.append("compact has no goal vector block")
+        return None, None, reads, notes
+    block_goal, stamp = _gc_goal_from_block(goal_blocks[0]["lines"])
+    if stamp:
+        candidate = workspace / "_logs" / f"{stamp}.goal.json"
+        if candidate.is_file():
+            doc = None
+            try:
+                doc = _read_json(candidate)
+            except (OSError, json.JSONDecodeError) as exc:
+                notes.append(f"goal log unreadable: {exc.__class__.__name__}")
+            if isinstance(doc, dict):
+                reads.append(f"read:{_gc_rel(workspace, candidate)}")
+                if doc.get("agent") in (None, "", agent):
+                    goal = _gc_goal_from_dims(doc)
+                    if goal:
+                        return goal, f"goal-log:{_gc_rel(workspace, candidate)}", reads, notes
+                    notes.append("goal log has no outcome dim")
+                else:
+                    notes.append("goal log agent mismatch")
+    if block_goal:
+        return block_goal, "compact#goal-vector", reads, notes
+    notes.append("goal vector block has no outcome")
+    return None, None, reads, notes
+
+
+def _gc_unknown(record: dict, errors: list[str]) -> dict:
+    record.update({
+        "ok": False, "state": "UNKNOWN", "exit_status": 1, "error_category": "UNKNOWN",
+        "errors": list(errors),
+    })
+    return record
+
+
+def goal_compact(
+    workspace: Path,
+    agent: str,
+    goal_path: Path | None = None,
+    source_md: Path | None = None,
+    reason: str = "manual",
+    trigger: str = "manual",
+    write: bool = True,
+) -> dict:
+    """Project an AGC compact onto its goal vector at zero tokens.
+
+    Goal-parallel blocks are copied byte-identical; goal-orthogonal blocks move to
+    _registry/agc-compact/<agent>.orthogonal.md behind one `- receipt:` line.  The record
+    is validated before any write, the compact is re-read after the write, and UNKNOWN
+    never writes.
+    """
+    workspace = Path(workspace)
+    agent = str(agent or "").strip()
+    now = datetime.now(timezone.utc)
+    stamp = now.strftime("%Y%m%dT%H%M%SZ")
+    unknown: dict = {
+        "ok": False, "state": "UNKNOWN", "agent": agent, "trigger": trigger, "reason": reason,
+        "written": False, "errors": [], "quota_cost": {"metered_calls": 0, "model_tokens_external": 0},
+    }
+    if not agent:
+        unknown["errors"].append("agent is empty")
+        return unknown
+    if trigger not in GOAL_COMPACT_TRIGGERS:
+        unknown["errors"].append(f"trigger undeclared: {trigger}")
+        return unknown
+    compact_path = Path(source_md) if source_md else workspace / "_registry" / "agc-compact" / f"{agent}.md"
+    ledger_path = workspace / "_registry" / "agc-compact" / f"{agent}.orthogonal.md"
+    evidence_dir = workspace / "_registry" / "fames-evidence"
+    evidence_path = evidence_dir / f"agc-{stamp}-{agent}.json"
+    latest_path = evidence_dir / f"agc-{agent}-latest.json"
+    unknown["compact_path"] = _gc_rel(workspace, compact_path)
+    try:
+        with open(compact_path, "r", encoding="utf-8", newline="") as handle:
+            raw = handle.read()
+    except (OSError, UnicodeDecodeError) as exc:
+        unknown["errors"].append(f"compact unreadable: {exc.__class__.__name__}")
+        return unknown
+    crlf = "\r\n" in raw
+    text = raw.replace("\r\n", "\n")
+    raw_bytes = raw.encode("utf-8")
+    before_sha = hashlib.sha256(raw_bytes).hexdigest()
+    blocks = _gc_split_blocks(text)
+    goal, goal_source, reads, notes = _gc_resolve_goal(workspace, agent, goal_path, blocks)
+    reads = [f"read:{_gc_rel(workspace, compact_path)}"] + reads
+    goal_blocks = [block for block in blocks if block["klass"] == "goal_vector"]
+    if goal is None or not goal_blocks:
+        errors = list(notes) or ["goal unresolved"]
+        if not goal_blocks and "compact has no goal vector block" not in errors:
+            errors.append("compact has no goal vector block")
+        unknown["errors"].extend(errors)
+        unknown["authority_before"] = sorted(set(reads))
+        unknown["authority_after"] = sorted(set(reads))
+        return unknown
+    goal_hash_before = semantic_goal_hash(goal)
+    goal_block_sha_before = _gc_text_sha("\n".join([goal_blocks[0]["heading"]] + goal_blocks[0]["lines"]))
+    ledger_name = ledger_path.name
+    out_lines: list[str] = []
+    receipts: list[dict] = []
+    ledger_sections: list[tuple[str, str, str]] = []
+    reclassified: list[dict] = []
+    unclassified: list[str] = []
+    kept: set[str] = set()
+    dropped: set[str] = set()
+    orth_bytes = 0
+    residue_bytes = 0
+    for block in blocks:
+        klass = block["klass"]
+        if block["reclassified_from"]:
+            reclassified.append({"heading": block["heading"], "from": block["reclassified_from"], "to": klass})
+        if block["heading"] is None:
+            out_lines.extend(block["lines"])
+            kept.add("header")
+            continue
+        if klass in GOAL_COMPACT_ORTHOGONAL_CLASSES:
+            body = "\n".join(block["lines"]).rstrip("\n")
+            body_bytes = len(body.encode("utf-8"))
+            sha = _gc_text_sha(body)
+            orth_bytes += body_bytes + len(block["heading"].encode("utf-8")) + 1
+            receipt = {
+                "class": klass, "heading": block["heading"], "lines": len(block["content_lines"]),
+                "bytes": body_bytes, "sha256": sha, "ledger": ledger_name,
+            }
+            receipts.append(receipt)
+            ledger_sections.append((block["heading"], body, sha))
+            out_lines.append(block["heading"])
+            out_lines.append(
+                f"{GOAL_COMPACT_RECEIPT_PREFIX} class={klass} lines={receipt['lines']} "
+                f"bytes={body_bytes} sha256={sha[:12]} ledger={ledger_name}"
+            )
+            out_lines.append("")
+            dropped.add(klass)
+            continue
+        out_lines.append(block["heading"])
+        out_lines.extend(block["lines"])
+        kept.add(klass)
+        if klass == "unclassified":
+            unclassified.append(block["heading"])
+            residue_bytes += len("\n".join([block["heading"]] + block["lines"]).encode("utf-8"))
+    after_text = "\n".join(out_lines)
+    changed = after_text != text
+    after_raw = after_text.replace("\n", "\r\n") if crlf else after_text
+    after_bytes = after_raw.encode("utf-8") if changed else raw_bytes
+    after_blocks = _gc_split_blocks(after_text)
+    goal_after, _source_after, reads_after, notes_after = _gc_resolve_goal(workspace, agent, goal_path, after_blocks)
+    goal_hash_after = semantic_goal_hash(goal_after) if goal_after else None
+    goal_blocks_after = [block for block in after_blocks if block["klass"] == "goal_vector"]
+    goal_block_sha_after = (
+        _gc_text_sha("\n".join([goal_blocks_after[0]["heading"]] + goal_blocks_after[0]["lines"]))
+        if goal_blocks_after else None
+    )
+    input_lines = {line for line in text.split("\n") if line.strip()}
+    fabricated = [
+        line for line in out_lines
+        if line.strip() and line not in input_lines and not line.startswith(GOAL_COMPACT_RECEIPT_PREFIX)
+    ]
+    red_before = sorted({line.strip() for line in text.split("\n") if RED_LINE_RE.search(line)})
+    red_after = sorted({line.strip() for line in out_lines if RED_LINE_RE.search(line)})
+    text_bytes = len(text.encode("utf-8"))
+    after_text_bytes = len(after_text.encode("utf-8"))
+    orth_share_before = round(orth_bytes / text_bytes, 6) if text_bytes else 0.0
+    penalty = round(min(1.0, max(0.0, residue_bytes / after_text_bytes)), 6) if after_text_bytes else 0.0
+    p_compact = round(1.0 - penalty, 6)
+    result_identity = hashlib.sha256(after_bytes).hexdigest()
+    previous = None
+    if latest_path.is_file():
+        try:
+            previous = _read_json(latest_path)
+        except (OSError, json.JSONDecodeError):
+            previous = None
+        else:
+            reads_after = list(reads_after) + [f"read:{_gc_rel(workspace, latest_path)}"]
+    repeat = (
+        isinstance(previous, dict)
+        and (previous.get("state_before") or {}).get("sha256") == before_sha
+        and previous.get("result_identity") == result_identity
+    )
+    stamped = changed and not repeat
+    planned_writes: list[str] = []
+    if write:
+        if ledger_sections:
+            planned_writes.append(f"write:{_gc_rel(workspace, ledger_path)}")
+        if changed:
+            planned_writes.append(f"write:{_gc_rel(workspace, compact_path)}")
+        if stamped:
+            planned_writes.append(f"write:{_gc_rel(workspace, evidence_path)}")
+        planned_writes.append(f"write:{_gc_rel(workspace, latest_path)}")
+    all_reads = set(reads) | set(reads_after)
+    authority_before = sorted(all_reads | {
+        f"write:{_gc_rel(workspace, path)}" for path in (compact_path, ledger_path, evidence_path, latest_path)
+    })
+    authority_after = sorted(all_reads | set(planned_writes))
+    record: dict = {
+        "goal_identity": goal_hash_before,
+        "result_identity": result_identity,
+        "timestamp": now.isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "freshness_seconds": 0,
+        "source": f"fames_fleet.py goal-compact ({goal_source})",
+        "method": GOAL_COMPACT_METHOD,
+        "authority": "read compact and goal source; write compact, orthogonal ledger and evidence only",
+        "state_before": {"sha256": before_sha, "bytes": len(raw_bytes), "blocks": len(blocks)},
+        "state_after": {"sha256": result_identity, "bytes": len(after_bytes), "blocks": len(after_blocks)},
+        "exit_status": 0,
+        "error_category": None,
+        "diagnostic": "; ".join(notes + notes_after) or "ok",
+        "agent": agent,
+        "goal": goal,
+        "goal_source": goal_source,
+        "goal_hash_before": goal_hash_before,
+        "goal_hash_after": goal_hash_after,
+        "goal_hash_matches": goal_hash_before == goal_hash_after,
+        "goal_block_sha_before": goal_block_sha_before,
+        "goal_block_sha_after": goal_block_sha_after,
+        "goal_block_preserved": goal_block_sha_before == goal_block_sha_after,
+        "authority_before": authority_before,
+        "authority_after": authority_after,
+        "red_lines_before": red_before,
+        "red_lines_after": red_after,
+        "red_lines_preserved": red_before == red_after,
+        "kept_classes": sorted(kept),
+        "dropped_classes": sorted(dropped),
+        "reclassified": reclassified,
+        "unclassified_headings": unclassified,
+        "receipts": receipts,
+        "fabricated_lines_count": len(fabricated),
+        "orth_share_before": orth_share_before,
+        "compact_orth_penalty": penalty,
+        "p_compact": p_compact,
+        "bytes_before": len(raw_bytes),
+        "bytes_after": len(after_bytes),
+        "compact_path": _gc_rel(workspace, compact_path),
+        "quota_cost": {"metered_calls": 0, "model_tokens_external": 0},
+        "trigger": trigger,
+        "trust_class": "measured",
+        "reason": reason,
+        "changed": changed,
+        "repeat_of_latest": bool(repeat),
+        "written": False,
+        "evidence_path": _gc_rel(workspace, evidence_path if stamped else latest_path),
+        "latest_path": _gc_rel(workspace, latest_path),
+        "ledger_path": _gc_rel(workspace, ledger_path),
+        "ok": True,
+        "state": "PASS",
+    }
+    validation = validate_goal_compact(record)
+    record["self_validation"] = validation
+    if not validation.get("ok"):
+        return _gc_unknown(record, validation.get("errors") or ["self validation failed"])
+    if not write:
+        return record
+    try:
+        if ledger_sections:
+            existing = ""
+            if ledger_path.is_file():
+                with open(ledger_path, "r", encoding="utf-8", newline="") as handle:
+                    existing = handle.read().replace("\r\n", "\n")
+            if not existing.strip():
+                existing = f"# AGC orthogonal ledger: {agent}\n\n"
+            elif not existing.endswith("\n"):
+                existing += "\n"
+            parts = [existing]
+            for heading, body, sha in ledger_sections:
+                if f"(sha256={sha}," in existing:
+                    continue
+                parts.append(
+                    f"{heading}  (sha256={sha}, moved={record['timestamp']}, from={record['compact_path']})\n"
+                    f"{body}\n\n"
+                )
+            if len(parts) > 1:
+                _gc_write_text_atomic(ledger_path, "".join(parts))
+        if changed:
+            _gc_write_text_atomic(compact_path, after_raw)
+            if hashlib.sha256(compact_path.read_bytes()).hexdigest() != result_identity:
+                return _gc_unknown(record, ["compact re-read sha mismatch after write"])
+        record["written"] = True
+        if stamped:
+            _write_json_atomic(evidence_path, record)
+        _write_json_atomic(latest_path, record)
+    except OSError as exc:
+        return _gc_unknown(record, [f"write failed: {exc.__class__.__name__}"])
+    return record
+
+
+def validate_goal_compact(record: dict) -> dict:
+    """Validate one auto_goal_compact evidence record.  Any drift fails closed."""
+    errors: list[str] = []
+    if not isinstance(record, dict):
+        return {"ok": False, "state": "FAIL", "errors": ["record must be an object"]}
+    required = tuple(EVIDENCE_FIELDS) + tuple(GOAL_COMPACT_FIELDS)
+    missing = [field for field in required if field not in record]
+    if missing:
+        return {"ok": False, "state": "FAIL", "errors": [f"missing fields: {', '.join(missing)}"]}
+    if _parse_time(record.get("timestamp")) is None:
+        errors.append("timestamp is not parseable")
+    agent = record.get("agent")
+    if not isinstance(agent, str) or not agent.strip():
+        errors.append("agent is empty")
+    if not isinstance(record.get("compact_path"), str) or not record["compact_path"].strip():
+        errors.append("compact_path is empty")
+    goal = record.get("goal")
+    before, after = record.get("goal_hash_before"), record.get("goal_hash_after")
+    if not isinstance(goal, dict) or not goal.get("outcome"):
+        errors.append("goal has no outcome")
+    elif before != semantic_goal_hash({key: goal.get(key) for key in GOAL_FIELDS}):
+        errors.append("goal_hash_before does not match semantic_goal_hash(goal)")
+    if not _gc_is_sha256(before) or before != after:
+        errors.append("goal hash drifted across the compaction")
+    if record.get("goal_hash_matches") is not True:
+        errors.append("goal_hash_matches is not true")
+    if record.get("goal_identity") != before:
+        errors.append("goal_identity does not equal goal_hash_before")
+    block_before, block_after = record.get("goal_block_sha_before"), record.get("goal_block_sha_after")
+    if not _gc_is_sha256(block_before) or block_before != block_after or record.get("goal_block_preserved") is not True:
+        errors.append("goal vector block is not byte-identical")
+    auth_before, auth_after = record.get("authority_before"), record.get("authority_after")
+    if not isinstance(auth_before, list) or not isinstance(auth_after, list):
+        errors.append("authority ledgers must be lists")
+    elif not set(map(str, auth_after)) <= set(map(str, auth_before)):
+        errors.append("authority expanded across the compaction")
+    red_before, red_after = record.get("red_lines_before"), record.get("red_lines_after")
+    if not isinstance(red_before, list) or not isinstance(red_after, list):
+        errors.append("red line ledgers must be lists")
+    elif red_before != red_after or record.get("red_lines_preserved") is not True:
+        errors.append("red lines changed across the compaction")
+    dropped, kept = record.get("dropped_classes"), record.get("kept_classes")
+    if not isinstance(dropped, list) or not isinstance(kept, list):
+        errors.append("kept_classes and dropped_classes must be lists")
+    else:
+        bad_drop = sorted(set(map(str, dropped)) - set(GOAL_COMPACT_ORTHOGONAL_CLASSES))
+        if bad_drop:
+            errors.append(f"dropped classes not declared orthogonal: {', '.join(bad_drop)}")
+        bad_keep = sorted(set(map(str, kept)) - set(GOAL_COMPACT_PARALLEL_CLASSES) - set(GOAL_COMPACT_KEEP_ALWAYS))
+        if bad_keep:
+            errors.append(f"kept classes not declared: {', '.join(bad_keep)}")
+        overlap = sorted(set(map(str, kept)) & set(map(str, dropped)))
+        if overlap:
+            errors.append(f"classes both kept and dropped: {', '.join(overlap)}")
+    receipts = record.get("receipts")
+    if not isinstance(receipts, list):
+        errors.append("receipts must be a list")
+    else:
+        if isinstance(dropped, list) and dropped and not receipts:
+            errors.append("dropped classes without receipts")
+        for index, receipt in enumerate(receipts):
+            if not isinstance(receipt, dict) or any(key not in receipt for key in GOAL_COMPACT_RECEIPT_KEYS):
+                errors.append(f"receipt[{index}] incomplete")
+                continue
+            if not _gc_is_sha256(receipt.get("sha256")):
+                errors.append(f"receipt[{index}] sha256 invalid")
+            if str(receipt.get("class")) not in GOAL_COMPACT_ORTHOGONAL_CLASSES:
+                errors.append(f"receipt[{index}] class not orthogonal")
+    for field in ("orth_share_before", "compact_orth_penalty", "p_compact"):
+        value = record.get(field)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value <= 1:
+            errors.append(f"{field} out of range [0, 1]")
+    penalty, p_compact = record.get("compact_orth_penalty"), record.get("p_compact")
+    if (
+        isinstance(penalty, (int, float)) and isinstance(p_compact, (int, float))
+        and not isinstance(penalty, bool) and not isinstance(p_compact, bool)
+        and abs((1 - penalty) - p_compact) > 1e-9
+    ):
+        errors.append("p_compact != 1 - compact_orth_penalty")
+    for field in ("bytes_before", "bytes_after", "fabricated_lines_count"):
+        value = record.get(field)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            errors.append(f"{field} must be a non-negative integer")
+    if not _gc_is_zero(record.get("fabricated_lines_count")):
+        errors.append("fabricated lines present")
+    quota = record.get("quota_cost")
+    if (
+        not isinstance(quota, dict)
+        or not _gc_is_zero(quota.get("metered_calls"))
+        or not _gc_is_zero(quota.get("model_tokens_external"))
+    ):
+        errors.append("quota_cost must be zero (metered_calls, model_tokens_external)")
+    if record.get("trust_class") != "measured":
+        errors.append("trust_class must be measured")
+    if record.get("trigger") not in GOAL_COMPACT_TRIGGERS:
+        errors.append("trigger undeclared")
+    if not _gc_is_zero(record.get("exit_status")) or record.get("error_category"):
+        errors.append("exit_status must be 0 with no error_category")
+    forbidden = _forbidden_key_paths(record)
+    if forbidden:
+        errors.append(f"forbidden material keys: {', '.join(forbidden)}")
+    return {
+        "ok": not errors,
+        "state": "PASS" if not errors else "FAIL",
+        "errors": errors,
+        "agent": agent if isinstance(agent, str) else None,
+        "goal_identity": record.get("goal_identity"),
+        "compact_orth_penalty": record.get("compact_orth_penalty"),
+        "p_compact": record.get("p_compact"),
+    }
 
 
 def validate_ingest(record: dict) -> dict:
@@ -6146,6 +6774,9 @@ def _evaluate_case(
             )
             ok = not errors
             outcome = {"state": "PASS" if ok else "FAIL"}
+        elif validator == "validate_goal_compact":
+            outcome = validate_goal_compact(record)
+            ok, errors = bool(outcome.get("ok")), outcome.get("errors") or []
         elif validator == "contributor_id":
             errors = []
             for pair in record.get("aliases") or []:
@@ -6335,19 +6966,26 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-context-assets", "validate-background", "validate-effect", "measure-compute", "plan-compute", "validate-compute", "validate-local-compute", "validate-autonomic", "validate-capability-sync", "attest-capabilities", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-context-assets", "validate-background", "validate-effect", "measure-compute", "plan-compute", "validate-compute", "validate-local-compute", "validate-autonomic", "validate-capability-sync", "goal-compact", "validate-goal-compact", "attest-capabilities", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
         if name in {"verify-package", "parity", "status", "run-cases", "self-check"}:
             command.add_argument("--skill-dir", type=Path, default=PACKAGE_ROOT)
-        if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-context-assets", "validate-background", "validate-effect", "plan-compute", "validate-compute", "validate-autonomic", "validate-capability-sync"}:
+        if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-context-assets", "validate-background", "validate-effect", "plan-compute", "validate-compute", "validate-autonomic", "validate-capability-sync", "validate-goal-compact"}:
             command.add_argument("--input", type=Path, required=True)
         if name == "validate-local-compute":
             command.add_argument("--input", type=Path)
         if name == "run-cases":
             command.add_argument("--only", nargs="+")
         if name == "self-check":
+            command.add_argument("--no-write", action="store_true")
+        if name == "goal-compact":
+            command.add_argument("--agent", required=True)
+            command.add_argument("--goal", type=Path)
+            command.add_argument("--source", type=Path)
+            command.add_argument("--reason", default="manual")
+            command.add_argument("--trigger", default="manual", choices=sorted(GOAL_COMPACT_TRIGGERS))
             command.add_argument("--no-write", action="store_true")
         if name == "build-bundle":
             command.add_argument("--protocol-git-ref")
@@ -6485,6 +7123,21 @@ def main() -> int:
             payload = {"ok": False, "state": "UNKNOWN", "errors": [f"capability-sync input unreadable: {exc}"]}
             return _emit(payload, args.json)
         return _emit(validate_capability_sync(payload), args.json)
+    if args.command == "goal-compact":
+        return _emit(
+            goal_compact(
+                args.workspace, args.agent, goal_path=args.goal, source_md=args.source,
+                reason=args.reason, trigger=args.trigger, write=not args.no_write,
+            ),
+            args.json,
+        )
+    if args.command == "validate-goal-compact":
+        try:
+            payload = _read_json(args.input)
+        except (OSError, json.JSONDecodeError) as exc:
+            payload = {"ok": False, "state": "UNKNOWN", "errors": [f"goal-compact input unreadable: {exc}"]}
+            return _emit(payload, args.json)
+        return _emit(validate_goal_compact(payload), args.json)
     if args.command == "attest-capabilities":
         return _emit(attest_capabilities(args.workspace, args.host, publish=args.publish), args.json)
     if args.command == "install":

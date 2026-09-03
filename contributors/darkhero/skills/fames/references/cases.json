@@ -15,7 +15,7 @@
     "path_exists": "path (workspace-relative), expect present|absent",
     "file_size_max": "path, max_bytes, missing_ok -- measures size only, never reads content",
     "json_probe": "select (list of workspace-relative globs), pointer (slash path, * wildcard segment), expect all_equal|all_equal_ref|all_in, ref canonical_package_sha|canonical_version, values, missing_ok",
-    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|validate_cognitive_boundary|validate_harness|validate_context_assets|validate_background|validate_effect|validate_compute|validate_autonomic|regression_guard|contributor_id, input_ref into fixtures, remove, patch, expect_ok, optional expect_state",
+    "validator_probe": "validator validate_run|validate_ingest|validate_cognitive|validate_cognitive_boundary|validate_harness|validate_context_assets|validate_background|validate_effect|validate_compute|validate_autonomic|regression_guard|contributor_id|validate_goal_compact, input_ref into fixtures, remove, patch, expect_ok, optional expect_state",
     "parity": "bundle and registry describe the same protocol generations",
     "newest_age_max": "select globs, max_age_h, missing_ok -- newest match must be younger than the ceiling",
     "forbidden_text": "paths, forbidden strings, and optional expect_clean -- canonical policy files must not contain platform identifiers"
@@ -628,6 +628,114 @@
         {"host": "altos", "package_sha": "pkg-v1", "capability_set_sha": "caps-v1", "validator_set_sha": "validators-v1", "runner_state": "armed", "observed_at": "2026-08-17T00:00:00Z", "freshness_seconds": 50, "capabilities": [{"capability_id": "delivery-integrity", "state": "PASS", "validator_exit": 0, "positive_control": true, "negative_control_rejected": true, "caller_backed": true, "evidence_refs": ["receipt://altos/delivery"]}, {"capability_id": "fleet-convergence", "state": "PASS", "validator_exit": 0, "positive_control": true, "negative_control_rejected": true, "caller_backed": true, "evidence_refs": ["receipt://altos/convergence"]}]}
       ],
       "full_convergence_claim": true
+    },
+    "goal_compact_min": {
+      "goal_identity": "f86f90eccd499bf1723620326740dd6ea89db33f45b0481c7c5b948d7cf3212a",
+      "result_identity": "eb8ac42ce733d4bc913884de0b5ef7888cbb15a4ff49479c8f16e60225c1e0bf",
+      "timestamp": "2026-09-03T04:06:04Z",
+      "freshness_seconds": 0,
+      "source": "fames_fleet.py goal-compact (compact#goal-vector)",
+      "method": "fames_fleet.py goal-compact: deterministic heading-class projection onto the goal vector; no model",
+      "authority": "read compact and goal source; write compact, orthogonal ledger and evidence only",
+      "state_before": {
+        "sha256": "6c680bf70ca774eac8a1cbe0522d79022f5834ac24ff0fd2b35af0e7575fce88",
+        "bytes": 805,
+        "blocks": 9
+      },
+      "state_after": {
+        "sha256": "eb8ac42ce733d4bc913884de0b5ef7888cbb15a4ff49479c8f16e60225c1e0bf",
+        "bytes": 905,
+        "blocks": 9
+      },
+      "exit_status": 0,
+      "error_category": null,
+      "diagnostic": "ok",
+      "agent": "fixture-seat",
+      "goal": {
+        "outcome": "Keep the goal vector byte-identical across every compaction",
+        "verification": "validate-goal-compact PASS with goal_hash_matches true",
+        "constraints": [
+          "submit:milestone"
+        ],
+        "authority_scope": null,
+        "non_goals": [
+          "no:model_summary"
+        ],
+        "irreversible_boundary": null,
+        "success_horizon": null,
+        "task_profile": "deliverable",
+        "required_evidence_classes": null
+      },
+      "goal_source": "compact#goal-vector",
+      "goal_hash_before": "f86f90eccd499bf1723620326740dd6ea89db33f45b0481c7c5b948d7cf3212a",
+      "goal_hash_after": "f86f90eccd499bf1723620326740dd6ea89db33f45b0481c7c5b948d7cf3212a",
+      "goal_hash_matches": true,
+      "goal_block_sha_before": "488b38475a1ed0145217471ba0055913651547405db8d87c5299063bdaefecba",
+      "goal_block_sha_after": "488b38475a1ed0145217471ba0055913651547405db8d87c5299063bdaefecba",
+      "goal_block_preserved": true,
+      "authority_before": [
+        "read:_registry/agc-compact/fixture-seat.md",
+        "write:_registry/agc-compact/fixture-seat.md",
+        "write:_registry/agc-compact/fixture-seat.orthogonal.md",
+        "write:_registry/fames-evidence/agc-20260903T040604Z-fixture-seat.json",
+        "write:_registry/fames-evidence/agc-fixture-seat-latest.json"
+      ],
+      "authority_after": [
+        "read:_registry/agc-compact/fixture-seat.md"
+      ],
+      "red_lines_before": [
+        "- RL-PERIODIC-FOREGROUND-POPUP: no periodic ps/cmd popup without operator permission"
+      ],
+      "red_lines_after": [
+        "- RL-PERIODIC-FOREGROUND-POPUP: no periodic ps/cmd popup without operator permission"
+      ],
+      "red_lines_preserved": true,
+      "kept_classes": [
+        "goal_vector",
+        "header",
+        "park_working_set",
+        "pfkt_pending",
+        "recent_submit",
+        "red_lines",
+        "stash_pointers"
+      ],
+      "dropped_classes": [
+        "recent_compaction",
+        "session_signals"
+      ],
+      "reclassified": [],
+      "unclassified_headings": [],
+      "receipts": [
+        {
+          "class": "session_signals",
+          "heading": "## Session signals",
+          "lines": 2,
+          "bytes": 77,
+          "sha256": "63cf151520c9c91eb11121064fef002a5fb09f8256a902e853fc2d6252066ebf",
+          "ledger": "fixture-seat.orthogonal.md"
+        },
+        {
+          "class": "recent_compaction",
+          "heading": "## Recent park/compaction",
+          "lines": 1,
+          "bytes": 31,
+          "sha256": "7b281f5f638eeb2255fc9a7daecd1f2d26f15bc5cea0fea86ee0bb4a870ce87a",
+          "ledger": "fixture-seat.orthogonal.md"
+        }
+      ],
+      "fabricated_lines_count": 0,
+      "orth_share_before": 0.190062,
+      "compact_orth_penalty": 0.0,
+      "p_compact": 1.0,
+      "bytes_before": 805,
+      "bytes_after": 905,
+      "compact_path": "_registry/agc-compact/fixture-seat.md",
+      "quota_cost": {
+        "metered_calls": 0,
+        "model_tokens_external": 0
+      },
+      "trigger": "self_test",
+      "trust_class": "measured"
     }
   },
   "cases": [
@@ -1199,6 +1307,20 @@
      "select": ["_registry/fames-protocol.json"], "pointer": "/integrity_invariants/red_lines/*",
      "flag": "enforced_by_machine_check", "id_field": "check_token",
      "backing": "_skill/engines/zt-foreground-guard.py", "pattern": "{id}", "missing_ok": false,
-     "why": "RL-PERIODIC-FOREGROUND-POPUP went unenforced for three months because the guard trusted a hardcoded floor list instead of enumerating live scheduled tasks, and reported green over the gap. A red line that claims machine enforcement must name a token that actually exists in the enforcing engine, so deleting or renaming the check turns the protocol red instead of silently disarming it."}
+     "why": "RL-PERIODIC-FOREGROUND-POPUP went unenforced for three months because the guard trusted a hardcoded floor list instead of enumerating live scheduled tasks, and reported green over the gap. A red line that claims machine enforcement must name a token that actually exists in the enforcing engine, so deleting or renaming the check turns the protocol red instead of silently disarming it."},
+    {"id": "C-GOALCOMPACT-BASE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_goal_compact", "input_ref": "goal_compact_min", "expect_ok": true, "expect_state": "PASS", "why": "A measured auto_goal_compact record with identical goal hashes, narrowed authority, preserved red lines and zero quota validates."},
+    {"id": "C-GOALCOMPACT-HASH-DRIFT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_goal_compact", "input_ref": "goal_compact_min", "patch": {"/goal_hash_after": "0000000000000000000000000000000000000000000000000000000000000000"}, "expect_ok": false, "expect_state": "FAIL", "why": "goal_hash_after differs from goal_hash_before: the compaction moved the goal vector and must fail closed."},
+    {"id": "C-GOALCOMPACT-GOAL-EDIT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_goal_compact", "input_ref": "goal_compact_min", "patch": {"/goal/outcome": "Ship faster by skipping verification"}, "expect_ok": false, "expect_state": "FAIL", "why": "The goal text no longer hashes to goal_hash_before: an edited goal cannot ride an old identity."},
+    {"id": "C-GOALCOMPACT-AUTHORITY-EXPANSION", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_goal_compact", "input_ref": "goal_compact_min", "patch": {"/authority_after": ["read:_registry/agc-compact/fixture-seat.md", "write:_registry/agc-compact/fixture-seat.md", "write:_registry/agc-compact/fixture-seat.orthogonal.md", "write:_registry/fames-evidence/agc-20260903T040604Z-fixture-seat.json", "write:_registry/fames-evidence/agc-fixture-seat-latest.json", "write:_registry/rules-blueprint.json"]}, "expect_ok": false, "expect_state": "FAIL", "why": "authority_after carries a write the run never held before: authority may only narrow."},
+    {"id": "C-GOALCOMPACT-REDLINE-DROPPED", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_goal_compact", "input_ref": "goal_compact_min", "patch": {"/red_lines_after": []}, "expect_ok": false, "expect_state": "FAIL", "why": "A red line present before the compaction is missing after it."},
+    {"id": "C-GOALCOMPACT-PARALLEL-DROPPED", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_goal_compact", "input_ref": "goal_compact_min", "patch": {"/dropped_classes": ["goal_vector", "session_signals"]}, "expect_ok": false, "expect_state": "FAIL", "why": "goal_vector is a goal-parallel class and can never be dropped."},
+    {"id": "C-GOALCOMPACT-UNDECLARED-DROP", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_goal_compact", "input_ref": "goal_compact_min", "patch": {"/dropped_classes": ["salient_but_unknown"]}, "expect_ok": false, "expect_state": "FAIL", "why": "A class that is not declared orthogonal was dropped."},
+    {"id": "C-GOALCOMPACT-PENALTY-RANGE", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_goal_compact", "input_ref": "goal_compact_min", "patch": {"/compact_orth_penalty": 1.5}, "expect_ok": false, "expect_state": "FAIL", "why": "compact_orth_penalty outside [0, 1] is not a projection score."},
+    {"id": "C-GOALCOMPACT-QUOTA-NONZERO", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_goal_compact", "input_ref": "goal_compact_min", "patch": {"/quota_cost/metered_calls": 1}, "expect_ok": false, "expect_state": "FAIL", "why": "A metered call during goal-compact breaks ZERO_TOKEN."},
+    {"id": "C-GOALCOMPACT-FORBIDDEN-MATERIAL", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_goal_compact", "input_ref": "goal_compact_min", "patch": {"/session_token": "abc"}, "expect_ok": false, "expect_state": "FAIL", "why": "A token-bearing key inside the evidence record is forbidden material."},
+    {"id": "C-GOALCOMPACT-FIELD-MISSING", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_goal_compact", "input_ref": "goal_compact_min", "remove": ["/red_lines_before"], "expect_ok": false, "expect_state": "FAIL", "why": "A required ledger field is absent: the record is not a complete measurement."},
+    {"id": "C-GOALCOMPACT-TRIGGER-UNDECLARED", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_goal_compact", "input_ref": "goal_compact_min", "patch": {"/trigger": "vibes"}, "expect_ok": false, "expect_state": "FAIL", "why": "An undeclared trigger is not an activation predicate."},
+    {"id": "C-GOALCOMPACT-STALE-TIME", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_goal_compact", "input_ref": "goal_compact_min", "patch": {"/timestamp": "not-a-time"}, "expect_ok": false, "expect_state": "FAIL", "why": "An unparsable timestamp cannot prove freshness."},
+    {"id": "C-GOALCOMPACT-UNKNOWN-EXIT", "kind": "validator_probe", "charges": "R_SEMANTICS", "fail_mode": "closed", "scope": "any", "validator": "validate_goal_compact", "input_ref": "goal_compact_min", "patch": {"/exit_status": 1, "/error_category": "UNKNOWN"}, "expect_ok": false, "expect_state": "FAIL", "why": "A non-zero exit with error_category UNKNOWN is not a PASS record."}
   ]
 }

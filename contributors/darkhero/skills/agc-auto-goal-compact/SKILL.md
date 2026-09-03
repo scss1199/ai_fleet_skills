@@ -71,6 +71,15 @@ python %AI_WORKSPACE%\_skill\engines\agc-fleet-audit.py --write --brief
 
 **禁止**手打 `/compact`。里程碑仍要 `brain/stash.md` + `goal_compact.py park`。
 
+## FAMES 治理（auto_goal_compact lane）
+
+- SSOT：`_registry/fames-protocol.json` 的 `auto_goal_compact` 區段（FAMES 1.31.0 起）；不是第六個 phase，是餵 MTM 與 SEAL 的 lane。
+- 引擎：`python _skill/fleet-skills/fames/scripts/fames_fleet.py goal-compact --workspace C:/ai_workspace --agent <seat> --trigger <trigger> --json`；`agc_lib.write_compact` 寫完 compact 後自動呼叫（best effort、隱藏視窗、30 秒逾時），結果存於 AGC state 的 `fames_goal_compact`。
+- 投影規則：以 `## ` 標題分類；目標向量、PARK、stash、PFKT、SUBMIT、紅線、invariant、terminal state、artifact 路徑逐位元組保留；compaction 紀錄、session 訊號、raw tool output、探索性讀取、被取代草稿、閒聊、已完成段落逐字稿移到 `_registry/agc-compact/<seat>.orthogonal.md`，原位留一行 `- receipt:`。含 `RL-*` 或 `UNKNOWN`/`FORBIDDEN` 的區塊一律保留。
+- 驗證：`validate-goal-compact --input _registry/fames-evidence/agc-<seat>-latest.json --json`；goal hash 前後必須相等、authority 只能縮、紅線逐位元組相同、fabricated 行數為 0、quota 為 0；任一不符即 UNKNOWN 且不寫任何檔案。
+- 分數：`compact_orth_penalty = 未分類殘餘 bytes / bytes_after`，`P_compact = 1 - compact_orth_penalty`（goal-vector-protocol 既有定義）。
+- 未武裝：Claude 端 PreCompact hook 只是提案（需 operator 核准修改 user-level settings）；`.cursor/hooks.json` 為 `sync-cursor-hooks.py` 產生，禁止手改；不新增 HubClock rider。
+
 ## 驗證
 
 ```powershell
@@ -91,3 +100,4 @@ python %AI_WORKSPACE%\_skill\engines\mtm-token-waste-scan.py --agent <seat> --br
 
 - `ztm-goal-compact-enforce` — 五規則 + manual PARK
 - `mtm-mto-first` — 禁 TRN Read 迴圈
+- `fames`（auto_goal_compact lane）— goal-compact 引擎與 validate-goal-compact 驗證器
