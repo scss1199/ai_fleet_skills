@@ -894,8 +894,24 @@ def _gc_goal_from_dims(doc: dict) -> dict | None:
     })
 
 
+GOAL_COMPACT_BLOCK_LINE_KEYS = {
+    # `O:` / `V:` are the seat-spec shorthand agc_lib emits when a seat has no minted
+    # goal file; `mint:` is the remediation command line, never goal content.
+    "O": "outcome",
+    "V": "verification",
+    "outcome": "outcome",
+    "verification": "verification",
+    "verify": "verification",
+}
+
+
 def _gc_goal_from_block(lines: list[str]) -> tuple[dict | None, str | None]:
-    """Parse the compact's goal-vector block: `stamp=... scope=...` tokens and `- id: note` bullets."""
+    """Parse the compact's goal-vector block: `stamp=... scope=...` tokens and `- id: note` bullets.
+
+    Bare `O: ...` / `V: ...` (or `outcome: ...` / `verification: ...`) lines are accepted as
+    the outcome and verification dims too, so a compact written for a seat without a minted
+    goal file still carries a goal identity instead of failing UNKNOWN on its own header.
+    """
     stamp: str | None = None
     scope: str | None = None
     outcome: list[str] = []
@@ -918,6 +934,16 @@ def _gc_goal_from_block(lines: list[str]) -> tuple[dict | None, str | None]:
                 non_goals.append(body)
             else:
                 constraints.append(body)
+            continue
+        bare_key, bare_sep, bare_value = stripped.partition(":")
+        bare_key, bare_value = bare_key.strip(), bare_value.strip()
+        if bare_sep and bare_key in GOAL_COMPACT_BLOCK_LINE_KEYS and bare_value and "=" not in bare_key:
+            target = GOAL_COMPACT_BLOCK_LINE_KEYS[bare_key]
+            if bare_value.startswith("(") and bare_value.endswith(")"):
+                continue  # placeholder such as "(run goal-field.py mint)" is not an outcome
+            (outcome if target == "outcome" else verification).append(bare_value)
+            continue
+        if bare_sep and bare_key == "mint":
             continue
         for token in stripped.split():
             name, sep, value = token.partition("=")
