@@ -179,7 +179,7 @@
       "demote_when": "尚無可壓縮軌跡",
       "concepts": ["AGC"],
       "protocol": "_registry/agc-protocol.json",
-      "skills": ["ztm-goal-compact-enforce", "agc-auto-goal-compact", "mtm-mte-mint"],
+      "skills": ["agc-auto-goal-compact", "mtm-mte-mint"],
       "engines": ["goal_compact.py", "agc-should-compact.py"],
       "verify": "python %AI_WORKSPACE%\\_skill\\engines\\fleet-token-ladder.py api DISTILL"
     },

@@ -21,7 +21,7 @@ parent_skill: aex-agent-evolution
 # ADUS — 自動部署型自我進化技能
 
 > **Concept id:** `ADUS` · SSOT: `_registry/fleet-lexicon.json` + `_registry/adus-protocol.json`  
-> **Legacy aliases:** ASU · `auto-skill-upgrade-deploy`（deploy 仍同步，詞彙不斷裂）
+> **Legacy aliases:** ASU · `auto-skill-upgrade-deploy`（詞彙保留於 lexicon `legacy_aliases`；alias 目錄 2026-09-05 退役 → `_delete/2026-09-05-skill-consolidation/`，不再部署第二份）
 
 ## When to use
 

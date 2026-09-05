@@ -34,7 +34,7 @@
     ]
   },
   "rename": {
-    "note": "Spoken upgrade 2026-07 — SSOT: _registry/fleet-token-ladder.json (skill mtm-token-ladder). Do not re-teach in chat.",
+    "note": "Spoken upgrade 2026-07 — SSOT: _registry/fleet-token-ladder.json (skill aex-agent-evolution; the mtm-token-ladder dir was retired 2026-09-05). Do not re-teach in chat.",
     "ZTM": "MTM — spoken upgrade; lane id stays zero-token-mechanism until schema 5",
     "ZCT": "MTO — minimal-token-operation (one bounded mechanical op)",
     "ZAT": "MTO deliverable unit (verify gate); legacy engine names unchanged",

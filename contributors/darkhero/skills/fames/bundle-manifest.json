@@ -2,7 +2,7 @@
   "schema": 1,
   "id": "FAMES",
   "version": "1.32.0",
-  "skill_gen": "2026-09-05.1",
+  "skill_gen": "2026-09-05.2",
   "execution_order": [
     "FP",
     "MTM",
@@ -23,16 +23,16 @@
   },
   "source_git_commit": null,
   "files": {
-    "SKILL.md": "cbbd8ad807e7548183c69e6a50ed718ec92a5eb975d97117f2774ae246c5b3c0",
+    "SKILL.md": "9801ee9e60ee6d814e9fdaa9d26542c8bdb514510908375856de0b6877b13b07",
     "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
     "references/cases.json": "2bea9d522745c266f358f7f16b4976c00c1b17eccf2b62205e6516f6e3e786ab",
     "references/claude-live-eval.json": "8946d081f4c71be8b82004e8253c9cda9aa301ef4f09b277dc8a9fb981431a86",
     "references/hardware-compute.json": "e0792dce63c4894107fd63e43e3e0095ce4c4999686811279fd12543106a8df4",
     "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
     "references/protocols/fames-protocol.json": "d6dafc9eda1ed95613ea2a0d64cf4a5452ba8da2d2a35d72712a21137cc5cdff",
-    "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
+    "references/protocols/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
     "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
-    "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
+    "references/protocols/mtm-protocol.json": "558b023da20f98588bbe98ee2ef062a478396158d7395368c38585b63f56f40a",
     "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
     "references/protocols/seal-protocol.json": "7de5562242692e0827a64bbc94f7a5a71fc418601558f51dc54371a11820b9a4",
     "scripts/adaptive_response_controller.py": "07a19c6e0bda90f25800617a274d5f641709676d0d71cdfae8e17dec91e0d911",
@@ -40,5 +40,5 @@
     "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
     "scripts/fames_fleet.py": "1638323c18fb2c556cc083fe058e6fb00af2bfcf68b53cae78ab1aba7f694646"
   },
-  "package_sha": "b4aeb88910e20d769be008ae0427030513f11fff3d72b9a7df6152388a85b41a"
+  "package_sha": "015a74af895e2e7afdd56e94c8752462e698603cb4e47698139b0eff0c03540c"
 }

@@ -68,7 +68,7 @@ python %AI_WORKSPACE%\_skill\engines\pfkt-fragment.py mint <seat> "<title>" --ve
 | inbox>0 | `ztm-fleet-inbox-absorb` |
 | 宣稱 done | `ztm-verify-before-done` |
 | 網頁登入 | `ztm-web-auth-ops` |
-| milestone | `ztm-goal-compact-enforce` park |
+| milestone | `agc-auto-goal-compact` park |
 | 全艦審計 | `mtm-fleet-audit --brief` |
 | 平行 Task | `pfkt-parallel-wave` |
 | gate HARD DENY | `pfkt-auto-unblock` |
