@@ -44,6 +44,11 @@ def main():
     cwd=str(doc.get("cwd") or os.getcwd()); agent="ai_"+Path(cwd).name[3:] if Path(cwd).name.startswith("ai_") else Path(cwd).name
     event=str(doc.get("hook_event_name") or "SessionStart")
     session_id=str(doc.get("session_id") or doc.get("conversation_id") or "")
+    # AGC lane inputs: the transcript path lets the context meter measure THIS session's
+    # curve; `source` (startup|resume|clear|compact) tells SessionStart when the platform
+    # just compacted so the compact pointer is injected right after the summary.
+    transcript_path=str(doc.get("transcript_path") or "")
+    session_source=str(doc.get("source") or "")
     # Claude Code's native hook payload also carries transcript_path,
     # permission_mode, and may carry model.  turn_id is the discriminating
     # Open Agent field; treating the common fields as vendor identity sends a
@@ -81,11 +86,15 @@ def main():
                 workspace=HUB,
                 runtime_event_observed=runtime_event_observed,
                 activation_evidence=("lifecycle_hook" if runtime_event_observed else "invalid_hook_payload"),
+                transcript_path=transcript_path,
             )
             context=(token_core+"\n"+result.get("plan_text", "")).strip()
             state=result.get("state")
         else:
-            result=harness.run_session(agent, Path(cwd), HUB)
+            result=harness.run_session(
+                agent, Path(cwd), HUB, hook_event=event, session_id=session_id,
+                transcript_path=transcript_path, session_source=session_source,
+            )
             harness.hot_refresh(
                 agent, Path(cwd), surface_id=surface_id, session_id=session_id,
                 workspace=HUB, acknowledge=True,
@@ -96,7 +105,7 @@ def main():
         state="UNKNOWN"
         context=token_core+f"\nFAMES ALWAYS-ON — UNKNOWN — {type(exc).__name__}"
     status_path=CODEX_STATUS if surface_id == "open-agent-standard" else STATUS
-    status_path.parent.mkdir(parents=True,exist_ok=True); status_path.write_text(json.dumps({"schema":3,"last_fired":datetime.now(timezone.utc).isoformat(),"event":event,"cwd":cwd,"agent":agent,"surface_id":surface_id,"runtime_event_observed":bool(locals().get("runtime_event_observed", False)),"fames_state":state},indent=2),encoding="utf-8")
+    status_path.parent.mkdir(parents=True,exist_ok=True); status_path.write_text(json.dumps({"schema":3,"last_fired":datetime.now(timezone.utc).isoformat(),"event":event,"cwd":cwd,"agent":agent,"surface_id":surface_id,"runtime_event_observed":bool(locals().get("runtime_event_observed", False)),"fames_state":state,"session_source":session_source or None,"agc":{k:(result.get("auto_goal_compact") or {}).get(k) for k in ("state","agent","seat_resolution","refreshed","trigger","precompact_hook_armed","elapsed_ms")} if isinstance(locals().get("result"),dict) else None},indent=2),encoding="utf-8")
     if context:
         # ASCII JSON keeps the hook envelope valid under Windows cp950 consoles;
         # Claude decodes the \u escapes back into the original context text.

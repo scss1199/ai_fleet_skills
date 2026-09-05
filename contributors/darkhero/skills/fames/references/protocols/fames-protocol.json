@@ -1,8 +1,8 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.31.0",
-  "updated": "2026-09-03",
+  "version": "1.32.0",
+  "updated": "2026-09-05",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
   "legacy_umbrella_aliases": [
@@ -1209,7 +1209,9 @@
     "wiring": {
       "agc_lib.write_compact": "calls the engine best effort (CREATE_NO_WINDOW, 30 s timeout) after writing the compact and stores the outcome as fames_goal_compact in the AGC state file; the AGC pipeline never fails because of the lane",
       "pre_compaction_recorder": "hooks/compaction-guard.ps1 via the generated .cursor/hooks.json preCompact entry (sync-cursor-hooks.py) remains the recorder; hooks.json is generated and never hand-edited",
-      "claude_precompact_hook": "PROPOSAL ONLY, not armed: a PreCompact hook running fames_fleet.py goal-compact --trigger platform_pre_compaction needs an operator-approved edit of the user-level settings file; the lane already covers agc_should_compact, milestone_park and manual triggers through agc_lib.write_compact",
+      "claude_precompact_hook": "ARMED 2026-09-05: _skill/engines/claude-agc-precompact-hook.py is registered in the user-level Claude hooks.PreCompact (15 s) and calls fames_session_harness.precompact_context, which forces the refresh with --trigger platform_pre_compaction, ledgers the compaction and writes _registry/fames-precompact/<seat>.json; probes (fames_probe_mode) never ledger",
+      "harness_lane": "_harness/runtime/fames_session_harness.py auto_goal_compact runs on every Claude hook: SessionStart mints/refreshes and appends a <=420-char pointer to the session receipt (AGC-LANE-SESSION-START; after source=compact the pointer is AGC-LANE-POST-COMPACTION-POINTER and orders resumption from the compact), UserPromptSubmit evaluates agc-should-compact and refreshes silently (AGC-LANE-TURN); seat resolution transcript_slug -> hook_agent -> seat_root_name, unresolved is UNKNOWN and writes nothing",
+      "claude_session_hook": "_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py passes session_id, transcript_path and source into run_session / turn_context and reports the lane under key agc in _registry/token-preflight/claude-hook-status.json",
       "new_hubclock_rider": "none; arming a rider is operator authorization scope"
     },
     "cites": [
@@ -1223,7 +1225,7 @@
       "summarising or paraphrasing any content with a model",
       "editing the goal vector, red lines, PFKT pending, stash pointers or SUBMIT pointers",
       "deleting orthogonal material: it moves to the ledger and stays openable",
-      "arming a new HubClock rider or editing user-level hook settings"
+      "arming a new HubClock rider"
     ],
     "does_not_expand_authority": true
   },
