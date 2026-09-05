@@ -56,7 +56,7 @@ STANDING RULES (_registry/rules-blueprint.json — portal rules tab = this sourc
 <!-- SEAT-SPEC:BEGIN (MTM seat contract; edit via hub portal or here) -->
 ## 五段落 SEAT-SPEC — standing work contract (MTM)
 Single source of truth: **this block** in AGENTS.md.
-See `mtm-token-ladder` / `fleet-token-ladder.py show` — do not re-teach PPTT.
+See `aex-agent-evolution` / `fleet-token-ladder.py show` — do not re-teach PPTT.
 P = Outcome, measured by Verification.
 
 - **1 Outcome (= P, the goal functional)** -- Operate this hub seat with verified outcomes (portal light / claim-linter / ship evidence when claimed).
