@@ -5055,10 +5055,13 @@ def build_bundle(
         "SKILL.md",
         "examples/anthropic_async_adapter.py",
         "references/claude-live-eval.json",
+        "references/knowledge-evidence.md",
         "scripts/adaptive_response_controller.py",
         "scripts/claude_live_ab.py",
         "scripts/claude_task_acceptance.py",
         "scripts/fames_fleet.py",
+        "scripts/knowledge_evidence.py",
+        "scripts/test_knowledge_evidence.py",
         CASES_TARGET,
         PRODUCTION_PROFILE_TARGET,
         HARDWARE_PROFILE_TARGET,
@@ -7032,7 +7035,25 @@ def main() -> int:
             command.add_argument("--apply", action="store_true")
         if name == "verify-fleet":
             command.add_argument("--hosts", nargs="+", required=True)
+    knowledge = sub.add_parser("validate-knowledge")
+    knowledge.add_argument("--input", type=Path, required=True)
+    knowledge.add_argument("--root", type=Path, required=True)
+    knowledge.add_argument("--json", action="store_true")
     args = parser.parse_args()
+    if args.command == "validate-knowledge":
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("fames_knowledge_evidence", PACKAGE_ROOT / "scripts" / "knowledge_evidence.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        try:
+            if args.input.stat().st_size > 1024 * 1024:
+                raise ValueError("oversized receipt")
+            record = json.loads(args.input.read_text(encoding="utf-8-sig"))
+        except (OSError, ValueError):
+            return _emit({"ok": False, "state": "UNKNOWN", "errors": ["knowledge receipt unreadable"]}, args.json)
+        result = module.validate_knowledge(record, args.root)
+        result["ok"] = result.get("state") == "PASS"
+        return _emit(result, args.json)
     if args.command == "build-bundle":
         return _emit(
             build_bundle(

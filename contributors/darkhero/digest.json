@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-09-05T12:04:28",
+  "generated": "2026-09-07T10:24:51",
   "required": [
     "fames",
     "independent-review",
@@ -9,7 +9,6 @@
     "ztm-skill-submit",
     "ztm-git-ship",
     "ztm-web-auth-ops",
-    "ztm-goal-compact-enforce",
     "agc-auto-goal-compact",
     "ztm-verify-before-done",
     "mtm-mto-first",
@@ -20,7 +19,6 @@
   "optional": [
     "accountability-unblock",
     "api-key-apply",
-    "auto-skill-upgrade-deploy",
     "aware-dual-field",
     "deploy-nextjs-cloudflare",
     "hubpulse-ops",
@@ -35,7 +33,6 @@
     "mtm-github-ops",
     "mtm-mte-mint",
     "mtm-obsidian-wiki",
-    "mtm-token-ladder",
     "pfkt-auto-unblock",
     "pfkt-parallel-wave",
     "sso-browser-session",

@@ -48,6 +48,20 @@ before making access or completeness claims.
 
 ## Acquire linked social content
 
+For the installed kyloren autonomous reader, use the existing seat's
+`line/knowledge_intake.py status` and `line/knowledge_search.py` before rescanning
+Drive. Operational details are in `line/KYLOREN-ZT-KNOWLEDGE.md`. Read back the
+finished worker and artifact identities; a spawned process or corpus statistics
+is not absorption. Keep unprocessed attachments, failed sources and upstream
+unsend delivery unresolved until observed.
+
+Use the canonical FAMES `validate-knowledge` gate documented in
+`fames/references/knowledge-evidence.md` for a retained full-text/digest receipt.
+Acquisition verification is separate from source truth and canon promotion.
+When zero remote API use is required, use the local reader's fixed acquisition
+route and count cached local ASR separately; the free-provider route below does
+not establish zero remote API calls.
+
 Extract URLs deterministically with `--include-urls`, then pass each approved URL
 to the shared engine:
 
@@ -97,4 +111,3 @@ python C:\ai_workspace\_skill\engines\fleet-skill-sync.py verify
      _delete/2026-08-13-codex-purge/userprofile/.codex/skills/.system/skill-creator/scripts/quick_validate.py.
      fleet-skill-sync.py verify checks that this skill still resolves on every surface, which is the
      part that can actually break. -->
-

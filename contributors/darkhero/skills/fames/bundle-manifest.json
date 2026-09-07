@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.32.0",
-  "skill_gen": "2026-09-05.2",
+  "version": "1.33.0",
+  "skill_gen": "2026-09-07.1",
   "execution_order": [
     "FP",
     "MTM",
@@ -23,13 +23,14 @@
   },
   "source_git_commit": null,
   "files": {
-    "SKILL.md": "9801ee9e60ee6d814e9fdaa9d26542c8bdb514510908375856de0b6877b13b07",
+    "SKILL.md": "791e403ac38c9853bd775be6d5caeaf49f166290edb396f4c8b10b61c8c09ee3",
     "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
     "references/cases.json": "2bea9d522745c266f358f7f16b4976c00c1b17eccf2b62205e6516f6e3e786ab",
     "references/claude-live-eval.json": "8946d081f4c71be8b82004e8253c9cda9aa301ef4f09b277dc8a9fb981431a86",
     "references/hardware-compute.json": "e0792dce63c4894107fd63e43e3e0095ce4c4999686811279fd12543106a8df4",
+    "references/knowledge-evidence.md": "8cd5f8a320cadd9acafc27cc27ece676798bfa250c5c7b75d4186537eaae9ba8",
     "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
-    "references/protocols/fames-protocol.json": "d6dafc9eda1ed95613ea2a0d64cf4a5452ba8da2d2a35d72712a21137cc5cdff",
+    "references/protocols/fames-protocol.json": "1dc67276e52cd03b27f92ff8b11da906e230956a85c493c4f718d6dce4dd2f16",
     "references/protocols/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
     "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
     "references/protocols/mtm-protocol.json": "558b023da20f98588bbe98ee2ef062a478396158d7395368c38585b63f56f40a",
@@ -38,7 +39,9 @@
     "scripts/adaptive_response_controller.py": "07a19c6e0bda90f25800617a274d5f641709676d0d71cdfae8e17dec91e0d911",
     "scripts/claude_live_ab.py": "3aaa4276c505e1eceea33207c6c4baeb190b6319b737f081fd53fbc055834261",
     "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
-    "scripts/fames_fleet.py": "1638323c18fb2c556cc083fe058e6fb00af2bfcf68b53cae78ab1aba7f694646"
+    "scripts/fames_fleet.py": "1dfb52e7c9049ccb43341e618644fa6d8e93dfcae199c60cb0b86cae024856d9",
+    "scripts/knowledge_evidence.py": "b9ea1d0f933ae11386924265a7f4c098bf7fec38eed6737877e48102f45eea0f",
+    "scripts/test_knowledge_evidence.py": "f024c3725f8001a8b2f76ea88897bc0c2de072350f4b2d697f66fed52fcca005"
   },
-  "package_sha": "015a74af895e2e7afdd56e94c8752462e698603cb4e47698139b0eff0c03540c"
+  "package_sha": "0935f65f6f13880a32b570b941a04ac9a3ce9dfcb3cb05bc188129310647da3d"
 }

@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.32.0",
+  "version": "1.33.0",
   "updated": "2026-09-05",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -983,6 +983,12 @@
     "validator": "python scripts/fames_fleet.py validate-autonomic --input <cycle.json> --json"
   },
   "external_learning": {
+    "acquisition_evidence": {
+      "validator": "python scripts/fames_fleet.py validate-knowledge --input <receipt.json> --root <artifact-directory> --json",
+      "contract": "references/knowledge-evidence.md",
+      "scope": "Retained source bytes, digest identity, provenance and explicit resource counters; never source truth, visual understanding, canon promotion or actual runtime loading.",
+      "unknown_rule": "Missing or changed artifacts, incomplete provenance, malformed counters and withdrawn inputs fail closed. A started worker is not a completed acquisition."
+    },
     "purpose": "Governs information acquired from OUTSIDE the fleet that proposes an improvement to the fleet. Turns 'I read something useful' into work with the same completion truth as any other FAMES work.",
     "is_phase": false,
     "lane_rule": "This is a lane that feeds AEX, not a sixth phase. execution_order is unchanged. A promoted candidate is an adaptation and is judged by AEX, SCF and SEAL like any other adaptation.",
