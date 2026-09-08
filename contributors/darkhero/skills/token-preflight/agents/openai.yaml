@@ -1,4 +1,0 @@
-interface:
-  display_name: "Token Preflight"
-  short_description: "Route work through the smallest verified context path"
-  default_prompt: "Use token-preflight to route this task with minimal context while preserving verification."
