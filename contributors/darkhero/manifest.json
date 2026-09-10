@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-09-10T07:30:03Z",
-  "manifest_sha": "923afc1fc5f03547",
+  "generated_at": "2026-09-10T07:45:04Z",
+  "manifest_sha": "934c535ef8f1ca03",
   "required": [
     "fames",
     "independent-review",
@@ -118,13 +118,13 @@
     },
     {
       "name": "fames",
-      "sha": "79905ba16eef7b23",
+      "sha": "7159f90813a4d13a",
       "required": true,
       "lane": null,
-      "package_sha": "7c007579168fb7fc093996ff903bfd2d0e3bfb624e1b96742c4aec4cd1eadbaf",
+      "package_sha": "223366e8f3212de50035a2182d766ea8efa5d908d50121821239386a6b68ce25",
       "files": {
-        "SKILL.md": "d828ee30e6f54363ab5afe3cf9d921b64549381a643f5fabad8fcf85c4a17c94",
-        "bundle-manifest.json": "95a40c9511a84f14a42e5230dd9b118932ec415e5ce21fb5f2a952d16bb0b546",
+        "SKILL.md": "bf5b22c21581b6c91245ae8160b50dadbfe626b4b709fb68a7edbdae0711a197",
+        "bundle-manifest.json": "eeee3ecd2b528f8d3bdf6cf98eaeb216c889044b7dfce363bb0d322867f5e097",
         "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
         "references/cases.json": "2bea9d522745c266f358f7f16b4976c00c1b17eccf2b62205e6516f6e3e786ab",
         "references/claude-live-eval.json": "8946d081f4c71be8b82004e8253c9cda9aa301ef4f09b277dc8a9fb981431a86",
@@ -142,7 +142,7 @@
         "scripts/claude_live_ab.py": "3aaa4276c505e1eceea33207c6c4baeb190b6319b737f081fd53fbc055834261",
         "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
         "scripts/context_packet.py": "83ea5f25d31ed03b70d1b29b3ed33c7076fd5192ed85cb093804da4b7ff91adb",
-        "scripts/fames_fleet.py": "6baeca60c8e69843a1b1d9684e070a23cfc6603d209113a1de6a54b65c8ce481",
+        "scripts/fames_fleet.py": "1e943f14e41ce157fa6bdb44c1f4094ab6a42138fea7c8d4eca3db7b099d9ad1",
         "scripts/knowledge_evidence.py": "b9ea1d0f933ae11386924265a7f4c098bf7fec38eed6737877e48102f45eea0f",
         "scripts/test_context_packet.py": "4046deb01229db855de71f9dc42c3e469231a9a9456054dbfeb2c56a8c6133d8",
         "scripts/test_knowledge_evidence.py": "f024c3725f8001a8b2f76ea88897bc0c2de072350f4b2d697f66fed52fcca005"

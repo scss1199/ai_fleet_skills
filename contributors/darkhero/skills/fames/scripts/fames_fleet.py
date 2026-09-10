@@ -5370,6 +5370,20 @@ def _install_targets(workspace: Path, host: str) -> list[Path]:
     return [root.joinpath(*surface, "fames") for root in roots for surface in surfaces]
 
 
+def _activate_update(workspace: Path) -> dict:
+    activation_path = workspace / "_skill" / "engines" / "fames-immediate-apply.py"
+    if not activation_path.is_file():
+        return {"state": "UNKNOWN", "reason": "immediate_apply_adapter_unavailable"}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("fames_install_activation", activation_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.apply(workspace)
+    except Exception as exc:
+        return {"ok": False, "state": "UNKNOWN", "reason": type(exc).__name__}
+
+
 def install(workspace: Path, host: str, source: Path = PACKAGE_ROOT) -> dict:
     workspace = workspace.resolve()
     source = source.resolve()
@@ -5398,7 +5412,10 @@ def install(workspace: Path, host: str, source: Path = PACKAGE_ROOT) -> dict:
     if key != host:
         receipt["host_requested"] = host
     _write_json_atomic(workspace / "_registry" / "fames-fleet-receipts" / f"{key}.json", receipt)
-    return {"ok": not errors, "receipt": receipt, "errors": errors}
+    activation = _activate_update(workspace) if not errors else {"state": "UNKNOWN", "reason": "installation_failed"}
+    if activation.get("ok") is False:
+        errors.append("installed package; immediate activation configuration failed")
+    return {"ok": not errors, "receipt": receipt, "activation": activation, "errors": errors}
 
 
 def _source_bytes(base: str, relative: str) -> bytes:
@@ -5481,8 +5498,10 @@ def follow(
             })
             if receipt != previous_receipt:
                 _write_json_atomic(receipt_path, receipt)
+            activation = _activate_update(workspace)
             return {
-                "ok": True,
+                "ok": activation.get("ok") is not False,
+                "activation": activation,
                 "changed": False,
                 "package_sha": remote_sha,
                 "receipt": receipt,

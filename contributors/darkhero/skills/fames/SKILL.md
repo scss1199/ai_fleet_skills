@@ -20,7 +20,7 @@ for accounting and immediate-update boundaries.
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-09-10.2
+FAMES-GEN: 2026-09-10.4
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
