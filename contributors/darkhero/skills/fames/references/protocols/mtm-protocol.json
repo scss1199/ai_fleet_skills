@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-08-10",
+  "updated": "2026-09-10",
   "framework": "mtm",
   "full_name": "minimal-token-mechanism",
   "parent_umbrella": "FAMES",
@@ -89,5 +89,6 @@
   "output_dir": "_registry/mtm-audit",
   "session_inject_alias": "_registry/ztm-enforce.json",
   "judgment_lane": "MTD",
-  "orchestration": "PFKT"
+  "orchestration": "PFKT",
+  "minimal_context_ref": "_registry/fames-protocol.json#minimal_context"
 }

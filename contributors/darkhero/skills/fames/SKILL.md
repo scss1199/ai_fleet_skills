@@ -9,9 +9,18 @@ Treat FAMES as one completion contract, not as a label or permission grant. Read
 
 Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` from this skill directory. The verifier must pass without reading any workspace file; this is the cold-load proof that GitHub delivered a complete skill rather than a pointer to one machine's registry.
 
+## Minimal-context route
+
+Use local acquisition and verification, then at most three relevant excerpts / 1600
+excerpt characters initially. Keep full evidence on disk and unknown/omitted items
+visible. Expand only for a named acceptance gap. Character savings are not token
+or billing savings. Do not reload this whole skill each turn: use the fresh compact
+contract and the relevant section. See [minimal context](references/minimal-context.md)
+for accounting and immediate-update boundaries.
+
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-09-07.1
+FAMES-GEN: 2026-09-10.2
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
