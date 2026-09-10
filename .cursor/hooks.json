@@ -3,16 +3,16 @@
   "hooks": {
     "sessionStart": [
       {
+        "command": "\"C:\\Python312\\pythonw.exe\" \"C:\\ai_workspace\\_skill\\engines\\cursor-agent-session-open.py\"",
+        "timeout": 90
+      },
+      {
         "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py C:\\ai_workspace\\_skill\\engines\\hooks\\session-start-notice.ps1",
         "timeout": 20
       },
       {
         "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-session-inbox.py",
         "timeout": 20
-      },
-      {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-agent-session-open.py",
-        "timeout": 90
       },
       {
         "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-mtm-session-inject.py",
@@ -45,7 +45,7 @@
     ],
     "beforeSubmitPrompt": [
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-fames-hot-refresh.py",
+        "command": "\"C:\\Python312\\pythonw.exe\" \"C:\\ai_workspace\\_skill\\engines\\cursor-fames-hot-refresh.py\"",
         "timeout": 20,
         "failClosed": true
       },
