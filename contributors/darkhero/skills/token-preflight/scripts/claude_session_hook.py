@@ -39,6 +39,27 @@ def _harness():
     return module
 
 
+def _hard_lines(cwd: str) -> tuple[str, str]:
+    """(state, text): the T1 hard lines SessionStart must add for a session opened in cwd.
+
+    Seat charters carry T1 whole (cursor_bootstrap_pack.py), so a seat session gets
+    ("charter", ""). The hub root and non-seat folders, such as a Codex thread opened in
+    system32, get ("injected", T1). A failure gets ("UNKNOWN", a pointer to the source).
+    """
+    try:
+        path = HUB / "_skill" / "engines" / "rules_brief.py"
+        spec = importlib.util.spec_from_file_location("rules_brief", path)
+        if spec is None or spec.loader is None:
+            raise RuntimeError(f"missing rules brief: {path}")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        text = module.format_for_session(cwd=cwd).strip()
+    except Exception as exc:
+        return "UNKNOWN", (f"T1 HARD LINES — UNKNOWN — {type(exc).__name__}; "
+                           "read tier T1 of _registry/rules-blueprint.json before acting.")
+    return ("injected", text) if text else ("charter", "")
+
+
 def main():
     doc=_read_hook_input(sys.stdin)
     cwd=str(doc.get("cwd") or os.getcwd()); agent="ai_"+Path(cwd).name[3:] if Path(cwd).name.startswith("ai_") else Path(cwd).name
@@ -104,8 +125,14 @@ def main():
     except Exception as exc:
         state="UNKNOWN"
         context=token_core+f"\nFAMES ALWAYS-ON — UNKNOWN — {type(exc).__name__}"
+    t1_state=None
+    if event == "SessionStart":
+        # The hard lines must not depend on the FAMES harness above having succeeded.
+        t1_state,hard_lines=_hard_lines(cwd)
+        if hard_lines:
+            context=(context+"\n"+hard_lines).strip()
     status_path=CODEX_STATUS if surface_id == "open-agent-standard" else STATUS
-    status_path.parent.mkdir(parents=True,exist_ok=True); status_path.write_text(json.dumps({"schema":3,"last_fired":datetime.now(timezone.utc).isoformat(),"event":event,"cwd":cwd,"agent":agent,"surface_id":surface_id,"runtime_event_observed":bool(locals().get("runtime_event_observed", False)),"fames_state":state,"session_source":session_source or None,"agc":{k:(result.get("auto_goal_compact") or {}).get(k) for k in ("state","agent","seat_resolution","refreshed","trigger","precompact_hook_armed","elapsed_ms")} if isinstance(locals().get("result"),dict) else None},indent=2),encoding="utf-8")
+    status_path.parent.mkdir(parents=True,exist_ok=True); status_path.write_text(json.dumps({"schema":3,"last_fired":datetime.now(timezone.utc).isoformat(),"event":event,"cwd":cwd,"agent":agent,"surface_id":surface_id,"runtime_event_observed":bool(locals().get("runtime_event_observed", False)),"fames_state":state,"t1_hard_lines":t1_state,"session_source":session_source or None,"agc":{k:(result.get("auto_goal_compact") or {}).get(k) for k in ("state","agent","seat_resolution","refreshed","trigger","precompact_hook_armed","elapsed_ms")} if isinstance(locals().get("result"),dict) else None},indent=2),encoding="utf-8")
     if context:
         # ASCII JSON keeps the hook envelope valid under Windows cp950 consoles;
         # Claude decodes the \u escapes back into the original context text.
