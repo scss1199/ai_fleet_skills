@@ -23,7 +23,7 @@ for accounting and immediate-update boundaries.
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-09-14.4
+FAMES-GEN: 2026-09-14.5
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -520,3 +520,16 @@ The heartbeat exists so that liveness is measured rather than assumed: `C-CONVER
 ## Mission command execution
 
 Delegation uses Auftragstaktik: declare intent, end state, ownership, resources, authority limits and acceptance; owners choose methods and adapt. The leader owns obstacles, conflict resolution and verified merge. Apply `references/minimal-context.md` and use `scripts/fames_fleet.py validate-execution --input mission.json --workspace <artifact-root> --json` before closing delegated work. A run with `execution_required: true` or `mission_id` must bind execution evidence to its semantic goal. Preserve failed attempts and require independently accepted successful retries; dispatch, configured hooks and self-reports are not execution proof. Observer identities and hashes are not cryptographic authentication or neural interpretability.
+
+## Document preservation
+
+Registered document writers use the installed shared runtime
+`_harness/runtime/document_preservation.py`: bind canonical workspace, one
+source/date directory, one registered lock, exact staging target and pinned
+template/source hashes before mutation. Keep the domain's full format/content
+verifier, independent review and atomic publication checks. Never bypass a guard
+with a new folder, alternate writer or duplicate remote ID. Missing configuration
+or runtime support fails closed. This protects supported writer entrypoints;
+prompt rules, synthetic hook tests and package installation do not prove that
+arbitrary filesystem writes by every host are intercepted. The current domain
+contract is `jci_taipei/_line/MEETING-MINUTES-CONTRACT.md` in the configured workspace.

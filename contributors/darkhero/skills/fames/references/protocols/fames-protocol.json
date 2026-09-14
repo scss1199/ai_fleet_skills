@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.36.1",
+  "version": "1.36.2",
   "updated": "2026-09-14",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -2352,6 +2352,24 @@
         "https://www.bundeswehr.de/de/organisation/zentrum-innere-fuehrung/handbuch-innere-fuehrung/menschenfuehrung-5710922",
         "https://www.alignment.org/blog/competing-with-sampling/"
       ]
+    },
+    "document_preservation": {
+      "id": "FAMES-DOCUMENT-PRESERVATION",
+      "runtime": "_harness/runtime/document_preservation.py",
+      "registered_contracts": [
+        "jci_taipei/_line/MEETING-MINUTES-CONTRACT.md"
+      ],
+      "caller_contract": "Domain adapters bind canonical roots, source identity, staging targets and pinned hashes from registered configuration. Shared helpers run before mutation; full domain format/content verification and atomic publication remain mandatory.",
+      "invariants": [
+        "canonical workspace only",
+        "one source/date directory without suffixes",
+        "one registered writer lock across processes",
+        "no direct final write",
+        "pinned template and source identity",
+        "no duplicate remote identity on retry"
+      ],
+      "coverage_boundary": "Supported writer entrypoints only. Arbitrary native filesystem-write interception and unobserved host lifecycles remain UNKNOWN.",
+      "failure_rule": "Missing guard or configuration, changed bytes, concurrent writer or ambiguous source identity blocks mutation; no fallback folders or writers."
     }
   }
 }
