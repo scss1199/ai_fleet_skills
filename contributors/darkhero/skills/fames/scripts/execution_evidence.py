@@ -49,12 +49,24 @@ This validator only narrows what a fabricator would have to fake:
     never silently treated as successful) and a retry_of must reference an
     earlier attempt of the SAME logical_task_id whose self_report is FAILED
     (retry_logical_task_mismatch / retry_of_target_not_failed rejects a
-    claimed retry of an unrelated or non-failed task).
+    claimed retry of an unrelated or non-failed task). "Earlier" is the
+    attempt's position in the manifest's own `tasks` list, strictly before
+    the retrying attempt (retry_of_not_earlier_in_roster) -- this rejects
+    both a forward reference to an attempt not yet recorded and any
+    retry_of cycle, since a cycle cannot have every edge point to a
+    strictly-earlier position.
   - A task can only be resolved once every logical task in its depends_on
     is itself already resolved (dependency_not_accepted); an unfinished
     graph (any expected logical task with zero accepted attempts) is
     state=INCOMPLETE, never a pass. Planning, dispatch, or an agent's own
     self_report is never sufficient by itself.
+  - The mission-level acceptance receipt's own result_artifacts must each
+    equal, by exact (path, sha256) pair, an output_artifacts entry of some
+    independently-accepted attempt (mission_result_not_bound_to_accepted_output);
+    naming a file no accepted attempt ever produced is rejected even when
+    the acceptance receipt is otherwise well-formed and its own bytes
+    hash-verify -- a final result must be traceable to real, corroborated
+    task output, not merely to some file that happens to exist.
 
 Output contains fixed diagnostic codes, identities and hashes only.
 """
@@ -173,11 +185,13 @@ def _attempts(mission):
         _identity(identity)
     roster = {}
     logical = {}
-    for task in tasks:
+    index_of = {}
+    for index, task in enumerate(tasks):
         _task_shape(task)
         task_id = task["task_id"]
         _require(task_id not in roster, "duplicate_task")
         roster[task_id] = task
+        index_of[task_id] = index
         logical.setdefault(task["logical_task_id"], []).append(task_id)
     _require(set(logical) == set(expected), "task_coverage_mismatch")
     depends_map = {}
@@ -200,6 +214,11 @@ def _attempts(mission):
             target = roster[retry_of]
             _require(target["logical_task_id"] == task["logical_task_id"], "retry_logical_task_mismatch")
             _require(target["self_report"]["state"] == "FAILED", "retry_of_target_not_failed")
+            # Strict roster-position ordering forbids both a forward reference
+            # to an attempt not yet recorded and any retry_of cycle: a cycle
+            # would require every edge to point strictly earlier, which no
+            # finite loop of edges can satisfy back to its own start.
+            _require(index_of[retry_of] < index_of[task_id], "retry_of_not_earlier_in_roster")
     # Bounded topological elimination over the logical dependency graph
     # catches cycles without exponential traversal through shared ancestors.
     order = []
@@ -281,9 +300,16 @@ def _validate_mission(mission, artifacts):
     results = acceptance["result_artifacts"]
     _require(isinstance(results, list) and 1 <= len(results) <= MAX_LOGS, "accepted_results_missing")
     for result in results:
-        artifacts.read(result, result=True)
+        _keys(result, {"path", "sha256"}, "artifact_record_invalid")
     resolved = {}
     attempt_accepted = {}
+    # Every result claimed as a final mission output must equal, by exact
+    # (path, sha256), an output of some attempt this same pass independently
+    # accepts -- that attempt's own output_artifacts were already re-hashed
+    # from disk in _validate_attempt, so re-reading the identical file here
+    # would only collide with Artifacts' duplicate-read guard; the binding
+    # is a set-membership check, not a second read.
+    accepted_outputs = set()
     for logical_id in order:
         for dependency in depends_map[logical_id]:
             _require(resolved.get(dependency) is True, "dependency_not_accepted")
@@ -292,7 +318,14 @@ def _validate_mission(mission, artifacts):
             ok = _validate_attempt(roster[task_id], mission, artifacts)
             attempt_accepted[task_id] = ok
             any_ok = any_ok or ok
+            if ok:
+                accepted_outputs.update(
+                    (record["path"], record["sha256"]) for record in roster[task_id]["output_artifacts"]
+                )
         resolved[logical_id] = any_ok
+    for result in results:
+        _require((result["path"], result["sha256"]) in accepted_outputs,
+                 "mission_result_not_bound_to_accepted_output")
     return roster, attempt_accepted, resolved
 
 

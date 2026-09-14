@@ -63,17 +63,26 @@ class ExecutionEvidenceTests(unittest.TestCase):
             task["task_acceptance_receipt"] = self.artifact(task_id + "-task-acceptance.json", receipt_doc)
         return task
 
-    def seal(self, mission):
+    def seal(self, mission, result_artifacts=None):
         coverage = {"schema": "fames.execution-coverage.v1", "state": "COMPLETE",
                     "all_tasks_included": True, "omitted_tasks": [], "omitted_retries": []}
         coverage.update({key: deepcopy(mission[key]) for key in
                          ("mission_id", "contract", "expected_tasks", "assignments", "tasks")})
         mission["coverage_receipt"] = self.artifact(mission["mission_id"] + "-coverage.json", coverage)
+        if result_artifacts is None:
+            # Default final result is bound to a real, completed attempt's own
+            # output -- an arbitrary unrelated file is only ever used when no
+            # task has one (a test exercising an earlier, unrelated failure).
+            result_artifacts = [deepcopy(output) for task in mission["tasks"]
+                                if task["self_report"]["state"] == "COMPLETED"
+                                for output in task["output_artifacts"]]
+            if not result_artifacts:
+                result_artifacts = [self.artifact(mission["mission_id"] + "-result.txt",
+                                                   b"mission accepted\n")]
         acceptance = {"schema": "fames.execution-acceptance.v1", "mission_id": mission["mission_id"],
                       "contract": mission["contract"], "state": "ACCEPTED", "verifier_id": "mission-verifier",
                       "coverage_sha256": mission["coverage_receipt"]["sha256"],
-                      "result_artifacts": [self.artifact(mission["mission_id"] + "-result.txt",
-                                                          b"mission accepted\n")]}
+                      "result_artifacts": result_artifacts}
         mission["acceptance_receipt"] = self.artifact(mission["mission_id"] + "-acceptance.json", acceptance)
         return mission
 
@@ -302,6 +311,63 @@ class ExecutionEvidenceTests(unittest.TestCase):
         task["task_acceptance_receipt"] = self.artifact("t1-task-acceptance.json", stale_doc)
         mission = self.build_mission([task])
         self.assert_unknown(self.document(mission), "stale_or_other_mission_receipt")
+
+    # --- independent review round: unobserved final result / retry roster --
+
+    def test_mission_result_naming_unproduced_file_is_rejected(self):
+        # Reproduces the reported fail-open: an accepted mission's own final
+        # result_artifacts pointed at a file no task ever produced or had
+        # accepted, and the validator wrongly returned VERIFIED_EXECUTED.
+        mission = self.build_mission([self.make_task("t1")])
+        unrelated = self.artifact("unrelated-result.txt", b"never produced by any task")
+        acceptance_path = mission["acceptance_receipt"]["path"]
+        acceptance = json.loads((self.root / acceptance_path).read_text())
+        acceptance["result_artifacts"] = [unrelated]
+        mission["acceptance_receipt"] = self.artifact(acceptance_path, acceptance)
+        self.assert_unknown(self.document(mission), "mission_result_not_bound_to_accepted_output")
+
+    def test_mission_result_bound_to_accepted_output_still_passes(self):
+        # Positive control for the fix above: the final result is exactly
+        # the accepted task's own output, and must still verify.
+        mission = self.build_mission([self.make_task("t1")])
+        result = evidence.validate_execution(self.document(mission), root=self.root)
+        self.assertTrue(result["ok"], result)
+        acceptance_path = mission["acceptance_receipt"]["path"]
+        acceptance = json.loads((self.root / acceptance_path).read_text())
+        self.assertEqual(acceptance["result_artifacts"], mission["tasks"][0]["output_artifacts"])
+
+    def test_retry_of_cycle_is_rejected(self):
+        # Reproduces the reported fail-open: two FAILED attempts pointing
+        # retry_of at each other (a cycle), with a third successful attempt
+        # retrying one of them, previously passed as VERIFIED_EXECUTED.
+        a = self.make_task("a", logical_task_id="work", state="FAILED",
+                           hook_configured=False, events=[], retry_of="b")
+        b = self.make_task("b", logical_task_id="work", state="FAILED",
+                           hook_configured=False, events=[], retry_of="a")
+        c = self.make_task("c", logical_task_id="work", retry_of="b")
+        mission = self.build_mission([a, b, c])
+        self.assert_unknown(self.document(mission), "retry_of_not_earlier_in_roster")
+
+    def test_retry_of_forward_reference_is_rejected(self):
+        forward = self.make_task("t1-try1", logical_task_id="t1", retry_of="t1-try2")
+        target = self.make_task("t1-try2", logical_task_id="t1", state="FAILED",
+                                hook_configured=False, events=[])
+        mission = self.build_mission([forward, target])
+        self.assert_unknown(self.document(mission), "retry_of_not_earlier_in_roster")
+
+    def test_retry_recovery_with_earlier_failure_still_passes(self):
+        # Positive control for the roster-order fix: a real failed-then-
+        # successful-retry history (earlier attempt strictly before its
+        # retry) must keep resolving the logical task.
+        failed = self.make_task("t1-try1", logical_task_id="t1", state="FAILED",
+                                hook_configured=False, events=[])
+        retry = self.make_task("t1-try2", logical_task_id="t1", retry_of="t1-try1")
+        mission = self.build_mission([failed, retry])
+        result = evidence.validate_execution(self.document(mission), root=self.root)
+        self.assertTrue(result["ok"], result)
+        self.assertTrue(result["normalized"]["logical_tasks"]["t1"])
+        self.assertFalse(result["normalized"]["tasks"]["t1-try1"]["accepted"])
+        self.assertTrue(result["normalized"]["tasks"]["t1-try2"]["accepted"])
 
 
 if __name__ == "__main__":
