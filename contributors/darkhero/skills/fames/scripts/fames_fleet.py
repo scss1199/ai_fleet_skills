@@ -649,12 +649,15 @@ def validate_efficiency(document: dict, root: Path | None = None) -> dict:
 
 
 def validate_execution(document: dict, root: Path | None = None) -> dict:
-    """Replay portable execution evidence; never treat a request as completion."""
+    """Replay portable execution evidence without executing provider code."""
     import importlib.util
+    import sys
+    scripts = str(PACKAGE_ROOT / "scripts")
+    inserted = scripts not in sys.path
+    if inserted:
+        sys.path.insert(0, scripts)
     try:
-        spec = importlib.util.spec_from_file_location(
-            "fames_execution_evidence", PACKAGE_ROOT / "scripts" / "execution_evidence.py"
-        )
+        spec = importlib.util.spec_from_file_location("fames_execution_evidence", PACKAGE_ROOT / "scripts" / "execution_evidence.py")
         if spec is None or spec.loader is None:
             raise ImportError("execution validator unavailable")
         module = importlib.util.module_from_spec(spec)
@@ -662,6 +665,9 @@ def validate_execution(document: dict, root: Path | None = None) -> dict:
         return module.validate_execution(document, root=root or _active_workspace())
     except (OSError, ValueError, TypeError, ImportError, AttributeError) as exc:
         return {"ok": False, "state": "UNKNOWN", "reasons": ["execution_validator_" + type(exc).__name__]}
+    finally:
+        if inserted:
+            sys.path.remove(scripts)
 
 
 def validate_run(run: dict, artifact_root: Path | None = None) -> dict:
@@ -5142,6 +5148,8 @@ def build_bundle(
         "references/minimal-context.md",
         "scripts/context_packet.py",
         "scripts/test_context_packet.py",
+        "scripts/execution_evidence.py",
+        "scripts/test_execution_evidence.py",
         "scripts/work_efficiency.py",
         "scripts/test_work_efficiency.py",
         "scripts/adaptive_response_controller.py",

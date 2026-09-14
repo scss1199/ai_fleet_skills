@@ -2,29 +2,61 @@
 """Offline validator of a bounded mission/execution graph; no model/network calls.
 
 Public API: validate_execution(document, root=None), defaulting root to the
-current working directory at call time. See execution-interface.md (mission
-evidence/mission-command-20260914) for the full schema. Document shape is
-schema='fames.execution-evidence.v1': mission_id, contract={goal_id,
-acceptance_id}, expected_tasks=[task_id,...], assignments={task_id:owner_id},
-tasks=[task,...], coverage_receipt={path,sha256}, acceptance_receipt=
-{path,sha256}.
+current working directory at call time. No model API is called; no source
+text, raw exceptions, or path/credential contents are ever returned. Reuses
+work_efficiency.Artifacts and its bounded JSON/identity/hash primitives.
 
-Each task declares an expected owner/dependencies, an agent self_report, a
-host_events log (format-selected adapter, analogous to work_efficiency's
-usage adapters) and output_artifacts. TRUST BOUNDARY: hashes prove artifact
-bytes are unchanged since they were recorded in a receipt or log; they do not
-prove the log author, host hook, or agent was honest, or that a described
-operation actually happened. A self_report of COMPLETED is never sufficient
-by itself -- it must be corroborated by a host_events entry naming the same
-task/owner and the same output artifact path, and closed by an independent
-per-task acceptance receipt bound to this mission_id/task_id and to the exact
-(path, sha256) set of the task's own output_artifacts. A task can only count
-as accepted if every task it depends_on is itself already accepted
-(dependency closure); an unfinished graph is state=INCOMPLETE, never PASS.
+Document is schema='fames.execution-evidence.v1':
+  mission_id, contract={goal_id, acceptance_id},
+  expected_tasks=[logical_task_id, ...], assignments={logical_task_id: owner_id},
+  tasks=[attempt, ...], coverage_receipt={path, sha256}, acceptance_receipt={path, sha256}.
 
-Output contains fixed diagnostic codes, identities and hashes only: no source
-text, raw exceptions, or claims of semantic task success beyond what these
-external receipts assert.
+Each entry in `tasks` is one ATTEMPT at a logical task (the same relationship
+actor_id has to a retried session in work_efficiency.py). attempt:
+  task_id (unique per attempt), logical_task_id (must be in expected_tasks),
+  owner_id (must equal assignments[logical_task_id]), attempt_id,
+  parent_task_id, depends_on=[logical_task_id, ...] (identical across every
+  attempt of the same logical_task_id), retry_of=task_id|null,
+  hook_configured, self_report={state}, format, host_events=[{path,sha256}],
+  output_artifacts=[{path,sha256}], task_acceptance_receipt={path,sha256}|null.
+
+TRUST BOUNDARY: a sha256 proves the referenced file's bytes, at the moment
+they are read here, equal the digest recorded in a receipt or host-event
+log line. It proves nothing about who wrote that line, whether a host hook
+actually fired, or whether a described operation actually happened -- an
+adversary who controls the log/receipt files can fabricate any of that.
+This validator only narrows what a fabricator would have to fake:
+  - Every host_events line must name THIS mission_id and THIS attempt_id
+    (host_event_mission_mismatch / host_event_attempt_mismatch), so a log
+    line copied verbatim from a different mission or attempt is rejected
+    even when task_id/owner_id/path happen to match.
+  - Only op in {file_write, artifact_publish} with result=="success" can
+    corroborate output production; a bare tool_call/command_run, or a
+    failed write, never corroborates (self_report of COMPLETED plus only
+    such evidence is self_report_not_host_corroborated /
+    output_artifact_not_host_observed).
+  - Corroboration binds to the (path, sha256) pair actually re-hashed from
+    disk right now, not merely the path string, so a host event cannot be
+    replayed against a mutated file.
+  - A per-task acceptance receipt must be bound to this mission_id/task_id
+    and must carry a verifier_id distinct from the attempt's own owner_id
+    (acceptance_not_independent_of_owner) -- an owner cannot accept its own
+    output. verifier_id is an unauthenticated identity string, like every
+    other identity here: it narrows who MUST be named, not who is telling
+    the truth.
+  - A logical task resolves once ANY of its attempts is independently
+    accepted; failed attempts stay visible in the roster (never deleted,
+    never silently treated as successful) and a retry_of must reference an
+    earlier attempt of the SAME logical_task_id whose self_report is FAILED
+    (retry_logical_task_mismatch / retry_of_target_not_failed rejects a
+    claimed retry of an unrelated or non-failed task).
+  - A task can only be resolved once every logical task in its depends_on
+    is itself already resolved (dependency_not_accepted); an unfinished
+    graph (any expected logical task with zero accepted attempts) is
+    state=INCOMPLETE, never a pass. Planning, dispatch, or an agent's own
+    self_report is never sufficient by itself.
+
+Output contains fixed diagnostic codes, identities and hashes only.
 """
 from __future__ import annotations
 
@@ -38,7 +70,6 @@ from work_efficiency import (
     EvidenceError,
     HASH,
     IDENTITY,
-    MAX_COUNT,
     MAX_FILE_BYTES,
     MAX_LOGS,
     _events,
@@ -52,28 +83,41 @@ from work_efficiency import (
 MAX_TASKS = 64
 CONTRACT_KEYS = {"goal_id", "acceptance_id"}
 SELF_REPORT_STATES = {"COMPLETED", "IN_PROGRESS", "FAILED", "BLOCKED"}
-HOST_OPS = {"file_write", "artifact_publish", "tool_call", "command_run"}
+WRITE_OPS = {"file_write", "artifact_publish"}
+CALL_OPS = {"tool_call", "command_run"}
+HOST_OPS = WRITE_OPS | CALL_OPS
+HOST_RESULTS = {"success", "failed"}
 TASK_KEYS = {
-    "task_id", "owner_id", "attempt_id", "parent_task_id", "depends_on",
-    "retry_of", "hook_configured", "self_report", "format", "host_events",
-    "output_artifacts", "task_acceptance_receipt",
+    "task_id", "logical_task_id", "owner_id", "attempt_id", "parent_task_id",
+    "depends_on", "retry_of", "hook_configured", "self_report", "format",
+    "host_events", "output_artifacts", "task_acceptance_receipt",
 }
 
 
-def _host_event_log(raw_logs, task, shared):
+def _host_event_log(raw_logs, task, mission_id):
     records = 0
     confirmed = set()
     for raw in raw_logs:
         for event in _events(raw):
-            _keys(event, {"task_id", "owner_id", "op", "artifact_path"}, "host_event_invalid")
+            _keys(event, {"mission_id", "attempt_id", "task_id", "owner_id", "op",
+                         "result", "artifact_path", "artifact_sha256"}, "host_event_invalid")
+            _require(event["mission_id"] == mission_id, "host_event_mission_mismatch")
+            _require(event["attempt_id"] == task["attempt_id"], "host_event_attempt_mismatch")
             _require(event["task_id"] == task["task_id"], "host_event_task_mismatch")
             _require(event["owner_id"] == task["owner_id"], "host_event_owner_mismatch")
             _require(event["op"] in HOST_OPS, "host_event_op_unknown")
-            path = event["artifact_path"]
-            _require(path is None or (isinstance(path, str) and IDENTITY.fullmatch(path)),
-                     "host_event_artifact_path_invalid")
-            if path is not None:
-                confirmed.add(path)
+            _require(event["result"] in HOST_RESULTS, "host_event_result_invalid")
+            path, digest = event["artifact_path"], event["artifact_sha256"]
+            if event["op"] in CALL_OPS:
+                # A call alone -- successful or not -- never claims artifact production.
+                _require(path is None and digest is None, "host_event_call_op_must_not_claim_artifact")
+            else:
+                _require(isinstance(path, str) and IDENTITY.fullmatch(path), "host_event_artifact_path_invalid")
+                if event["result"] == "success":
+                    _require(isinstance(digest, str) and HASH.fullmatch(digest), "host_event_artifact_digest_invalid")
+                    confirmed.add((path, digest))
+                else:
+                    _require(digest is None, "host_event_failed_write_must_not_claim_digest")
             records += 1
     return records, confirmed
 
@@ -91,7 +135,7 @@ def _contract(value):
 
 def _task_shape(task):
     _keys(task, TASK_KEYS, "task_invalid")
-    for name in ("task_id", "owner_id", "attempt_id"):
+    for name in ("task_id", "logical_task_id", "owner_id", "attempt_id"):
         _identity(task[name])
     for name in ("parent_task_id", "retry_of"):
         if task[name] is not None:
@@ -101,7 +145,7 @@ def _task_shape(task):
     for identity in depends_on:
         _identity(identity)
     _require(len(set(depends_on)) == len(depends_on), "duplicate_dependency")
-    _require(task["task_id"] not in depends_on, "self_dependency_invalid")
+    _require(task["logical_task_id"] not in depends_on, "self_dependency_invalid")
     _require(type(task["hook_configured"]) is bool, "hook_configured_invalid")
     _keys(task["self_report"], {"state"}, "self_report_invalid")
     _require(task["self_report"]["state"] in SELF_REPORT_STATES, "self_report_invalid")
@@ -115,7 +159,7 @@ def _task_shape(task):
              "task_acceptance_receipt_invalid")
 
 
-def _tasks(mission):
+def _attempts(mission):
     tasks = mission["tasks"]
     expected = mission["expected_tasks"]
     assignments = mission["assignments"]
@@ -128,42 +172,54 @@ def _tasks(mission):
     for identity in assignments.values():
         _identity(identity)
     roster = {}
+    logical = {}
     for task in tasks:
         _task_shape(task)
         task_id = task["task_id"]
         _require(task_id not in roster, "duplicate_task")
         roster[task_id] = task
-    _require(set(roster) == set(expected), "task_coverage_mismatch")
+        logical.setdefault(task["logical_task_id"], []).append(task_id)
+    _require(set(logical) == set(expected), "task_coverage_mismatch")
+    depends_map = {}
+    for logical_id, attempt_ids in logical.items():
+        depends_sets = {frozenset(roster[tid]["depends_on"]) for tid in attempt_ids}
+        _require(len(depends_sets) == 1, "logical_task_dependency_inconsistent")
+        deps = next(iter(depends_sets))
+        for dep in deps:
+            _require(dep in expected, "task_reference_invalid")
+        depends_map[logical_id] = deps
+        for tid in attempt_ids:
+            _require(roster[tid]["owner_id"] == assignments[logical_id], "owner_assignment_mismatch")
     for task_id, task in roster.items():
-        _require(task["owner_id"] == assignments[task_id], "owner_assignment_mismatch")
-    dependencies = {}
-    for task_id, task in roster.items():
-        edges = set(task["depends_on"])
-        for field in ("parent_task_id", "retry_of"):
-            target = task[field]
-            if target is not None:
-                edges.add(target)
-        for target in edges:
-            _require(target in roster, "task_reference_invalid")
-        dependencies[task_id] = edges
-    # Bounded topological elimination catches cycles across depends_on/retry/
-    # parent edges without exponential traversal through shared ancestors.
+        parent = task["parent_task_id"]
+        if parent is not None:
+            _require(parent in roster and parent != task_id, "task_reference_invalid")
+        retry_of = task["retry_of"]
+        if retry_of is not None:
+            _require(retry_of in roster and retry_of != task_id, "retry_reference_invalid")
+            target = roster[retry_of]
+            _require(target["logical_task_id"] == task["logical_task_id"], "retry_logical_task_mismatch")
+            _require(target["self_report"]["state"] == "FAILED", "retry_of_target_not_failed")
+    # Bounded topological elimination over the logical dependency graph
+    # catches cycles without exponential traversal through shared ancestors.
     order = []
-    remaining = dict(dependencies)
+    remaining = {key: set(deps) for key, deps in depends_map.items()}
     while remaining:
         ready = sorted(key for key, parents in remaining.items() if not parents)
         _require(bool(ready), "task_dependency_cycle")
         order.extend(ready)
         remaining = {key: parents - set(ready) for key, parents in remaining.items() if key not in ready}
-    return roster, order
+    return roster, logical, depends_map, order
 
 
 def _bind_task_acceptance(receipt_doc, mission, task):
-    _keys(receipt_doc, {"schema", "mission_id", "task_id", "state", "result_artifacts"},
+    _keys(receipt_doc, {"schema", "mission_id", "task_id", "verifier_id", "state", "result_artifacts"},
           "task_acceptance_invalid")
     _require(receipt_doc["schema"] == "fames.execution-task-acceptance.v1", "task_acceptance_schema_unknown")
     _require(receipt_doc["mission_id"] == mission["mission_id"] and receipt_doc["task_id"] == task["task_id"],
              "stale_or_other_mission_receipt")
+    _identity(receipt_doc["verifier_id"])
+    _require(receipt_doc["verifier_id"] != task["owner_id"], "acceptance_not_independent_of_owner")
     _require(receipt_doc["state"] == "ACCEPTED", "task_not_accepted")
     results = receipt_doc["result_artifacts"]
     _require(isinstance(results, list) and 1 <= len(results) <= MAX_LOGS, "task_acceptance_results_missing")
@@ -175,26 +231,26 @@ def _bind_task_acceptance(receipt_doc, mission, task):
     _require(result_pairs == output_pairs, "task_acceptance_binding_mismatch")
 
 
-def _validate_task(task, mission, artifacts, accepted):
+def _validate_attempt(task, mission, artifacts):
     logs = [artifacts.read(record, log=True) for record in task["host_events"]]
-    records, confirmed = ADAPTERS[task["format"]](logs, task, {})
+    records, confirmed = ADAPTERS[task["format"]](logs, task, mission["mission_id"])
     if task["hook_configured"]:
         _require(records > 0, "host_event_missing_despite_hook_configured")
     completed = task["self_report"]["state"] == "COMPLETED"
     outputs = task["output_artifacts"]
     receipt = task["task_acceptance_receipt"]
     if not completed:
+        # A failed/in-progress/blocked attempt stays visible in the roster;
+        # it must never smuggle in an output or acceptance of its own.
         _require(not outputs and receipt is None, "incomplete_task_must_not_claim_artifacts_or_acceptance")
         return False
     _require(bool(outputs), "task_result_artifacts_missing")
     _require(records > 0, "self_report_not_host_corroborated")
     for record in outputs:
         artifacts.read(record, result=True)
-        _require(record["path"] in confirmed, "output_artifact_not_host_observed")
+        _require((record["path"], record["sha256"]) in confirmed, "output_artifact_not_host_observed")
     _require(receipt is not None, "task_acceptance_missing")
     _bind_task_acceptance(_json(artifacts.read(receipt)), mission, task)
-    for dependency in task["depends_on"]:
-        _require(accepted.get(dependency) is True, "dependency_not_accepted")
     return True
 
 
@@ -203,7 +259,7 @@ def _validate_mission(mission, artifacts):
                     "coverage_receipt", "acceptance_receipt"}, "mission_invalid")
     _identity(mission["mission_id"])
     _contract(mission["contract"])
-    roster, order = _tasks(mission)
+    roster, logical, depends_map, order = _attempts(mission)
     coverage = _json(artifacts.read(mission["coverage_receipt"]))
     _keys(coverage, {"schema", "mission_id", "contract", "expected_tasks", "assignments", "tasks",
                      "state", "all_tasks_included", "omitted_tasks", "omitted_retries"},
@@ -214,10 +270,11 @@ def _validate_mission(mission, artifacts):
     for field in ("mission_id", "contract", "expected_tasks", "assignments", "tasks"):
         _require(coverage[field] == mission[field], "coverage_binding_mismatch")
     acceptance = _json(artifacts.read(mission["acceptance_receipt"]))
-    _keys(acceptance, {"schema", "mission_id", "contract", "state", "coverage_sha256", "result_artifacts"},
-          "acceptance_receipt_invalid")
+    _keys(acceptance, {"schema", "mission_id", "contract", "state", "coverage_sha256",
+                       "result_artifacts", "verifier_id"}, "acceptance_receipt_invalid")
     _require(acceptance["schema"] == "fames.execution-acceptance.v1" and acceptance["state"] == "ACCEPTED",
              "mission_not_accepted")
+    _identity(acceptance["verifier_id"])
     _require(acceptance["mission_id"] == mission["mission_id"] and acceptance["contract"] == mission["contract"]
              and acceptance["coverage_sha256"] == mission["coverage_receipt"]["sha256"],
              "acceptance_binding_mismatch")
@@ -225,25 +282,35 @@ def _validate_mission(mission, artifacts):
     _require(isinstance(results, list) and 1 <= len(results) <= MAX_LOGS, "accepted_results_missing")
     for result in results:
         artifacts.read(result, result=True)
-    accepted = {}
-    for task_id in order:
-        accepted[task_id] = _validate_task(roster[task_id], mission, artifacts, accepted)
-    return roster, accepted
+    resolved = {}
+    attempt_accepted = {}
+    for logical_id in order:
+        for dependency in depends_map[logical_id]:
+            _require(resolved.get(dependency) is True, "dependency_not_accepted")
+        any_ok = False
+        for task_id in sorted(logical[logical_id]):
+            ok = _validate_attempt(roster[task_id], mission, artifacts)
+            attempt_accepted[task_id] = ok
+            any_ok = any_ok or ok
+        resolved[logical_id] = any_ok
+    return roster, attempt_accepted, resolved
 
 
 def validate_execution(document, root=None):
     """Return ok/state/reasons/normalized for a bounded mission execution graph.
 
-    ok=True ONLY when every declared task is independently accepted with a
-    host-observed operation for each output artifact and closed dependencies.
-    state=INCOMPLETE is a valid, non-passing result (graph not yet finished);
-    state=UNKNOWN means missing/invalid/tampered evidence. No returned string
-    originates in raw logs.
+    ok=True ONLY when every expected logical task has at least one attempt
+    independently accepted, with a host-observed successful write for each
+    of its output artifacts, and closed dependencies. state=INCOMPLETE is a
+    valid, non-passing result (graph not yet finished, e.g. a retry still
+    pending); state=UNKNOWN means missing/invalid/tampered/unfalsifiable
+    evidence. No returned string originates in raw logs.
     """
     output = {"schema": "fames.execution-evidence-result.v1", "ok": False,
-              "state": "UNKNOWN", "reasons": [], "mission_id": None, "normalized": {"tasks": {}},
-              "boundary": "hashes_prove_bytes_unchanged_since_recorded_observation_"
-                           "not_observer_honesty_or_semantic_task_success"}
+              "state": "UNKNOWN", "reasons": [], "mission_id": None,
+              "normalized": {"tasks": {}, "logical_tasks": {}},
+              "boundary": "sha256_proves_bytes_read_now_match_a_recorded_digest_"
+                           "not_observer_or_verifier_honesty_or_semantic_task_success"}
     try:
         try:
             encoded = json.dumps(document, allow_nan=False).encode("utf-8")
@@ -255,17 +322,19 @@ def validate_execution(document, root=None):
         _require(document["schema"] == "fames.execution-evidence.v1", "manifest_schema_unknown")
         mission = {key: value for key, value in document.items() if key != "schema"}
         artifacts = Artifacts(Path.cwd() if root is None else root)
-        roster, accepted = _validate_mission(mission, artifacts)
+        roster, attempt_accepted, resolved = _validate_mission(mission, artifacts)
         output["mission_id"] = mission["mission_id"]
         output["normalized"]["tasks"] = {
-            task_id: {"owner_id": roster[task_id]["owner_id"], "accepted": accepted[task_id]}
+            task_id: {"owner_id": roster[task_id]["owner_id"],
+                     "logical_task_id": roster[task_id]["logical_task_id"],
+                     "accepted": attempt_accepted[task_id]}
             for task_id in roster
         }
-        if all(accepted.values()):
+        output["normalized"]["logical_tasks"] = dict(resolved)
+        if all(resolved.values()):
             output.update(ok=True, state="VERIFIED_EXECUTED")
         else:
-            output.update(state="INCOMPLETE",
-                          reasons=["mission_incomplete"])
+            output.update(state="INCOMPLETE", reasons=["mission_incomplete"])
     except EvidenceError as exc:
         output["reasons"].append(str(exc))
     except (OSError, RuntimeError, ValueError, TypeError, KeyError, OverflowError, RecursionError):

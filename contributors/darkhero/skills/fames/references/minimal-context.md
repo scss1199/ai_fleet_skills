@@ -50,22 +50,3 @@ logs, matching task/model/config/acceptance and result receipts. Existing utilit
 `model_calls=0` reports remain scoped to those utilities. No provider calls are
 needed by this validator. Missing evidence is UNKNOWN; latency, token use and
 money are separate outcomes.
-
-## Mission command
-
-For authorized delegation, use Auftragstaktik: the leader binds purpose, end
-state, ownership, available resources, authority limits and observable acceptance.
-The owner chooses methods and adapts to local evidence without asking for routine
-instructions. The leader resolves cross-owner obstacles, retains failed attempts,
-and owns the final merge and verification. An unavailable host is a routing problem
-to investigate; a dispatched request is not a delivered result.
-
-The shared `validate-execution` gate checks the declared mission and retained
-host observations against actual output bytes and acceptance evidence. It cannot
-authenticate an arbitrary receipt author or inspect a model's neural mechanisms.
-Missing observations, unfinished dependencies, identity drift and omitted attempts
-remain non-passing. Record explicit authority separately; a mission never grants
-permission to bypass host trust, secrets, destructive or production boundaries.
-
-This is an engineering adaptation of mission command and mechanism-aware
-verification. It is not ARC mechanistic estimation of neural-network weights.

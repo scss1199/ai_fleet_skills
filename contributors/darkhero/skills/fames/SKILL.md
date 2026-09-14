@@ -23,7 +23,7 @@ for accounting and immediate-update boundaries.
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-09-14.2
+FAMES-GEN: 2026-09-14.3
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 
@@ -516,3 +516,7 @@ python scripts/fames_fleet.py converge --workspace <root> --host <seat> --arm --
 Three properties matter more than the mechanism. Arming **re-measures** the registry after the engine exits, because an exit code 0 is a claim and the rider row is the evidence. Arming **repairs drift but never re-adds a removed rider**, so it cannot fight an operator who deliberately disarmed it. And where `register-rider.py` does not exist, `arm` prints the exact registration it would have made and reports a named blocker rather than claiming a schedule it did not create.
 
 The heartbeat exists so that liveness is measured rather than assumed: `C-CONVERGE-HEARTBEAT` charges `R_FLEET` when the newest heartbeat is over 6 hours old, and `C-CONVERGE-ARMED` charges it when a heartbeat reports its rider is anything but `armed`. Without them a dead rider, a powered-off machine, and a stale generation are indistinguishable. Both are `degraded`: a machine that is merely off should not block the authority's run. This path calls no model and adds no resident process.
+
+## Mission command execution
+
+Delegation uses Auftragstaktik: declare intent, end state, ownership, resources, authority limits and acceptance; owners choose methods and adapt. The leader owns obstacles, conflict resolution and verified merge. Apply `references/minimal-context.md` and use `scripts/fames_fleet.py validate-execution --input mission.json --workspace <artifact-root> --json` before closing delegated work. A run with `execution_required: true` or `mission_id` must bind execution evidence to its semantic goal. Preserve failed attempts and require independently accepted successful retries; dispatch, configured hooks and self-reports are not execution proof. Observer identities and hashes are not cryptographic authentication or neural interpretability.

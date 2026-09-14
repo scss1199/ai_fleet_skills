@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.35.0",
+  "version": "1.36.0",
   "updated": "2026-09-14",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -2329,6 +2329,29 @@
     "validator": "scripts/work_efficiency.py",
     "cli": "validate-efficiency",
     "measurement_on_intake": "UNKNOWN_UNTIL_COMPLETE_USAGE_EVIDENCE",
-    "authority_rule": "No implicit model switching, provider calls, new schedules, credentials, or external actions; existing authority only."
+    "authority_rule": "No implicit model switching, provider calls, new schedules, credentials, or external actions; existing authority only.",
+    "mission_command": {
+      "id": "FAMES-MISSION-COMMAND",
+      "principle": "Auftragstaktik",
+      "leader_owns": [
+        "purpose",
+        "end_state",
+        "ownership",
+        "authority_limits",
+        "resources",
+        "acceptance",
+        "conflict_resolution",
+        "final_merge"
+      ],
+      "owner_autonomy": "Choose methods, obtain in-scope resources and adapt to evidence; report intent-threatening constraints, not routine permission requests.",
+      "completion_rule": "Require closed expected-owner and dependency graph, actual host observations, unchanged result artifacts and independent acceptance. Dispatch and self-report are not completion.",
+      "validator": "scripts/execution_evidence.py",
+      "cli": "validate-execution",
+      "trust_boundary": "Workflow evidence only. Hash identity does not authenticate an observer; no neural-weight or deception-intent inference.",
+      "article_sources": [
+        "https://www.bundeswehr.de/de/organisation/zentrum-innere-fuehrung/handbuch-innere-fuehrung/menschenfuehrung-5710922",
+        "https://www.alignment.org/blog/competing-with-sampling/"
+      ]
+    }
   }
 }
