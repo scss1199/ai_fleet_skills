@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-09-14T05:15:10Z",
-  "manifest_sha": "4dbf35900334339d",
+  "generated_at": "2026-09-14T05:30:11Z",
+  "manifest_sha": "341828a1634544a6",
   "required": [
     "fames",
     "independent-review",
@@ -385,12 +385,12 @@
     },
     {
       "name": "ztm-git-ship",
-      "sha": "763b5727f9bc59b1",
+      "sha": "31dd939e6088af8c",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "9de06b6e9c8527faae6ef0fdc5cc62abda8fe06175bd1e6fe13a2c9b6147581c",
+      "package_sha": "efef9f077c3c7bbb7f79b1d9d2f2bdc885dff1089525d5c46bc2d3ba912d9ecf",
       "files": {
-        "SKILL.md": "4be35fde873124f2635efd3d5f7fb1b15dbf44417791f2ff611a11e528c0daa8",
+        "SKILL.md": "6bfd386d319100228ea6913e9aae1a3afc8e3208ee50984b3d6cd8284a4f4320",
         "engines/git_repo_detect.py": "86a8275e600a2aa990dc6ffc4de2cf854b5dd3172f79b8451f4b75b00586f2a7",
         "tests/test_git_repo_detect.py": "84966608e5bf9e1f32127a44654e77c38b25586478aa4e64099235eb3012aeff"
       }

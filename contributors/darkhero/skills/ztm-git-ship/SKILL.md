@@ -20,7 +20,7 @@ parent_skill: aex-agent-evolution
 ```powershell
 .\ship.ps1
 # 或
-python $env:AI_WORKSPACE\_skill\engines\git_smart.py commit-push . --zct
+python $env:AI_WORKSPACE\_skill\engines\git_smart.py commit-push . --zct --staged-only
 ```
 
 `--zct` = 檔名清單產生 commit message，**零 LLM token**。
@@ -33,3 +33,11 @@ python $env:AI_WORKSPACE\_skill\engines\git_smart.py commit-push . --zct
 
 - 裸 `git diff` 進 agent context
 - 問 operator「要不要 commit/push」
+
+## Deterministic scope
+
+Stage only the task-owned paths first, then use `--zct --staged-only`. Alternatively
+pass an explicit `--files path1 path2` list. Commit commands reject missing scope;
+never sweep unrelated staged or working changes. `--zct` and `--ztm` do not import
+or call a model provider. Only the explicit `--legacy-llm` mode enables the old
+provider path; it requires its existing authority and API gate.
