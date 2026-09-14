@@ -5145,6 +5145,7 @@ def build_bundle(
         "examples/anthropic_async_adapter.py",
         "references/claude-live-eval.json",
         "references/knowledge-evidence.md",
+        "references/autonomous-knowledge.md",
         "references/minimal-context.md",
         "scripts/context_packet.py",
         "scripts/test_context_packet.py",
