@@ -14,13 +14,16 @@ Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` 
 Use local acquisition and verification, then at most three relevant excerpts / 1600
 excerpt characters initially. Keep full evidence on disk and unknown/omitted items
 visible. Expand only for a named acceptance gap. Character savings are not token
-or billing savings. Do not reload this whole skill each turn: use the fresh compact
+or billing savings. Whole-task savings require `validate-efficiency` with matched
+task/model/acceptance and complete parent, child and retry usage. Shared runtime
+entrypoints load the `work_efficiency` contract; local utility API counts alone
+cannot satisfy this gate. Do not reload this whole skill each turn: use the fresh compact
 contract and the relevant section. See [minimal context](references/minimal-context.md)
 for accounting and immediate-update boundaries.
 
 ## Freshness — resolve at run time, never from memory
 
-FAMES-GEN: 2026-09-10.4
+FAMES-GEN: 2026-09-14.2
 
 A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
 

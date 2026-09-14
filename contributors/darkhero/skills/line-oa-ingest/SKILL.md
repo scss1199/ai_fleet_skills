@@ -58,6 +58,11 @@ unsend delivery unresolved until observed.
 Use the canonical FAMES `validate-knowledge` gate documented in
 `fames/references/knowledge-evidence.md` for a retained full-text/digest receipt.
 Acquisition verification is separate from source truth and canon promotion.
+Novelty must use retained source-event/arrival identity, never artifact mtime.
+The shared reader must recheck full/digest/provenance hashes, report unknown
+arrival and excluded candidates, and expose coverage limits. Batch acquisition
+locally, then pass one bounded packet to judgment. Token-saving claims use the
+shared FAMES whole-task efficiency validator, including parent/child/retry use.
 When zero remote API use is required, use the local reader's fixed acquisition
 route and count cached local ASR separately; the free-provider route below does
 not establish zero remote API calls.

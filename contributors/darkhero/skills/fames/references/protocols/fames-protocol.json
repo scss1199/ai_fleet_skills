@@ -1,8 +1,8 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.34.0",
-  "updated": "2026-09-10",
+  "version": "1.35.0",
+  "updated": "2026-09-14",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
   "legacy_umbrella_aliases": [
@@ -1595,12 +1595,14 @@
             "runtime_event_observed",
             "activation_evidence",
             "read_back",
-            "raw_prompt_persisted"
+            "raw_prompt_persisted",
+            "work_contract"
           ],
           "failure_rule": "Missing session identity, missing prompt identity, stale or mismatched rule/context identity, unreadable package, parity drift, missing actual lifecycle-event execution, untrusted or skipped hook, or adapter failure is UNKNOWN and blocks a completion claim. An adapter that can only block cannot claim it injected context.",
           "hook_trust_rule": "Configuration write-back, a direct script probe, and a synthetic hook payload do not prove that a live conversation executed a hook. Where the host has hook review or trust, only an observed lifecycle event bound to the current session and prompt can prove activation; otherwise that live conversation remains UNKNOWN.",
           "completion_scope_rule": "An all-open-conversations or next-turn guarantee is admissible only when every claimed live conversation produces a fresh prompt-bound runtime receipt from its actual lifecycle event. Package parity and host-level hook deployment are necessary but not sufficient.",
-          "privacy_rule": "The receipt stores no raw prompt, attachment body, credential, cookie, token, or session value. Conversation and prompt identities are one-way SHA-256 values."
+          "privacy_rule": "The receipt stores no raw prompt, attachment body, credential, cookie, token, or session value. Conversation and prompt identities are one-way SHA-256 values.",
+          "work_efficiency_policy_sha": "d721d917194fd2424d60c9831a6cf2733ffeb5977174766bf5a911df2c800f86"
         },
         "unknown_rule": "Unknown prompt identity, session identity, generation, intent coverage, clause coverage, Ti binding, terminal state, authority conservation, lifecycle-event execution, hook trust, or turn-refresh read-back is UNKNOWN and fails closed."
       },
@@ -2300,9 +2302,33 @@
     "default_max_excerpts": 3,
     "default_excerpt_chars": 1600,
     "budget_unit": "characters_not_tokens",
-    "rule": "Local acquisition and verification first; return bounded relevant excerpts and evidence paths. Keep failures and omissions explicit. Expand only for a named unresolved acceptance test; preserve all authority, red lines and acceptance criteria.",
+    "rule": "Local acquisition, deduplication, indexing and verification first; reuse hashed results and return bounded excerpts with evidence paths. Expose failures and omissions. Expand only for a named acceptance gap; preserve authority, red lines and acceptance criteria.",
     "accounting": "Separate reported input, cached input, output, reasoning, API calls, local compute, quota and money; missing measurements UNKNOWN. Character reduction is not token savings. Free-provider routing is not zero model use.",
     "reference": "references/minimal-context.md",
-    "packet_engine": "scripts/context_packet.py"
+    "packet_engine": "scripts/context_packet.py",
+    "work_contract_ref": "work_efficiency"
+  },
+  "work_efficiency": {
+    "schema": 1,
+    "id": "FAMES-WORK-EFFICIENCY",
+    "default_route": "local_acquire_deduplicate_index_verify_then_bounded_judgment",
+    "initial_work_plan": "Bind the prompt, acceptance, route and read/tool/time budgets before work. Reuse identity-matching receipts; expand only for a named acceptance gap.",
+    "parallel_contract": {
+      "independent_tool_io": "batch",
+      "model_fanout": "only independent owned work where benefit offsets context duplication",
+      "input": "bounded evidence packet, not full conversation",
+      "merge": "one authoritative merge with coverage and conflict checks"
+    },
+    "stop_rule": {
+      "non_discriminating_attempts": 3,
+      "next_action": "retain UNKNOWN and choose the smallest discriminating test; never weaken acceptance"
+    },
+    "arrival_rule": "Use persisted source-event/arrival identity, never filesystem mtime as article novelty. Recheck full/digest/provenance hashes and expose excluded/unknown/bounded candidates.",
+    "claim_rule": "Utility zero remote API calls and character reduction cannot establish total-task token, quota, money or latency savings.",
+    "measurement_rule": "Compare matched task/model/config/acceptance with complete parent, child and retry coverage; bind raw local usage logs and accepted result artifacts by hash. Deduplicate provider messages and overlapping cache/reasoning counters. Unknown measurements fail closed.",
+    "validator": "scripts/work_efficiency.py",
+    "cli": "validate-efficiency",
+    "measurement_on_intake": "UNKNOWN_UNTIL_COMPLETE_USAGE_EVIDENCE",
+    "authority_rule": "No implicit model switching, provider calls, new schedules, credentials, or external actions; existing authority only."
   }
 }

@@ -37,3 +37,16 @@ retroactively changed. Missing/untrusted/skipped hooks, unsupported surfaces,
 unregistered rules and unobserved conversations remain UNKNOWN. A synthetic
 probe proves adapter behavior only. Do not mark a delivered update as loaded
 until the host supplies a real session/prompt-bound lifecycle receipt.
+
+## Shared work contract
+
+Every registered turn adapter reads `work_efficiency` from the canonical protocol
+and binds a content-free work contract to the prompt identity. It instructs local
+acquisition/deduplication/indexing first, bounded owned work, result reuse and one
+merge. This records delivery, not proof that a model followed the instructions.
+Use `fames_fleet.py validate-efficiency --input comparison.json --workspace <root>`
+for a savings claim. The manifest binds complete actor/retry coverage, raw usage
+logs, matching task/model/config/acceptance and result receipts. Existing utility
+`model_calls=0` reports remain scoped to those utilities. No provider calls are
+needed by this validator. Missing evidence is UNKNOWN; latency, token use and
+money are separate outcomes.

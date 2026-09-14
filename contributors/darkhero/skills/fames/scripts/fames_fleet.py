@@ -632,7 +632,23 @@ def _parse_time(value: object) -> datetime | None:
         return None
 
 
-def validate_run(run: dict) -> dict:
+def validate_efficiency(document: dict, root: Path | None = None) -> dict:
+    """Replay the portable whole-task gate; no provider/model calls."""
+    import importlib.util
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "fames_work_efficiency", PACKAGE_ROOT / "scripts" / "work_efficiency.py"
+        )
+        if spec is None or spec.loader is None:
+            raise ImportError("efficiency validator unavailable")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.validate_efficiency(document, root=root or _active_workspace())
+    except (OSError, ValueError, TypeError, ImportError, AttributeError) as exc:
+        return {"ok": False, "state": "UNKNOWN", "errors": ["efficiency validator unavailable: " + type(exc).__name__]}
+
+
+def validate_run(run: dict, artifact_root: Path | None = None) -> dict:
     """Validate one FAMES phase ledger without executing or expanding authority."""
     errors: list[str] = []
     goal = run.get("goal") if isinstance(run.get("goal"), dict) else {}
@@ -785,6 +801,28 @@ def validate_run(run: dict) -> dict:
         )
     )
 
+    efficiency = {"state": "NOT_APPLICABLE", "reason": "no efficiency measurement or savings claim"}
+    if "efficiency_evidence" in run or run.get("efficiency_claim"):
+        comparison = run.get("efficiency_evidence")
+        if not isinstance(comparison, dict):
+            errors.append("efficiency savings require complete raw-usage comparison evidence")
+            efficiency = {"ok": False, "state": "UNKNOWN"}
+        else:
+            efficiency = validate_efficiency(comparison, root=artifact_root)
+            for side in ("baseline", "candidate"):
+                side_record = comparison.get(side)
+                contract = side_record.get("contract") if isinstance(side_record, dict) else {}
+                contract = contract if isinstance(contract, dict) else {}
+                if contract.get("goal_id") != expected_hash:
+                    errors.append(f"efficiency {side} goal identity mismatch")
+            if not efficiency.get("ok"):
+                errors.append("efficiency evidence is not independently replayable")
+            if run.get("efficiency_claim"):
+                if run["efficiency_claim"] != "token_savings":
+                    errors.append("efficiency metric is unmeasured; cost/quota/latency are not token counts")
+                elif efficiency.get("token_savings_verified") is not True:
+                    errors.append("whole-task token savings are not verified")
+
     return {
         "ok": not errors,
         "state": "PASS" if not errors else "FAIL",
@@ -792,6 +830,7 @@ def validate_run(run: dict) -> dict:
         "risk_class": risk,
         "task_profile": profile,
         "aex_required": aex_required,
+        "efficiency": efficiency,
         "errors": errors,
     }
 
@@ -4243,6 +4282,15 @@ def _prompt_compilation_findings(
             errors.append(f"prompt compilation turn_receipt.{field} is not SHA-256")
     if receipt.get("prompt_contract_identity") != _stable_sha(policy):
         errors.append("prompt compilation contract identity differs from active policy")
+    expected_work_policy = (policy.get("turn_refresh_contract") or {}).get("work_efficiency_policy_sha")
+    if expected_work_policy:
+        work = receipt.get("work_contract")
+        if not isinstance(work, dict):
+            unknowns.append("prompt compilation shared work contract missing")
+        elif (work.get("policy_identity_sha") != expected_work_policy
+              or work.get("prompt_identity") != receipt.get("prompt_identity")
+              or work.get("state") != "BOUND_NOT_EXECUTION_PROOF"):
+            errors.append("prompt compilation shared work contract identity mismatch")
     try:
         manifest = _read_json(PACKAGE_ROOT / MANIFEST_NAME)
     except (OSError, json.JSONDecodeError):
@@ -5059,6 +5107,8 @@ def build_bundle(
         "references/minimal-context.md",
         "scripts/context_packet.py",
         "scripts/test_context_packet.py",
+        "scripts/work_efficiency.py",
+        "scripts/test_work_efficiency.py",
         "scripts/adaptive_response_controller.py",
         "scripts/claude_live_ab.py",
         "scripts/claude_task_acceptance.py",
@@ -6227,6 +6277,12 @@ def _hydrate_boundary_fixtures(node: object) -> None:
                 turn_receipt["skill_gen"] = manifest.get("skill_gen")
                 turn_receipt["package_sha"] = manifest.get("package_sha")
                 turn_receipt["prompt_contract_identity"] = _stable_sha(prompt_policy)
+                work_sha = (prompt_policy.get("turn_refresh_contract") or {}).get("work_efficiency_policy_sha")
+                if work_sha:
+                    turn_receipt["work_contract"] = {
+                        "state": "BOUND_NOT_EXECUTION_PROOF", "policy_identity_sha": work_sha,
+                        "prompt_identity": turn_receipt.get("prompt_identity"),
+                    }
                 prompt_compilation["turn_receipt"] = turn_receipt
                 source = prompt_compilation.get("source") or {}
                 source["prompt_identity"] = turn_receipt.get("prompt_identity")
@@ -7017,13 +7073,13 @@ def _emit(payload: dict, as_json: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-context-assets", "validate-background", "validate-effect", "measure-compute", "plan-compute", "validate-compute", "validate-local-compute", "validate-autonomic", "validate-capability-sync", "goal-compact", "validate-goal-compact", "attest-capabilities", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
+    for name in ("build-bundle", "verify-package", "parity", "status", "run-cases", "self-check", "validate-run", "validate-efficiency", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-context-assets", "validate-background", "validate-effect", "measure-compute", "plan-compute", "validate-compute", "validate-local-compute", "validate-autonomic", "validate-capability-sync", "goal-compact", "validate-goal-compact", "attest-capabilities", "install", "follow", "converge", "arm", "verify-host", "verify-fleet"):
         command = sub.add_parser(name)
         command.add_argument("--workspace", type=Path, default=Path.cwd())
         command.add_argument("--json", action="store_true")
         if name in {"verify-package", "parity", "status", "run-cases", "self-check"}:
             command.add_argument("--skill-dir", type=Path, default=PACKAGE_ROOT)
-        if name in {"validate-run", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-context-assets", "validate-background", "validate-effect", "plan-compute", "validate-compute", "validate-autonomic", "validate-capability-sync", "validate-goal-compact"}:
+        if name in {"validate-run", "validate-efficiency", "validate-ingest", "validate-cognitive", "validate-cognitive-boundary", "validate-harness", "validate-context-assets", "validate-background", "validate-effect", "plan-compute", "validate-compute", "validate-autonomic", "validate-capability-sync", "validate-goal-compact"}:
             command.add_argument("--input", type=Path, required=True)
         if name == "validate-local-compute":
             command.add_argument("--input", type=Path)
@@ -7104,7 +7160,13 @@ def main() -> int:
         except (OSError, json.JSONDecodeError) as exc:
             payload = {"ok": False, "state": "UNKNOWN", "errors": [f"run input unreadable: {exc}"]}
             return _emit(payload, args.json)
-        return _emit(validate_run(payload), args.json)
+        return _emit(validate_run(payload, artifact_root=args.workspace), args.json)
+    if args.command == "validate-efficiency":
+        try:
+            payload = _read_json(args.input)
+        except (OSError, json.JSONDecodeError) as exc:
+            return _emit({"ok": False, "state": "UNKNOWN", "errors": [type(exc).__name__]}, args.json)
+        return _emit(validate_efficiency(payload, root=args.workspace), args.json)
     if args.command == "validate-ingest":
         try:
             payload = _read_json(args.input)
