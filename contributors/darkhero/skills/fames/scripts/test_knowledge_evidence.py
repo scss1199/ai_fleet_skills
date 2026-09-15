@@ -81,6 +81,35 @@ class KnowledgeEvidenceTests(unittest.TestCase):
                 self.assertIn(name + "_hash_mismatch", result["errors"])
                 path.write_bytes(original)
 
+    def test_hash_valid_login_shell_is_blocked_and_retained(self):
+        self.bind_full("Home\nSearch\nCreate\nNotifications\nProfile\nMore\n"
+                       "This content is unavailable\nLog in or sign up for Threads\n")
+        self.persist()
+        result = self.validate()
+        self.assertEqual(result["state"], "BLOCKED")
+        self.assertEqual(result["acquisition_state"], "BLOCKED")
+        self.assertIn("source_access_wall", result["errors"])
+        self.assertEqual((self.root / "full.txt").read_bytes(), self.full)
+        self.assertEqual(result["truth_state"], "UNKNOWN")
+
+    def test_quoted_unavailable_phrase_is_not_a_login_shell(self):
+        self.bind_full("An article explains the message: This content is unavailable. "
+                       "Its actual body continues with a discussion of access boundaries.")
+        self.persist()
+        self.assertEqual(self.validate()["state"], "PASS")
+
+    def test_hash_valid_post_redirect_to_home_fails_closed(self):
+        self.record['source_url'] = self.source['source_url'] = 'https://www.threads.com/share/post/'
+        for target in ('https://www.threads.com:443/?error=invalid_post', 'https://www.threads.com/'):
+            self.source['final_url'] = target
+            self.persist()
+            result = self.validate()
+            self.assertEqual(result['state'], 'BLOCKED')
+            self.assertIn('source_target_not_retained', result['errors'])
+        self.source['final_url'] = 'https://www.threads.com/@fixture/post/ID'
+        self.persist()
+        self.assertEqual(self.validate()['state'], 'PASS')
+
     def test_matching_receipt_and_content_cannot_override_source_hash(self):
         self.record["full_sha256"] = _sha(b"tampered")
         (self.root / "full.txt").write_bytes(b"tampered")

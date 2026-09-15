@@ -35,6 +35,22 @@ def _sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def page_access_issue(body, source_url="", final_url=""):
+    """Recognize a known unavailable-page shell; absence is not content proof."""
+    source, target = urllib.parse.urlsplit(source_url), urllib.parse.urlsplit(final_url)
+    threads = {"threads.com", "www.threads.com", "threads.net", "www.threads.net"}
+    if source.hostname in threads and target.hostname in threads:
+        post = source.path.startswith("/share/") or "/post/" in source.path
+        if post and (target.path.rstrip("/") in {"", "/login"}
+                     or "invalid_post" in urllib.parse.parse_qs(target.query).get("error", [])):
+            return "source_target_not_retained"
+    lines = {" ".join(line.casefold().split()) for line in body.splitlines()}
+    unavailable = {"this content is unavailable", "this page isn't available", "this page isn’t available"}
+    login = {"log in or sign up for threads", "log in with username instead"}
+    navigation = {"home", "search", "create", "notifications", "profile", "more"}
+    return "source_access_wall" if lines & unavailable and lines & login and len(lines & navigation) >= 3 else ""
+
+
 def _pairs(pairs):
     result = {}
     for key, value in pairs:
@@ -272,6 +288,10 @@ def validate_knowledge(record, root: Path) -> dict:
             raise EvidenceError("source_kind_missing")
         if "source_kind" in record and record["source_kind"] != kind:
             raise EvidenceError("receipt_source_kind_mismatch")
+        access_issue = page_access_issue(_text(full), url, source.get("final_url", "")) if kind == "public_page_text" else ""
+        if access_issue:
+            output.update(state="BLOCKED", acquisition_state="BLOCKED")
+            raise EvidenceError(access_issue)
         if kind in ("public_media_local_whisper", "cached_public_media_local_whisper"):
             media = _speech(source, full, full_path.parent, root, url, runs)
             output["hashes"].update({key: media.pop(key) for key in ("media_sha256", "transcript_sha256")})
