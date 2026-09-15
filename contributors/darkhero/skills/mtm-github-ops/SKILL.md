@@ -2,7 +2,7 @@
 name: mtm-github-ops
 description: >-
   MTM-first GitHub/repo operations: architecture snapshot, structural cross-seat diff,
-  static runtime prediction — all TR0 engines, no full-repo reads. Use before exploring
+  bounded source inventory and syntax checks — TR0 engines, cold reports. Use before exploring
   repos, comparing fleet seats, or pre-ship verification. Pairs with ztm-git-ship + git-token-guard.
 metadata:
   fleet:
@@ -48,14 +48,15 @@ python %AI_WORKSPACE%\_skill\engines\mtm-github-arch.py --path C:\ai_workspace\a
 
 輸出：top dirs、manifests、languages（`gh api` 或本地推斷）、entry points、git branch/dirty。
 
-### 2 靜態預測 — TR0
+### 2 Source inventory and syntax — TR0
 
 ```powershell
-python %AI_WORKSPACE%\_skill\engines\mtm-github-static.py --seat <seat>
+python %AI_WORKSPACE%\_skill\engines\mtm-github-static.py --seat <seat> --py-limit 0 --report <inventory.json>
 ```
 
-- Python：`ast` 語法 + import 圖（不 install）
-- JS/TS：`package.json` scripts；有 `tsconfig.json` 時嘗試 `tsc --noEmit`（timeout，缺 deps 不阻擋）
+- Python: parse/compile only; report parsed, discovered and unchecked counts. The default limit is 80; `--py-limit 0` covers all eligible Python sources.
+- JS/TS: bounded package script metadata only. No repository execution, installer or automatic `tsc`; syntax and runtime need separate evidence.
+- Add `--baseline <previous-inventory.json>` to compare same-root source hashes. Read the compact summary; retain the full inventory cold. Unchanged but unreviewed code stays pending. Incomplete coverage returns UNKNOWN and a nonzero exit code.
 
 ### 3 結構 diff — 僅需要時
 

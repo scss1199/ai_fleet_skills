@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-09-15T09:15:04Z",
-  "manifest_sha": "504bdf73e7f8740d",
+  "generated_at": "2026-09-15T09:30:06Z",
+  "manifest_sha": "511de3125886a2c1",
   "required": [
     "fames",
     "independent-review",
@@ -269,12 +269,13 @@
     },
     {
       "name": "mtm-github-ops",
-      "sha": "294596e0625c974c",
+      "sha": "ccc473c4abc8fcb2",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "350e3657554a03554ecc3c8cc5d4d68b385e4724e635f7750ce237181823f7e8",
+      "package_sha": "b767c3b7a7bc63a1b10d6fed1e04d01aaf375554cf048e04dd0a91ef92d0b2db",
       "files": {
-        "SKILL.md": "ab0beb18ec80d06126c5add559e667f1819fc591c5c02895f47de47d46ad0b59"
+        "SKILL.md": "0c00da6ca2f0ab9ee7580dd16f2a4e8959b86dc451314655fb7ec12349cd1c5d",
+        "scripts/quick_validate.py": "0544c8efc19d9467af6ad679ee0f02e58c94a6dba0592aed110d701e3db7149a"
       }
     },
     {
