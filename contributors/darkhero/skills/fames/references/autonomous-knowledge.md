@@ -34,6 +34,14 @@ Local DSH requires a fixed loopback endpoint, installed model identity and nativ
 completion evidence. The remote free API resident gate remains separate: a local
 probe never establishes remote readiness and cannot activate a remote fallback.
 
+The shared native transport accepts only an eligible project-matrix CWD and
+binds that seat to the native lifecycle receipt. Long UTF-8 input travels through
+bounded stdin into the installed headless CLI, avoiding Windows command-line
+truncation without changing the model, global configuration or retained history.
+Request byte coverage, model usage, package parity and semantic acceptance are
+separate checks. An observed hook with a changed package remains UNKNOWN until
+the package is rebuilt and the next actual worker passes; never rewrite history.
+
 ## Owner acceptance
 
 Read only the assigned evidence packet and relevant current CWD implementation.

@@ -5,7 +5,7 @@ description: Govern a task with durable intent, minimal context, scoped skills, 
 
 # FAMES
 
-FAMES-GEN: 2026-09-15.4
+FAMES-GEN: 2026-09-15.5
 
 FAMES is a completion contract. Its small always-on harness and this on-demand skill have different lifetimes. Resolve the current package from disk; do not reread the full protocol or this skill on every turn. A fresh runtime receipt may establish package identity; absent or changed identity requires `python scripts/fames_fleet.py status --json --workspace <workspace>`. A portable cold install requires `verify-package --json` without a workspace.
 
