@@ -5149,6 +5149,7 @@ def build_bundle(
         "references/scoped-skills.md",
         "references/operator-manual.md",
         "references/minimal-context.md",
+        "references/incremental-review.md",
         "scripts/context_packet.py",
         "scripts/test_context_packet.py",
         "scripts/execution_evidence.py",
@@ -5374,8 +5375,8 @@ def status(workspace: Path, package_root: Path = PACKAGE_ROOT) -> dict:
         "read_at": datetime.now(timezone.utc).isoformat(),
         "stale_context_rule": (
             "If the FAMES text in your context declares a different %s than skill_gen above, "
-            "that copy is stale: re-read SKILL.md and the bundled protocols from disk before "
-            "judging any phase." % GENERATION_PREFIX.strip()
+            "that copy is stale: refresh the small SKILL.md entry and only the reference "
+            "needed by the current acceptance gap before judging the affected phase." % GENERATION_PREFIX.strip()
         ),
         "errors": errors,
     }

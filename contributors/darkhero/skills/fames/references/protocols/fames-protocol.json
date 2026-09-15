@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.37.0",
+  "version": "1.38.2",
   "updated": "2026-09-14",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -502,7 +502,7 @@
     "rule": "FAMES is resolved at run time from disk, never from the contract text already sitting in a thread's context.",
     "generation_stamp": "SKILL.md carries a FAMES-GEN line; the runtime command reports the on-disk value.",
     "runtime_command": "python _skill/fleet-skills/fames/scripts/fames_fleet.py status --json --workspace %AI_WORKSPACE%",
-    "stale_context_rule": "A FAMES-GEN in context that differs from the on-disk skill_gen means the held copy is stale: re-read SKILL.md and the bundled protocols from disk, and treat any phase already judged with the stale copy as UNKNOWN.",
+    "stale_context_rule": "Changed generation: refresh the small SKILL.md entry and only the reference required by the current acceptance gap; affected stale phase evidence is UNKNOWN.",
     "parity_rule": "Bundled protocols must match the registry SSOT by version and by line-ending-normalized content; drift is UNKNOWN and fails closed. A machine with no registry is a legitimate cold load and reports NOT_APPLICABLE.",
     "parity_engine": "_skill/fleet-skills/fames/scripts/fames_fleet.py",
     "applies_to": [
@@ -2401,6 +2401,12 @@
       "retention": "host-capability-specific; no selective provider deletion claim",
       "completion": "fresh registered predicates, no pending obligations, no active scopes",
       "semantic_proof": "conditional on correct goal formalization and observable predicates; arbitrary intent remains UNKNOWN"
+    },
+    "incremental_review": {
+      "reference": "references/incremental-review.md",
+      "inventory_engine": "_skill/engines/mtm-github-static.py",
+      "reuse": "same-root policy-bound source hash delta; unchanged unreviewed work stays pending",
+      "completion": "fresh predicates and closed graph; syntax, registry entries and rounded scores do not prove semantic completion"
     }
   }
 }

@@ -5,7 +5,7 @@ description: Govern a task with durable intent, minimal context, scoped skills, 
 
 # FAMES
 
-FAMES-GEN: 2026-09-15.1
+FAMES-GEN: 2026-09-15.4
 
 FAMES is a completion contract. Its small always-on harness and this on-demand skill have different lifetimes. Resolve the current package from disk; do not reread the full protocol or this skill on every turn. A fresh runtime receipt may establish package identity; absent or changed identity requires `python scripts/fames_fleet.py status --json --workspace <workspace>`. A portable cold install requires `verify-package --json` without a workspace.
 
@@ -33,6 +33,7 @@ Main conversation history cannot be selectively erased by this skill. Use fresh 
 | --- | --- |
 | Scope contract, native proof limits, mathematical invariants | [Scoped skills](references/scoped-skills.md) |
 | Context budgets, reuse and complete usage accounting | [Minimal context](references/minimal-context.md) |
+| Code and capability review, coverage and changed-file routing | [Incremental review](references/incremental-review.md) |
 | External articles, routing, trial and absorption | [Autonomous knowledge](references/autonomous-knowledge.md) |
 | Other FAMES capabilities: cognitive checks, hardware, background, documents, missions, federation | [Operator reference](references/operator-manual.md), select one heading |
 | Exact machine-readable acceptance fields | [FAMES protocol](references/protocols/fames-protocol.json), select one capability |
