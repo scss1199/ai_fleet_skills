@@ -108,10 +108,12 @@ def main():
                 runtime_event_observed=runtime_event_observed,
                 activation_evidence=("lifecycle_hook" if runtime_event_observed else "invalid_hook_payload"),
                 transcript_path=transcript_path,
+                context_retained=surface_id == "claude" and bool(transcript_path),
             )
-            context=(token_core+"\n"+result.get("plan_text", "")).strip()
+            context=((token_core+"\n") if result.get("should_inject") else "") + result.get("plan_text", "")
             state=result.get("state")
         else:
+            harness.reset_turn_context(HUB, surface_id, session_id)
             result=harness.run_session(
                 agent, Path(cwd), HUB, hook_event=event, session_id=session_id,
                 transcript_path=transcript_path, session_source=session_source,
