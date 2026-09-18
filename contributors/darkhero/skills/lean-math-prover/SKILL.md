@@ -124,6 +124,24 @@ still shows what the file declares — none of it is proved. At most 40 theorems
 fields) · `positivity` · `field_simp` · `simp` · `gcongr` · `aesop` · `exact?` (searches Mathlib;
 slow, the suggestion arrives in `messages[]`).
 
+## FAMES math-claim gate — proving is not the same as being allowed to claim it
+
+The hub runs a gate that will not let **any** model report mathematics as proved on its own say-so.
+A bare "QED." / "formally verified" / "the lemma holds for all n" with no evidence is flagged
+UNSUPPORTED on every surface a message passes through (Claude Code Stop hook, Cursor stop gate,
+claim-linter). To satisfy it, prove the statement and paste the marker the gate mints, on the
+claim's own line:
+
+```
+python C:/ai_workspace/_lean/fames/lean_gate.py attest --file proof.lean
+# -> evidence: lean=<attest.json> sha256=<64 hex> theorem=<Name>
+```
+
+The gate replays that attestation; a forged path, a flipped sha, or a wrong theorem name is
+rejected. If you could not prove it, state it as UNKNOWN — do not assert it. `evidence_ok` in the
+gate is a Lean-proved decision (`Fames.mathOk`) and the running Python is bound to that Lean model
+by `fames/conformance.py`. Full contract: `_lean/README.md` ("fames/" section).
+
 ## Cost
 
 Core check 2–3 s; `import Mathlib.Tactic` ~10 s; full `import Mathlib` 16–23 s (import time
