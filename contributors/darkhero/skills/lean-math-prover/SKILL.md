@@ -42,8 +42,11 @@ python C:/ai_workspace/_lean/leanctl.py selftest --require-mathlib          # 22
 python C:/ai_workspace/_lean/leanctl.py exec --cwd C:/path/proj lake -- build
 ```
 
-Write the source to a file (or pipe it on stdin). Avoid `--code`: Windows shells mangle quotes
-and `ℝ ∀ ≤`. `import Mathlib…` in the source turns Mathlib on by itself.
+Write the source to a **UTF-8 file** and pass it with `--file`. Avoid `--code` and avoid piping
+from Windows PowerShell 5.1: both turn `ℝ ∀ ≤ ⟨` into `?`, and Lean then fails on syntax. A file
+written by PowerShell `>` / `Out-File` (UTF-16 with BOM) is accepted; a cp950 file is refused
+with `INPUT_ERROR`. `import Mathlib…` in the source turns Mathlib on by itself. stdout is always
+one JSON document, whatever goes wrong.
 
 ## Minimal file
 
@@ -66,9 +69,14 @@ theorem amgm2 (x y : ℝ) : 2 * x * y ≤ x ^ 2 + y ^ 2 := by nlinarith [sq_nonn
 | `FAILED` | 1 | not proved; `messages[]` holds the error and the unsolved goal (1-based `line`) |
 | `INCOMPLETE` | 1 | `sorry`/`admit` present: nothing was proved |
 | `UNSOUND_AXIOMS` | 1 | own `axiom`, `native_decide`, `decide +native`, or a SAT-backed `bv_decide` |
-| `UNVERIFIED` | 1 | `example`, `#guard_msgs`, `set_option debug.*`, `#exit`, or a broken audit |
+| `UNVERIFIED` | 1 | `example`, `#guard_msgs`, `set_option debug.*`, `#exit`, a Lean crash, or a broken audit |
 | `UNSUPPORTED` / `TIMEOUT` / `ELABORATED` | 1 | not a proof verdict; see README |
+| `INPUT_ERROR` | 2 | the call was unusable (bad arguments, unreadable or non-UTF-8 file): nothing was checked — fix the call, read `error` |
 | `SETUP_ERROR` | 2 | install problem: run `info`, then README "Rebuild / upgrade" |
+| `INTERNAL_ERROR` | 2 | a leanctl bug: nothing was checked; report `error` to the curator |
+
+Exit 2 says nothing about the mathematics. With `--out`, an exit-2 error overwrites the receipt,
+so an older `PROVED` at that path never stands in for the current run.
 
 ## Red lines
 
