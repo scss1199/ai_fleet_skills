@@ -38,7 +38,7 @@ python C:/ai_workspace/_lean/leanctl.py check --file proof.lean [--out receipt.j
 python C:/ai_workspace/_lean/leanctl.py check --stdin < proof.lean
 python C:/ai_workspace/_lean/leanctl.py --ascii check --file proof.lean    # cp950 / legacy consoles
 python C:/ai_workspace/_lean/leanctl.py info                                # versions, Mathlib readiness
-python C:/ai_workspace/_lean/leanctl.py selftest --require-mathlib          # 22 live controls
+python C:/ai_workspace/_lean/leanctl.py selftest --require-mathlib          # 31 live controls
 python C:/ai_workspace/_lean/leanctl.py exec --cwd C:/path/proj lake -- build
 ```
 
@@ -64,8 +64,8 @@ theorem amgm2 (x y : ℝ) : 2 * x * y ≤ x ^ 2 + y ^ 2 := by nlinarith [sq_nonn
 
 | verdict | exit | what you may say |
 |---|---|---|
-| `PROVED` | 0 | "formally verified" — quote `audit.theorems[].statement` and cite the `--out` receipt |
-| `CHECKED` | 0 | "Lean computed this" (`#eval`/`#check` output is in `messages[]`); nothing was proved |
+| `PROVED` | 0 | "formally verified" — quote `audit.theorems[].statement` (an entry with `synthetic: false`), pass on `cautions`, cite the `--out` receipt |
+| `CHECKED` | 0 | "Lean computed this" (`#eval`/`#check` output is in `messages[]`); nothing was proved. A file with only `def`s or a `structure` lands here too |
 | `FAILED` | 1 | not proved; `messages[]` holds the error and the unsolved goal (1-based `line`) |
 | `INCOMPLETE` | 1 | `sorry`/`admit` present: nothing was proved |
 | `UNSOUND_AXIOMS` | 1 | own `axiom`, `native_decide`, `decide +native`, or a SAT-backed `bv_decide` |
@@ -78,6 +78,25 @@ theorem amgm2 (x y : ℝ) : 2 * x * y ≤ x ^ 2 + y ^ 2 := by nlinarith [sq_nonn
 Exit 2 says nothing about the mathematics. With `--out`, an exit-2 error overwrites the receipt,
 so an older `PROVED` at that path never stands in for the current run.
 
+## What exactly was proved — read these before you repeat a statement
+
+`audit.theorems[]` is what the kernel accepted, printed by the checker itself (default options,
+root namespace, nothing opened). Per entry:
+
+| field | read it as |
+|---|---|
+| `statement` | the proposition. Quote this, never your own prompt |
+| `statement_typed` | same statement with the type of every numeral: `(2 : ℝ) ^ (1 / 2 : ℕ) = (1 : ℝ)` shows that `1 / 2` was natural-number division. Check it whenever numerals, `/` or `-` appear |
+| `local_deps` | definitions of **your file** the statement mentions. `theorem rh : RH` with `def RH : Prop := True` proves nothing about Riemann: quote those definitions with the claim |
+| `shadow_instances` | your file redefined `+`, a numeral, … for an imported type (`instance : Add Nat`). The statement does not mean what it looks like; do not report it as ordinary arithmetic |
+| `statement_form` | `pretty` normally; `no_notation` / `kernel` when the file registers its own notation or printing code, or uses a shadow instance. `statement_pretty` then holds the rendering not to trust |
+| `synthetic: true` | Lean generated it (`Foo.mk.injEq`); it is not your result |
+
+`cautions` says the same in words and never changes the verdict: empty for a plain file, and
+whatever it holds goes into your report next to the claim. On `FAILED` / `INCOMPLETE` the list
+still shows what the file declares — none of it is proved. At most 40 theorems are listed
+(`theorems_total`, `theorems_truncated`): split a larger file.
+
 ## Red lines
 
 - **Only `PROVED` may be reported as proved or formally verified.** Every other verdict,
@@ -87,8 +106,12 @@ so an older `PROVED` at that path never stands in for the current run.
 - **Never "fix" a failing proof with `sorry`, a new `axiom`, `native_decide`, a `debug.*` option
   or `#guard_msgs`.** The checker refuses all of them. Report the failure instead.
 - **`PROVED` covers the Lean statement, not your informal claim.** Read the statement back from
-  `audit.theorems[]`. Traps: `ℕ` subtraction truncates (`2 - 3 = 0`), `/` on `ℕ`/`ℤ` floors,
-  `1 / 0 = 0` in a field, a contradictory hypothesis proves anything.
+  `audit.theorems[]` (section above). Traps: `ℕ` subtraction truncates (`2 - 3 = 0`), `/` on
+  `ℕ`/`ℤ` floors, `1 / 0 = 0` in a field, a contradictory hypothesis proves anything.
+- **Prove facts about Mathlib's definitions, not about look-alikes you define yourself.** Do not
+  declare `notation`/`infix`, unexpanders, delaborators, or instances for imported types
+  (`instance : Add Nat`) in a file you want verified: the receipt unmasks them (`local_deps`,
+  `shadow_instances`, `pp_extensions`, `cautions`) and the claim becomes worthless.
 - The checker guards against sloppy or hallucinated proofs, not against a source that ships its
   own macros or metaprograms (`text_flags` lists those keywords). Do not write them to get a pass.
 - `_lean/` is shared by the whole fleet: do not edit the toolchain, `hubmath/` or `state/` from
@@ -103,7 +126,7 @@ slow, the suggestion arrives in `messages[]`).
 
 ## Cost
 
-Core check ~2 s; `import Mathlib.Tactic` ~10 s; full `import Mathlib` 16–21 s (import time
+Core check 2–3 s; `import Mathlib.Tactic` ~10 s; full `import Mathlib` 16–23 s (import time
 dominates, so put several theorems in one file). Keep parallel Mathlib checks to two or three:
 each maps several GB of `.olean` files. Default timeout 600 s.
 
