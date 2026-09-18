@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-09-15T15:30:13Z",
-  "manifest_sha": "2271aed696ff3307",
+  "generated_at": "2026-09-18T08:30:17Z",
+  "manifest_sha": "b2f500d5fa8feccf",
   "required": [
     "fames",
     "independent-review",
@@ -22,7 +22,7 @@
     "ztm-fleet-intelligence",
     "token-preflight"
   ],
-  "skill_count": 40,
+  "skill_count": 41,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -180,6 +180,16 @@
         "SKILL.md": "0336c6194210637291760f539ccb94b29894b29d12ead8b4e50ef9ea8affb54f",
         "scripts/validate_receipt.py": "b2743116c6105a0dc0cfe3f152e9fbc59877a5c69e0e1123dfa132dd01b05991",
         "scripts/verify_bundle.py": "f4420d52b0e5c62c0734524075ece408d005f6861d5dcd950cc18d252e66c5fe"
+      }
+    },
+    {
+      "name": "lean-math-prover",
+      "sha": "8173cc2b8c2d6b8e",
+      "required": false,
+      "lane": "zero-token-mechanism",
+      "package_sha": "ebdb4bb0c23aaea149ffdee46f136c1ed2da3c1ed8fe330fce829c6685f5c9aa",
+      "files": {
+        "SKILL.md": "8173cc2b8c2d6b8e6b3139b240bd6b46c84e183b7204a053d133b23d4d43797f"
       }
     },
     {
