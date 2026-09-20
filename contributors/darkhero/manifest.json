@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-09-18T17:30:15Z",
-  "manifest_sha": "6f8e2704fdb684b0",
+  "generated_at": "2026-09-20T04:49:58Z",
+  "manifest_sha": "ab344653b194ab1c",
   "required": [
     "fames",
     "independent-review",
@@ -184,12 +184,12 @@
     },
     {
       "name": "lean-math-prover",
-      "sha": "72a505bc53a29a76",
+      "sha": "1e27090f88c91241",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "a451901e3fd6eae61e4d07b8083af02346757ac788f63bf568f5283cb28b9b1e",
+      "package_sha": "72f5feb21e0a0f65823d4fa51f51a83382c73d26845f0ad86168cb4fff8d40af",
       "files": {
-        "SKILL.md": "72a505bc53a29a76d991764cec4d4d267d1d2503bfa9c393c1429459dbd3e69f"
+        "SKILL.md": "1e27090f88c912415e01f09795b9ed6825611e013d77d68e2e280c01b1dfe6b4"
       }
     },
     {
