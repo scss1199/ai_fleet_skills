@@ -5,7 +5,7 @@ description: Govern a task with durable intent, minimal context, scoped skills, 
 
 # FAMES
 
-FAMES-GEN: 2026-09-15.5
+FAMES-GEN: 2026-09-22.1
 
 FAMES is a completion contract. Its small always-on harness and this on-demand skill have different lifetimes. Resolve the current package from disk; do not reread the full protocol or this skill on every turn. A fresh runtime receipt may establish package identity; absent or changed identity requires `python scripts/fames_fleet.py status --json --workspace <workspace>`. A portable cold install requires `verify-package --json` without a workspace.
 
@@ -22,6 +22,8 @@ Freeze Outcome, Verification, Constraints and authority before implementation. P
 ## Skill lifetime
 
 Use the shared `skill_scope.py` JSON CLI when the workspace provides `_harness/runtime/skill_scope.py`: open -> input -> native worker -> complete -> release -> snapshot. Bind exact actions, targets, parameters, predicates and budgets. A worker sees the selected skill and task projection. Releasing it invalidates further calls while keeping evidence and pending obligations. Failed/expired work remains pending. Revisions invalidate old scopes; authority may only narrow.
+
+Where installed, `jev_skill_advisor.py` supplies optional skill recommendations through `jev_turn_router.py` after verified turn intake. Preserve explicit and mandatory skills; resolve the recommended canonical ID and body hash before loading it. Jev availability, recommendation, actual skill load and verified execution are separate states. Missing provider access or an approved minimal task projection falls back to local routing. Read the Jev section of [scoped skills](references/scoped-skills.md) when configuring or verifying this path.
 
 The compute adapter `native_skill_scope.py` supports registered native DSH and Claude Code without tools or global configuration changes. Other actions/hosts need a capability adapter and actual lifecycle evidence. Native adapters own transport, the shared store owns state and acceptance. The store is an admission boundary, not an OS sandbox.
 

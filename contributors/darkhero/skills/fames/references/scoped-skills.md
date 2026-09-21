@@ -51,6 +51,22 @@ Keep native raw synthetic logs on disk and surface only checksums, usage and nec
 
 ## Acceptance checklist for a new adapter
 
+## Optional Jev skill advice
+
+The shared `turn_context()` invokes `_harness/runtime/jev_turn_router.py` after core-context deduplication. DSH, Claude Code and Codex/Open Agent adapters share this route. SessionStart remains zero-provider. A registered host path or passing offline test does not prove that a resident host invoked Jev.
+
+`_registry/jev-advisor.json` selects enabled seats and shadow/advisory mode. It does not authorize a skill action. Provider use also requires a fresh `typesafe` inference receipt in the existing names-only availability registry, an allowed credential source and explicit provider authorization. Never transfer subscription-session tokens, guess credentials or publish keys. The current direct adapter is pinned to `jev-1.13.0`; thresholds are provisional and not calibrated for local tasks.
+
+Before a host may send task data, a trusted local caller prepares `_registry/jev-task-projections/<agent>/<prompt-sha256>.json`. Bind `schema:1`, `approved_for_provider:true`, `prompt_identity`, `session_identity`, allowed `surfaces`, exact `config_sha256`, `provider_policy_sha256`, and `catalog_sha256`, plus timezone-aware `expires_at` within one hour, `task_projection` of at most 1600 characters, `allowed_skill_ids` and `mandatory_skill_ids`. These fields are local caller assertions, not new authority. Use only task-relevant, permitted data; raw conversation and credentials are excluded. The bridge never constructs a projection by copying the raw prompt. Expired or mismatched input falls back without inference.
+
+The advisor ranks registered canonical skills, checks at most three candidates and may return NONE. It validates the selected candidate's own fit and re-reads the installed body hash; a different candidate's high score is insufficient. Advice cannot carry executable commands, arbitrary paths, expanded actions or expected verifier results. A returned ID is only a recommendation. Load the canonical skill through the host's existing capability path, then apply scope and outcome verification. Keep exact local rules and required multi-skill stages; Jev does not replace Lean, policy, risk gates or SEAL.
+
+Repeated identical approved turns reuse hash-bound advice instead of repeating provider calls. Record recommendation, actual skill loading, execution and verified outcome separately. A generic tool-using executor or cross-host adoption requires its own observed lifecycle evidence. For ai_trader the initial consumer is research-checklist selection before its existing DSH proposal prompt; it does not change order, risk, reconciliation or strategy acceptance logic.
+
+Measure Chinese/mixed-language selection, abstention, mandatory-stage recall and complete task cost before promotion. The installed bridge and offline transport tests alone do not establish semantic accuracy or savings. See `ai_darkhero/evidence/jev-adoption-20260922` for the implementation boundary and current coverage.
+
+## Native adapter acceptance checks
+
 - A-only skill marker is present in A input and absent from B input; B-only marker behaves conversely.
 - Releasing A retains the goal, authority and pending B obligation; B success closes only its matched obligations.
 - Changed artifacts, wrong identity, unknown predicates, expired/released scopes, outside targets and expanded authority are rejected.
