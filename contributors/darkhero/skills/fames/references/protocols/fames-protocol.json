@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.39.0",
+  "version": "1.39.1",
   "updated": "2026-09-14",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -1602,7 +1602,7 @@
           "hook_trust_rule": "Configuration write-back, a direct script probe, and a synthetic hook payload do not prove that a live conversation executed a hook. Where the host has hook review or trust, only an observed lifecycle event bound to the current session and prompt can prove activation; otherwise that live conversation remains UNKNOWN.",
           "completion_scope_rule": "An all-open-conversations or next-turn guarantee is admissible only when every claimed live conversation produces a fresh prompt-bound runtime receipt from its actual lifecycle event. Package parity and host-level hook deployment are necessary but not sufficient.",
           "privacy_rule": "The receipt stores no raw prompt, attachment body, credential, cookie, token, or session value. Conversation and prompt identities are one-way SHA-256 values.",
-          "work_efficiency_policy_sha": "c5faf150008fe7a6ae45f77a180fa2c9ab656679b17bcd7341c7344c5031240a"
+          "work_efficiency_policy_sha": "211ea6e1689d44bb3c6a89f3f4f7a4d9ba04788c0947f9c7d39a49a382ece8e2"
         },
         "unknown_rule": "Unknown prompt identity, session identity, generation, intent coverage, clause coverage, Ti binding, terminal state, authority conservation, lifecycle-event execution, hook trust, or turn-refresh read-back is UNKNOWN and fails closed."
       },

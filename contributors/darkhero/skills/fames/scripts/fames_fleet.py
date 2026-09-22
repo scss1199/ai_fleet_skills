@@ -5208,6 +5208,43 @@ def build_bundle(
     return {"ok": True, "package_root": str(package_root), **manifest}
 
 
+def _work_policy_drift_errors(protocol: dict) -> list[str]:
+    """The declared work-policy hash must still identify the policy it names.
+
+    _prompt_compilation_findings compares a live turn receipt's work_contract against this
+    declared constant, and _hydrate_boundary_fixtures copies the SAME constant into every
+    fixture it builds -- so a fixture agrees with a stale declaration by construction and no
+    case can ever see the drift. On 2026-09-22 the declaration had drifted from the real
+    work_efficiency policy: every honest live receipt failed the check while the whole case
+    suite stayed green. This control compares the declaration against the policy itself,
+    which is the one comparison a hydrated fixture cannot fake.
+
+    The live producer (_harness/runtime/fames_session_harness.py::_work_contract) hashes with
+    json.dumps at its default ensure_ascii, while _stable_sha keeps non-ASCII verbatim. The
+    two agree only while work_efficiency is pure ASCII, so this also refuses a policy whose
+    identity would depend on which producer computed it.
+    """
+    contract = (((protocol.get("cognitive_operator_layer") or {})
+                 .get("cognitive_boundary") or {})
+                .get("prompt_compilation_contract") or {})
+    declared = (contract.get("turn_refresh_contract") or {}).get("work_efficiency_policy_sha")
+    if not declared:
+        return []
+    policy = protocol.get("work_efficiency")
+    if not isinstance(policy, dict) or not policy:
+        return ["work_efficiency policy missing while its identity is declared"]
+    unicode_sha = _stable_sha(policy)
+    ascii_sha = hashlib.sha256(
+        json.dumps(policy, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    errors: list[str] = []
+    if unicode_sha != ascii_sha:
+        errors.append("work_efficiency policy identity is encoding-dependent")
+    if declared != unicode_sha:
+        errors.append("work_efficiency_policy_sha does not identify the work_efficiency policy")
+    return errors
+
+
 def verify_package(package_root: Path = PACKAGE_ROOT) -> dict:
     package_root = package_root.resolve()
     errors: list[str] = []
@@ -5251,6 +5288,7 @@ def verify_package(package_root: Path = PACKAGE_ROOT) -> dict:
         errors.append("bundled protocol version mismatch")
     if fames.get("execution_order") != EXECUTION_ORDER:
         errors.append("bundled protocol execution order mismatch")
+    errors.extend(_work_policy_drift_errors(fames))
     for phase, source_rel in (fames.get("canonical_protocols") or {}).items():
         if phase not in EXECUTION_ORDER:
             errors.append(f"unexpected phase protocol: {phase}")
