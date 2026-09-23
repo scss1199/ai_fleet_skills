@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-09-23T05:31:09Z",
-  "manifest_sha": "fd92d26f74b9b0f0",
+  "generated_at": "2026-09-23T05:45:12Z",
+  "manifest_sha": "127dcf97fd0c7bcc",
   "required": [
     "fames",
     "independent-review",
@@ -22,7 +22,7 @@
     "ztm-fleet-intelligence",
     "token-preflight"
   ],
-  "skill_count": 40,
+  "skill_count": 41,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -114,6 +114,50 @@
         "scripts/selftest_verify_ztm_recipe.py": "c9e401560018acdfb7cf2ee3da1ef3f173abf725a279d664c9392f15d43c6686",
         "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37",
         "scripts/verify_ztm_recipe.py": "1a84a4184da614a525434ec8e4b450e0288ec4c284e369997e66ac4a47a5f4b2"
+      }
+    },
+    {
+      "name": "fames",
+      "sha": "71348135a7f2e2b0",
+      "required": true,
+      "lane": null,
+      "package_sha": "4774394d7cb764227efa4d9f4590549498a8ce83731232bf6fc4f28fe856e575",
+      "files": {
+        "SKILL.md": "d6d54b73532e926f94ceaab8eeaa7da966c072795b6bf168fe741d3676c4ec89",
+        "bundle-manifest.json": "878f8c69bbe994021c5f776c41bff325326658f27e52a29df6581a06e932d546",
+        "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
+        "references/autonomous-knowledge.md": "b34ca6beb034909aaade75be4707c772e90155c6c12b8278c7b3964ec8238df5",
+        "references/cases.json": "2ebbb062b8e58241dfd2a70ec423678c4c16e40303d436ffa6de6e5560f67a40",
+        "references/claude-live-eval.json": "8946d081f4c71be8b82004e8253c9cda9aa301ef4f09b277dc8a9fb981431a86",
+        "references/hardware-compute.json": "e0792dce63c4894107fd63e43e3e0095ce4c4999686811279fd12543106a8df4",
+        "references/incremental-review.md": "bc98ed38ef36c20ad2191aa61462d724d6a8563dadb64d440920c91bd0d0596f",
+        "references/knowledge-evidence.md": "8a2e015c6273856185500a2ec61e31d233fdb546ed55b2510d6e624b5c394ef8",
+        "references/minimal-context.md": "f5c24bd6cc37901d7e71187ef9d273a88676be4c1393faaedf1664ff794478da",
+        "references/operator-manual.md": "ddfdafdb484c5233b59bf91d80f44a0060b161f822342db9669e7bcf63b0903c",
+        "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
+        "references/scoped-skills.md": "b8d6178efa7c1700b13cab721a208900f0d088e3f416c9a906eb661c22362f85",
+        "references/protocols/fames-protocol.json": "198e35be78f8754252564786b3f73de6fbbad8d03d95785756a5b27ffdb46952",
+        "references/protocols/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
+        "references/protocols/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
+        "references/protocols/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
+        "references/protocols/scf-protocol.json": "6688d7370af1040b421dfcc715e7b730d4a74331b60bf316e3b527285be27906",
+        "references/protocols/seal-protocol.json": "7de5562242692e0827a64bbc94f7a5a71fc418601558f51dc54371a11820b9a4",
+        "scripts/adaptive_response_controller.py": "07a19c6e0bda90f25800617a274d5f641709676d0d71cdfae8e17dec91e0d911",
+        "scripts/claude_live_ab.py": "3aaa4276c505e1eceea33207c6c4baeb190b6319b737f081fd53fbc055834261",
+        "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
+        "scripts/context_packet.py": "83ea5f25d31ed03b70d1b29b3ed33c7076fd5192ed85cb093804da4b7ff91adb",
+        "scripts/execution_evidence.py": "a0e15c249ff1ee86048647b314c926eb54006877038dcc9060fe538fdcdb73c1",
+        "scripts/fames_fleet.py": "69b6c7b8aa9d91429cad881e287fe69ab4a91b58253c03cedeb202ba5f81086a",
+        "scripts/knowledge_evidence.py": "aee01474f7ab6f4b7c43a008700d498fffc1ba64803598c2c48a9ad57bbac2da",
+        "scripts/test_context_packet.py": "4046deb01229db855de71f9dc42c3e469231a9a9456054dbfeb2c56a8c6133d8",
+        "scripts/test_execution_evidence.py": "c772c1bf23058ccc51fde55ad544eef584cf9f2e9a74ed7fbc03a19601a15b71",
+        "scripts/test_knowledge_evidence.py": "fecf1dc7cee04f3dc67edc3e632da7ce85254e3e26cbef149416e12505566447",
+        "scripts/test_work_efficiency.py": "e4250ba4c05f616c79cf97182507d1ff3585487c788546151a97b2dad74f0536",
+        "scripts/work_efficiency.py": "42d41b64b8075280b1212625b46a25ab32bba35d27f5c019cf79dde02552022e",
+        "scripts/.pytest_cache/.gitignore": "3ed731b65d06150c138e2dadb0be0697550888a6b47eb8c45ecc9adba8b8e9bd",
+        "scripts/.pytest_cache/CACHEDIR.TAG": "37dc88ef9a0abeddbe81053a6dd8fdfb13afb613045ea1eb4a5c815a74a3bde4",
+        "scripts/.pytest_cache/README.md": "73fd6fccdd802c419a6b2d983d6c3173b7da97558ac4b589edec2dfe443db9ad",
+        "scripts/.pytest_cache/v/cache/nodeids": "54057055f3bef728570247d7e7e2721232cfcc493e03d6ea514b57d9b67cd82e"
       }
     },
     {

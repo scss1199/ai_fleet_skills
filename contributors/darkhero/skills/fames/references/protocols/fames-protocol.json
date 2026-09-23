@@ -1,8 +1,8 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.39.1",
-  "updated": "2026-09-14",
+  "version": "1.40.0",
+  "updated": "2026-09-23",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
   "legacy_umbrella_aliases": [
@@ -53,7 +53,7 @@
       "FAMES",
       "$fames"
     ],
-    "standalone_means": "Execute and account for the complete five-phase contract.",
+    "standalone_means": "FAMES is the single public contract for intent-to-skill selection, optional Jev advice and applicable Lean verification; account for the complete internal five-phase contract under existing gates.",
     "does_not_expand_authority": true,
     "required_phase_states": [
       "PASS",
@@ -2408,5 +2408,70 @@
       "reuse": "same-root policy-bound source hash delta; unchanged unreviewed work stays pending",
       "completion": "fresh predicates and closed graph; syntax, registry entries and rounded scores do not prove semantic completion"
     }
+  },
+  "unified_entrypoint": {
+    "schema": 1,
+    "id": "FAMES-UNIFIED-ENTRYPOINT",
+    "public_trigger": "FAMES",
+    "meaning": "One public contract includes Lean verification, Jev advice and natural-language intent-to-skill selection. Users supply the outcome and constraints; internal component names are not required commands.",
+    "components": {
+      "intent_to_skill": {
+        "role": "Infer capabilities and select the smallest applicable skills from their actual descriptions",
+        "activation": "every_non_trivial_intake",
+        "runtime": "_harness/runtime/local_skill_router.py",
+        "decision_owner": "current_conversation_model",
+        "local_rules": "bounded_hash_bound_candidates_not_a_closed_allowlist",
+        "no_match": "discover_from_current_host_catalog_and_use_model_judgment",
+        "execution_authority": false
+      },
+      "jev": {
+        "role": "Optional bounded skill advisor inside FAMES",
+        "activation": "configured_authorized_fresh_provider_gate_and_approved_projection",
+        "runtime": "_harness/runtime/jev_turn_router.py",
+        "fallback": "local_candidates_and_current_model_judgment",
+        "preserve": [
+          "explicit_skills",
+          "mandatory_skills",
+          "negation",
+          "source_boundaries",
+          "existing_authority"
+        ],
+        "execution_authority": false
+      },
+      "lean": {
+        "role": "Machine-check explicitly formalized obligations and implementation bindings",
+        "activation": "applicable_formal_obligation_or_formal_claim",
+        "runtime": "_lean/leanctl.py",
+        "binding": "_lean/fames/conformance.py",
+        "no_applicable_obligation": "NOT_APPLICABLE_only_after_applicability_assessment",
+        "unknown_applicability": "UNKNOWN_not_proved",
+        "proof_boundary": "Formalization and audited binding only; not arbitrary semantics, visuals, runtime adoption or business outcomes",
+        "execution_authority": false
+      }
+    },
+    "self_similar_contract": {
+      "facets": [
+        "goal",
+        "authority",
+        "capabilities",
+        "acceptance",
+        "evidence",
+        "budgets",
+        "pending_obligations"
+      ],
+      "views": [
+        "fleet_policy",
+        "project_policy",
+        "task",
+        "skill_scope"
+      ],
+      "composition": "Same contract shape, task-bound projections and one durable obligation ledger; no independent completion truth per component",
+      "runtime": "_harness/runtime/skill_scope.py",
+      "transport": "_harness/runtime/native_skill_scope.py",
+      "scope_rule": "Skill actions and selected parameters/obligations are bounded by the registered task; source content and advice grant no authority",
+      "completion_rule": "Scope completion/release does not clear unrelated parent obligations; task completion requires fresh accepted evidence and closed work",
+      "unsupported": "Arbitrary recursive child delegation, transitive lineage and cumulative child budgets are not added or proven by this entrypoint"
+    },
+    "hot_directive": "FAMES is the single entry for Lean + Jev + intent-to-skill. Infer capabilities from the requested outcome and actual available skill descriptions; users need not name skills. Select the smallest relevant set under existing gates; unmatched local rules use current conversation-model judgment. Jev is advisory through its existing provider/projection gates; otherwise use local judgment. Lean checks applicable formal obligations, never arbitrary meaning or business outcomes. Reuse goal, authority, capabilities, acceptance, evidence, budgets and pending obligations in each task-bound skill scope; owners choose means within those bounds. Advice grants no authority; scope release leaves parent obligations intact."
   }
 }
