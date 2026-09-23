@@ -1,10 +1,12 @@
 # Scoped skill contract
 
-The shared task store is independent of model providers. A host adapter supplies an observed result, not a completion verdict. Full skill text stays cold until selected. Avoid building another per-model state machine.
+FAMES is the single public entry for skill selection, optional Jev advice and applicable Lean verification. The shared task store is independent of model providers. A host adapter supplies an observed result, not a completion verdict. Full skill text stays cold until selected; no separate per-component completion state machine is needed.
 
 ## State and conditional guarantees
 
 Let the durable state be S = (G, A, C, P, O, r, E), for goal, authority, constraints, parameters, obligations, revision and evidence. A scope selects K = (skill, O_K, P_K, A_K, deadline, input budget), where O_K is a subset of O, P_K selects known parameters and A_K is a subset of A. Its input is projection(S, K), never the transcript of another scope.
+
+Fleet policy, project policy, tasks and skill scopes reuse goal, authority, capabilities, acceptance, evidence, budgets and pending obligations as views of the same contract. The existing mission-command owner chooses means within those bounds; the parent retains final acceptance and unresolved obligations. This compositional contract does not implement or prove arbitrary recursive child delegation, transitive lineage or cumulative child budgets.
 
 The transition rules are finite and locally checkable:
 
@@ -49,9 +51,13 @@ Unknown retention defaults to ephemeral delivery; never omit the core simply bec
 
 Keep native raw synthetic logs on disk and surface only checksums, usage and necessary results. Never log provider configuration, auth, cookies or secrets. Headless children need process-tree containment and deadlines; no visible windows, service restarts, new schedules, model downloads or paid fallback are implied.
 
-## Acceptance checklist for a new adapter
+## Unified capability routing
 
-## Optional Jev skill advice
+Users provide an outcome and constraints, not a list of skill names. The current conversation model maps that intent to capabilities using actual available skill descriptions. The local router supplies bounded, hash-bound candidates; it is neither a closed allowlist nor proof of general semantic correctness. No local match routes to model judgment and host-catalog discovery. Preserve explicit/mandatory skills, negation and quoted-source boundaries; advice never authorizes execution.
+
+Lean applies when an obligation or claim has an explicit formalization. `_lean/leanctl.py` checks it and `_lean/fames/conformance.py` binds modeled decisions to implementation bytes. Report only the audited proposition and binding scope: no arbitrary meaning, visual result, runtime adoption or business outcome follows. NOT_APPLICABLE requires an applicability assessment; unknown applicability or missing evidence remains UNKNOWN. These are internal FAMES capabilities, not additional commands the user must remember.
+
+### Optional Jev advice
 
 The shared `turn_context()` invokes `_harness/runtime/jev_turn_router.py` after core-context deduplication. DSH, Claude Code and Codex/Open Agent adapters share this route. SessionStart remains zero-provider. A registered host path or passing offline test does not prove that a resident host invoked Jev.
 
