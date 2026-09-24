@@ -5140,6 +5140,19 @@ def build_bundle(
     copied[HARDWARE_PROFILE_TARGET] = HARDWARE_PROFILE_SOURCE
 
     fames = _read_json(package_root / PROTOCOL_TARGETS["FAMES"])
+    runtime_files = []
+    runtime_sources = package_root / "references/runtime-sources.json"
+    if runtime_sources.is_file():
+        import importlib.util
+        runtime_spec = importlib.util.spec_from_file_location("fames_runtime_release", package_root / "scripts/runtime_release.py")
+        runtime_module = importlib.util.module_from_spec(runtime_spec)
+        runtime_spec.loader.exec_module(runtime_module)
+        runtime_result = runtime_module.build(workspace, package_root, _read_json(runtime_sources)["source_paths"])
+        if runtime_result.get("ok") is not True:
+            raise RuntimeError("runtime_release_build_failed")
+        runtime_files = ["references/runtime-sources.json", "scripts/runtime_release.py", "runtime/manifest.json"]
+        runtime_files.extend(str(p.relative_to(package_root)).replace("\\", "/")
+                             for p in (package_root / "runtime/files").rglob("*") if p.is_file())
     expected_files = [
         "SKILL.md",
         "examples/anthropic_async_adapter.py",
@@ -5166,6 +5179,7 @@ def build_bundle(
         PRODUCTION_PROFILE_TARGET,
         HARDWARE_PROFILE_TARGET,
         *PROTOCOL_TARGETS.values(),
+        *runtime_files,
     ]
     files = {rel: _sha256(package_root / rel) for rel in sorted(set(expected_files))}
     version = str(fames.get("version") or "")
@@ -5425,6 +5439,13 @@ def _copy_package(source: Path, destination: Path) -> None:
     destination = destination.resolve()
     if source == destination:
         return
+    if destination.exists():
+        old = verify_package(destination)
+        new = verify_package(source)
+        if old.get("ok") is not True:
+            raise ValueError("destination_package_has_unverified_local_changes")
+        if old.get("package_sha") == new.get("package_sha") and new.get("ok") is True:
+            return
     destination.parent.mkdir(parents=True, exist_ok=True)
     temp = destination.parent / f".{destination.name}.fames-{uuid.uuid4().hex}"
     backup = destination.parent / f".{destination.name}.previous-{uuid.uuid4().hex}"
@@ -5433,15 +5454,12 @@ def _copy_package(source: Path, destination: Path) -> None:
         if destination.exists():
             destination.replace(backup)
         temp.replace(destination)
-        if backup.exists():
-            shutil.rmtree(backup)
+        # Preserve the exact previous package; permanent deletion is operator-owned.
     except Exception:
         if destination.exists() and backup.exists():
-            shutil.rmtree(destination)
+            destination.replace(destination.parent / f".{destination.name}.failed-{uuid.uuid4().hex}")
         if backup.exists():
             backup.replace(destination)
-        if temp.exists():
-            shutil.rmtree(temp)
         raise
 
 
@@ -5506,15 +5524,31 @@ def _install_targets(workspace: Path, host: str) -> list[Path]:
 
 
 def _activate_update(workspace: Path) -> dict:
+    runtime_path = workspace / "_skill/fleet-skills/fames/scripts/runtime_release.py"
+    runtime_receipt = None
+    if runtime_path.is_file():
+        try:
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("fames_install_runtime", runtime_path)
+            runtime = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(runtime)
+            runtime_receipt = runtime.apply(workspace, runtime_path.parent.parent)
+            if runtime_receipt.get("ok") is not True:
+                return {"ok": False, "state": "UNKNOWN", "reason": "runtime_activation_incomplete", "runtime": runtime_receipt}
+        except Exception as exc:
+            return {"ok": False, "state": "UNKNOWN", "reason": type(exc).__name__}
     activation_path = workspace / "_skill" / "engines" / "fames-immediate-apply.py"
     if not activation_path.is_file():
-        return {"state": "UNKNOWN", "reason": "immediate_apply_adapter_unavailable"}
+        return {"ok": False, "state": "UNKNOWN", "reason": "immediate_apply_adapter_unavailable"}
     try:
         import importlib.util
         spec = importlib.util.spec_from_file_location("fames_install_activation", activation_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        return module.apply(workspace)
+        result = module.apply(workspace)
+        if runtime_receipt is not None:
+            result["runtime"] = runtime_receipt
+        return result
     except Exception as exc:
         return {"ok": False, "state": "UNKNOWN", "reason": type(exc).__name__}
 
@@ -5548,7 +5582,7 @@ def install(workspace: Path, host: str, source: Path = PACKAGE_ROOT) -> dict:
         receipt["host_requested"] = host
     _write_json_atomic(workspace / "_registry" / "fames-fleet-receipts" / f"{key}.json", receipt)
     activation = _activate_update(workspace) if not errors else {"state": "UNKNOWN", "reason": "installation_failed"}
-    if activation.get("ok") is False:
+    if activation.get("ok") is not True:
         errors.append("installed package; immediate activation configuration failed")
     return {"ok": not errors, "receipt": receipt, "activation": activation, "errors": errors}
 
@@ -5635,7 +5669,7 @@ def follow(
                 _write_json_atomic(receipt_path, receipt)
             activation = _activate_update(workspace)
             return {
-                "ok": activation.get("ok") is not False,
+                "ok": activation.get("ok") is True,
                 "activation": activation,
                 "changed": False,
                 "package_sha": remote_sha,
@@ -5644,7 +5678,9 @@ def follow(
                 "errors": [],
             }
         canonical_state = _canonical_identity(workspace)
-        with tempfile.TemporaryDirectory(prefix="fames-follow-") as temp_dir:
+        # Stages are retained for operator-owned cleanup and interrupted-update recovery.
+        from contextlib import nullcontext
+        with nullcontext(tempfile.mkdtemp(prefix="fames-follow-")) as temp_dir:
             package = Path(temp_dir) / "fames"
             for relative, expected in declared.items():
                 parts = Path(relative).parts
@@ -5971,7 +6007,7 @@ def _publish_capability_receipt(workspace: Path, host: str, receipt: dict) -> di
     staged = git("add", "--", relative.as_posix())
     if staged.returncode != 0:
         return {"ok": False, "state": "UNKNOWN", "errors": ["capability receipt could not be staged"]}
-    committed = git("commit", "-m", f"chore(fames/{contributor}): attest capabilities")
+    committed = git("commit", "--only", "-m", f"chore(fames/{contributor}): attest capabilities", "--", relative)
     if committed.returncode != 0:
         status = git("status", "--porcelain", "--", relative.as_posix())
         if not status.stdout.strip():
