@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "4774394d7cb764227efa4d9f4590549498a8ce83731232bf6fc4f28fe856e575",
+  "package_sha": "d05c526b0b0cb1961f57b405c8458a818c088e65f09189f7707ed91fc2afcdda",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
-  "validator_set_sha": "fa6e9f4eedd6a42a9d2295262c9a989066659609529541ba212330b089900b90",
+  "validator_set_sha": "63cfdc168527a280915ef3e1b5da5f7341a9055f6f08aae11182100cf28a90b5",
   "runner_state": "armed",
-  "observed_at": "2026-09-24T02:02:44.179075+00:00",
+  "observed_at": "2026-09-24T03:16:54.671372+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -348,5 +348,14 @@
   "evidence_refs": [
     "C:\\ai_workspace\\_skill\\fleet-skills\\fames\\bundle-manifest.json",
     "C:\\ai_workspace\\_skill\\fleet-skills\\fames\\references\\cases.json"
-  ]
+  ],
+  "execution_adoption": {
+    "runtime_state": "PASS",
+    "phase_proof_state": "PASS",
+    "base_proof_state": "PASS",
+    "native_state": "UNKNOWN",
+    "native_events": [],
+    "runtime_release_sha256": "022454d3361938b5afabc0485121589899dfd4afdb28f5bb0ffa945fd45020b1"
+  },
+  "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
