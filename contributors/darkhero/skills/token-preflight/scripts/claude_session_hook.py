@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import importlib.util
-import json, os, sys
+import json
+import os
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
-HUB=Path(os.environ.get("AI_WORKSPACE",r"C:\ai_workspace")); STATUS=HUB/"_registry"/"token-preflight"/"claude-hook-status.json"; CODEX_STATUS=HUB/"_registry"/"token-preflight"/"codex-hook-status.json"
+HUB=Path(os.environ.get("AI_WORKSPACE") or Path(__file__).resolve().parents[4])
+STATUS=HUB/"_registry"/"token-preflight"/"claude-hook-status.json"
+CODEX_STATUS=HUB/"_registry"/"token-preflight"/"codex-hook-status.json"
 
 
 def _read_hook_input(stream) -> dict:
@@ -62,7 +66,8 @@ def _hard_lines(cwd: str) -> tuple[str, str]:
 
 def main():
     doc=_read_hook_input(sys.stdin)
-    cwd=str(doc.get("cwd") or os.getcwd()); agent="ai_"+Path(cwd).name[3:] if Path(cwd).name.startswith("ai_") else Path(cwd).name
+    cwd=str(doc.get("cwd") or os.getcwd())
+    agent="ai_"+Path(cwd).name[3:] if Path(cwd).name.startswith("ai_") else Path(cwd).name
     event=str(doc.get("hook_event_name") or "SessionStart")
     session_id=str(doc.get("session_id") or doc.get("conversation_id") or "")
     # AGC lane inputs: the transcript path lets the context meter measure THIS session's
@@ -134,7 +139,8 @@ def main():
         if hard_lines:
             context=(context+"\n"+hard_lines).strip()
     status_path=CODEX_STATUS if surface_id == "open-agent-standard" else STATUS
-    status_path.parent.mkdir(parents=True,exist_ok=True); status_path.write_text(json.dumps({"schema":3,"last_fired":datetime.now(timezone.utc).isoformat(),"event":event,"cwd":cwd,"agent":agent,"surface_id":surface_id,"runtime_event_observed":bool(locals().get("runtime_event_observed", False)),"fames_state":state,"t1_hard_lines":t1_state,"session_source":session_source or None,"agc":{k:(result.get("auto_goal_compact") or {}).get(k) for k in ("state","agent","seat_resolution","refreshed","trigger","precompact_hook_armed","elapsed_ms")} if isinstance(locals().get("result"),dict) else None},indent=2),encoding="utf-8")
+    status_path.parent.mkdir(parents=True,exist_ok=True)
+    status_path.write_text(json.dumps({"schema":3,"last_fired":datetime.now(timezone.utc).isoformat(),"event":event,"cwd":cwd,"agent":agent,"surface_id":surface_id,"runtime_event_observed":bool(locals().get("runtime_event_observed", False)),"fames_state":state,"t1_hard_lines":t1_state,"session_source":session_source or None,"agc":{k:(result.get("auto_goal_compact") or {}).get(k) for k in ("state","agent","seat_resolution","refreshed","trigger","precompact_hook_armed","elapsed_ms")} if isinstance(locals().get("result"),dict) else None},indent=2),encoding="utf-8")
     if context:
         # ASCII JSON keeps the hook envelope valid under Windows cp950 consoles;
         # Claude decodes the \u escapes back into the original context text.
@@ -142,4 +148,5 @@ def main():
     else:
         print("{}")
     return 0
-if __name__=="__main__": raise SystemExit(main())
+if __name__=="__main__":
+    raise SystemExit(main())
