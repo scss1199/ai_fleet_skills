@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import sys
 import winreg
 
 HUB=Path(__file__).resolve().parents[2]
@@ -14,7 +15,7 @@ USER=Path.home()/'.claude'
 POLICY_KEY=r'SOFTWARE\Policies\ClaudeCode'
 GATE=USER/'hooks/fames_managed_gate.py'
 MANIFEST=USER/'hooks/fames_managed_manifest.json'
-PYTHON=Path('C:/Python312/pythonw.exe')
+PYTHON=Path(sys.executable).resolve().with_name('pythonw.exe')
 EVENTS=('SessionStart','UserPromptSubmit','PreToolUse','Stop','SubagentStop','ConfigChange')
 
 
@@ -67,9 +68,18 @@ def planned_policy(old,sha):
         existing=hooks.setdefault(event,[])
         # Idempotent replacement of only this installer-owned entry.
         def owned(handler):
-            return (str(handler.get('command','')).replace('\\','/').casefold()==str(PYTHON).replace('\\','/').casefold()
-                    and any(str(GATE).replace('\\','/').casefold()==str(a).replace('\\','/').casefold()
-                            for a in handler.get('args',[])))
+            # Interpreter paths can change after a Python/workspace migration.
+            # Ownership is the exact entry script and manifest pair, not the
+            # executable or merely a familiar script basename.
+            args=handler.get('args')
+            if handler.get('type')!='command' or not isinstance(args,list) or not args:
+                return False
+            def normalized(value):
+                return str(value).replace('\\','/').casefold()
+            if normalized(args[0])!=normalized(GATE) or args.count('--manifest')!=1:
+                return False
+            index=args.index('--manifest')+1
+            return index<len(args) and normalized(args[index])==normalized(MANIFEST)
         retained=[]
         for entry in existing:
             handlers=entry.get('hooks',[])
@@ -127,7 +137,7 @@ def main():
     parser.add_argument('--scope',choices=('hkcu','user','machine'),default='hkcu')
     args=parser.parse_args()
     args.output.mkdir(parents=True,exist_ok=True)
-    if not PYTHON.is_file():
+    if args.apply and not PYTHON.is_file():
         raise ValueError('no_windowless_python')
     file_policy=None
     if args.scope=='user':
@@ -150,6 +160,7 @@ def main():
           'events':list(EVENTS),'dependency_count':len(manifest['files']),
           'manifest_sha256':manifest_sha,'policy_sha256':digest(encoded(policy)),
           'policy_path':str(file_policy) if file_policy else 'HKCU/'+POLICY_KEY+'/Settings',
+          'windowless_python':str(PYTHON),'windowless_python_available':PYTHON.is_file(),
           'new_schedules':0,'service_restarts':0,'native_tool_adoption':'UNKNOWN',
           'limitations':manifest['boundary']}
     (args.output/('installation-plan-'+args.scope+'.json')).write_bytes(encoded(plan))

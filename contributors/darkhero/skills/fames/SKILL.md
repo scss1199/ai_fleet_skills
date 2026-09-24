@@ -5,7 +5,7 @@ description: The single public contract for outcome-driven skill selection, opti
 
 # FAMES
 
-FAMES-GEN: 2026-09-24.3
+FAMES-GEN: 2026-09-24.4
 
 FAMES is the single public contract for intent-to-skill selection, optional Jev advice and applicable Lean verification. Users state outcomes and constraints without naming internal components or skills. Infer required capabilities from the request and actual available skill descriptions; select the smallest applicable set. Unmatched local rules use current-model judgment. Jev retains its provider/projection gates; Lean checks explicitly formalized obligations, with UNKNOWN where applicability or evidence is missing.
 
