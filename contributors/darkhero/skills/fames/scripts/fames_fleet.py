@@ -5154,6 +5154,7 @@ def build_bundle(
         runtime_files.extend(str(p.relative_to(package_root)).replace("\\", "/")
                              for p in (package_root / "runtime/files").rglob("*") if p.is_file())
     expected_files = [
+        ".gitattributes",
         "SKILL.md",
         "examples/anthropic_async_adapter.py",
         "references/claude-live-eval.json",
@@ -5559,11 +5560,20 @@ def install(workspace: Path, host: str, source: Path = PACKAGE_ROOT) -> dict:
     source_check = verify_package(source)
     if not source_check["ok"]:
         return {"ok": False, "host": host, "errors": source_check["errors"]}
+    canonical = workspace / "_skill" / "fleet-skills" / "fames"
+    _copy_package(source, canonical)
+    runtime_path = canonical / "scripts/runtime_release.py"
+    if runtime_path.is_file():
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("fames_initial_runtime", runtime_path)
+        runtime = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(runtime)
+        applied = runtime.apply(workspace, canonical)
+        if applied.get("ok") is not True:
+            return {"ok": False, "host": host, "runtime": applied, "errors": ["complete runtime installation incomplete"]}
     targets = _install_targets(workspace, host)
     if not targets:
         return {"ok": False, "host": host, "errors": ["agent surface registry missing or empty"]}
-    canonical = workspace / "_skill" / "fleet-skills" / "fames"
-    _copy_package(source, canonical)
     for target in targets:
         _copy_package(canonical, target)
     checks = [verify_package(target) for target in targets]
@@ -6066,6 +6076,8 @@ def attest_capabilities(workspace: Path, host: str, publish: bool = False) -> di
         "evidence_refs": [str(package_root / MANIFEST_NAME), str(package_root / CASES_TARGET)],
     }
     key = _receipt_key(workspace, host)
+    receipt["execution_adoption"] = _runtime_adoption(workspace, package_root, package.get("package_sha"))
+    receipt["capability_evidence_scope"] = "local_validator_cases_not_native_lifecycle"
     _write_json_atomic(workspace / CAPABILITY_DIR / f"{key}.json", receipt)
     state = "PASS" if not errors and all(row["state"] == "PASS" for row in rows) else "FAIL"
     publication = _publish_capability_receipt(workspace, host, receipt) if publish and state == "PASS" else {
@@ -6086,6 +6098,45 @@ def attest_capabilities(workspace: Path, host: str, publish: bool = False) -> di
         "publication": publication,
         "errors": errors,
     }
+
+
+def _runtime_adoption(workspace: Path, package_root: Path, package_sha: str) -> dict:
+    """Separate portable source adoption, local proof, and actual lifecycle events."""
+    result = {"runtime_state": "UNKNOWN", "phase_proof_state": "UNKNOWN", "base_proof_state": "UNKNOWN",
+              "native_state": "UNKNOWN", "native_events": [], "runtime_release_sha256": None}
+    try:
+        manifest = _read_json(package_root / "runtime/manifest.json")
+        installed = _read_json(workspace / "_registry/fames-runtime-release.json")
+        result["runtime_release_sha256"] = manifest.get("release_sha256")
+        files = manifest.get("files") or {}
+        matching = bool(files) and all(hashlib.sha256((workspace / relative).read_bytes()).hexdigest() == row["sha256"]
+                                      for relative, row in files.items())
+        if installed.get("ok") is True and (installed.get("installed_manifest") or {}).get("release_sha256") == manifest.get("release_sha256") and matching:
+            result["runtime_state"] = "PASS"
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("fames_attest_phase", workspace / "_lean/fames/phase_contract.py")
+        phase = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(phase)
+        phase._conformance(workspace / "_registry/fames-phase-conformance.json")
+        result["phase_proof_state"] = "PASS"
+        lean_gate = phase.load_module(workspace / "_lean/fames/lean_gate.py", "fames_attest_base_gate")
+        if lean_gate.binding_status().get("all_bound"):
+            result["base_proof_state"] = "PASS"
+        harness_sha = hashlib.sha256((workspace / "_harness/runtime/fames_session_harness.py").read_bytes()).hexdigest()
+        for path in (workspace / "_registry/fames-turn").glob("*/*.json"):
+            row = _read_json(path)
+            observed = datetime.fromisoformat(str(row.get("generated", "")).replace("Z", "+00:00"))
+            age = (datetime.now(timezone.utc) - observed).total_seconds()
+            if (0 <= age <= 86400 and row.get("package_sha") == package_sha
+                    and row.get("harness_runtime_sha") == harness_sha and row.get("runtime_event_observed") is True
+                    and row.get("state") == "PASS" and (row.get("phase_execution") or {}).get("state") == "PASS"):
+                result["native_events"].append({"agent": row.get("agent"), "surface": row.get("surface_id"),
+                                                "observed_at": row.get("generated"), "receipt_sha256": _sha256(path)})
+        if result["native_events"]:
+            result["native_state"] = "OBSERVED_PARTIAL_POPULATION"
+    except (OSError, ValueError, KeyError, TypeError, ImportError):
+        pass
+    return result
 
 
 def verify_host(workspace: Path, host: str) -> dict:
@@ -6175,6 +6226,10 @@ def verify_fleet(workspace: Path, hosts: list[str]) -> dict:
                 )
             except (TypeError, ValueError):
                 capability_receipt["freshness_seconds"] = None
+        adoption = (capability_receipt or {}).get("execution_adoption") or {}
+        if adoption.get("runtime_state") != "PASS" or adoption.get("phase_proof_state") != "PASS":
+            errors.append(f"{host} complete runtime or local phase proof is UNKNOWN")
+        # Even fresh package/case receipts do not prove every native project surface.
         rows.append(
             {
                 "host": contributor,
@@ -6205,7 +6260,8 @@ def verify_fleet(workspace: Path, hosts: list[str]) -> dict:
         errors.extend(f"capability: {item}" for item in capability_result.get("errors") or [])
     return {
         "ok": canonical.get("ok", False) and not errors and len(rows) == len(hosts),
-        "claim_scope": "package_and_capability" if capability_result.get("ok") else "package_only",
+        "claim_scope": "package_runtime_and_validator_cases; native_population_separate",
+        "full_native_convergence": "UNKNOWN",
         "capability_convergence": capability_result.get("state"),
         "capability_probe": "validate-capability-sync",
         "capability_result": capability_result,

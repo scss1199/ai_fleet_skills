@@ -5,7 +5,7 @@ description: The single public contract for outcome-driven skill selection, opti
 
 # FAMES
 
-FAMES-GEN: 2026-09-23.1
+FAMES-GEN: 2026-09-24.3
 
 FAMES is the single public contract for intent-to-skill selection, optional Jev advice and applicable Lean verification. Users state outcomes and constraints without naming internal components or skills. Infer required capabilities from the request and actual available skill descriptions; select the smallest applicable set. Unmatched local rules use current-model judgment. Jev retains its provider/projection gates; Lean checks explicitly formalized obligations, with UNKNOWN where applicability or evidence is missing.
 
@@ -43,3 +43,9 @@ Main conversation history cannot be selectively erased by this skill. Use fresh 
 | Exact machine-readable acceptance fields | [FAMES protocol](references/protocols/fames-protocol.json), select one capability |
 
 Do not promise arbitrary semantic correctness from schema validation. Savings need matched task/model/acceptance and complete parent, child and retry usage, including caches. Report character counts separately. Missing/stale evidence fails closed as UNKNOWN. Before claiming delivery, use the relevant verifier and SEAL; apply changed packages through the registered convergence route and read back destination identity.
+
+## Executable phase guards
+
+The native turn adapter produces source-bound FP/MTM admission receipts. Before a completion claim, the agent calls `_harness/runtime/fames_phase_runtime.py --turn <current-turn-receipt> --result <task-verification-receipt> --closure <obligation-closure>` (and `--residual` only for a measured comparable cross-cycle result). This produces SCF/AEX/SEAL receipts by replaying real file identities against the locally checked Lean contract. Missing conformance, stale source, unmet predicates and open obligations are UNKNOWN. Advice never supplies evidence facts. AEX without a comparable residual is explicitly INACTIVE. The theorem checks formal admission conditions; the agent remains responsible for matching verification to the actual requested outcome.
+
+The content-addressed package includes `runtime/manifest.json` and an explicit source allowlist. Existing `fames-converge` installs these with retained backups and destination hash checks, then refreshes local conformance and discovery surfaces. Local edits block replacement. A package or fixture receipt is not native lifecycle adoption; a missing/offline host stays UNKNOWN. No new schedule or provider permission is created. A missing Windows Lean checker uses the existing official-release installer with digest verification, retained downloads and no PATH/environment edits; unsupported platforms remain UNKNOWN. Existing managed FAMES hook pins are refreshed after verification; new policy scopes are never silently added.

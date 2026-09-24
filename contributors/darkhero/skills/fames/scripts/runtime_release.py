@@ -284,7 +284,11 @@ def _git(cwd: Path, *args: str):
 
 
 def _clean_git_baseline(path: Path, raw: bytes) -> dict | None:
-    """Strict raw blob identity; no filters, network, index writes or credentials."""
+    """Clean HEAD/index baseline; only declared CRLF conversion is permitted.
+
+    External filters and working-tree encodings are refused before any worktree
+    diff can invoke conversion. Release payloads and backups remain raw bytes.
+    """
     try:
         top = _git(path.parent, 'rev-parse', '--show-toplevel')
         if top.returncode:
@@ -310,20 +314,49 @@ def _clean_git_baseline(path: Path, raw: bytes) -> dict | None:
             return None
         if os.fsdecode(tree_path) != relative:
             return None
+        attrs = _git(repo, 'check-attr', '-z', 'filter', 'working-tree-encoding', 'text', 'eol', '--', relative)
+        if attrs.returncode:
+            return None
+        fields = attrs.stdout.split(b'\0')
+        if len(fields) != 13 or fields[-1] != b'':
+            return None
+        attributes = {}
+        for offset in range(0, 12, 3):
+            if os.fsdecode(fields[offset]) != relative:
+                return None
+            attributes[fields[offset + 1].decode('ascii')] = fields[offset + 2].decode('ascii')
+        if any(attributes.get(name) not in ('unspecified', 'unset')
+               for name in ('filter', 'working-tree-encoding')):
+            return None
         algorithm = 'sha1' if len(blob) == 40 else 'sha256' if len(blob) == 64 else None
         if algorithm is None:
             return None
-        current_blob = hashlib.new(algorithm, b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest()
+        def blob_hash(data):
+            return hashlib.new(algorithm, b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+        current_blob = blob_hash(raw)
+        conversion = 'raw_identity'
         if current_blob != blob.decode('ascii'):
-            return None
-        diff = _git(repo, 'diff', '--quiet', '--no-ext-diff', 'HEAD', '--', relative)
+            setting = _git(repo, 'config', '--get', 'core.autocrlf')
+            if setting.returncode not in (0, 1):
+                return None
+            autocrlf = setting.stdout.strip().lower() in (b'true', b'input')
+            allows_crlf = attributes.get('text') != 'unset' and (
+                attributes.get('text') in ('set', 'auto') or
+                attributes.get('eol') in ('lf', 'crlf') or autocrlf)
+            normalized = raw.replace(b'\r\n', b'\n')
+            if not allows_crlf or b'\0' in raw or normalized == raw or blob_hash(normalized) != blob.decode('ascii'):
+                return None
+            current_blob = blob_hash(normalized)
+            conversion = 'declared_crlf_to_lf'
+        diff = _git(repo, 'diff', '--quiet', '--no-ext-diff', '--no-textconv', 'HEAD', '--', relative)
         if diff.returncode:
             return None
         commit = head.stdout.strip().decode('ascii')
         if not re.fullmatch(r'[0-9a-f]{40}|[0-9a-f]{64}', commit):
             return None
         return {'baseline_kind': 'clean_tracked_git_HEAD', 'commit': commit,
-                'blob_hash': current_blob, 'blob_algorithm': algorithm}
+                'blob_hash': current_blob, 'blob_algorithm': algorithm,
+                'worktree_conversion': conversion, 'worktree_sha256': _sha(raw)}
     except (OSError, ValueError, subprocess.SubprocessError, UnicodeError):
         return None
 
@@ -366,6 +399,8 @@ def _apply(workspace: Path, package: Path, checked: dict) -> dict:
         raise ReleaseError('rollback_or_same_generation_fork')
     receipt = {'schema': SCHEMA, 'kind': 'fames-runtime-installation', 'attempt_id': uuid.uuid4().hex,
                'observed_at': _now(), 'ok': False, 'state': 'PREFLIGHT', 'attempted_release_sha256': release,
+               'release_sha256': release,
+               'installed_release_sha256': installed['release_sha256'] if installed else None,
                'generation': manifest['generation'], 'highest_generation': highest,
                'highest_release_sha256': highest_release,
                'installed_manifest': installed, 'native_activation': 'UNKNOWN',
@@ -435,7 +470,8 @@ def _apply(workspace: Path, package: Path, checked: dict) -> dict:
         for record in receipt['files']:
             if _sha(_read_file(_beneath(workspace, record['path']))) != record['source_sha256']:
                 raise ReleaseError('final_destination_drift', record['path'])
-        receipt.update(ok=True, state='INSTALLED', installed_manifest=manifest)
+        receipt.update(ok=True, state='INSTALLED', installed_manifest=manifest,
+                       installed_release_sha256=release)
     except Exception as exc:
         receipt.update(ok=False, state='UNKNOWN_PARTIAL_APPLY')
         receipt['errors'].append(_error(exc))
