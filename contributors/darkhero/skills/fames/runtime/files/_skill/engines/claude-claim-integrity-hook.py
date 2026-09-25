@@ -57,7 +57,16 @@ RECEIPT_MINTER = SCRIPT_PATH.parent / "fames-receipt.py"
 EFFICIENCY_VALIDATOR = HUB / "_skill" / "fleet-skills" / "fames" / "scripts" / "work_efficiency.py"
 # The only tool kinds _tool_kind() can classify; naming anything else in an
 # `evidence: tool=` marker resolves to nothing, so the block message must say so.
-ACCEPTED_TOOL_KINDS = ("pytest", "py_compile", "npm_test", "npm_build", "fames_self_check")
+def _shared_module(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+_EXECUTION = _shared_module('fames_execution_evidence', SCRIPT_PATH.parent / 'fames_execution_evidence.py')
+_TURN_BINDING = _shared_module('fames_turn_binding', SCRIPT_PATH.parents[2] / '_harness/runtime/fames_turn_binding.py')
+ACCEPTED_TOOL_KINDS = _EXECUTION.ACCEPTED_TOOL_KINDS
 MAX_BLOCKS = 3
 MAX_TRANSCRIPT_BYTES = 32 * 1024 * 1024
 MAX_EVIDENCE_BYTES = 4 * 1024 * 1024
@@ -338,29 +347,7 @@ def _content_text(content: object) -> str:
 
 
 def _tool_kind(command: str, result: str, is_error: object) -> str | None:
-    if is_error is not False:
-        return None
-    command_l = command.lower()
-    result_l = result.lower()
-    if re.search(r"(?:^|\s)(?:python(?:\.exe)?\s+-m\s+)?pytest(?:\s|$)", command_l):
-        if re.search(r"\b\d+\s+passed\b", result_l) and not re.search(
-            r"\b[1-9]\d*\s+(?:failed|errors?)\b", result_l
-        ):
-            return "pytest"
-        return None
-    if "py_compile" in command_l:
-        return "py_compile"
-    if re.search(r"(?:^|[;&|]\s*)npm(?:\.cmd)?\s+(?:run\s+)?test(?:\s|$)", command_l):
-        return "npm_test"
-    if re.search(r"(?:^|[;&|]\s*)npm(?:\.cmd)?\s+run\s+build(?:\s|$)", command_l):
-        return "npm_build"
-    if "fames_fleet.py" in command_l and "self-check" in command_l:
-        try:
-            parsed = json.loads(result)
-        except (TypeError, ValueError, json.JSONDecodeError):
-            return None
-        return "fames_self_check" if isinstance(parsed, dict) and parsed.get("ok") is True else None
-    return None
+    return _EXECUTION.execution_evidence_kind(command, result, is_error)
 
 
 def _transcript_evidence(doc: dict) -> tuple[dict[str, str], float | None]:
@@ -594,6 +581,8 @@ def _measured_evidence(
         result = transcript.get(tool_kind)
         if result is None:
             continue
+        if not _EXECUTION.tool_supports_claim(tool_kind, claim_text):
+            continue
         if kind == "numeric":
             values = _METRIC.findall(window)
             if values and not all(value.lower().replace(" ", "") in result.lower().replace(" ", "") for value in values):
@@ -808,7 +797,7 @@ def _fames_turn_lifecycle(doc: dict) -> dict:
     prompt_text, prompt_row = _latest_prompt_row(doc)
     expected_prompt, prompt_started = _prompt_identity_and_start(prompt_text, prompt_row)
     expected_agent = _expected_agent(doc, prompt_row)
-    path = FAMES_TURN_RECEIPT_ROOT / "claude" / f"{session_sha}.json"
+    path = _TURN_BINDING.select(FAMES_TURN_RECEIPT_ROOT, 'claude', session_sha, expected_prompt)
     receipt = _read_receipt(path)
     manifest = _read_receipt(FAMES_MANIFEST)
     prompt_hook_sha = _path_sha(FAMES_PROMPT_HOOK)
@@ -837,11 +826,9 @@ def _fames_turn_lifecycle(doc: dict) -> dict:
         receipt_mtime = path.stat().st_mtime
     except OSError:
         receipt_mtime = None
-    checks["current_turn_time"] = (
-        receipt_mtime is not None
-        and prompt_started is not None
+    checks["current_turn_time"] = (receipt_mtime is not None and prompt_started is not None
         and receipt_mtime + 2 >= prompt_started
-    )
+        and (not receipt.get('generated') or _TURN_BINDING.fresh_for_prompt(receipt, prompt_started)))
     state = "PASS" if checks and all(checks.values()) else "UNKNOWN"
     failed = sorted(name for name, ok in checks.items() if not ok)
     return {
@@ -849,6 +836,7 @@ def _fames_turn_lifecycle(doc: dict) -> dict:
         "checks": checks,
         "failed_checks": failed,
         "turn_receipt_sha256": _path_sha(path) if state == "PASS" else None,
+        "turn_receipt_path": str(path),
         "package_sha": receipt.get("package_sha"),
         "skill_gen": receipt.get("skill_gen"),
         "prompt_identity": receipt.get("prompt_identity"),
@@ -886,6 +874,12 @@ def evaluate_hook(doc: dict) -> tuple[dict, dict]:
         }
     else:
         result = lint_message(message, doc, _seat_from_cwd(doc.get("cwd")))
+
+    deferral = _EXECUTION.internal_gate_deferral(message)
+    if deferral is not None:
+        result['ok'] = False
+        result['violation_count'] += 1
+        result['violations'].append(dict(deferral, claim_type='internal_gate_deferral', state='FORBIDDEN'))
 
     lifecycle = _fames_turn_lifecycle(doc)
     if event == "Stop" and lifecycle.get("state") != "PASS":
@@ -960,6 +954,11 @@ def evaluate_hook(doc: dict) -> tuple[dict, dict]:
             "receipt through the installed FAMES UserPromptSubmit lifecycle hook. Failing "
             f"lifecycle checks: {', '.join(lifecycle.get('failed_checks') or ['UNKNOWN'])}."
         )
+    if 'internal_gate_deferral' in kinds:
+        reason += (' Do not ask the user for another message to repair an internal gate. '
+                   'The native boundary resolves prompt-bound receipts and replays current policy; '
+                   'if native provenance is missing, report the exact failed source and smallest repair, '
+                   'without claiming completion or fabricating an intake event.')
     if "math_proof" in kinds:
         reason += (
             " A mathematical claim (proved, QED, formally verified, 得證, 恆成立, ...) needs a Lean proof "

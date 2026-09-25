@@ -5,7 +5,7 @@ description: The single public contract for outcome-driven skill selection, opti
 
 # FAMES
 
-FAMES-GEN: 2026-09-24.4
+FAMES-GEN: 2026-09-26.2
 
 FAMES is the single public contract for intent-to-skill selection, optional Jev advice and applicable Lean verification. Users state outcomes and constraints without naming internal components or skills. Infer required capabilities from the request and actual available skill descriptions; select the smallest applicable set. Unmatched local rules use current-model judgment. Jev retains its provider/projection gates; Lean checks explicitly formalized obligations, with UNKNOWN where applicability or evidence is missing.
 
@@ -20,6 +20,8 @@ Freeze Outcome, Verification, Constraints and authority before implementation. P
 - SCF: begins only after an identity-matched verified result exists.
 - AEX: begins only with a measured comparable cross-cycle residual.
 - SEAL: accept only fresh destination evidence, matching identity, closed work, preserved boundaries and an openable receipt. Dispatch, process exit and model self-reports do not prove the outcome.
+
+Internal recovery is agent work. Queued native prompts keep separate receipts; select the real transcript prompt, replay verified native provenance and current policy before continuing. Never ask the operator to send another message merely to unlock an internal hook. A missing native source remains a concrete blocker, not permission to fabricate one. Accept supported Python/unittest/pytest runner evidence by verified execution and scope; builds do not prove browser behavior and local tests do not prove deployment. Recovery and Jev advice never authorize completion. Report the observed result, validation, remaining action and actual blocker concisely; put internal receipt detail in the linked artifact.
 
 ## Skill lifetime
 

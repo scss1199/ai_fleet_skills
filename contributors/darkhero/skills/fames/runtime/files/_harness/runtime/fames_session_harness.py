@@ -1061,6 +1061,7 @@ def turn_context(
     activation_evidence: str = "direct_probe",
     transcript_path: str = "",
     context_retained: bool = False,
+    native_rebind: dict | None = None,
 ) -> dict[str, Any]:
     """Compile one prompt into a privacy-bounded RB/Ti turn envelope.
 
@@ -1068,6 +1069,7 @@ def turn_context(
     UserPromptSubmit. `always_apply_rule_with_pre_submit_read_back` verifies the
     exact always-applied rule for surfaces whose pre-submit hook cannot inject.
     """
+    intake_observed_ns = time.time_ns()
     workspace = (workspace or _default_workspace()).resolve()
     script = (fames_script or _default_fames_script(workspace)).resolve()
     prompt_text = prompt if isinstance(prompt, str) else ""
@@ -1133,9 +1135,15 @@ def turn_context(
     ).hexdigest()
     surface_key = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in (surface_id or "unknown"))
     state_path = workspace / "_registry" / "fames-turn" / surface_key / f"{session_key}.json"
+    binding = _load_engine(Path(__file__).parent, 'fames_turn_binding.py', 'fames_turn_persistence')
+    if native_rebind is not None:
+        if (native_rebind.get('admitted') is not True or native_rebind.get('completion_authorized') is not False
+                or native_rebind.get('native_event') not in {'PreToolUse', 'Stop', 'SubagentStop'}):
+            raise ValueError('invalid_native_rebind')
+        state_path = binding.archive_path(workspace / '_registry/fames-turn', surface_key, session_key, prompt_identity)
     previous, _ = _read_json(state_path)
     count = previous.get("turn_count") if isinstance(previous.get("turn_count"), int) else 0
-    if adapter_mode == "same_turn_context_injection":
+    if adapter_mode == "same_turn_context_injection" and native_rebind is None:
         # Surfaces whose pre-submit hook cannot inject run their own AGC hook
         # (cursor-agc-auto-compact.py); only the same-turn injection surfaces get the lane here.
         agc = auto_goal_compact(
@@ -1144,15 +1152,16 @@ def turn_context(
         )
     else:
         agc = {
-            "id": AGC_LANE_ID, "lane": "auto_goal_compact", "event": "UserPromptSubmit",
+            "id": AGC_LANE_ID, "lane": "auto_goal_compact", "event": native_rebind.get('native_event') if native_rebind else 'UserPromptSubmit',
             "check_token": AGC_CHECK_TURN, "state": "NOT_APPLICABLE", "refreshed": False, "pointer": "",
-            "diagnostic": "surface runs its own AGC pre-submit hook", "model_tokens": 0, "api_calls": 0,
+            "diagnostic": "native rebind is not a new user prompt" if native_rebind else "surface runs its own AGC pre-submit hook", "model_tokens": 0, "api_calls": 0,
         }
     now = dt.datetime.now(dt.timezone.utc).astimezone().isoformat(timespec="seconds")
     receipt = {
         "schema": 2,
         "id": "FAMES-RB-TI-TURN",
         "generated": now,
+        "native_intake_observed_ns": native_rebind.get('native_intake_observed_ns', intake_observed_ns) if native_rebind else intake_observed_ns,
         "state": state,
         "agent": agent,
         "surface_id": surface_id or None,
@@ -1200,6 +1209,8 @@ def turn_context(
         ),
         "state_path": str(state_path),
     }
+    if native_rebind is not None:
+        receipt['native_rebind'] = native_rebind
     receipt["context_delivery_mode"] = "retained" if context_retained else "ephemeral"
     receipt["should_inject"] = adapter_mode == "same_turn_context_injection" and (
         not context_retained or receipt["changed_generation"] or state != "PASS"
@@ -1288,7 +1299,11 @@ def turn_context(
         receipt["plan_text"] = (receipt["plan_text"] + "\nFAMES PHASE GATE — "
             + phase_result.get("state", "UNKNOWN") + "; completion requires SCF/AEX/SEAL receipts. "
             + "Run fames_phase_runtime.py with --turn, --result and --closure before a completion claim.").strip()
-    _atomic_write(state_path, {key: value for key, value in receipt.items() if key != "plan_text"})
+    stored = {key: value for key, value in receipt.items() if key != "plan_text"}
+    if session_identity and prompt_identity:
+        binding.preserve(workspace / '_registry/fames-turn', stored)
+    if native_rebind is None:
+        binding.publish_latest(state_path, stored)
     return receipt
 
 

@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.41.2",
+  "version": "1.42.1",
   "updated": "2026-09-23",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -2472,7 +2472,7 @@
       "completion_rule": "Scope completion/release does not clear unrelated parent obligations; task completion requires fresh accepted evidence and closed work",
       "unsupported": "Arbitrary recursive child delegation, transitive lineage and cumulative child budgets are not added or proven by this entrypoint"
     },
-    "hot_directive": "FAMES is the single entry for Lean + Jev + intent-to-skill. Infer capabilities from the requested outcome and actual available skill descriptions; users need not name skills. Select the smallest relevant set under existing gates; unmatched local rules use current conversation-model judgment. Jev is advisory through its existing provider/projection gates; otherwise use local judgment. Lean checks applicable formal obligations, never arbitrary meaning or business outcomes. Reuse goal, authority, capabilities, acceptance, evidence, budgets and pending obligations in each task-bound skill scope; owners choose means within those bounds. Advice grants no authority; scope release leaves parent obligations intact.",
+    "hot_directive": "FAMES is the single entry for Lean + Jev + intent-to-skill. Infer capabilities from the requested outcome and actual available skill descriptions; users need not name skills. Select the smallest relevant set under existing gates; unmatched local rules use current conversation-model judgment. Jev is advisory through its existing provider/projection gates; otherwise use local judgment. Lean checks applicable formal obligations, never arbitrary meaning or business outcomes. Reuse goal, authority, capabilities, acceptance, evidence, budgets and pending obligations in each task-bound skill scope; owners choose means within those bounds. Advice grants no authority; scope release leaves parent obligations intact. Resolve internal hook and receipt faults through verified native recovery; never ask for a new user message just to unlock. Recovery and advice grant no completion. Keep receipt detail in artifacts; report the actual outcome and concrete blocker.",
     "phase_execution": {
       "schema": 1,
       "required": true,
@@ -2492,6 +2492,21 @@
       "proof_boundary": "Source-bound formal admission over independently read artifacts; no semantic, OS isolation, native adoption or business-outcome theorem",
       "inactive": "SCF/AEX only with measured false predicate and explicit reason",
       "runtime_release": "One verified package transports allowlisted runtime and formal sources through the existing fames-converge rider; destination evidence is separate from native adoption"
+    },
+    "execution_recovery": {
+      "version": 1,
+      "receipt_key": [
+        "surface_id",
+        "session_identity_sha",
+        "prompt_identity"
+      ],
+      "current_policy_replay_required": true,
+      "new_user_message_for_internal_unlock": "FORBIDDEN",
+      "recovery_grants_completion": false,
+      "formal_contract": "_lean/fames/FamesTurnRecovery.lean",
+      "runtime": "_harness/runtime/fames_turn_binding.py",
+      "evidence_classifier": "_skill/engines/fames_execution_evidence.py",
+      "evidence_rule": "Verified runner output is scoped evidence; build and local tests never establish production behavior."
     }
   }
 }

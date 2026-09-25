@@ -91,7 +91,8 @@ def intake_status(doc: dict, surface: str, *, not_before: float | None = None, p
     if not session or not isinstance(prompt, str) or not prompt.strip():
         return {'state': 'UNKNOWN', 'failed_checks': ['native_prompt_identity']}
     session_hash = digest(surface + '\0' + session)
-    path = HUB / '_registry/fames-turn' / surface / (session_hash + '.json')
+    binding = load_module('intake_turn_binding', Path(__file__).with_name('fames_turn_binding.py'))
+    path = binding.select(HUB / '_registry/fames-turn', surface, session_hash, digest(prompt))
     receipt = read_json(path)
     manifest = read_json(HUB / '_skill/fleet-skills/fames/bundle-manifest.json')
     checks = {
@@ -169,13 +170,57 @@ def protected_operation(doc: dict) -> str | None:
     return None
 
 
+def recover_turn(doc: dict, module, lifecycle: dict) -> tuple[dict, str]:
+    """Rebind proven native intake under current policy inside the native hook.
+
+Only receipt identity drift is repairable here. No generic allowlist, receipt
+fabrication, new operator prompt, provider call requirement or completion grant.
+"""
+    failed = set(lifecycle.get('failed_checks', []))
+    if not failed or not failed <= {'prompt_identity', 'package_identity', 'generation_identity', 'adapter_identity'}:
+        return lifecycle, ''
+    if doc.get('fames_probe_mode') in {'direct', 'synthetic'}:
+        return lifecycle, ''
+    parent = parent_event(doc)
+    prompt, row = module._latest_prompt_row(parent)
+    identity, started = module._prompt_identity_and_start(prompt, row)
+    agent = module._expected_agent(parent, row)
+    session = digest('claude\0' + str(doc.get('session_id') or ''))
+    binding = load_module('native_turn_binding', HUB / '_harness/runtime/fames_turn_binding.py')
+    path = binding.select(HUB / '_registry/fames-turn', 'claude', session, identity)
+    source = binding.read(path)
+    if source.get('prompt_identity') != identity:
+        path = binding.migrate_legacy(HUB, source, identity, agent, started)
+        if path is None:
+            return dict(lifecycle, recovery={'state': 'UNKNOWN', 'reason': 'native_prompt_source_missing'}), ''
+    decision = binding.recovery_admission(HUB, path, session=session, prompt=identity, agent=agent, started=started)
+    if decision.get('admitted') is not True:
+        return dict(lifecycle, recovery={'state': 'UNKNOWN', 'reason': 'native_source_not_admitted'}), ''
+    harness = load_module('native_turn_rebind_harness', HUB / '_harness/runtime/fames_session_harness.py')
+    decision['native_event'] = str(doc['hook_event_name'])
+    result = harness.turn_context(agent, Path(str(row.get('cwd') or doc['cwd'])),
+        prompt=prompt, surface_id='claude', session_id=str(doc['session_id']),
+        adapter_mode='same_turn_context_injection', adapter_path=PROMPT_HOOK,
+        workspace=HUB, runtime_event_observed=True, activation_evidence='lifecycle_hook',
+        transcript_path=str(parent.get('transcript_path') or ''), context_retained=False,
+        native_rebind=decision)
+    recovered = module._fames_turn_lifecycle(parent)
+    recovered['recovery'] = {'state': recovered['state'], 'source_sha256': decision['source_sha256'],
+                             'completion_authorized': False, 'native_event': doc['hook_event_name']}
+    return recovered, result.get('plan_text', '')
+
+
 def evaluate(doc: dict, *, surface: str = 'claude') -> tuple[dict, dict]:
     event = str(doc.get('hook_event_name') or '')
     if event not in SUPPORTED or surface != 'claude':
         return denial(event, 'unsupported native host or event'), {'state': 'UNKNOWN', 'reason': 'unsupported_host_event'}
     if event in {'SessionStart', 'UserPromptSubmit'}:
         started=time.time()
-        receipt_path=HUB/'_registry/fames-turn'/surface/(digest(surface+'\0'+str(doc.get('session_id') or ''))+'.json')
+        binding = load_module('intake_previous_binding', Path(__file__).with_name('fames_turn_binding.py'))
+        native_prompt = doc.get('prompt') or doc.get('user_message') or doc.get('message')
+        receipt_path = binding.select(HUB/'_registry/fames-turn', surface,
+            digest(surface+'\0'+str(doc.get('session_id') or '')),
+            digest(native_prompt) if isinstance(native_prompt, str) and native_prompt else None)
         previous_identity=digest(receipt_path.read_bytes()) if receipt_path.is_file() else 'MISSING'
         payload = call_prompt_hook(doc)
         if event == 'SessionStart':
@@ -188,6 +233,9 @@ def evaluate(doc: dict, *, surface: str = 'claude') -> tuple[dict, dict]:
         # existing operator guard separately checks local configuration edits.
         return {}, {'state': 'OBSERVED', 'reason': 'managed policy remains authoritative'}
     lifecycle = module._fames_turn_lifecycle(parent_event(doc))
+    recovery_context = ''
+    if lifecycle.get('state') != 'PASS':
+        lifecycle, recovery_context = recover_turn(doc, module, lifecycle)
     if lifecycle.get('state') != 'PASS':
         reason = 'current parent turn ' + ','.join(lifecycle.get('failed_checks', ['UNKNOWN']))
         if event in {'Stop','SubagentStop'} and doc.get('stop_hook_active') is True:
@@ -197,13 +245,16 @@ def evaluate(doc: dict, *, surface: str = 'claude') -> tuple[dict, dict]:
         violation=protected_operation(doc)
         if violation:
             return denial(event,violation), {'state':'DENIED','reason':violation}
-        return {}, lifecycle
+        payload = ({'hookSpecificOutput': {'hookEventName': event, 'additionalContext': recovery_context}}
+                   if recovery_context else {})
+        return payload, lifecycle
     payload, receipt = module.evaluate_hook(doc)
     protocol = read_json(HUB / '_skill/fleet-skills/fames/references/protocols/fames-protocol.json')
     if ((protocol.get('unified_entrypoint') or {}).get('phase_execution') or {}).get('required') is True and receipt.get('claim_count', 0) > 0 and receipt.get('state') == 'PASS':
         parent = parent_event(doc)
         identity = digest(surface + '\0' + str(parent.get('session_id') or ''))
-        turn = read_json(HUB / '_registry/fames-turn' / surface / (identity + '.json'))
+        turn = read_json(Path(lifecycle.get('turn_receipt_path') or
+                             HUB / '_registry/fames-turn' / surface / (identity + '.json')))
         phase_runtime = load_module('fames_phase_completion', HUB / '_harness/runtime/fames_phase_runtime.py')
         phase = phase_runtime.completion_status(HUB, turn)
         if phase.get('state') != 'PASS':

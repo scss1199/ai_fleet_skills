@@ -108,8 +108,10 @@ def dependency_manifest(entry_bytes):
     paths=[HUB/'_harness/runtime'/name for name in (
         'fames_session_harness.py','fames_capabilities.py','fames_enforcement.py',
         'fames_managed_entry.py','fames_phase_runtime.py','local_skill_router.py',
+        'fames_turn_binding.py',
         'jev_skill_advisor.py','jev_turn_router.py','jev_task_projection.py','jev_phase_advisor.py')]
     paths += [HUB/'_skill/engines/claude-claim-integrity-hook.py',
+              HUB/'_skill/engines/fames_execution_evidence.py',
               HUB/'_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py',
               HUB/'_skill/fleet-skills/fames/bundle-manifest.json',
               HUB/'_skill/fleet-skills/fames/scripts/fames_fleet.py',
@@ -119,6 +121,8 @@ def dependency_manifest(entry_bytes):
               HUB/'_lean/fames/FamesPhaseContract.lean',
               HUB/'_lean/fames/phase_contract.py',
               HUB/'_lean/fames/phase_conformance.py',
+              HUB/'_lean/fames/FamesTurnRecovery.lean',
+              HUB/'_lean/fames/turn_recovery_contract.py',
               USER/'hooks/operator_intent_guard.py']
     files={str(p.resolve()):digest(p.read_bytes()) for p in paths if p.is_file()}
     files[str(GATE)]=digest(entry_bytes)

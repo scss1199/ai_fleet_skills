@@ -8,6 +8,7 @@ import importlib.util
 import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 import uuid
@@ -160,7 +161,20 @@ def ensure_conformance(workspace):
             if result.returncode != 0 or not gate.binding_status().get("all_bound"):
                 return {"ok": False, "state": "UNKNOWN", "reason": "base_conformance_failed"}
         phases._conformance(path)
+        recovery = load('fames_apply_recovery_contract', root / 'turn_recovery_contract.py')
+        recovery_path = workspace / '_registry/fames-turn-recovery-conformance.json'
+        if not recovery.conformance_status(recovery_path).get('ok'):
+            target = workspace / '_registry/fames-phase-history' / ('recovery-' + uuid.uuid4().hex + '.json')
+            target.parent.mkdir(parents=True, exist_ok=True)
+            result = subprocess.run([sys.executable, '-B', str(root / 'turn_recovery_contract.py'), '--out', str(target)],
+                capture_output=True, timeout=600, creationflags=0x08000000 if os.name == 'nt' else 0)
+            if result.returncode != 0 or not recovery.conformance_status(target).get('ok'):
+                return {'ok': False, 'state': 'UNKNOWN', 'reason': 'native_recovery_conformance_failed'}
+            if recovery_path.is_file():
+                shutil.copy2(recovery_path, target.with_name(target.stem + '-previous.json'))
+            shutil.copy2(target, recovery_path)
         return {"ok": True, "state": "PASS", "receipt": str(path), "reused_phase_proof": phase_current,
+                'native_recovery_conformance': str(recovery_path),
                 "native_adoption": "UNKNOWN"}
     except Exception as exc:
         return {"ok": False, "state": "UNKNOWN", "reason": type(exc).__name__}
