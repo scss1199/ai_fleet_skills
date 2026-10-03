@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "63cfdc168527a280915ef3e1b5da5f7341a9055f6f08aae11182100cf28a90b5",
   "runner_state": "armed",
-  "observed_at": "2026-10-03T12:16:01.242372+00:00",
+  "observed_at": "2026-10-03T12:46:09.114211+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,40 +356,10 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
-        "agent": "ai_zonghe",
-        "surface": "claude",
-        "observed_at": "2026-10-02T20:19:51+08:00",
-        "receipt_sha256": "4998534d849001e7574a50df276a40646c54fae06ae787a5ba0edbb106875248"
-      },
-      {
-        "agent": "ai_zonghe",
-        "surface": "claude",
-        "observed_at": "2026-10-02T20:25:08+08:00",
-        "receipt_sha256": "d52b0a63d73f00775db501e19a6d30c61e9dd1c8cd8eba7b9a35238ba2024f63"
-      },
-      {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-03T20:06:05+08:00",
-        "receipt_sha256": "e0f368c267b33b125646b735f1d60c3fce7d11a8ee31f95a0f856fdc39cd192c"
-      },
-      {
-        "agent": "ai_zonghe",
-        "surface": "claude",
-        "observed_at": "2026-10-02T20:37:38+08:00",
-        "receipt_sha256": "cf71c111bdb7db4358c7da7acb7bd1c8a5450dc8ab4b0d82952709d1ebed9d88"
-      },
-      {
-        "agent": "ai_zonghe",
-        "surface": "claude",
-        "observed_at": "2026-10-02T20:37:22+08:00",
-        "receipt_sha256": "c5cef333919f3c0f19d999d5d22c3e79f251452c357e2ec7140ad1685d8e3787"
-      },
-      {
-        "agent": "ai_zonghe",
-        "surface": "claude",
-        "observed_at": "2026-10-02T20:31:15+08:00",
-        "receipt_sha256": "79e421d85e4b3ccabb2ed201f2c54fd3c66d6c47a6e6f5e99c4d80f83a4c7087"
+        "observed_at": "2026-10-03T20:36:54+08:00",
+        "receipt_sha256": "c4fd516236f5c0437df777e7398a8c89f873fd25f8e27cdcec12fa03a2301f02"
       },
       {
         "agent": "ai_zonghe",
@@ -402,18 +372,6 @@
         "surface": "claude",
         "observed_at": "2026-10-02T20:59:38+08:00",
         "receipt_sha256": "d664610d17a55f54b32cc0e4eccfa215db33d4071fc496674112b2837ec32a4a"
-      },
-      {
-        "agent": "ai_zonghe",
-        "surface": "claude",
-        "observed_at": "2026-10-02T20:45:05+08:00",
-        "receipt_sha256": "ea9fa5a2ddb59b25534138debf92388b345706ce61f3a5989b5f94b5eccdc01c"
-      },
-      {
-        "agent": "ai_zonghe",
-        "surface": "claude",
-        "observed_at": "2026-10-02T20:26:56+08:00",
-        "receipt_sha256": "1c7c6220ca33d35b31fd0abcffe1076050c04e1b5bd23e9195a988a6cef31039"
       },
       {
         "agent": "ai_trader",
