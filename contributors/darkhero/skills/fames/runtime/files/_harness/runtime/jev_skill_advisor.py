@@ -99,6 +99,22 @@ def _read(path: Path, limit: int) -> bytes:
     return data
 
 
+def _read_registry(path: Path, limit: int) -> bytes:
+    """Retry a transient Windows sharing denial within a bounded read budget."""
+    deadline = time.monotonic() + 2
+    while True:
+        try:
+            return _read(path, limit)
+        except PermissionError:
+            # Atomic replacement can briefly deny readers on Windows. All other
+            # failures, including malformed JSON and schema/hash failures, remain
+            # immediate fail-closed errors in the existing catalogue validation.
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise
+            time.sleep(min(0.01, remaining))
+
+
 def _description(body: str, expected_id: str) -> str:
     lines = body.splitlines()
     if not lines or lines[0] != "---":
@@ -149,7 +165,7 @@ def load_catalog(workspace: str | Path, *,
     canonical = (root / "_skill" / "fleet-skills").resolve()
     registry_path = root / "_registry" / "fleet-skills.json"
     try:
-        raw = _read(registry_path, MAX_REGISTRY_BYTES)
+        raw = _read_registry(registry_path, MAX_REGISTRY_BYTES)
         registry = json.loads(raw, object_pairs_hook=_pairs)
         if (type(registry) is not dict or type(registry.get("schema")) is not int
                 or registry["schema"] != 2 or

@@ -32,6 +32,7 @@ import re
 import shutil
 import sys
 import time
+import uuid
 
 ENG = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ENG)
@@ -425,6 +426,30 @@ def _group_by_lane(canonical: list[dict]) -> dict:
     return out
 
 
+def _atomic_write_json(path: str, document: dict) -> None:
+    """Publish one complete registry; retain a failed stage for diagnosis."""
+    destination = os.path.abspath(os.fspath(path))
+    stage = os.path.join(os.path.dirname(destination),
+                         "." + os.path.basename(destination) + "." + uuid.uuid4().hex + ".tmp")
+    # Exclusive creation prevents concurrent writers from sharing a stage. The
+    # same-directory replace exposes either the old complete JSON or the new one.
+    with open(stage, "x", encoding="utf-8") as stream:
+        json.dump(document, stream, ensure_ascii=False, indent=2)
+        stream.flush()
+        os.fsync(stream.fileno())
+    deadline = time.monotonic() + 2
+    while True:
+        try:
+            os.replace(stage, destination)
+            break
+        except PermissionError:
+            # Windows can briefly deny replacement while another publisher or
+            # reader holds the destination. Retry the already closed stage only.
+            if time.monotonic() >= deadline:
+                raise
+            time.sleep(0.01)
+
+
 def cmd_registry() -> dict:
     scan = cmd_scan()
     subs = []
@@ -452,7 +477,7 @@ def cmd_registry() -> dict:
         "incubator": sorted(os.listdir(INCUBATOR)) if os.path.isdir(INCUBATOR) else [],
     }
     os.makedirs(REGISTRY, exist_ok=True)
-    json.dump(reg, open(REG_PATH, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+    _atomic_write_json(REG_PATH, reg)
     print("registry: %s  canonical=%d seats=%d submissions=%d" % (
         REG_PATH, len(reg["canonical"]), len(reg["by_seat"]), len(subs)))
     return reg

@@ -63,14 +63,11 @@ def order(receipt):
 
 
 @contextlib.contextmanager
-def locked(path):
+def locked(path, *, timeout_seconds=2):
     """Retained lock file; bounded cross-process serialization without deletion."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open('a+b') as stream:
-        if stream.tell() == 0:
-            stream.write(b'0')
-            stream.flush()
-        deadline = time.monotonic() + 2
+        deadline = time.monotonic() + timeout_seconds
         while True:
             try:
                 stream.seek(0)
@@ -86,6 +83,12 @@ def locked(path):
                     raise ValueError('turn_store_busy')
                 time.sleep(0.01)
         try:
+            # Windows byte-range locks may cover an empty file. Initialize only
+            # after acquisition: a concurrent opener can otherwise flush into
+            # a range already locked by another native hook and get EACCES.
+            if stream.seek(0, os.SEEK_END) == 0:
+                stream.write(b'0')
+                stream.flush()
             yield
         finally:
             stream.seek(0)

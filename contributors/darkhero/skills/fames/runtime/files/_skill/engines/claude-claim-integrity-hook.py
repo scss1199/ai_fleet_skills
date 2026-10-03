@@ -69,6 +69,11 @@ _TURN_BINDING = _shared_module('fames_turn_binding', SCRIPT_PATH.parents[2] / '_
 ACCEPTED_TOOL_KINDS = _EXECUTION.ACCEPTED_TOOL_KINDS
 MAX_BLOCKS = 3
 MAX_TRANSCRIPT_BYTES = 32 * 1024 * 1024
+# Bound a single record and a current-turn scan separately from session size.
+# A long-lived session must not lose admission merely because old turns grew.
+MAX_TRANSCRIPT_SCAN_BYTES = 128 * 1024 * 1024
+MAX_TRANSCRIPT_RECORDS = 100_000
+TRANSCRIPT_CHUNK_BYTES = 64 * 1024
 MAX_EVIDENCE_BYTES = 4 * 1024 * 1024
 # A mathematical claim is decided by the hub Lean gate, whose rule is the Lean-proved `Fames.mathOk`.
 LEAN_GATE = HUB / "_lean" / "fames" / "lean_gate.py"
@@ -330,11 +335,105 @@ def _safe_transcript_path(doc: dict) -> Path | None:
     except (OSError, RuntimeError, ValueError):
         return None
     try:
-        if not path.is_file() or path.stat().st_size > MAX_TRANSCRIPT_BYTES:
+        if not path.is_file():
             return None
     except OSError:
         return None
     return path
+
+
+def _reverse_transcript_lines(path: Path):
+    """Yield complete records newest first, with bounded IO and record memory.
+
+    An exhausted budget is unknown; never skip an oversized recent record to
+    admit an older prompt. Offsets let evidence stream only the selected turn.
+    The open file's end is frozen so concurrent appends belong to the next read.
+    """
+    with path.open("rb") as fh:
+        end = fh.seek(0, os.SEEK_END)
+        position = end
+        floor = max(0, end - MAX_TRANSCRIPT_SCAN_BYTES)
+        pending = b""
+        while position > floor:
+            count = min(TRANSCRIPT_CHUNK_BYTES, position - floor)
+            position -= count
+            fh.seek(position)
+            block = fh.read(count) + pending
+            stop = len(block)
+            while True:
+                split = block.rfind(b"\n", 0, stop)
+                if split < 0:
+                    break
+                raw = block[split + 1:stop]
+                if len(raw) > MAX_TRANSCRIPT_BYTES:
+                    return
+                if raw.strip():
+                    yield raw, position + split + 1, end
+                stop = split
+            pending = block[:stop]
+            if len(pending) > MAX_TRANSCRIPT_BYTES:
+                return
+        if floor == 0 and pending.strip():
+            yield pending, 0, end
+
+
+def _prompt_text(row: dict) -> str | None:
+    if row.get("type") != "user" or _is_client_authored_row(row):
+        return None
+    message = row.get("message") if isinstance(row.get("message"), dict) else {}
+    content = message.get("content")
+    if isinstance(content, str):
+        return content if content.strip() else None
+    if isinstance(content, list):
+        blocks = [item["text"] for item in content if isinstance(item, dict)
+                  and item.get("type") in {"text", "input_text"}
+                  and isinstance(item.get("text"), str)]
+        text = "\n".join(blocks)
+        return text if text.strip() else None
+    return None
+
+
+def _latest_prompt_record(path: Path, record_refs=None):
+    for count, (raw, offset, end) in enumerate(_reverse_transcript_lines(path)):
+        if count >= MAX_TRANSCRIPT_RECORDS:
+            return None
+        if record_refs is not None:
+            record_refs.append((offset, len(raw), hashlib.sha256(raw).digest()))
+        try:
+            row = json.loads(raw.decode("utf-8-sig"))
+        except (UnicodeDecodeError, ValueError):
+            # A torn newest row could be a new user turn. Do not fall back to
+            # older admission when its identity cannot be established.
+            return None
+        if not isinstance(row, dict):
+            return None
+        prompt = _prompt_text(row)
+        if prompt is not None:
+            return prompt, row, offset, end
+        if row.get("type") == "user" and not _is_client_authored_row(row):
+            message = row.get("message")
+            content = message.get("content") if isinstance(message, dict) else None
+            if not (isinstance(content, list) and content and all(
+                    isinstance(item, dict) and item.get("type") == "tool_result"
+                    for item in content)):
+                # A real input without a recoverable text identity (including
+                # image-only inputs) is UNKNOWN, not the previous user's turn.
+                return None
+    return None
+
+
+def _current_turn_lines(path: Path):
+    refs = []
+    record = _latest_prompt_record(path, refs)
+    if record is None:
+        return
+    with path.open("rb") as fh:
+        for offset, length, digest in reversed(refs):
+            fh.seek(offset)
+            raw = fh.read(length)
+            if len(raw) != length or hashlib.sha256(raw).digest() != digest:
+                raise ValueError("transcript_window_incomplete")
+            yield raw.decode("utf-8-sig")
 
 
 def _content_text(content: object) -> str:
@@ -360,57 +459,56 @@ def _transcript_evidence(doc: dict) -> tuple[dict[str, str], float | None]:
     turn_started: float | None = None
     current_turn = False
     try:
-        with path.open("r", encoding="utf-8-sig", errors="replace") as fh:
-            for raw in fh:
-                try:
-                    row = json.loads(raw)
-                except (TypeError, ValueError, json.JSONDecodeError):
-                    continue
-                if not isinstance(row, dict):
-                    continue
-                message = row.get("message") if isinstance(row.get("message"), dict) else {}
-                content = message.get("content")
-                if row.get("type") == "user" and not _is_client_authored_row(row):
-                    is_prompt = isinstance(content, str) or (
-                        isinstance(content, list)
-                        and any(not isinstance(item, dict) or item.get("type") != "tool_result" for item in content)
-                    )
-                    if is_prompt:
-                        current_turn = True
-                        tools.clear()
-                        verified.clear()
-                        try:
-                            turn_started = datetime.fromisoformat(
-                                str(row.get("timestamp") or "").replace("Z", "+00:00")
-                            ).timestamp()
-                        except ValueError:
-                            turn_started = None
-                if not current_turn or not isinstance(content, list):
-                    continue
-                if row.get("type") == "assistant":
-                    for item in content:
-                        if not isinstance(item, dict) or item.get("type") != "tool_use":
-                            continue
-                        tool_id = str(item.get("id") or "")
-                        tool_input = item.get("input") if isinstance(item.get("input"), dict) else {}
-                        if tool_id:
-                            tools[tool_id] = (
-                                str(item.get("name") or ""),
-                                str(tool_input.get("command") or ""),
-                            )
-                elif row.get("type") == "user":
-                    for item in content:
-                        if not isinstance(item, dict) or item.get("type") != "tool_result":
-                            continue
-                        tool_name, command = tools.get(str(item.get("tool_use_id") or ""), ("", ""))
-                        if tool_name not in {"Bash", "PowerShell"}:
-                            continue
-                        result = _content_text(item.get("content"))
-                        kind = _tool_kind(command, result, item.get("is_error"))
-                        if kind:
-                            verified[kind] = result[:1_000_000]
-    except OSError:
-        return {}, turn_started
+        for raw in _current_turn_lines(path):
+            try:
+                row = json.loads(raw)
+            except (TypeError, ValueError, json.JSONDecodeError):
+                raise ValueError("transcript_record_invalid")
+            if not isinstance(row, dict):
+                raise ValueError("transcript_record_invalid")
+            message = row.get("message") if isinstance(row.get("message"), dict) else {}
+            content = message.get("content")
+            if row.get("type") == "user" and not _is_client_authored_row(row):
+                is_prompt = isinstance(content, str) or (
+                    isinstance(content, list)
+                    and any(not isinstance(item, dict) or item.get("type") != "tool_result" for item in content)
+                )
+                if is_prompt:
+                    current_turn = True
+                    tools.clear()
+                    verified.clear()
+                    try:
+                        turn_started = datetime.fromisoformat(
+                            str(row.get("timestamp") or "").replace("Z", "+00:00")
+                        ).timestamp()
+                    except ValueError:
+                        turn_started = None
+            if not current_turn or not isinstance(content, list):
+                continue
+            if row.get("type") == "assistant":
+                for item in content:
+                    if not isinstance(item, dict) or item.get("type") != "tool_use":
+                        continue
+                    tool_id = str(item.get("id") or "")
+                    tool_input = item.get("input") if isinstance(item.get("input"), dict) else {}
+                    if tool_id:
+                        tools[tool_id] = (
+                            str(item.get("name") or ""),
+                            str(tool_input.get("command") or ""),
+                        )
+            elif row.get("type") == "user":
+                for item in content:
+                    if not isinstance(item, dict) or item.get("type") != "tool_result":
+                        continue
+                    tool_name, command = tools.get(str(item.get("tool_use_id") or ""), ("", ""))
+                    if tool_name not in {"Bash", "PowerShell"}:
+                        continue
+                    result = _content_text(item.get("content"))
+                    kind = _tool_kind(command, result, item.get("is_error"))
+                    if kind:
+                        verified[kind] = result[:1_000_000]
+    except (OSError, ValueError):
+        return {}, None
     return verified, turn_started
 
 
@@ -709,37 +807,11 @@ def _latest_prompt_row(doc: dict) -> tuple[str | None, dict]:
     path = _safe_transcript_path(doc)
     if path is None:
         return None, {}
-    latest_prompt: str | None = None
-    latest_row: dict = {}
     try:
-        with path.open("r", encoding="utf-8-sig", errors="replace") as fh:
-            for raw in fh:
-                try:
-                    row = json.loads(raw)
-                except (TypeError, ValueError, json.JSONDecodeError):
-                    continue
-                if not isinstance(row, dict) or row.get("type") != "user":
-                    continue
-                if _is_client_authored_row(row):
-                    continue
-                message = row.get("message") if isinstance(row.get("message"), dict) else {}
-                content = message.get("content")
-                prompt: str | None = content if isinstance(content, str) else None
-                if prompt is None and isinstance(content, list):
-                    text_blocks = [
-                        str(item.get("text"))
-                        for item in content
-                        if isinstance(item, dict)
-                        and item.get("type") in {"text", "input_text"}
-                        and isinstance(item.get("text"), str)
-                    ]
-                    prompt = "\n".join(text_blocks) if text_blocks else None
-                if not prompt or not prompt.strip():
-                    continue
-                latest_prompt, latest_row = prompt, row
+        record = _latest_prompt_record(path)
     except OSError:
         return None, {}
-    return latest_prompt, latest_row
+    return (record[0], record[1]) if record else (None, {})
 
 
 def _prompt_identity_and_start(prompt: str | None, row: dict) -> tuple[str | None, float | None]:
@@ -853,6 +925,69 @@ def _write_receipt(path: Path, doc: dict) -> None:
     os.replace(temp, path)
 
 
+def _quoted_noncompletion_only(message: str, result: dict) -> bool:
+    """Recognize a narrow withdrawal of earlier quoted claims, never success.
+
+    The linter's UNKNOWN qualifier is line-scoped. It alone cannot authorize a
+    SEAL exemption: an unrelated UNKNOWN can share a line with a positive claim.
+    Require explicit correction followed by one contiguous enumeration of
+    withdrawn quotations, then missing support and UNKNOWN in that same first
+    sentence. All other quoted content retains its ordinary claim checks.
+    """
+    claims = result.get("claims") or []
+    if (not result.get("ok") or not claims or len(claims) != result.get("claim_count")
+            or any(claim.get("state") != "UNKNOWN"
+                   or claim.get("claim_type") not in {"delivery_completion", "exhaustive_scope"}
+                   for claim in claims)):
+        return False
+    prefix = re.compile(
+        r"(?i)^\s*(?:更正上一則|撤回先前主張|"
+        r"correction\s+to\s+my\s+previous\s+(?:claim|statement|reply))\s*[:：]"
+    )
+    missing = re.compile(
+        r"(?i)(?:(?:沒有|缺少|缺乏)[^。！？\r\n]{0,40}(?:證據|收據)|"
+        r"\b(?:no|missing|insufficient|without|lacks?)\s+(?:supporting\s+)?(?:evidence|receipt)\b)"
+    )
+    contrast = re.compile(r"(?i)\b(?:but|however|yet)\b|但是|然而|但")
+    connector = re.compile(r"(?i)\s*(?:與|及|和|、|,|，|and|&)\s*")
+    lines = message.splitlines()
+    for number in {claim.get("line") for claim in claims}:
+        if type(number) is not int or not 1 <= number <= len(lines):
+            return False
+        line = lines[number - 1]
+        correction = prefix.search(line)
+        if not correction:
+            return False
+        quotes = list(_QUOTED.finditer(line))
+        unquoted = _QUOTED.sub(lambda match: " " * len(match.group()), line)
+        support = missing.search(unquoted)
+        if not support or not _UNKNOWN.search(unquoted) or contrast.search(unquoted):
+            return False
+        claim_quotes = [quote for quote in quotes
+                        if _COMPLETION.search(quote.group()) or _EXHAUSTIVE.search(quote.group())]
+        if not claim_quotes or any(quote.end() > support.start() for quote in claim_quotes):
+            return False
+        if line[correction.end():claim_quotes[0].start()].strip():
+            return False
+        if any(not connector.fullmatch(line[left.end():right.start()])
+               for left, right in zip(claim_quotes, claim_quotes[1:])):
+            return False
+        first_end = re.search(r"[.!?。！？]", unquoted)
+        sentence_end = first_end.start() if first_end else len(line)
+        if (support.end() > sentence_end
+                or not _UNKNOWN.search(unquoted[support.end():sentence_end])):
+            return False
+        # A new positive claim outside the withdrawn quotation remains gated,
+        # even without punctuation or on the same line as an UNKNOWN qualifier.
+        residual = line
+        for quote in reversed(claim_quotes):
+            residual = residual[:quote.start()] + " " * len(quote.group()) + residual[quote.end():]
+        residual = _UNKNOWN.sub("", residual)
+        if _COMPLETION.search(residual) or _EXHAUSTIVE.search(residual):
+            return False
+    return True
+
+
 def evaluate_hook(doc: dict) -> tuple[dict, dict]:
     event = str(doc.get("hook_event_name") or "")
     session_id = str(doc.get("session_id") or doc.get("conversation_id") or "")
@@ -922,6 +1057,7 @@ def evaluate_hook(doc: dict) -> tuple[dict, dict]:
         "violation_count": result["violation_count"],
         "violations": result["violations"],
         "fames_turn_lifecycle": lifecycle,
+        "noncompletion_only": _quoted_noncompletion_only(message, result),
         "consecutive_blocks": blocks,
         "action": action,
         "history": history[-8:],

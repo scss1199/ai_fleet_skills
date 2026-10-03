@@ -34,12 +34,17 @@ def load(path):
     return mod
 
 def write(path, data):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    stage = path.with_suffix('.tmp')
-    stage.write_text(json.dumps(data, indent=2, ensure_ascii=True)+'\n', encoding='utf-8')
-    stage.replace(path)
-    if json.loads(path.read_text(encoding='utf-8')) != data:
-        raise ValueError('phase_receipt_readback')
+    # Native legacy and managed hooks can publish the same phase concurrently.
+    # Serialize the entire stage/replace/readback transaction, including between
+    # processes; unique staging alone would still race destination readback.
+    binding = load(Path(__file__).with_name('fames_turn_binding.py'))
+    with binding.locked(path.with_suffix('.write.lock')):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        stage = path.with_suffix('.tmp')
+        stage.write_text(json.dumps(data, indent=2, ensure_ascii=True)+'\n', encoding='utf-8')
+        stage.replace(path)
+        if json.loads(path.read_text(encoding='utf-8')) != data:
+            raise ValueError('phase_receipt_readback')
 
 def ref(role, path):
     return {'role': role, 'path': str(path), 'sha256': sha(path.read_bytes())}
@@ -184,14 +189,29 @@ def advance(workspace, turn_path, phase, *, previous_guard=None, extra_refs=(), 
     return guard, ref('previous_guard', path)
 
 def begin_turn(workspace, turn):
+    with phase_transaction(workspace, turn):
+        return _begin_turn_unlocked(workspace, turn)
+
+def phase_transaction(workspace, turn):
+    binding = load(Path(__file__).with_name('fames_turn_binding.py'))
+    path = Path(workspace) / '_registry/fames-phase' / goal_identity(turn) / 'transaction.lock'
+    return binding.locked(path, timeout_seconds=15)
+
+def _begin_turn_unlocked(workspace, turn):
     workspace = Path(workspace)
     goal = goal_identity(turn)
     folder = workspace / '_registry/fames-phase' / goal
     snapshot = folder / 'turn.json'
+    binding = load(Path(__file__).with_name('fames_turn_binding.py'))
+    if snapshot.is_file() and binding.order(binding.read(snapshot)) > binding.order(turn):
+        return {'goal_identity': goal, 'turn_snapshot': str(snapshot), 'guards': {},
+                'state': 'UNKNOWN', 'reason': 'superseded_native_intake',
+                'completion': 'UNKNOWN_UNTIL_SCF_AEX_SEAL',
+                'scope': 'formal_phase_admission_not_business_outcome'}
     # Freeze only the fields needed by evidence replay; no prompt text or advice.
     keys = ('agent', 'jev_agent', 'surface_id', 'state', 'runtime_event_observed', 'activation_evidence', 'read_back', 'adapter_registration',
             'package_sha', 'prompt_identity', 'session_identity_sha', 'prompt_contract_identity',
-            'work_contract', 'generated', 'local_skill_route')
+            'work_contract', 'generated', 'native_intake_observed_ns', 'local_skill_route')
     write(snapshot, {k: turn.get(k) for k in keys})
     guards, previous = {}, None
     for phase in ('FP', 'MTM'):
@@ -221,6 +241,33 @@ def completion_status(workspace, turn):
     except Exception as exc:
         return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': type(exc).__name__}
 
+def complete_turn(workspace, turn, result, closure, residual=None):
+    # Completion and intake share the same goal transaction. Locking each write
+    # alone cannot protect the snapshot/previous_guard hashes between phases.
+    with phase_transaction(workspace, turn):
+        return _complete_turn_unlocked(Path(workspace), turn, result, closure, residual)
+
+def _complete_turn_unlocked(workspace, turn, result, closure, residual):
+    begin = _begin_turn_unlocked(workspace, turn)
+    goal = begin['goal_identity']
+    folder = workspace/'_registry/fames-phase'/goal
+    if begin['state'] != 'PASS':
+        return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': begin.get('reason', 'intake_phase_not_pass'),
+                'phases': {p:g['state'] for p,g in begin['guards'].items()}, 'path': str(folder)}
+    snapshot = folder/'turn.json'
+    previous = ref('previous_guard', folder/'mtm.json') if (folder/'mtm.json').is_file() else None
+    extra = [ref('result', Path(result)), ref('closure', Path(closure))]
+    if residual:
+        extra.append(ref('residual', Path(residual)))
+    phases = dict(begin['guards'])
+    for phase in ('SCF', 'AEX', 'SEAL'):
+        inactive = phase == 'AEX' and not residual
+        guard, previous = advance(workspace, snapshot, phase, previous_guard=previous, extra_refs=extra,
+            mode='skip' if inactive else 'execute', skip_reason='No comparable cross-cycle measurement exists' if inactive else '')
+        phases[phase] = guard
+    return {'state': phases['SEAL']['state'], 'goal_identity': goal,
+            'phases': {p:g['state'] for p,g in phases.items()}, 'path': str(folder)}
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--workspace', type=Path, default=HUB)
@@ -230,23 +277,9 @@ def main():
     parser.add_argument('--residual', type=Path)
     args = parser.parse_args()
     turn = json.loads(args.turn.read_text(encoding='utf-8'))
-    begin = begin_turn(args.workspace, turn)
-    goal = begin['goal_identity']
-    folder = args.workspace/'_registry/fames-phase'/goal
-    snapshot = folder/'turn.json'
-    previous = ref('previous_guard', folder/'mtm.json') if (folder/'mtm.json').is_file() else None
-    extra = [ref('result', args.result), ref('closure', args.closure)]
-    if args.residual:
-        extra.append(ref('residual', args.residual))
-    phases = dict(begin['guards'])
-    for phase in ('SCF', 'AEX', 'SEAL'):
-        inactive = phase == 'AEX' and not args.residual
-        guard, previous = advance(args.workspace, snapshot, phase, previous_guard=previous, extra_refs=extra,
-            mode='skip' if inactive else 'execute', skip_reason='No comparable cross-cycle measurement exists' if inactive else '')
-        phases[phase] = guard
-    print(json.dumps({'state': phases['SEAL']['state'], 'goal_identity': goal,
-                      'phases': {p:g['state'] for p,g in phases.items()}, 'path': str(folder)}))
-    return 0 if phases['SEAL']['state'] == 'PASS' else 1
+    outcome = complete_turn(args.workspace, turn, args.result, args.closure, args.residual)
+    print(json.dumps(outcome))
+    return 0 if outcome['state'] == 'PASS' else 1
 
 if __name__ == '__main__':
     raise SystemExit(main())

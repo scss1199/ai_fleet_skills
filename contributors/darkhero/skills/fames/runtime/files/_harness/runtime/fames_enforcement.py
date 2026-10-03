@@ -250,7 +250,9 @@ def evaluate(doc: dict, *, surface: str = 'claude') -> tuple[dict, dict]:
         return payload, lifecycle
     payload, receipt = module.evaluate_hook(doc)
     protocol = read_json(HUB / '_skill/fleet-skills/fames/references/protocols/fames-protocol.json')
-    if ((protocol.get('unified_entrypoint') or {}).get('phase_execution') or {}).get('required') is True and receipt.get('claim_count', 0) > 0 and receipt.get('state') == 'PASS':
+    if (((protocol.get('unified_entrypoint') or {}).get('phase_execution') or {}).get('required') is True
+            and receipt.get('claim_count', 0) > 0 and receipt.get('state') == 'PASS'
+            and receipt.get('noncompletion_only') is not True):
         parent = parent_event(doc)
         identity = digest(surface + '\0' + str(parent.get('session_id') or ''))
         turn = read_json(Path(lifecycle.get('turn_receipt_path') or

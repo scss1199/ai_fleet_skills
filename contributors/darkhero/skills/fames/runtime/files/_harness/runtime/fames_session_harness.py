@@ -1063,14 +1063,50 @@ def turn_context(
     context_retained: bool = False,
     native_rebind: dict | None = None,
 ) -> dict[str, Any]:
+    """Serialize the complete native intake, including its phase evidence chain."""
+    # Capture arrival before waiting: a delayed older invocation must not acquire
+    # a newer timestamp and supersede a later native prompt.
+    intake_observed_ns = time.time_ns()
+    workspace = (workspace or _default_workspace()).resolve()
+    binding = _load_engine(Path(__file__).parent, 'fames_turn_binding.py', 'fames_intake_transaction')
+    identity = hashlib.sha256(f"{surface_id}\0{session_id}".encode("utf-8")).hexdigest()
+    lock_path = workspace / '_registry/fames-turn/intake-locks' / (identity + '.lock')
+    with binding.locked(lock_path, timeout_seconds=15):
+        return _turn_context_unlocked(
+            agent, seat_root, prompt=prompt, surface_id=surface_id, session_id=session_id,
+            adapter_mode=adapter_mode, adapter_path=adapter_path, workspace=workspace,
+            fames_script=fames_script, rule_path=rule_path,
+            runtime_event_observed=runtime_event_observed, activation_evidence=activation_evidence,
+            transcript_path=transcript_path, context_retained=context_retained,
+            native_rebind=native_rebind, intake_observed_ns=intake_observed_ns,
+        )
+
+
+def _turn_context_unlocked(
+    agent: str,
+    seat_root: Path,
+    *,
+    prompt: str,
+    surface_id: str,
+    session_id: str,
+    adapter_mode: str,
+    adapter_path: Path,
+    workspace: Path,
+    fames_script: Path | None = None,
+    rule_path: Path | None = None,
+    runtime_event_observed: bool = False,
+    activation_evidence: str = "direct_probe",
+    transcript_path: str = "",
+    context_retained: bool = False,
+    native_rebind: dict | None = None,
+    intake_observed_ns: int,
+) -> dict[str, Any]:
     """Compile one prompt into a privacy-bounded RB/Ti turn envelope.
 
     `same_turn_context_injection` returns context for adapters such as Claude
     UserPromptSubmit. `always_apply_rule_with_pre_submit_read_back` verifies the
     exact always-applied rule for surfaces whose pre-submit hook cannot inject.
     """
-    intake_observed_ns = time.time_ns()
-    workspace = (workspace or _default_workspace()).resolve()
     script = (fames_script or _default_fames_script(workspace)).resolve()
     prompt_text = prompt if isinstance(prompt, str) else ""
     rc, status, status_diagnostic = _status(script, workspace)
