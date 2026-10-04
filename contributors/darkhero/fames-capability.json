@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "63cfdc168527a280915ef3e1b5da5f7341a9055f6f08aae11182100cf28a90b5",
   "runner_state": "armed",
-  "observed_at": "2026-10-04T16:47:23.506550+00:00",
+  "observed_at": "2026-10-04T17:33:45.064586+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,10 +356,10 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
-        "agent": "_registry",
+        "agent": "ai_workspace",
         "surface": "claude",
-        "observed_at": "2026-10-05T00:45:30+08:00",
-        "receipt_sha256": "11d392cefc6ca7295786776228283b383e88a09bebf372f5ae5572342ab8abe5"
+        "observed_at": "2026-10-05T01:06:50+08:00",
+        "receipt_sha256": "ec5bd8ae9dee94bb6d5fc4ee45f8cb1eefe3331ea26a3831129cb5a95211781c"
       },
       {
         "agent": "ai_zonghe",
