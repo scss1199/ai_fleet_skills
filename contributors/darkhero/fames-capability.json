@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "63cfdc168527a280915ef3e1b5da5f7341a9055f6f08aae11182100cf28a90b5",
   "runner_state": "armed",
-  "observed_at": "2026-10-04T16:03:20.264851+00:00",
+  "observed_at": "2026-10-04T16:47:23.506550+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,10 +356,34 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
+        "agent": "_registry",
+        "surface": "claude",
+        "observed_at": "2026-10-05T00:45:30+08:00",
+        "receipt_sha256": "11d392cefc6ca7295786776228283b383e88a09bebf372f5ae5572342ab8abe5"
+      },
+      {
+        "agent": "ai_zonghe",
+        "surface": "claude",
+        "observed_at": "2026-10-05T00:23:15+08:00",
+        "receipt_sha256": "031f3506a7a1d23e368c4e14ae2128fbca23c8484d3e68325a3484b9d983461e"
+      },
+      {
         "agent": "ai_zonghe",
         "surface": "claude",
         "observed_at": "2026-10-04T23:38:07+08:00",
         "receipt_sha256": "a348eaff3b1059fc717df1a86952162838f7a953bbd2a930caa014670855ff40"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-10-05T00:29:18+08:00",
+        "receipt_sha256": "5eb85f640274e1c0175224c7b93ab93ea99357a70c6ab01ade84ec0a137fe572"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-10-05T00:30:12+08:00",
+        "receipt_sha256": "c31b5b3718da2914dc8c16ad4c2b32661f98e42f503a79f0e5d2d9f6f1612958"
       },
       {
         "agent": "ai_trader",
@@ -370,8 +394,8 @@
       {
         "agent": "jci_taipei",
         "surface": "claude",
-        "observed_at": "2026-10-04T23:45:37+08:00",
-        "receipt_sha256": "fd2e2937c1bb52d6067438f3df4a79b00295232d5bc1e69d813e409734114981"
+        "observed_at": "2026-10-05T00:13:43+08:00",
+        "receipt_sha256": "e5f62284c81507e08bf80a0c541852c9de955b32e37dd41f8ba97f6ab171df6b"
       }
     ],
     "runtime_release_sha256": "cb2b41e06a8d187490afcb7119302e44a73b43d56613a024c6a832f050671f2d"
