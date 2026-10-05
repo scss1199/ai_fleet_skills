@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "63cfdc168527a280915ef3e1b5da5f7341a9055f6f08aae11182100cf28a90b5",
   "runner_state": "armed",
-  "observed_at": "2026-10-05T08:46:22.902758+00:00",
+  "observed_at": "2026-10-05T09:17:16.954032+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -394,8 +394,8 @@
       {
         "agent": "jci_taipei",
         "surface": "claude",
-        "observed_at": "2026-10-05T10:46:05+08:00",
-        "receipt_sha256": "52596b41d182374591b7fd4c6c6f4001f11552eb90d8cd4b9fb5f845ce2c3919"
+        "observed_at": "2026-10-05T17:16:13+08:00",
+        "receipt_sha256": "05b7cdfd7bb946bbf6427dd9e64c1e97c9bac09c357e7fe423f154b41b3a0762"
       }
     ],
     "runtime_release_sha256": "cb2b41e06a8d187490afcb7119302e44a73b43d56613a024c6a832f050671f2d"
