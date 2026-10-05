@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "63cfdc168527a280915ef3e1b5da5f7341a9055f6f08aae11182100cf28a90b5",
   "runner_state": "armed",
-  "observed_at": "2026-10-05T14:45:21.775743+00:00",
+  "observed_at": "2026-10-05T15:15:32.368041+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -376,14 +376,20 @@
       {
         "agent": "ai_workspace",
         "surface": "claude",
-        "observed_at": "2026-10-05T22:24:02+08:00",
-        "receipt_sha256": "b96a9b62f6b0a1051422f23edd2356193143946f53d34d6228dd5b4a92425eed"
+        "observed_at": "2026-10-05T22:51:56+08:00",
+        "receipt_sha256": "1be1d8128a5901063b624ab1a7b57962a10471f562f3a505deef8126cabceaeb"
       },
       {
         "agent": "ai_zonghe",
         "surface": "claude",
         "observed_at": "2026-10-04T23:38:07+08:00",
         "receipt_sha256": "a348eaff3b1059fc717df1a86952162838f7a953bbd2a930caa014670855ff40"
+      },
+      {
+        "agent": "ai_metadata",
+        "surface": "claude",
+        "observed_at": "2026-10-05T23:01:17+08:00",
+        "receipt_sha256": "9fa5d5e6abb103a7d78f9c56bd8e669da0b2ffa74856f9f94e51ac56de9e77fb"
       },
       {
         "agent": "ai_darkhero",
@@ -398,16 +404,22 @@
         "receipt_sha256": "c31b5b3718da2914dc8c16ad4c2b32661f98e42f503a79f0e5d2d9f6f1612958"
       },
       {
+        "agent": "app",
+        "surface": "claude",
+        "observed_at": "2026-10-05T23:13:25+08:00",
+        "receipt_sha256": "c164647bb71444de24cf5681a6b82f7d7f6038020fe18e433a22aaefa9cb7da9"
+      },
+      {
         "agent": "ai_zonghe",
         "surface": "claude",
         "observed_at": "2026-10-05T11:55:33+08:00",
         "receipt_sha256": "4e7339f9c33af1834dba7c91632144cafdd383e807d9ab9c4a7311d5bda6fdc6"
       },
       {
-        "agent": "jci_taipei",
+        "agent": "jci_taipei_website",
         "surface": "claude",
-        "observed_at": "2026-10-05T22:40:33+08:00",
-        "receipt_sha256": "5c985724853d2339f619c206abe37422845b6f69ff62dd7510a829a99cd7ce18"
+        "observed_at": "2026-10-05T23:15:01+08:00",
+        "receipt_sha256": "64ac99fdb79d075864362750d59d2840d0b0ff43462adccf5f6d8d744471e3ae"
       }
     ],
     "runtime_release_sha256": "cb2b41e06a8d187490afcb7119302e44a73b43d56613a024c6a832f050671f2d"
