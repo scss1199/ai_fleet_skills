@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "63cfdc168527a280915ef3e1b5da5f7341a9055f6f08aae11182100cf28a90b5",
   "runner_state": "armed",
-  "observed_at": "2026-10-06T15:47:13.530999+00:00",
+  "observed_at": "2026-10-06T16:18:33.862084+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -374,10 +374,10 @@
         "receipt_sha256": "bca11b69c134cab42403bc696cb099cd7553756c320534a178f27b0779f74184"
       },
       {
-        "agent": "ai_darkhero",
+        "agent": "ai_workspace",
         "surface": "claude",
-        "observed_at": "2026-10-06T23:45:44+08:00",
-        "receipt_sha256": "a6bbd228e825ba6b9538c9edcd2e00e34e45aa024b2c856e6aeda50381670dcd"
+        "observed_at": "2026-10-07T00:07:35+08:00",
+        "receipt_sha256": "6d4243f43883c5fc5e8a40f39944f755822aca05991b01e4e4de878ed2441f07"
       },
       {
         "agent": "ai_metadata",
@@ -388,14 +388,14 @@
       {
         "agent": "ai_ziyaoastro",
         "surface": "claude",
-        "observed_at": "2026-10-06T23:17:04+08:00",
-        "receipt_sha256": "939c1a1e05937b6bd6b1c04aed6281ab10720d1d442b73ced02461649ea8b183"
+        "observed_at": "2026-10-06T23:54:50+08:00",
+        "receipt_sha256": "e4a74dd1b3fb7c8dabcb9cc31227700330894e3d864ae5a72cbd5d0143849c36"
       },
       {
         "agent": "jci_taipei_website",
         "surface": "claude",
         "observed_at": "2026-10-06T09:55:37+08:00",
-        "receipt_sha256": "fb03a33ee4de286b4a78045ea1cc390d7650cf9b483ed8a1a92b88c7d0b2a22c"
+        "receipt_sha256": "663464e6ac329745ed9b78c7f2be852e1c32cc9e4e50ab336fd32d5636b6bc87"
       }
     ],
     "runtime_release_sha256": "cb2b41e06a8d187490afcb7119302e44a73b43d56613a024c6a832f050671f2d"
