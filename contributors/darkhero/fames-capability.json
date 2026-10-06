@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "63cfdc168527a280915ef3e1b5da5f7341a9055f6f08aae11182100cf28a90b5",
   "runner_state": "armed",
-  "observed_at": "2026-10-06T05:02:11.579155+00:00",
+  "observed_at": "2026-10-06T05:47:10.783258+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -376,14 +376,14 @@
       {
         "agent": "ai_metadata",
         "surface": "claude",
-        "observed_at": "2026-10-06T09:54:58+08:00",
-        "receipt_sha256": "aedb078ad2a7381b4f3236dc5e6966b3f6adb2530be605a353cf48aeddef5bd3"
+        "observed_at": "2026-10-06T13:15:11+08:00",
+        "receipt_sha256": "85eeae859384c513bad3a519a715ed8890b89ecfa74b6c12e6835a8ddde27a15"
       },
       {
         "agent": "ai_ziyaoastro",
         "surface": "claude",
-        "observed_at": "2026-10-06T12:48:41+08:00",
-        "receipt_sha256": "d4ff2b0c509aed3636775107967f2f421b098b92a670339f707d30c89c8223fc"
+        "observed_at": "2026-10-06T13:30:43+08:00",
+        "receipt_sha256": "fbd82dc9a6d89c8228087f7c184c6a336df979bcda491580a653427009a99686"
       },
       {
         "agent": "jci_taipei_website",
