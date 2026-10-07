@@ -10,6 +10,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -145,7 +146,11 @@ def call_prompt_hook(doc: dict) -> dict:
 
 
 def protected_operation(doc: dict) -> str | None:
-    """Deny direct policy edits and known bypass launches; not shell semantics."""
+    """Deny direct policy edits and known bypass launches; not shell semantics.
+
+    File tools (Write/Edit/NotebookEdit) are judged by the path they write to; content that merely names a guarded
+    folder is not a write there (round-16 P9, audit H2). Command tools are judged by their command text, prompt
+    tools (Agent/SendMessage and the like) by their whole input; the bypass keywords apply to command text only."""
     name=str(doc.get('tool_name') or '')
     data=doc.get('tool_input')
     if not isinstance(data,dict):
@@ -158,19 +163,35 @@ def protected_operation(doc: dict) -> str | None:
         HUB/'_lean/fames',HUB/'_registry/fames-enforcement.json',
         Path.home()/'.claude/hooks',Path.home()/'.claude/settings.json',
     )]
-    text=re.sub(r'/+', '/', json.dumps(data,ensure_ascii=False).replace('\\\\','/').replace('\\','/').casefold())
-    bypass=re.search(r'(?i)--bare\b|claude_code_simple|disableallhooks|(?:hkey_current_user|hkcu|hkey_local_machine|hklm).{0,40}software.{0,4}policies.{0,4}claudecode|install_fames_enforcement\.py',text)
-    if bypass:
-        return 'managed_policy_or_known_bypass'
+    guarded=re.compile(r'(?i)(?:\.\./|\.\./\.\./)?_harness/runtime|_skill/(?:fleet-skills/(?:fames|token-preflight)|engines/claude-claim-integrity-hook)|(?:~/|\.claude/)?hooks/fames_managed|fames_managed_(?:gate|manifest)')
+    def norm(value):
+        return re.sub(r'/+', '/', str(value).replace(chr(92)+chr(92),'/').replace(chr(92),'/').casefold())
+    def names_guarded(value):
+        return any(path in value for path in critical) or bool(guarded.search(value))
     mutating=bool(re.search(r'(?i)write|edit|patch|delete|remove|move|rename',name))
     command=str(data.get('command') or data.get('cmd') or '')
+    text=norm(json.dumps(data,ensure_ascii=False))
+    target=data.get('file_path') or data.get('notebook_path')
+    if isinstance(target,str) and target and not command and re.search(r'(?i)write|edit',name):
+        # judged by where it writes: a relative target resolves against the hook's cwd, dot segments collapse
+        # (round-17 review R5); the bypass keywords are still refused inside written content (round-17 review R1)
+        if re.search(r'(?i)--bare\b|claude_code_simple|disableallhooks|(?:hkey_current_user|hkcu|hkey_local_machine|hklm).{0,40}software.{0,4}policies.{0,4}claudecode|install_fames_enforcement\.py',text):
+            return 'managed_policy_or_known_bypass'
+        base=str(doc.get('cwd') or '')
+        resolved=target if os.path.isabs(target) or not base else os.path.join(base,target)
+        forms=[os.path.normpath(resolved)]
+        try:
+            forms.append(os.path.realpath(resolved))  # junctions and symlinks land on their real folder
+        except (OSError, ValueError):
+            pass
+        return 'trusted_dependency_write' if any(names_guarded(norm(f)) for f in forms) else None
+    if command and re.search(r'(?i)--bare\b|claude_code_simple|disableallhooks|(?:hkey_current_user|hkcu|hkey_local_machine|hklm).{0,40}software.{0,4}policies.{0,4}claudecode|install_fames_enforcement\.py',norm(command)):
+        return 'managed_policy_or_known_bypass'
     if command:
         mutating=mutating or bool(re.search(r'(?i)>|\bset-content\b|\badd-content\b|\bout-file\b|\bmove-item\b|\bcopy-item\b|\brename-item\b|\breg\s+(add|delete|import|restore)\b|write_text|write_bytes|writefile|\bopen\s*\(|\b(?:rm|mv|cp|tee)\b',command))
     # Unknown tool aliases and code/payload fields must not turn protected
     # operations into implicit permission. Explicit read tools returned above.
-    if any(path in text for path in critical):
-        return 'trusted_dependency_write' if mutating else 'trusted_dependency_unclassified_operation'
-    if re.search(r'(?i)(?:\.\./|\.\./\.\./)?_harness/runtime|_skill/(?:fleet-skills/(?:fames|token-preflight)|engines/claude-claim-integrity-hook)|(?:~/|\.claude/)?hooks/fames_managed|fames_managed_(?:gate|manifest)',text):
+    if names_guarded(text):
         return 'trusted_dependency_write' if mutating else 'trusted_dependency_unclassified_operation'
     return None
 
@@ -222,17 +243,22 @@ def complete_declared_turn(phase_runtime, turn: dict, turn_path: Path, parent: d
                '--result', str(result), '--closure', str(closure)]
     if residual.is_file():
         command += ['--residual', str(residual)]
+    started = time.monotonic()
     try:
-        subprocess.run(command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                       timeout=budget, cwd=str(HUB), creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+        child = subprocess.run(command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                               timeout=budget, cwd=str(HUB), creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
     except subprocess.TimeoutExpired:
         return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': 'declared_completion_timeout'}
     except Exception as exc:  # noqa: BLE001 - fail closed
         return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': 'declared_completion_' + type(exc).__name__}
     try:
-        return phase_runtime.completion_status(HUB, turn)
+        phase = phase_runtime.completion_status(HUB, turn)
     except Exception as exc:  # noqa: BLE001 - fail closed, and keep the folder hint in the denial
         return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': 'declared_completion_' + type(exc).__name__}
+    if isinstance(phase, dict):  # observability only; admission comes from completion_status (round-16 P9b)
+        phase['declared_completion_seconds'] = round(time.monotonic() - started, 2)
+        phase['declared_completion_exit'] = getattr(child, 'returncode', None)
+    return phase
 
 
 def recover_turn(doc: dict, module, lifecycle: dict) -> tuple[dict, str]:

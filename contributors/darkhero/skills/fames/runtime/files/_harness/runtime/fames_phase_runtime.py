@@ -247,10 +247,75 @@ def complete_turn(workspace, turn, result, closure, residual=None):
     with phase_transaction(workspace, turn):
         return _complete_turn_unlocked(Path(workspace), turn, result, closure, residual)
 
+RECEIPT_MAX_AGE_S = 86400
+
+def mechanical_receipt_anchor(workspace, result_path, turn=None):
+    """A seat writes result.json itself; this is the one part of it that another program must have produced.
+
+    At least one evidence_ref must be a receipt the receipt engine minted by RUNNING a command: under
+    _registry/fames-evidence/receipts, bytes equal to the ref's sha256, JSON with state PASS, ok true, exit_status 0,
+    a non-empty commands list, validator_identity naming fames-receipt.py, generated within 24 h AND not before
+    this turn's intake (a receipt from an earlier turn, another goal or another seat does not bind this completion;
+    round-17 review R2). Anything else is a seat-authored assertion and gets no completion (round-16 P8, audit H1)."""
+    try:
+        result = json.loads(Path(result_path).read_text(encoding='utf-8-sig'))
+    except (OSError, ValueError):
+        return {'ok': False, 'reason': 'result_unreadable'}
+    receipts_root = (Path(workspace) / '_registry/fames-evidence/receipts').resolve()
+    now = dt.datetime.now(dt.timezone.utc).timestamp()
+    not_before = -1.0
+    if isinstance(turn, dict):
+        try:
+            not_before = dt.datetime.fromisoformat(str(turn.get('generated')).replace('Z', '+00:00')).timestamp() - 5
+        except (ValueError, TypeError):
+            return {'ok': False, 'reason': 'turn_intake_time_unreadable'}
+    reasons = []
+    refs = result.get('evidence_refs') if isinstance(result, dict) else None
+    for item in (refs if isinstance(refs, list) else []):
+        try:
+            path = Path(item['path']).resolve()
+            path.relative_to(receipts_root)
+            raw = path.read_bytes()
+            if sha(raw) != item.get('sha256'):
+                reasons.append('ref_sha_mismatch')
+                continue
+            doc = json.loads(raw.decode('utf-8-sig'))
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            reasons.append('ref_not_a_registry_receipt')
+            continue
+        validator = str(doc.get('validator_identity') or '').replace(chr(92), '/').lower()
+        if not validator.endswith('/fames-receipt.py'):
+            reasons.append('not_minted_by_receipt_engine')
+            continue
+        if doc.get('state') != 'PASS' or doc.get('ok') is not True or doc.get('exit_status') != 0:
+            reasons.append('receipt_not_pass')
+            continue
+        if not isinstance(doc.get('commands'), list) or not doc['commands']:
+            reasons.append('receipt_without_commands')
+            continue
+        generated = doc.get('generated_at')
+        if not isinstance(generated, (int, float)) or isinstance(generated, bool):  # engine epoch; ISO fallback (round-17 N4)
+            try:
+                generated = dt.datetime.fromisoformat(str(doc.get('generated_at_iso')).replace('Z', '+00:00')).timestamp()
+            except (ValueError, TypeError):
+                generated = None
+        if generated is None or not (-5 <= now - generated <= RECEIPT_MAX_AGE_S):
+            reasons.append('receipt_stale')
+            continue
+        if generated < not_before:
+            reasons.append('receipt_before_turn_intake')
+            continue
+        return {'ok': True, 'receipt': str(path)}
+    return {'ok': False, 'reason': ','.join(sorted(set(reasons))) or 'no_receipt_ref'}
+
 def _complete_turn_unlocked(workspace, turn, result, closure, residual):
-    begin = _begin_turn_unlocked(workspace, turn)
-    goal = begin['goal_identity']
+    goal = goal_identity(turn)
     folder = workspace/'_registry/fames-phase'/goal
+    anchor = mechanical_receipt_anchor(workspace, result, turn)
+    if not anchor.get('ok'):
+        return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': 'result_without_mechanical_receipt',
+                'detail': anchor.get('reason'), 'path': str(folder)}
+    begin = _begin_turn_unlocked(workspace, turn)
     if begin['state'] != 'PASS':
         return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': begin.get('reason', 'intake_phase_not_pass'),
                 'phases': {p:g['state'] for p,g in begin['guards'].items()}, 'path': str(folder)}
