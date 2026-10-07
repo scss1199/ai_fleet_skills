@@ -47,6 +47,12 @@ CANON = os.path.join(HUB, "_skill", "fleet-skills")
 SKILL_EXTRAS = ("reference.md", "oauth-verify-ledger.md")
 FLAGS = 0x08000000 if os.name == "nt" else 0
 TEXT_SUFFIXES = {".json", ".md", ".py", ".ps1", ".txt", ".yaml", ".yml"}
+# Tool caches are never skill content. pytest also drops a "*" .gitignore inside its cache,
+# so listing those files published a manifest that 404'd on every follower (2026-09-26..10-03).
+SKIP_DIRS = {"__pycache__", ".git", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".hypothesis",
+             ".tox", ".venv", "node_modules"}
+# A crashed git leaves .git/index.lock behind and every later commit fails; one sat for 7 days.
+STALE_INDEX_LOCK_S = 1800
 
 
 def _iso() -> str:
@@ -72,8 +78,18 @@ def _load_state(proto: dict) -> dict:
 def _save_state(proto: dict, state: dict) -> str:
     p = _state_path(proto)
     os.makedirs(os.path.dirname(p), exist_ok=True)
-    Path(p).write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
-    return p
+    # Stage and swap: a crash mid-write must not leave a truncated state file that breaks every tick.
+    stage = f"{p}.{os.getpid()}.tmp"
+    Path(stage).write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+    deadline = time.monotonic() + 2
+    while True:
+        try:
+            os.replace(stage, p)
+            return p
+        except PermissionError:  # a reader (the gate watch) holding the file for a moment
+            if time.monotonic() >= deadline:
+                raise
+            time.sleep(0.05)
 
 
 def _sha16_file(path: str) -> str:
@@ -220,27 +236,42 @@ def _skill_names(reg: dict) -> list[str]:
     return names
 
 
-def _copy_skill(src_name: str, src_base: str, dest_base: str) -> dict:
+def _copy_skill(src_name: str, src_base: str, dest_base: str, repo: str | None = None) -> dict:
     src_dir = os.path.join(src_base, src_name)
     dest_dir = os.path.join(dest_base, "skills", src_name)
     src_md = os.path.join(src_dir, "SKILL.md")
     if not os.path.isfile(src_md):
         return {"name": src_name, "ok": False, "error": "missing SKILL.md"}
     os.makedirs(dest_dir, exist_ok=True)
-    copied: list[str] = []
-    files: dict[str, str] = {}
+    sources: list[tuple[str, str]] = []
     for walk_root, dirs, filenames in os.walk(src_dir):
-        dirs[:] = sorted(d for d in dirs if d not in {"__pycache__", ".git"})
+        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
         for filename in sorted(filenames):
             if filename.endswith((".pyc", ".pyo")):
                 continue
             source = os.path.join(walk_root, filename)
-            rel = os.path.relpath(source, src_dir).replace("\\", "/")
-            target = os.path.join(dest_dir, *rel.split("/"))
-            os.makedirs(os.path.dirname(target), exist_ok=True)
-            shutil.copy2(source, target)
-            copied.append(rel)
-            files[rel] = _sha256_file(target)
+            sources.append((os.path.relpath(source, src_dir).replace("\\", "/"), source))
+
+    copied: list[str] = []
+    for rel, source in sources:
+        target = os.path.join(dest_dir, *rel.split("/"))
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        shutil.copy2(source, target)
+        copied.append(rel)
+
+    def repo_rel(rel: str) -> str:
+        return os.path.relpath(os.path.join(dest_dir, *rel.split("/")), repo).replace("\\", "/")
+
+    # Publish only what git will commit: a git-ignored file in the manifest is a 404 for followers.
+    # Asked after copying, so the skill's own .gitignore files (e.g. htmlcov/.gitignore "*") count too;
+    # ignored copies stay behind as untracked files and never reach the remote.
+    try:
+        ignored = _git_ignored(repo, [repo_rel(rel) for rel in copied]) if repo else set()
+    except RuntimeError as exc:
+        return {"name": src_name, "ok": False, "error": str(exc)}
+    skipped = [rel for rel in copied if repo and repo_rel(rel) in ignored]
+    files: dict[str, str] = {rel: _sha256_file(os.path.join(dest_dir, *rel.split("/")))
+                             for rel in copied if rel not in skipped}
     package_sha = hashlib.sha256(
         json.dumps(files, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
@@ -249,13 +280,15 @@ def _copy_skill(src_name: str, src_base: str, dest_base: str) -> dict:
         try:
             bundle = json.loads(Path(bundle_manifest).read_text(encoding="utf-8-sig"))
             for rel, expected_sha in (bundle.get("files") or {}).items():
+                if rel in skipped:
+                    raise ValueError(f"bundle declares a git-ignored file: {rel}")
                 if files.get(rel) != expected_sha:
                     raise ValueError(f"bundle hash mismatch: {rel}")
             if bundle.get("package_sha"):
                 package_sha = str(bundle["package_sha"])
         except (OSError, json.JSONDecodeError, ValueError) as exc:
             return {"name": src_name, "ok": False, "error": str(exc)}
-    return {
+    row = {
         "name": src_name,
         "ok": True,
         "sha": _sha16_file(os.path.join(dest_dir, "SKILL.md")),
@@ -263,6 +296,9 @@ def _copy_skill(src_name: str, src_base: str, dest_base: str) -> dict:
         "files": files,
         "copied": copied,
     }
+    if skipped:
+        row["git_ignored_skipped"] = skipped
+    return row
 
 
 def _mirror_skill_dir(src_skill_dir: str, dest_skill_dir: str) -> bool:
@@ -271,7 +307,7 @@ def _mirror_skill_dir(src_skill_dir: str, dest_skill_dir: str) -> bool:
         return False
     os.makedirs(dest_skill_dir, exist_ok=True)
     for walk_root, dirs, filenames in os.walk(src_skill_dir):
-        dirs[:] = [d for d in dirs if d not in {"__pycache__", ".git"}]
+        dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
         rel_dir = os.path.relpath(walk_root, src_skill_dir)
         out_dir = dest_skill_dir if rel_dir == "." else os.path.join(dest_skill_dir, rel_dir)
         os.makedirs(out_dir, exist_ok=True)
@@ -327,8 +363,9 @@ def cmd_export(node_name: str, node: dict, *, quiet: bool = False) -> dict:
 
     rows = []
     manifest_skills = []
+    repo = _repo_root(node, proto)
     for name in _skill_names(reg):
-        row = _copy_skill(name, canon, export)
+        row = _copy_skill(name, canon, export, repo=repo)
         rows.append(row)
         if row.get("ok"):
             meta = next((c for c in reg.get("canonical", []) if c.get("name") == name), {})
@@ -414,10 +451,17 @@ def cmd_export(node_name: str, node: dict, *, quiet: bool = False) -> dict:
     return report
 
 
+class _Stdin(str):
+    """A `_git` argument that is written to git's standard input, never put on its command line (it rides in
+    `args` so that anything wrapping `_git(args, cwd)` passes it through unchanged)."""
+
+
 def _git(args: list[str], cwd: str) -> subprocess.CompletedProcess:
+    stdin = "".join(a for a in args if isinstance(a, _Stdin))
     return subprocess.run(
-        ["git"] + args,
+        ["git"] + [a for a in args if not isinstance(a, _Stdin)],
         cwd=cwd,
+        input=stdin or None,
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -426,7 +470,320 @@ def _git(args: list[str], cwd: str) -> subprocess.CompletedProcess:
     )
 
 
-def _fast_forward(repo: str) -> tuple[bool, str]:
+def _git_ignored(repo: str, paths: list[str]) -> set[str]:
+    """Repo-relative paths git would leave out of a commit (ignored and untracked)."""
+    if not paths:
+        return set()
+    proc = subprocess.run(
+        ["git", "check-ignore", "-z", "--stdin"],
+        cwd=repo,
+        input="\0".join(paths) + "\0",
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        creationflags=FLAGS,
+    )
+    if proc.returncode not in (0, 1):  # 1 = nothing ignored
+        raise RuntimeError("git check-ignore failed: " + ((proc.stderr or proc.stdout) or "")[-300:])
+    return {p for p in proc.stdout.split("\0") if p}
+
+
+def _git_running() -> bool:
+    """Any git process alive; an unknown answer counts as alive."""
+    try:
+        if os.name == "nt":
+            # Bytes, not text: tasklist answers in the console code page (cp950 here), which a
+            # UTF-8-mode Python cannot decode.
+            out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq git.exe", "/FO", "CSV", "/NH"],
+                                 capture_output=True, creationflags=FLAGS, timeout=30).stdout or b""
+            return b"git.exe" in out.lower()
+        return subprocess.run(["pgrep", "-x", "git"], capture_output=True, timeout=30).returncode == 0
+    except Exception:  # noqa: BLE001 - unknown means "maybe alive"; the lock is then left alone
+        return True
+
+
+def _clear_stale_index_lock(repo: str) -> dict:
+    """Move (never delete) an abandoned index.lock into _delete so commits can resume."""
+    lock = os.path.join(repo, ".git", "index.lock")
+    if not os.path.isfile(lock):
+        return {"index_lock": "absent"}
+    age = int(time.time() - os.path.getmtime(lock))
+    if age < STALE_INDEX_LOCK_S or _git_running():
+        return {"index_lock": "busy", "index_lock_age_s": age}
+    now = datetime.now()
+    dest_dir = os.path.join(HUB, "_delete", now.strftime("%Y-%m-%d") + "-stale-git-index-lock")
+    dest = os.path.join(dest_dir, now.strftime("%H%M%S") + f"-{os.getpid()}-index.lock")
+    try:
+        os.makedirs(dest_dir, exist_ok=True)
+        os.replace(lock, dest)
+    except OSError as exc:  # e.g. clone and hub on different drives: leave the lock, report it
+        return {"index_lock": "busy", "index_lock_age_s": age, "index_lock_error": type(exc).__name__}
+    moved = {"index_lock": "moved_stale", "index_lock_age_s": age, "index_lock_moved_to": dest}
+    try:
+        with open(os.path.join(dest_dir, "MANIFEST.md"), "a", encoding="utf-8") as fh:
+            fh.write(f"- {_iso()} moved {lock} (age {age} s, no git process) -> {os.path.basename(dest)}\n")
+    except OSError as exc:  # the lock is already out of the way; a missing log line must not stop the tick
+        moved["index_lock_manifest_error"] = type(exc).__name__
+    return moved
+
+
+def _ahead(repo: str, remote: str) -> int:
+    """Local commits not on the remote branch; unknown counts as one so a push is attempted."""
+    proc = _git(["rev-list", "--count", f"{remote}..HEAD"], repo)
+    try:
+        return int(proc.stdout.strip()) if proc.returncode == 0 else 1
+    except ValueError:
+        return 1
+
+
+def _merge_in_progress(repo: str) -> bool:
+    return _git(["rev-parse", "-q", "--verify", "MERGE_HEAD"], repo).returncode == 0
+
+
+SHA40 = re.compile(r"[0-9a-f]{40}")
+
+
+def _resolve(repo: str, rev: str) -> str:
+    """The commit sha `rev` names right now, or "" when git cannot tell."""
+    sha = _git(["rev-parse", "-q", "--verify", rev + "^{commit}"], repo).stdout.strip()
+    return sha if SHA40.fullmatch(sha) else ""
+
+
+def _outside(paths: list[str], allowed: tuple[str, ...]) -> list[str]:
+    prefixes = tuple(p.strip("/") + "/" for p in allowed)
+    return [p for p in paths if p and not p.startswith(prefixes)]
+
+
+def _foreign_change(repo: str, base: str, target: str, allowed: tuple[str, ...]) -> dict | None:
+    """Paths outside the allowed prefixes whose content differs between commit `base` and `target`.
+
+    `target` is the commit about to be pushed (it contains base) or an exact merge result (a tree), so this
+    is what publishing it would change in the remote tree: reverts, deletions and resurrections by merges
+    that keep one parent's version of a path (`-s ours`, a hand-picked side, plumbing) included, which a
+    merge's own diff never shows. Raises when git cannot tell.
+    """
+    net = _git(["diff", "--name-only", "--no-renames", "-z", base, target], repo)
+    if net.returncode != 0:
+        raise RuntimeError("cannot diff the push against the remote: " + ((net.stderr or "").strip()[-200:]))
+    outside = _outside(net.stdout.split("\x00"), allowed)
+    return {"kind": "net", "sha": target, "paths": outside[:3]} if outside else None
+
+
+def _foreign_commit(repo: str, base: str, head: str, allowed: tuple[str, ...]) -> dict | None:
+    """The first commit in base..head (two shas) that touches a path outside the allowed prefixes.
+
+    The publisher commits only under its export dir (plus a node's declared push_paths). Anything else
+    on its way out is history the remote does not have: commits a force push purged (a leaked file) that
+    this clone still holds, or another process's unpublished commit. Stateless on purpose. Every commit
+    counts, so a file added and later removed still does; `--no-renames` makes a move delete + add; `--cc`
+    lists what a merge adds itself. -z keeps paths with spaces, non-ASCII or control characters unquoted.
+    Only shas are formatted, every record must start with one, and together they must be exactly
+    `git rev-list base..head` (a path holding a record separator cannot forge one). Raises when it cannot
+    tell.
+    """
+    listed = _git(["-c", "log.showRoot=true", "-c", "log.showSignature=false", "log", "-z", "--name-only",
+                   "--no-renames", "--cc", "--format=%x01%H", f"{base}..{head}"], repo)
+    expected = _git(["rev-list", f"{base}..{head}"], repo)
+    if listed.returncode != 0 or expected.returncode != 0:
+        raise RuntimeError("cannot list the commits to push: "
+                           + ((listed.stderr or expected.stderr or "").strip()[-200:]))
+    records = listed.stdout.split("\x01")
+    if records[0]:
+        raise RuntimeError("cannot parse the list of commits to push")
+    shas, found = [], None
+    for record in records[1:]:
+        sha, sep, names = record.partition("\x00")
+        if not sep or not SHA40.fullmatch(sha):
+            raise RuntimeError("cannot parse the list of commits to push")
+        shas.append(sha)
+        paths = names.split("\x00")
+        if paths[0].startswith("\n"):  # git puts one newline between the sha and a commit's first path
+            paths[0] = paths[0][1:]
+        outside = _outside(paths, allowed)
+        if outside and found is None:
+            found = {"kind": "commit", "sha": sha, "paths": outside[:3]}
+    if sorted(shas) != sorted(expected.stdout.split()):
+        raise RuntimeError("cannot parse the list of commits to push")
+    if found:
+        found["subject"] = _git(["log", "-1", "--format=%s", found["sha"]], repo).stdout.strip()
+    return found
+
+
+def _foreign_refusal(foreign: dict, allowed: tuple[str, ...]) -> str:
+    where = f"outside {', '.join(allowed)}"
+    if foreign.get("kind") == "net":
+        return (f"refusing to publish: it would change {', '.join(foreign['paths'])} {where} on the remote "
+                "(a merge or reset in the shared clone reverts, deletes or resurrects them). Resync the clone "
+                "to the remote by hand, or push that change by hand if it is intended.")
+    return (f"refusing to publish {foreign['sha'][:12]} ({foreign.get('subject', '')[:60]}): it touches "
+            f"{', '.join(foreign['paths'])} {where} and the remote does not have it. A force push purged it "
+            "(resync the clone to the remote by hand) or another process committed it (push or drop it by "
+            "hand first).")
+
+
+def _merge_remote(repo: str, remote: str, allowed: tuple[str, ...]) -> tuple[bool, str]:
+    """Join the remote branch when fast-forward is impossible (commits left behind by a failed push).
+
+    The merge is computed to the side (`git merge-tree --write-tree`, git 2.38 or newer) and checked before
+    anything moves: the exact merged tree against the remote tip (what the push will change there) and
+    every commit of ours. The merge commit is made with `commit-tree` on the checked HEAD and remote tip
+    (signed when commit.gpgSign is set). `read-tree -m -u` then carries the index and working tree from
+    head to the merge (after an index refresh, so a file rewritten with the same bytes is not a change),
+    refusing when a file with uncommitted changes is in the way; the branch has not moved yet. Last, one
+    `update-ref --stdin` transaction moves the branch to the merge only if the branch is still at head and
+    the remote-tracking ref still at the checked remote tip (refused, and nothing moves, if anyone moved
+    either, even back to an ancestor: a resync, or a fetch after a force push purged that tip), and if that
+    is refused the index and working tree are carried from the merge to whatever HEAD is now. After the
+    move the index must equal the merge; when it does not (a stash, a reset or a path checkout during the
+    join, or a change staged before it on a path the merge leaves alone), that is reported as an error and
+    nothing else is touched. So no unchecked commit is ever merged and nothing is stashed or reset.
+    Residual: a write failing halfway (a file held open on Windows) leaves part of the
+    merge in the working tree, as `git merge` would. A clone that already contains the remote tip has
+    nothing to join; a clone behind it is fast-forwarded (autostash off). Refused outright while someone
+    else's merge is in progress, and while the clone holds a commit the guard refuses: a merge would make
+    it a fast-forward of the remote, and any plain `push HEAD` from it (the FAMES capability attestation
+    pushes that way) would then send it out.
+    """
+    if _merge_in_progress(repo):
+        return False, "a merge is already in progress in the shared clone; finish or abort it by hand"
+    head, seen = _resolve(repo, "HEAD"), _resolve(repo, remote)
+    if not head or not seen:
+        return False, f"cannot resolve HEAD or {remote} in the shared clone"
+    if _git(["merge-base", "--is-ancestor", seen, head], repo).returncode == 0:
+        return True, ""  # nothing to join; the push guard reads what is ours
+    if _git(["merge-base", "--is-ancestor", head, seen], repo).returncode == 0:
+        ff = _git(["-c", "merge.autoStash=false", "merge", "--ff-only", seen], repo)
+        return (True, "") if ff.returncode == 0 else (False, ((ff.stderr or ff.stdout) or "fast-forward failed")[-500:])
+    merged = _git(["merge-tree", "--write-tree", head, seen], repo)
+    tree = (merged.stdout or "").split("\n", 1)[0].strip()
+    if merged.returncode == 1:
+        return False, f"joining {remote} would conflict; resolve it in the shared clone by hand"
+    if merged.returncode != 0 or not SHA40.fullmatch(tree):
+        err = ((merged.stderr or merged.stdout) or "").strip()
+        if "unrelated histories" in err:
+            return False, f"{remote} shares no history with the shared clone (rewritten?); resync the clone by hand"
+        if "usage:" in err or "unknown option" in err:
+            return False, "joining a diverged remote needs git 2.38 or newer (git merge-tree --write-tree)"
+        return False, f"cannot compute the merge with {remote}: " + err[-200:]
+    try:
+        foreign = _foreign_change(repo, seen, tree, allowed) or _foreign_commit(repo, seen, head, allowed)
+    except RuntimeError as exc:
+        return False, str(exc)
+    if foreign:
+        return False, _foreign_refusal(foreign, allowed)
+    branch_ref = _git(["symbolic-ref", "-q", "HEAD"], repo).stdout.strip()
+    if not branch_ref.startswith("refs/heads/"):
+        return False, f"the shared clone is not on a branch; not joining {remote}"
+    tracking_ref = _git(["rev-parse", "--symbolic-full-name", remote], repo).stdout.strip()
+    if not tracking_ref.startswith("refs/"):  # empty when the name is ambiguous
+        return False, f"cannot tell which ref {remote} names in the shared clone; not joining it"
+    branch = remote.split("/", 1)[-1]
+    sign = ["-S"] if _git(["config", "--bool", "commit.gpgSign"], repo).stdout.strip() == "true" else []
+    made = _git(["commit-tree", *sign, tree, "-p", head, "-p", seen, "-m", f"Merge {remote} into {branch}"], repo)
+    merge_commit = (made.stdout or "").strip()
+    if made.returncode != 0 or not SHA40.fullmatch(merge_commit):
+        return False, "cannot create the merge commit: " + ((made.stderr or "").strip()[-200:])
+    _git(["update-index", "-q", "--refresh"], repo)  # its exit code only says that some file differs
+    synced = _git(["read-tree", "-m", "-u", head, merge_commit], repo)
+    if synced.returncode != 0:
+        return False, (f"not joining {remote}: git would not carry the working tree to the merge (a file with "
+                       "uncommitted changes in the way?): " + ((synced.stderr or synced.stdout) or "").strip()[-200:])
+    # One atomic transaction (-z: a text-mode pipe on Windows would turn LF into CRLF): nothing moves unless
+    # the branch is still at head and the tracking ref still at seen.
+    moved = _git(["update-ref", "-m", f"fleet skill publisher: join {remote}", "-z", "--stdin",
+                  _Stdin(f"verify {tracking_ref}\0{seen}\0update {branch_ref}\0{merge_commit}\0{head}\0")], repo)
+    if moved.returncode == 0:
+        if _git(["diff-index", "--cached", "--quiet", merge_commit], repo).returncode == 0:
+            return True, ""
+        return False, (f"joined {remote}, but the index of the shared clone does not match the merge "
+                       f"{merge_commit[:12]}: something changed it during the join (or a change was staged before "
+                       "it); check `git status` in the shared clone by hand before anything commits from it")
+    now = _resolve(repo, "HEAD")
+    back = _git(["read-tree", "-m", "-u", merge_commit, now], repo) if now else None
+    state = ("index and working tree put back on HEAD" if back is not None and back.returncode == 0 else
+             "index and working tree NOT put back, resync the shared clone by hand: "
+             + (((back.stderr or "") if back is not None else "HEAD unreadable").strip()[-120:]))
+    gone = [name for name, ref, was in (("the branch", branch_ref, head), (remote, tracking_ref, seen))
+            if _resolve(repo, ref) != was]
+    why = (" and ".join(gone) + " moved during the join") if gone else "git refused to move the branch"
+    # The state goes last: a recorded error keeps only its last 300 characters.
+    return False, (f"not joining {remote} (" + ((moved.stderr or moved.stdout) or "").strip()[-160:]
+                   + f"): {why}; {state}")
+
+
+def _guarded_push(repo: str, remote: str, allowed: tuple[str, ...]) -> dict:
+    """Push exactly the commits the guard read.
+
+    Returns {"pushed", "tip", "retry", "text"}: tip is the commit the remote branch is known to be at
+    afterwards ("" when unknown), retry means a fetch and a join may let a second attempt through. HEAD and
+    the remote tip are resolved once. The guard reads seen..head, the push sends head (a sha, not HEAD)
+    with a lease on seen, and head must contain seen, so the push is a fast-forward of exactly the checked
+    commits: a fetch, a purge, another push or a reset landing in between cannot change what goes out or
+    overwrite the remote. A head equal to the remote tip has nothing to push; the remote is asked where its
+    branch is (the tracking ref may be stale) and whether that tip holds this tick's export is the caller's
+    check. Only a client-side rejection (fetch first, non-fast-forward, stale info) is worth a retry; a
+    server-side one ([remote rejected]: a hook, push protection, branch rules) is reported as it is.
+    """
+    head, seen = _resolve(repo, "HEAD"), _resolve(repo, remote)
+    if not head or not seen:
+        return {"pushed": False, "tip": "", "retry": False,
+                "text": f"cannot resolve HEAD or {remote} in the shared clone; not pushing"}
+    branch = remote.split("/", 1)[-1]
+    if head == seen:
+        asked = _git(["ls-remote", "origin", f"refs/heads/{branch}"], repo)
+        now = (asked.stdout or "").split("\t", 1)[0].strip() if asked.returncode == 0 else ""
+        if now == seen:
+            return {"pushed": False, "tip": seen, "retry": False, "text": f"nothing to push: {remote} is at {seen[:12]}"}
+        return {"pushed": False, "tip": "", "retry": False,
+                "text": f"nothing to push, but the remote branch is at {now[:12] or 'an unknown commit'}, not "
+                        f"{seen[:12]}; the next tick fetches again"}
+    if _git(["merge-base", "--is-ancestor", seen, head], repo).returncode != 0:
+        return {"pushed": False, "tip": "", "retry": True,
+                "text": f"local branch does not contain {remote} ({seen[:12]}); not pushing over the shared remote"}
+    try:
+        foreign = _foreign_change(repo, seen, head, allowed) or _foreign_commit(repo, seen, head, allowed)
+    except RuntimeError as exc:
+        return {"pushed": False, "tip": "", "retry": False, "text": str(exc)}
+    if foreign:
+        return {"pushed": False, "tip": "", "retry": False, "text": _foreign_refusal(foreign, allowed)}
+    p = _git(["push", f"--force-with-lease=refs/heads/{branch}:{seen}", "origin", f"{head}:refs/heads/{branch}"], repo)
+    text = (p.stdout or "") + (p.stderr or "")
+    if p.returncode == 0:
+        return {"pushed": True, "tip": head, "retry": False, "text": text}
+    retry = any(m in text.lower() for m in ("fetch first", "non-fast-forward", "stale info", "[rejected]"))
+    return {"pushed": False, "tip": "", "retry": retry, "text": text}
+
+
+def _push_branch(repo: str, remote: str, allowed: tuple[str, ...]) -> dict:
+    """One guarded push, and after a rejection one fetch, join and second push. Same dict as _guarded_push."""
+    result = _guarded_push(repo, remote, allowed)
+    if not result["pushed"] and result["retry"]:
+        fetch = _git(["fetch", "origin"], repo)
+        if fetch.returncode != 0:
+            return {"pushed": False, "tip": "", "retry": False,
+                    "text": (fetch.stderr or fetch.stdout) or "fetch failed"}
+        joined, error = _merge_remote(repo, remote, allowed)
+        if not joined:
+            return {"pushed": False, "tip": "", "retry": False, "text": error}
+        result = _guarded_push(repo, remote, allowed)
+    return result
+
+
+def _tip_holds(repo: str, tip: str, export_rel: str, manifest_sha: str | None) -> bool:
+    """Whether commit `tip` carries this tick's export: its manifest.json names manifest_sha."""
+    if not tip or not manifest_sha:
+        return False
+    shown = _git(["show", f"{tip}:{export_rel}/manifest.json"], repo)
+    if shown.returncode != 0:
+        return False
+    try:
+        return json.loads(shown.stdout).get("manifest_sha") == manifest_sha
+    except (ValueError, AttributeError):
+        return False
+
+
+def _fast_forward(repo: str, allowed: tuple[str, ...]) -> tuple[bool, str]:
     """Join the latest shared branch before writing one contributor directory."""
     fetch = _git(["fetch", "origin"], repo)
     if fetch.returncode != 0:
@@ -435,10 +792,27 @@ def _fast_forward(repo: str) -> tuple[bool, str]:
     remote = f"origin/{branch}"
     if _git(["rev-parse", "--verify", remote], repo).returncode != 0:
         remote = "origin/main"
-    merge = _git(["merge", "--ff-only", remote], repo)
+    merge = _git(["-c", "merge.autoStash=false", "merge", "--ff-only", remote], repo)
     if merge.returncode != 0:
-        return False, ((merge.stderr or merge.stdout) or "fast-forward failed")[-500:]
+        # An earlier failed push leaves local commits that cannot fast-forward once another
+        # contributor pushes; without joining the remote every later tick fails here.
+        joined, error = _merge_remote(repo, remote, allowed)
+        if not joined:
+            return False, error
     return True, remote
+
+
+def _note_push_error(node_name: str, error: str, tail: list[str] | None = None,
+                     manifest_sha: str | None = None, field: str = "last_push_error") -> None:
+    """Keep a failing publish (or pull) visible; first_at survives retries, the fingerprint is untouched."""
+    proto = _load_proto()
+    state = _load_state(proto)
+    node_state = (state.setdefault("nodes", {}).get(node_name) or {}).copy()
+    previous = node_state.get(field) or {}
+    node_state[field] = {"at": _iso(), "first_at": previous.get("first_at") or _iso(),
+                         "error": str(error)[-300:], "manifest_sha": manifest_sha, "git_tail": tail or []}
+    state["nodes"][node_name] = node_state
+    _save_state(proto, state)
 
 
 def _skills_fingerprint(manifest_or_exp: dict) -> str:
@@ -451,111 +825,123 @@ def _skills_fingerprint(manifest_or_exp: dict) -> str:
 
 
 def cmd_push(node_name: str, node: dict, *, quiet: bool = False) -> dict:
+    """One publish tick; a crash is recorded in last_push_error before it propagates."""
+    try:
+        return _cmd_push(node_name, node, quiet=quiet)
+    except Exception as exc:
+        try:
+            _note_push_error(node_name, f"crash: {type(exc).__name__}: {exc}")
+        except Exception:  # noqa: BLE001 - the original failure is the one to surface
+            pass
+        raise
+
+
+def _cmd_push(node_name: str, node: dict, *, quiet: bool = False) -> dict:
     proto = _load_proto()
     repo = _repo_root(node, proto)
-    synced, remote = _fast_forward(repo)
+    lock = _clear_stale_index_lock(repo)
+    if lock["index_lock"] == "busy":
+        out = {"ok": False, "node": node_name, "error": "index_lock_busy", **lock}
+        _note_push_error(node_name, "index_lock_busy")
+        if not quiet:
+            print(json.dumps(out, ensure_ascii=False))
+        return out
+    push_paths = node.get("push_paths") or ()
+    if isinstance(push_paths, str):  # one path written as a string, not a list of characters
+        push_paths = (push_paths,)
+    allowed = (_export_rel(node, proto), *push_paths)
+    synced, remote = _fast_forward(repo, allowed)
     if not synced:
         out = {"ok": False, "node": node_name, "error": remote}
+        _note_push_error(node_name, remote)
         if not quiet:
             print(json.dumps(out, ensure_ascii=False))
         return out
     exp = cmd_export(node_name, node, quiet=True)
     if exp.get("ok") is not True:
+        _note_push_error(node_name, "export: " + str(exp.get("reason") or exp.get("error") or "failed"))
         if not quiet:
             print(json.dumps(exp, ensure_ascii=False))
         return exp
     slug = _contributor_slug(node)
     export_rel = _export_rel(node, proto)
-    # Economy: skip git when skill content unchanged (timestamp-only export churn)
-    state0 = _load_state(proto)
-    prev_fp = (state0.get("nodes") or {}).get(node_name, {}).get("skills_fingerprint")
     mpath = os.path.join(_export_root(node, proto), "manifest.json")
     try:
         man = json.loads(Path(mpath).read_text(encoding="utf-8-sig"))
         fp = _skills_fingerprint(man)
     except (OSError, json.JSONDecodeError):
         fp = exp.get("manifest_sha") or ""
-    if prev_fp and fp and prev_fp == fp:
-        out = {
-            "ok": True,
-            "node": node_name,
-            "pushed": False,
-            "committed": False,
-            "skipped": "skills_fingerprint_unchanged",
-            "skills_fingerprint": fp,
-            "manifest_sha": exp.get("manifest_sha"),
-        }
-        if not quiet:
-            print(json.dumps(out, ensure_ascii=False))
-        return out
+    # No fingerprint shortcut: "unchanged since the last recorded push" is not "on the remote" (a
+    # failed push, or a force push that dropped the export commit, made it lie). Published means the
+    # remote tip this tick pushed, or found with nothing to push, carries this export's manifest.
     st = _git(["status", "--porcelain", export_rel], repo)
     dirty = [ln for ln in (st.stdout or "").splitlines() if ln.strip()]
-    if not dirty:
-        out = {"ok": True, "node": node_name, "pushed": False, "reason": "clean", **exp}
-        if not quiet:
-            print(json.dumps(out, ensure_ascii=False))
-        return out
-
-    _git(["add", export_rel], repo)
-    msg = "chore(skills/%s): export manifest %s (%d skills)" % (
-        slug,
-        exp.get("manifest_sha", "?")[:12],
-        exp.get("skill_count", 0),
-    )
-    c = _git(["commit", "--only", "-m", msg, "--", export_rel], repo)
-    pushed = False
-    git_tail: list[str] = []
-    if c.returncode == 0:
-        p = _git(["push"], repo)
-        if p.returncode != 0 and "no upstream" in (p.stderr or "").lower():
-            p = _git(["push", "-u", "origin", "HEAD"], repo)
-        if p.returncode != 0 and any(
-            marker in ((p.stderr or "") + (p.stdout or "")).lower()
-            for marker in ("fetch first", "non-fast-forward", "rejected")
-        ):
-            _git(["fetch", "origin"], repo)
-            rebase = _git(["rebase", remote], repo)
-            if rebase.returncode == 0:
-                p = _git(["push"], repo)
-        pushed = p.returncode == 0
-        git_tail = ((p.stdout or "") + (p.stderr or "")).strip().splitlines()[-3:]
-    elif "nothing to commit" in (c.stdout or "") + (c.stderr or ""):
-        pushed = False
+    c = None
+    git_failed = st.returncode != 0  # an unreadable status is never "clean"
+    git_tail: list[str] = ((st.stdout or "") + (st.stderr or "")).strip().splitlines()[-3:] if git_failed else []
+    if dirty and not git_failed:
+        _git(["add", export_rel], repo)
+        msg = "chore(skills/%s): export manifest %s (%d skills)" % (
+            slug,
+            exp.get("manifest_sha", "?")[:12],
+            exp.get("skill_count", 0),
+        )
+        c = _git(["commit", "--only", "-m", msg, "--", export_rel], repo)
+        if c.returncode != 0 and "nothing to commit" not in (c.stdout or "") + (c.stderr or ""):
+            git_failed = True
+            git_tail = ((c.stdout or "") + (c.stderr or "")).strip().splitlines()[-3:] or [
+                f"git commit exited {c.returncode}"]
+    committed = c is not None and c.returncode == 0
+    pushed = attempted = False
+    tip = ""
+    # Also pushes commits an earlier failed push left behind; the export then reads clean.
+    if not git_failed and (committed or _ahead(repo, remote) > 0):
+        attempted = True
+        result = _push_branch(repo, remote, allowed)
+        pushed, tip = result["pushed"], result["tip"]
+        git_tail = (result["text"] or "").strip().splitlines()[-3:]
+    elif not git_failed:
+        tip = _resolve(repo, remote)
+    reached = not git_failed and bool(tip)  # the remote is at a tip this tick checked or pushed
+    # A reset or a merge in the clone can leave a pushed (or already current) tip without this export:
+    # reporting that as published hid the miss until the next tick.
+    published = reached and _tip_holds(repo, tip, export_rel, exp.get("manifest_sha"))
+    if reached and not published:
+        git_tail = [f"{remote} at {tip[:12] or '?'} does not hold this export (manifest "
+                    f"{exp.get('manifest_sha')}); the next tick exports and pushes again"]
+    if published:
+        # Only once the remote holds this content: recording a failed commit here made
+        # every later tick skip as skills_fingerprint_unchanged (2026-09-26..10-03).
+        proto = _load_proto()
+        state = _load_state(proto)
+        node_state = (state.setdefault("nodes", {}).get(node_name) or {}).copy()
+        changed = (pushed or "last_push_error" in node_state or node_state.get("skills_fingerprint") != fp
+                   or node_state.get("manifest_sha") != exp.get("manifest_sha"))
+        if changed:  # an idle tick leaves the tracked state file alone
+            node_state.update(last_push=_iso(), manifest_sha=exp.get("manifest_sha"),
+                              skills_fingerprint=fp, repo=node.get("repo"))
+            node_state.pop("last_push_error", None)
+            state["nodes"][node_name] = node_state
+            _save_state(proto, state)
     else:
-        git_tail = ((c.stdout or "") + (c.stderr or "")).strip().splitlines()[-3:]
-    proto = _load_proto()
-    state = _load_state(proto)
-    previous_node_state = (state.setdefault("nodes", {}).get(node_name) or {}).copy()
-    state["nodes"][node_name] = {
-        **previous_node_state,
-        "last_push": _iso(),
-        "manifest_sha": exp.get("manifest_sha"),
-        "skills_fingerprint": fp,
-        "repo": node.get("repo"),
-    }
-    _save_state(proto, state)
+        _note_push_error(node_name, "remote tip lacks this export" if reached else "commit or push failed",
+                         git_tail, exp.get("manifest_sha"))
 
     out = {
-        "ok": pushed or not dirty or "nothing to commit" in ((c.stdout or "") + (c.stderr or "")),
+        "ok": published,
         "node": node_name,
         "pushed": pushed,
-        "committed": c.returncode == 0,
+        "committed": committed,
         "dirty_files": len(dirty),
         "manifest_sha": exp.get("manifest_sha"),
         "skills_fingerprint": fp,
         "git_tail": git_tail,
+        **({} if lock["index_lock"] == "absent" else lock),
     }
-    if c.returncode == 0 and not pushed:
-        sq = os.path.join(ENG, "ship-queue.py")
-        if os.path.isfile(sq):
-            subprocess.run(
-                [sys.executable, sq, "request", repo],
-                capture_output=True,
-                text=True,
-                creationflags=FLAGS,
-                timeout=30,
-            )
-            out["ship_queue"] = True
+    if not dirty and not attempted and not git_failed:
+        out = {**exp, **out, "reason": "clean"}
+    # No ship-queue hand-off when a push fails: it pushed HEAD without the guard above. The next tick
+    # pushes a commit left behind anyway (it is ahead of the remote).
     if not quiet:
         print(json.dumps(out, ensure_ascii=False))
     return out
@@ -662,6 +1048,24 @@ def cmd_pull(
     upstream_name: str | None = None,
     quiet: bool = False,
 ) -> dict:
+    """One downstream pull; a crash (e.g. ls-remote failing) is recorded in last_pull_error first."""
+    try:
+        return _cmd_pull(node_name, node, upstream_name=upstream_name, quiet=quiet)
+    except Exception as exc:
+        try:
+            _note_push_error(node_name, f"crash: {type(exc).__name__}: {exc}", field="last_pull_error")
+        except Exception:  # noqa: BLE001 - the original failure is the one to surface
+            pass
+        raise
+
+
+def _cmd_pull(
+    node_name: str,
+    node: dict,
+    *,
+    upstream_name: str | None = None,
+    quiet: bool = False,
+) -> dict:
     proto = _load_proto()
     up_name, up_node = _upstream_node(proto, upstream_name or node.get("upstream"))
     remote, source_base, source_commit = _remote_manifest_snapshot(up_node)
@@ -760,7 +1164,7 @@ def cmd_pull(
                 )
 
     previous_node_state = (state.setdefault("nodes", {}).get(node_name) or {}).copy()
-    state["nodes"][node_name] = {
+    node_state = {
         **previous_node_state,
         "last_pull": _iso(),
         "last_pull_manifest_sha": remote_sha,
@@ -773,6 +1177,13 @@ def cmd_pull(
             if sk.get("name") and sk.get("package_sha")
         },
     }
+    # A failed skill keeps a stale local sha, so the next tick retries it (and only it); the
+    # error is kept visible instead of vanishing into a manifest sha that reads as pulled.
+    if errors:
+        node_state["last_pull_error"] = {"at": _iso(), "manifest_sha": remote_sha, "errors": errors[:5]}
+    else:
+        node_state.pop("last_pull_error", None)
+    state["nodes"][node_name] = node_state
     _save_state(proto, state)
 
     out = {
@@ -865,16 +1276,18 @@ def cmd_sync(node_name: str, node: dict, *, quiet: bool = False) -> dict:
 
 
 def _package_sha_of_dir(skill_dir: str) -> tuple[str | None, str]:
-    """(package_sha, note) over a skill tree, identical to the rule used by _copy_skill.
+    """(package_sha, note) over a skill tree, the walk rule of _copy_skill (SKIP_DIRS, no *.pyc).
 
     A bundle-manifest.json in the tree overrides the walked sha, but only after every
-    hash it declares matches the file on disk — same order as _copy_skill.
+    hash it declares matches the file on disk — same order as _copy_skill. Git-ignore rules
+    are only known inside the shared clone, so for an unbundled skill that carries ignored
+    files the walked sha differs from the published one (receipts compare bundled skills).
     """
     if not os.path.isdir(skill_dir):
         return None, "missing canonical source"
     files: dict[str, str] = {}
     for walk_root, dirs, filenames in os.walk(skill_dir):
-        dirs[:] = sorted(d for d in dirs if d not in {"__pycache__", ".git"})
+        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
         for filename in sorted(filenames):
             if filename.endswith((".pyc", ".pyo")):
                 continue

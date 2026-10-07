@@ -5999,34 +5999,136 @@ def _publish_capability_receipt(workspace: Path, host: str, receipt: dict) -> di
         if age < 1800:
             return {"ok": True, "state": "PASS", "changed": False, "skipped": "published receipt is still fresh", "errors": []}
 
-    def git(*args: str) -> subprocess.CompletedProcess:
-        return _run_hidden(["git", *args], cwd=repo, capture_output=True, text=True)
+    def git(*args: str, env: dict | None = None) -> subprocess.CompletedProcess:
+        # Plumbing output (-z paths) is UTF-8 whatever the console code page; a decoding error must never read
+        # as "no output" (round-14 review R3).
+        return _run_hidden(["git", *args], cwd=repo, capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", env=env)
 
-    fetched = git("fetch", "origin", "main")
-    if fetched.returncode != 0:
-        return {"ok": False, "state": "UNKNOWN", "errors": ["carrier fetch failed"]}
-    head = git("rev-parse", "HEAD")
-    remote = git("rev-parse", "origin/main")
-    if head.returncode != 0 or remote.returncode != 0:
-        return {"ok": False, "state": "UNKNOWN", "errors": ["carrier identity unreadable"]}
-    if head.stdout.strip() != remote.stdout.strip():
-        merged = git("merge", "--ff-only", "origin/main")
-        if merged.returncode != 0:
-            return {"ok": False, "state": "UNKNOWN", "errors": ["carrier cannot fast-forward before receipt publication"]}
-    _write_json_atomic(target, receipt)
-    staged = git("add", "--", relative.as_posix())
-    if staged.returncode != 0:
-        return {"ok": False, "state": "UNKNOWN", "errors": ["capability receipt could not be staged"]}
-    committed = git("commit", "--only", "-m", f"chore(fames/{contributor}): attest capabilities", "--", relative)
-    if committed.returncode != 0:
-        status = git("status", "--porcelain", "--", relative.as_posix())
-        if not status.stdout.strip():
+    def sha_out(proc: subprocess.CompletedProcess) -> str:
+        value = (proc.stdout or "").strip()
+        return value if proc.returncode == 0 and re.fullmatch(r"[0-9a-f]{40}", value) else ""
+
+    trouble: list[str] = []  # what put_back could not do; reported with every UNKNOWN
+
+    def unknown(*errors: str) -> dict:
+        return {"ok": False, "state": "UNKNOWN", "changed": False, "errors": list(errors) + trouble}
+
+    # The receipt commit is built on the fetched remote tip, never on this clone's HEAD or index, and is pushed
+    # with a lease on that tip. Nothing else in the shared clone can ride along: a commit a force push purged,
+    # a staged or working-tree revert, another process's unpublished commit (lockout-fix review round 12,
+    # R1-R4); a remote that moved in between is refused by the lease instead of overwritten, and one retry
+    # after a fresh fetch covers a benign concurrent push. The receipt file is written only after the first
+    # fetch succeeded and is put back as it was whenever nothing gets published, so the freshness skip above
+    # never takes an unpublished receipt for a published one (round-13 review B1).
+    message = f"chore(fames/{contributor}): attest capabilities"
+    previous = target.read_bytes() if target.is_file() else None
+    wrote: bytes | None = None  # the bytes this call put on disk; None until written
+
+    def put_back() -> None:
+        """Undo this call's own write and nothing else: another writer's newer file is left as found (round-14
+        review R1); a failure to undo is reported, and a file that cannot be removed is emptied so that the
+        freshness skip cannot take it for a published receipt (R2)."""
+        if wrote is None:
+            return
+        try:
+            if target.read_bytes() != wrote:
+                trouble.append("receipt file changed by another writer; left as found")
+                return
+        except OSError:
+            return
+        import time as _time  # a short retry ladder for Windows sharing violations (readers hold files briefly)
+        for attempt in range(6):
+            try:
+                if previous is None:
+                    target.unlink()
+                else:
+                    target.write_bytes(previous)
+                return
+            except OSError:
+                if attempt < 5:
+                    _time.sleep(0.25)
+        try:
+            target.write_bytes(b"")
+            trouble.append("receipt file could not be put back; emptied")
+        except OSError:
+            trouble.append("receipt file could not be put back")
+
+    for attempt in range(2):
+        fetched = git("fetch", "origin", "main")
+        if fetched.returncode != 0:
+            put_back()
+            return unknown("carrier fetch failed")
+        seen = sha_out(git("rev-parse", "--verify", "refs/remotes/origin/main^{commit}"))
+        if not seen:
+            put_back()
+            return unknown("carrier identity unreadable")
+        if wrote is None:
+            try:
+                _write_json_atomic(target, receipt)
+                wrote = target.read_bytes()
+            except OSError:  # a reader holding the file; nothing published, nothing to put back
+                return unknown("capability receipt could not be written")
+        blob = sha_out(git("hash-object", "-w", "--path=" + relative.as_posix(), "--", str(target)))
+        if not blob:
+            put_back()
+            return unknown("capability receipt could not be stored")
+        index = repo / ".git" / f"fames-attest-index-{uuid.uuid4().hex}"
+        env = {"GIT_INDEX_FILE": str(index)}
+        try:
+            built = (git("read-tree", seen, env=env).returncode == 0
+                     and git("update-index", "--add", "--cacheinfo", f"100644,{blob},{relative.as_posix()}",
+                             env=env).returncode == 0 and index.is_file())
+            tree = sha_out(git("write-tree", env=env)) if built else ""
+        finally:
+            try:
+                index.unlink()
+            except OSError:
+                pass
+        if not tree:
+            put_back()
+            return unknown("capability receipt tree could not be built")
+        # The invariant this function exists for, checked in the engine itself: the tree may differ from the
+        # remote tip in the receipt path and nowhere else. (A vanished private index would yield the empty
+        # tree, whose commit would delete everything on main; round-13 review R1.)
+        changed = git("diff-tree", "-r", "-z", "--name-only", seen, tree)
+        touched = [p for p in (changed.stdout or "").split("\0") if p]
+        if changed.returncode != 0 or changed.stdout is None or touched not in ([], [relative.as_posix()]):
+            put_back()
+            return unknown("capability receipt tree changed more than the receipt")
+        if not touched:
             return {"ok": True, "state": "PASS", "changed": False, "skipped": "receipt unchanged", "errors": []}
-        return {"ok": False, "state": "UNKNOWN", "errors": ["capability receipt commit failed"]}
-    pushed = git("push", "origin", "HEAD:main")
-    if pushed.returncode != 0:
-        return {"ok": False, "state": "UNKNOWN", "changed": True, "errors": ["capability receipt push failed"]}
-    return {"ok": True, "state": "PASS", "changed": True, "commit": git("rev-parse", "HEAD").stdout.strip(), "errors": []}
+        sign = ["-S"] if git("config", "--bool", "commit.gpgSign").stdout.strip() == "true" else []
+        commit = sha_out(git("commit-tree", *sign, tree, "-p", seen, "-m", message))
+        if not commit:
+            put_back()
+            return unknown("capability receipt commit failed")
+        pushed = git("push", f"--force-with-lease=refs/heads/main:{seen}", "origin", f"{commit}:refs/heads/main")
+        if pushed.returncode == 0:
+            break
+        text = ((pushed.stdout or "") + (pushed.stderr or "")).lower()
+        # A lease refused client-side ("stale info") or server-side when two pushes truly race ("incorrect old
+        # value provided", round-14 review N1) is worth one retry after a fresh fetch; other server-side rejections are not.
+        retry = any(m in text for m in ("fetch first", "non-fast-forward", "stale info", "[rejected]", "incorrect old value"))
+        if attempt == 1 or not retry:
+            put_back()
+            return unknown("capability receipt push failed")
+    # Bookkeeping only; the publication is done. The tracking ref follows what the remote accepted, and the
+    # local branch follows only when it stood exactly at the pushed-from tip (compare-and-swap); the receipt
+    # path is staged to the pushed blob only after that swap succeeded, so a refused swap leaves nothing staged
+    # (round-13 review R4). Anything else is left to the publisher's guarded join; a refusal here changes
+    # nothing and is not an error.
+    git("update-ref", "refs/remotes/origin/main", commit, seen)
+    index_stale = False
+    if (git("symbolic-ref", "-q", "HEAD").stdout.strip() == "refs/heads/main"
+            and sha_out(git("rev-parse", "--verify", "HEAD^{commit}")) == seen
+            and git("update-ref", "-m", message, "refs/heads/main", commit, seen).returncode == 0):
+        stage = ("update-index", "--add", "--cacheinfo", f"100644,{blob},{relative.as_posix()}")
+        index_stale = git(*stage).returncode != 0 and git(*stage).returncode != 0  # one retry (index.lock)
+    result = {"ok": True, "state": "PASS", "changed": True, "commit": commit, "errors": []}
+    if index_stale:
+        result["index_stale"] = True  # HEAD holds the receipt, the index does not; the next add re-stages it
+    return result
 
 
 def attest_capabilities(workspace: Path, host: str, publish: bool = False) -> dict:

@@ -7,6 +7,7 @@ authority. Installation-required does not mean mandatory on every turn.
 """
 from __future__ import annotations
 
+import functools
 import hashlib
 import importlib.util
 import json
@@ -15,7 +16,10 @@ import re
 import sys
 
 SURFACES = {"dsh", "claude", "open-agent-standard"}
-MAX_PROMPT_CHARS = 16000
+# A routing budget, not a prompt policy: at 16000 every longer prompt left intake UNKNOWN and was
+# refused (2026-10-03). Worst cases at 65536 stay well inside the gate's 12 s worker deadline
+# (diagnosis/router-timing-output.txt in the 2026-10-03 lockout evidence).
+MAX_PROMPT_CHARS = 65536
 MAX_CANDIDATES = 3
 MAX_CONTEXT_CHARS = 2400
 SEMANTIC_GUIDANCE = (
@@ -63,7 +67,8 @@ MUTATING_IDS = {"ztm-git-ship", "deploy-nextjs-cloudflare", "adus-auto-deploy-up
                 "ztm-skill-submit", "ztm-fracdigi-psync", "ztm-ziyaoastro-vercel"}
 NEGATION = re.compile(r"不要|不准|禁止|別|无需|無需|不用|不可|不想|尚未授權|\b(?:do not|don't|never|without|no need to)\b", re.I)
 READ_ONLY = re.compile(r"唯讀|只讀|僅(?:做)?(?:分析|檢查|說明|研究)|只(?:要|想)?(?:分析|檢查|說明|了解|讀取)|\bread[ -]?only\b", re.I)
-SOURCE_LABEL = re.compile(r"(?:^|\n)\s*(?:SOURCE|source text|來源內容|文章內容|引用內容)\s*[:：]", re.I)
+# Line-local leading whitespace ([^\S\n]): \s* there crossed newlines and went quadratic on blank-line pastes.
+SOURCE_LABEL = re.compile(r"(?:^|\n)[^\S\n]*(?:SOURCE|source text|來源內容|文章內容|引用內容)\s*[:：]", re.I)
 STOP_WORDS = {"skill", "skills", "use", "when", "the", "and", "for", "with", "from", "this", "that", "into", "local", "task", "agent", "file", "files"}
 
 
@@ -77,16 +82,18 @@ def _advisor():
     return module
 
 
+@functools.lru_cache(maxsize=4)  # one route asks three times for the same prompt
 def _directive_text(prompt):
     # This is a conservative lexical boundary; the model must use full context.
     text = SOURCE_LABEL.split(prompt, maxsplit=1)[0]
     text = re.sub(r"(?:不用|無需|不要讓我|不必)(?:說|提供|輸入|指定|記住).{0,6}技能名(?:稱)?", " ", text)
     text = re.sub(r"```[\s\S]*?```|`[^`]*`|「[^」]*」|『[^』]*』|“[^”]*”|\"[^\"]*\"", " ", text)
     text = re.sub(r"(?<![a-zA-Z0-9])'[^'\n]+'(?![a-zA-Z0-9])", " ", text)
-    text = re.sub(r"(?m)^\s*>.*$", " ", text)
+    text = re.sub(r"(?m)^[^\S\n]*>.*$", " ", text)
     return text
 
 
+@functools.lru_cache(maxsize=4)
 def _clause_scopes(prompt):
     text = _directive_text(prompt)
     # Comma-separated prohibitions share scope: "do not deploy, push, or publish".
@@ -100,7 +107,7 @@ def _clause_scopes(prompt):
                 negated = True
             if part:
                 clauses.append((part, negated))
-    return clauses
+    return tuple(clauses)  # cached, so immutable
 
 
 def _positive_clauses(prompt):

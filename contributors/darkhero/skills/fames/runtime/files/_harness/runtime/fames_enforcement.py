@@ -12,6 +12,7 @@ import io
 import json
 from pathlib import Path
 import re
+import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -21,6 +22,10 @@ PROMPT_HOOK = HUB / '_skill/fleet-skills/token-preflight/scripts/claude_session_
 CLAIM_HOOK = HUB / '_skill/engines/claude-claim-integrity-hook.py'
 AUDIT = HUB / '_registry/fames-enforcement'
 SUPPORTED = {'SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop', 'SubagentStop', 'ConfigChange'}
+# The managed entry kills this worker at 12 s (its subprocess timeout); the completion child below
+# gets what is left of that, minus a margin for the entry to collect the output.
+WORKER_DEADLINE_S = 12.0
+WORKER_START = time.monotonic()
 
 
 def digest(data: str | bytes) -> str:
@@ -170,6 +175,66 @@ def protected_operation(doc: dict) -> str | None:
     return None
 
 
+def declared_goal(phase_runtime, turn: dict) -> str:
+    """The goal identity a seat declares evidence under; '' when the runtime cannot name one (fail closed)."""
+    goal_of = getattr(phase_runtime, 'goal_identity', None)
+    try:
+        goal = goal_of(turn) if callable(goal_of) else ''
+    except Exception:  # noqa: BLE001 - a runtime that cannot bind the goal gets no declared completion
+        return ''
+    return goal if isinstance(goal, str) and re.fullmatch(r'[0-9a-f]{64}', goal) else ''
+
+
+def complete_declared_turn(phase_runtime, turn: dict, turn_path: Path, parent: dict) -> dict | None:
+    """Close SCF/AEX/SEAL inside this trusted worker from evidence the seat declared in its own folder.
+
+    protected_operation denies any tool input that names this folder, so no seat can launch the phase runtime
+    itself; the Stop gate runs it for the seat, as a hidden child of this worker, on
+    <seat cwd>/runtime/fames_seal/<goal_identity>/{result.json, closure.json[, residual.json]}. The runtime
+    re-runs every phase guard and completion_status is re-read afterwards: nothing here grants PASS. The child
+    gets what is left of the entry's deadline and is killed past it, so a slow completion is UNKNOWN, never a
+    hung hook; it gets no pipes, so nothing it leaves behind can hold this worker either. Returns None when
+    the seat declared nothing (the caller keeps its original denial).
+    """
+    cwd = parent.get('cwd')
+    if not cwd:
+        return None
+    try:
+        seat = Path(str(cwd)).resolve(strict=True)
+        seat.relative_to(HUB)
+    except (OSError, ValueError):
+        return None
+    goal = declared_goal(phase_runtime, turn)
+    if not goal:
+        return None
+    folder = seat / 'runtime' / 'fames_seal' / goal
+    result, closure, residual = (folder / name for name in ('result.json', 'closure.json', 'residual.json'))
+    if not (result.is_file() and closure.is_file()):
+        return None
+    budget = WORKER_DEADLINE_S - 1.5 - (time.monotonic() - WORKER_START)
+    if budget < 2.0:
+        return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': 'declared_completion_no_time_budget'}
+    runtime = Path(__file__).with_name('fames_phase_runtime.py')
+    if not runtime.is_file():
+        return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': 'declared_completion_runtime_missing'}
+    command = [sys.executable, '-B', str(runtime),
+               '--workspace', str(HUB), '--turn', str(Path(turn_path).resolve()),
+               '--result', str(result), '--closure', str(closure)]
+    if residual.is_file():
+        command += ['--residual', str(residual)]
+    try:
+        subprocess.run(command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                       timeout=budget, cwd=str(HUB), creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+    except subprocess.TimeoutExpired:
+        return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': 'declared_completion_timeout'}
+    except Exception as exc:  # noqa: BLE001 - fail closed
+        return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': 'declared_completion_' + type(exc).__name__}
+    try:
+        return phase_runtime.completion_status(HUB, turn)
+    except Exception as exc:  # noqa: BLE001 - fail closed, and keep the folder hint in the denial
+        return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': 'declared_completion_' + type(exc).__name__}
+
+
 def recover_turn(doc: dict, module, lifecycle: dict) -> tuple[dict, str]:
     """Rebind proven native intake under current policy inside the native hook.
 
@@ -255,12 +320,17 @@ def evaluate(doc: dict, *, surface: str = 'claude') -> tuple[dict, dict]:
             and receipt.get('noncompletion_only') is not True):
         parent = parent_event(doc)
         identity = digest(surface + '\0' + str(parent.get('session_id') or ''))
-        turn = read_json(Path(lifecycle.get('turn_receipt_path') or
-                             HUB / '_registry/fames-turn' / surface / (identity + '.json')))
+        turn_path = Path(lifecycle.get('turn_receipt_path') or HUB / '_registry/fames-turn' / surface / (identity + '.json'))
+        turn = read_json(turn_path)
         phase_runtime = load_module('fames_phase_completion', HUB / '_harness/runtime/fames_phase_runtime.py')
         phase = phase_runtime.completion_status(HUB, turn)
         if phase.get('state') != 'PASS':
-            return denial(event, 'SEAL phase evidence is missing or stale'), {'state': 'UNKNOWN', 'phase_execution': phase}
+            phase = complete_declared_turn(phase_runtime, turn, turn_path, parent) or phase
+        if phase.get('state') != 'PASS':
+            goal = declared_goal(phase_runtime, turn)
+            where = ('; declare result.json + closure.json under <seat cwd>/runtime/fames_seal/' + goal
+                     + '/ and end the turn again') if goal else ''
+            return denial(event, 'SEAL phase evidence is missing or stale' + where), {'state': 'UNKNOWN', 'phase_execution': phase}
     return payload, {'state': receipt.get('state', 'UNKNOWN'), 'action': receipt.get('action'), 'reason': 'claim and Lean evidence gate', 'lifecycle': lifecycle.get('state')}
 
 

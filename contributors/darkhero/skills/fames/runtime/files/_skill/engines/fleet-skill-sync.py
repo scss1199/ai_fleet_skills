@@ -477,7 +477,18 @@ def cmd_registry() -> dict:
         "incubator": sorted(os.listdir(INCUBATOR)) if os.path.isdir(INCUBATOR) else [],
     }
     os.makedirs(REGISTRY, exist_ok=True)
-    _atomic_write_json(REG_PATH, reg)
+    # Same content as on disk except the timestamp: keep the file. The skill router pins the registry
+    # sha while it routes a prompt, so a timestamp-only rewrite on every converge tick (15 min) refused
+    # prompts routed across it (reproduced 2026-10-03 22:32).
+    try:
+        with open(REG_PATH, encoding="utf-8-sig") as stream:
+            previous = json.load(stream)
+    except (OSError, ValueError):
+        previous = None
+    if isinstance(previous, dict) and {**previous, "updated": None} == json.loads(json.dumps({**reg, "updated": None})):
+        reg["updated"] = previous.get("updated")
+    else:
+        _atomic_write_json(REG_PATH, reg)
     print("registry: %s  canonical=%d seats=%d submissions=%d" % (
         REG_PATH, len(reg["canonical"]), len(reg["by_seat"]), len(subs)))
     return reg
