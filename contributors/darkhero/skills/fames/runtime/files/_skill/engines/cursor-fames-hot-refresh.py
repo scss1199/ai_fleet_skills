@@ -45,7 +45,19 @@ def main() -> int:
         and doc.get("fames_probe_mode") not in {"direct", "synthetic"}
     )
     try:
-        turn = _harness().turn_context(
+        harness = _harness()
+        rule_path = Path(cwd) / ".cursor" / "rules" / "fames-rb-ti.mdc"
+        try:  # self-heal a stale rule (never raises; the read-back below still reports the result)
+            script = Path(HUB) / "_skill" / "fleet-skills" / "fames" / "scripts" / "fames_fleet.py"
+            expected, _contract, _diag = harness.render_turn_rule(script)
+            current = rule_path.read_text(encoding="utf-8-sig") if rule_path.is_file() else ""
+            if expected and rule_path.parent.is_dir() and current != expected:
+                stage = rule_path.with_name(rule_path.name + ".tmp")
+                stage.write_text(expected, encoding="utf-8", newline="\n")
+                os.replace(stage, rule_path)
+        except Exception:
+            pass
+        turn = harness.turn_context(
             agent,
             Path(cwd),
             prompt=prompt,

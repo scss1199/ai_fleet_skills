@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 HUB=Path(os.environ.get("AI_WORKSPACE") or Path(__file__).resolve().parents[4])
 STATUS=HUB/"_registry"/"token-preflight"/"claude-hook-status.json"
+T1_DELIVERY=HUB/"_registry"/"token-preflight"/"t1-delivery"
 CODEX_STATUS=HUB/"_registry"/"token-preflight"/"codex-hook-status.json"
 
 
@@ -64,6 +65,44 @@ def _hard_lines(cwd: str) -> tuple[str, str]:
     return ("injected", text) if text else ("charter", "")
 
 
+def _t1_refresh(surface_id: str, session_id: str, *, at_start: bool) -> str:
+    """Return the current T1 text when it differs from what this conversation last received.
+
+    SessionStart only records what the session starts with (charter or injection); a later prompt gets
+    the whole current T1 once whenever it changed, so an upgrade never needs a restarted conversation.
+    A conversation with no record yet (opened before this existed) gets it once. Never raises.
+    """
+    if not session_id.strip():
+        return ""
+    try:
+        import hashlib
+        path = HUB / "_skill" / "engines" / "rules_brief.py"
+        spec = importlib.util.spec_from_file_location("rules_brief_t1_refresh", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        text = module.format_rules(tiers=["T1"], max_bytes=1 << 30).strip()
+        if not text:
+            return ""
+        digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        key = hashlib.sha256(f"{surface_id}\0{session_id}".encode("utf-8")).hexdigest()
+        record = T1_DELIVERY / f"{key}.json"
+        try:
+            last = json.loads(record.read_text(encoding="utf-8")).get("t1_sha256")
+        except (OSError, ValueError):
+            last = None
+        if last != digest:
+            record.parent.mkdir(parents=True, exist_ok=True)
+            stage = record.with_suffix(".tmp")
+            stage.write_text(json.dumps({"t1_sha256": digest, "at": datetime.now(timezone.utc).isoformat()}),
+                             encoding="utf-8")
+            os.replace(stage, record)
+        if at_start or last == digest:
+            return ""
+        return "STANDING RULES UPDATED (current T1, applies from this turn):\n" + text
+    except Exception:
+        return ""
+
+
 def main():
     doc=_read_hook_input(sys.stdin)
     cwd=str(doc.get("cwd") or os.getcwd())
@@ -117,6 +156,9 @@ def main():
             )
             context=((token_core+"\n") if result.get("should_inject") else "") + result.get("plan_text", "")
             state=result.get("state")
+            t1_update=_t1_refresh(surface_id, session_id, at_start=False)
+            if t1_update:
+                context=(context+"\n"+t1_update).strip()
         else:
             harness.reset_turn_context(HUB, surface_id, session_id)
             result=harness.run_session(
@@ -129,6 +171,7 @@ def main():
             )
             context=(token_core+"\n"+result.get("plan_text", "")).strip()
             state=result.get("state")
+            _t1_refresh(surface_id, session_id, at_start=True)
     except Exception as exc:
         state="UNKNOWN"
         context=token_core+f"\nFAMES ALWAYS-ON — UNKNOWN — {type(exc).__name__}"

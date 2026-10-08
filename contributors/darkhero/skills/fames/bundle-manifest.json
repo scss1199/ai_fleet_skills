@@ -2,7 +2,7 @@
   "schema": 1,
   "id": "FAMES",
   "version": "1.45.0",
-  "skill_gen": "2026-10-08.5",
+  "skill_gen": "2026-10-08.6",
   "execution_order": [
     "FP",
     "MTM",
@@ -24,7 +24,7 @@
   "source_git_commit": null,
   "files": {
     ".gitattributes": "448f5307a4b4eaab3e5e0615e1b57e125c2e6419d590025c4ac3d2e2c004955e",
-    "SKILL.md": "7f12d9ed3cf4330ff77251e34bd9c3f4e0335f6c545fb5ff1daf1e1c5479fe29",
+    "SKILL.md": "14532c0d96742b6d6f067bf54665f422330473d4d8c00baad236ffecd6fb3a12",
     "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
     "references/autonomous-knowledge.md": "b34ca6beb034909aaade75be4707c772e90155c6c12b8278c7b3964ec8238df5",
     "references/cases.json": "2ebbb062b8e58241dfd2a70ec423678c4c16e40303d436ffa6de6e5560f67a40",
@@ -48,7 +48,7 @@
     "runtime/files/_harness/runtime/dsh_fames_plugin.mjs": "cde86d6be7cfcb5729c17f7e46c65f30d7681e8fa6ede9a60e3c2c30b52f4ed7",
     "runtime/files/_harness/runtime/fames_capabilities.py": "323f4d69d67ab15cea6fddb4a6fe3bd16e555c3b20d8f47376f1fae49bfc7ffe",
     "runtime/files/_harness/runtime/fames_phase_runtime.py": "ce9afd4228566852a4819bb0740c5b399bd702d037fc64781f2259b8864247ae",
-    "runtime/files/_harness/runtime/fames_session_harness.py": "0b6730d67e6bf5e8096585e71cfc47af361a35ddf1ed216b9b94c6ede2c68f9e",
+    "runtime/files/_harness/runtime/fames_session_harness.py": "b8b8e920aa0fc251571ecaaebfceb0a4533b4c55308571b95d02b0bc3a49e973",
     "runtime/files/_harness/runtime/fames_turn_binding.py": "ebc57eb024b976d79db90fa5d176b8d25571f2c18587684be060f65979f14b6f",
     "runtime/files/_harness/runtime/jev_phase_advisor.py": "3512af5166341135e29f083b807a6e159286d2e04599ef15c914c1df45752d40",
     "runtime/files/_harness/runtime/jev_skill_advisor.py": "438e0e7c39ee6105483d1e9f689de582161e0464c36d69939498f6afbfbd9057",
@@ -79,7 +79,7 @@
     "runtime/files/_skill/engines/_projects.py": "9121798be38115430276d2b4f98200d75917ac2c0680aa990efbd0b730d7e046",
     "runtime/files/_skill/engines/claim-linter.py": "b81bace525467206964a96751ca38043266fd9143e9d2e5085c57b8f2cd503f2",
     "runtime/files/_skill/engines/claude-claim-integrity-hook.py": "a13bfb56f0523caa27cbe6cf08fb69adbd2f1b4e962d617a3bfeb6ea09352c5f",
-    "runtime/files/_skill/engines/cursor-fames-hot-refresh.py": "4de88bf96af1a603cc5ea7e85ddbddd1cbe367f6cb11f4a12afe01486c6e0dc2",
+    "runtime/files/_skill/engines/cursor-fames-hot-refresh.py": "fe8b65f32894e5dc5661039f0502a0ae3abd09ff38b9f8795e47142223e78f97",
     "runtime/files/_skill/engines/fames-immediate-apply.py": "7473fb1f1d9494798f02403e15456a150e38cda9fdc79156c464faf10c052be6",
     "runtime/files/_skill/engines/fames_execution_evidence.py": "47f1ef6470401c155a88355816e2a13377e8d6730a440b9d7032a0a391bbacf5",
     "runtime/files/_skill/engines/fleet-skill-sync.py": "20937e6b7ece58cd862af6963eaf71f798f809374a394d97b07f604adb1775dc",
@@ -87,8 +87,8 @@
     "runtime/files/_skill/engines/lane_taxonomy.py": "e8cb50dd7a0ea47368196320ad4ce3e1ce90379beb757be0f3d38fe193d26888",
     "runtime/files/_skill/engines/mtm-fleet-skill-github.py": "dd548a7faafd1a589952eed2ae740395fc52e6cd6f1972a51387d917ad1232b7",
     "runtime/files/_skill/engines/sync-cursor-hooks.py": "b1082262151f88af55328b6cf1a14905f05ab6c1b1e38a4f0ba5c359a4388a53",
-    "runtime/files/_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py": "73c5353d82c8a666c9779d40795cefe6c9bde93c6864cd1ae0b474fbb150bed9",
-    "runtime/manifest.json": "09252aee3fe932a03437c5204f09ecb1ef73dd4f8e4e0732d8c78ecabf5b7d4b",
+    "runtime/files/_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py": "1571688d5a8ef0b62c77f5475a9c31aa8dfa7e6f153b08bc9bdc8eb9ba784b65",
+    "runtime/manifest.json": "f4a816e1713b059ce8a6ba844429a7bb322a0686b3a4ca5ea4453f250c2174ae",
     "scripts/adaptive_response_controller.py": "07a19c6e0bda90f25800617a274d5f641709676d0d71cdfae8e17dec91e0d911",
     "scripts/claude_live_ab.py": "3aaa4276c505e1eceea33207c6c4baeb190b6319b737f081fd53fbc055834261",
     "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
@@ -103,5 +103,5 @@
     "scripts/test_work_efficiency.py": "e4250ba4c05f616c79cf97182507d1ff3585487c788546151a97b2dad74f0536",
     "scripts/work_efficiency.py": "42d41b64b8075280b1212625b46a25ab32bba35d27f5c019cf79dde02552022e"
   },
-  "package_sha": "ab11aa81f5d538d1ea4a6e27dd5d0ab64a2049c7be83ca00f8bb4f640d84d631"
+  "package_sha": "e8f2a8106889db89b741371accbdc0e980105d980d0224cd8ba74f88667ae0a8"
 }

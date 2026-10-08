@@ -292,16 +292,14 @@ def render_turn_rule(fames_script: Path) -> tuple[str, dict[str, Any], str]:
         manifest = _read_json(package_root / "bundle-manifest.json")[0]
     except Exception:
         manifest = {}
-    identity = str(contract.get("prompt_contract_identity") or "UNKNOWN")
+    # No per-build identity lines: an upgrade rewrites this file only when the contract text changes,
+    # and an open Cursor conversation reads the current file on its next request.
     rule = (
         "---\n"
         "description: FAMES per-turn RB intent reach and Ti boundary contract\n"
         "alwaysApply: true\n"
         "---\n\n"
         "# FAMES RB -> Prompt -> Ti\n\n"
-        f"Generation: `{manifest.get('skill_gen') or 'UNKNOWN'}`  \n"
-        f"Package: `{manifest.get('package_sha') or 'UNKNOWN'}`  \n"
-        f"Prompt contract: `{identity}`\n\n"
         + _turn_directive(contract)
         + "\n\nBefore any completion claim, use the current on-disk FAMES generation and fail closed "
           "if the package, parity, prompt contract, session identity, or turn receipt is UNKNOWN.\n"
@@ -1227,6 +1225,8 @@ def _turn_context_unlocked(
                 "prompt_contract_identity": contract.get("prompt_contract_identity"),
                 "harness_runtime_sha": contract.get("harness_runtime_sha"),
                 "capability_runtime_sha": (contract.get("unified_entrypoint") or {}).get("runtime_sha256"),
+                # Any change to the delivered text reaches open conversations on their next turn.
+                "rule_or_context_identity": rule_or_context_identity,
             }.items()
         ),
         "diagnostic": "" if state == "PASS" else (
