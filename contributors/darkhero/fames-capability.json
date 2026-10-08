@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "ef3132088faf449eac24856f6c32c0426462466056bca0b78361fdb3b8d4162a",
+  "package_sha": "4682d43c19190da3bc50456576b91c3c91b0b48529b76726c58dec128eb081bc",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-08T07:19:28.677290+00:00",
+  "observed_at": "2026-10-08T09:14:42.876977+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,37 +356,13 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
-        "agent": "ai_darkhero",
+        "agent": "ai_fleet_skills",
         "surface": "claude",
-        "observed_at": "2026-10-07T22:28:47+08:00",
-        "receipt_sha256": "d267aa3692f1d3224ecf1ac4a72c2cebf3480dcd872377d8c12df658018ae355"
-      },
-      {
-        "agent": "ai_trader",
-        "surface": "claude",
-        "observed_at": "2026-10-08T15:11:34+08:00",
-        "receipt_sha256": "f3023b25286abbdfc1412fc991556fba929c4d8eceeebabe8d8b0c9ebe5a746a"
-      },
-      {
-        "agent": "ai_nuwa",
-        "surface": "claude",
-        "observed_at": "2026-10-08T15:17:26+08:00",
-        "receipt_sha256": "02a0fde69cd8516496c788c65db81028a860d8a06ac0b478e5957a7d9a602f99"
-      },
-      {
-        "agent": "ai_workspace",
-        "surface": "claude",
-        "observed_at": "2026-10-08T15:16:51+08:00",
-        "receipt_sha256": "d36206d294b5e21eaf3ec997e0757afaff7243be7e3319abd034a3011f464148"
-      },
-      {
-        "agent": "ai_ziyaoastro",
-        "surface": "claude",
-        "observed_at": "2026-10-08T15:03:22+08:00",
-        "receipt_sha256": "6c879f7f0f9713f2be471cd10e7d591552a60c1cf3f5c3f3ffdb3ef540cb7ff1"
+        "observed_at": "2026-10-08T17:12:36+08:00",
+        "receipt_sha256": "dbe3878bbdb7a9f38736045f54a483dc3a18094bdb0ec19452bb2c2829dc877a"
       }
     ],
-    "runtime_release_sha256": "99b77456de341b7c617c7cecdaf771eb232ce244eba769199c01cb6fb434f093"
+    "runtime_release_sha256": "552d135eee19bddc9c84a3cf949abbfc8f3e1be273a26122d9757d4ae6b07875"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
