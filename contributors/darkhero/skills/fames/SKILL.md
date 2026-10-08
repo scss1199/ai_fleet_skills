@@ -5,7 +5,7 @@ description: The single public contract for outcome-driven skill selection, opti
 
 # FAMES
 
-FAMES-GEN: 2026-10-08.1
+FAMES-GEN: 2026-10-08.2
 
 FAMES is the single public contract for intent-to-skill selection, optional Jev advice and applicable Lean verification. Users state outcomes and constraints without naming internal components or skills. Infer required capabilities from the request and actual available skill descriptions; select the smallest applicable set. Unmatched local rules use current-model judgment. Jev retains its provider/projection gates; Lean checks explicitly formalized obligations, with UNKNOWN where applicability or evidence is missing.
 
@@ -52,4 +52,4 @@ The native turn adapter produces source-bound FP/MTM admission receipts. Before 
 
 The content-addressed package includes `runtime/manifest.json` and an explicit source allowlist. Existing `fames-converge` installs these with retained backups and destination hash checks, then refreshes local conformance and discovery surfaces. Local edits block replacement. A package or fixture receipt is not native lifecycle adoption; a missing/offline host stays UNKNOWN. No new schedule or provider permission is created. A missing Windows Lean checker uses the existing official-release installer with digest verification, retained downloads and no PATH/environment edits; unsupported platforms remain UNKNOWN.
 
-FAMES is a contract and an evidence discipline, not a gate: it lives in context and reports and never blocks a prompt or a tool call at the hook layer. The managed gate and `operator_intent_guard.py` were retired on 2026-10-08 and must not return; no agent installs a blocking hook or puts a hash or version into a hook command. Hook commands fail open, so a missing or broken hook script cannot lock a session. See `_harness/docs/fames-host-enforcement.md`.
+FAMES is a contract and an evidence discipline, not a gate: it lives in context and reports and never blocks a prompt, a tool call or a stop at the hook layer; claim-integrity and the Cursor/Codex/DSH checks are advisory only. The managed gate and `operator_intent_guard.py` were retired on 2026-10-08 and must not return; no agent installs a blocking hook or puts a hash or version into a hook command. Hook commands fail open, so a missing or broken hook script cannot lock a session. See `_harness/docs/fames-host-enforcement.md`.

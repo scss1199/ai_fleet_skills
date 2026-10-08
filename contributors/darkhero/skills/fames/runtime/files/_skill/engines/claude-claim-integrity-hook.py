@@ -1070,7 +1070,7 @@ def evaluate_hook(doc: dict) -> tuple[dict, dict]:
     kinds = sorted({row["claim_type"] for row in result["violations"]})
     lines = sorted({row["line"] for row in result["violations"] if row["line"]})
     reason = (
-        "FAMES claim-integrity gate: unsupported load-bearing claim(s) "
+        "FAMES claim-integrity (advisory): unsupported load-bearing claim(s) "
         f"at lines {lines or ['UNKNOWN']} ({', '.join(kinds)}). "
         "Do not invent proof. Evidence must sit in the claim's own window (the line before "
         "through two lines after) in one of these exact forms: "
@@ -1121,9 +1121,10 @@ def evaluate_hook(doc: dict) -> tuple[dict, dict]:
             "The claimed total-token reduction must match the replay. Cost and quota remain UNKNOWN "
             "without their own measurement adapters. Proposed or unmeasured savings must be labeled as such."
         )
-    if action == "hard_stop":
-        return {"continue": False, "stopReason": reason}, receipt
-    return {"decision": "block", "reason": reason}, receipt
+    # Advisory only (operator 2026-10-08): the verdict (allow/block/hard_stop) stays in the receipt,
+    # where the Lean conformance reads it, and the reason is shown to the user. The hook never blocks
+    # a Stop and never ends a session.
+    return {"systemMessage": reason}, receipt
 
 
 def _read_hook_input(stream) -> dict:

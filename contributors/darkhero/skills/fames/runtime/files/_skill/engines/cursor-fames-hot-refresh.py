@@ -4,7 +4,8 @@
 """beforeSubmitPrompt: read back the always-applied FAMES RB/Ti rule every turn.
 
 Cursor's event can allow or block but cannot inject context.  The project rule is the
-injection path; this hook is its fail-closed freshness and receipt gate.
+injection path; this hook is its freshness and receipt check, advisory only since 2026-10-08
+(operator): an UNKNOWN turn is reported to the user and the prompt still goes through.
 """
 from __future__ import annotations
 

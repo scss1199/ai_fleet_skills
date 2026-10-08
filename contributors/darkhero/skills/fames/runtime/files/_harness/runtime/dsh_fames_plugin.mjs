@@ -56,17 +56,17 @@ export async function apply(ctx, config) {
     if (!prompt.trim()) return next();
     const cwd = agent?.session?.header?.cwd;
     try {
-      if (typeof cwd !== 'string' || !cwd.trim() || !isAbsolute(cwd) || !statSync(cwd).isDirectory()) return { kind: 'reject' };
-    } catch { return { kind: 'reject' }; }
+      if (typeof cwd !== 'string' || !cwd.trim() || !isAbsolute(cwd) || !statSync(cwd).isDirectory()) return next();
+    } catch { return next(); }
     const payload = {
       hook_event_name: 'UserPromptSubmit', activation_source: 'dsh-agent-pre-step',
       session_id: agent.session.header.id, turn_id: String(turn), cwd,
       prompt,
     };
+    // Advisory only (operator 2026-10-08): a failed or non-PASS intake is reported in context; the step proceeds.
     let result;
     try { result = await invoke(config, payload, signal); }
-    catch { return { kind: 'reject' }; }
-    if (result.state !== 'PASS') return { kind: 'reject' };
+    catch { result = { state: 'UNKNOWN', context: 'FAMES DSH intake UNKNOWN (advisory): lifecycle adapter failed; do not claim completion.' }; }
     const downstream = await next();
     if (downstream.kind !== 'enter') return downstream;
     // Request-local projection: at most one current fragment, never a growing stack.

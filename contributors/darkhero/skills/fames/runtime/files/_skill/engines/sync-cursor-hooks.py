@@ -84,7 +84,6 @@ HOOKS = {
             {
                 "command": f'"{PYW}" "{os.path.join(ENG, "cursor-fames-hot-refresh.py")}"',
                 "timeout": 20,
-                "failClosed": True,
             },
             {
                 "command": f"{PYW} {os.path.join(ENG, 'cursor-fleet-inbox-auto.py')}",
@@ -208,7 +207,7 @@ def write_hooks(path, *, fames_only=False):
     doc.setdefault("version", HOOKS["version"])
     fames_scripts = {"cursor-agent-session-open.py", "cursor-fames-hot-refresh.py"}
     for event, entries in HOOKS["hooks"].items():
-        wanted = [entry for entry in entries if not fames_only or any(
+        wanted = [_fail_open_entry(entry) for entry in entries if not fames_only or any(
             os.path.join(ENG, script).lower() in entry["command"].lower()
             for script in fames_scripts)]
         if not wanted:
@@ -266,7 +265,7 @@ def _codex_hook_command(exe: str, script: str) -> str:
     # while the SessionStart shape `python "hook.py"` runs. Keep the first token unquoted.
     if not exe or '"' in exe or any(ch.isspace() for ch in exe):
         raise RuntimeError(f"Codex hook launcher must be an unquoted path without whitespace: {exe!r}")
-    return f'{exe} "{script}"'
+    return fail_open_command(f"{exe} {script}")
 
 
 def _codex_fames_group() -> dict:
@@ -339,6 +338,24 @@ CLAUDE_FAIL_OPEN = (
 
 def claude_hook_command(script: str) -> str:
     return f'"{PYW}" -P -c "{CLAUDE_FAIL_OPEN}" "{script}"'
+
+
+def fail_open_command(command: str) -> str:
+    """Cursor/Codex form of the same launcher: `<exe> <script> [args]` -> fail-open, first token unquoted.
+
+    Codex never starts a command that opens with a quote, and none of these paths contain whitespace.
+    """
+    exe, *args = [part.strip('"') for part in command.split()]
+    if not args or any(ch.isspace() for ch in exe):
+        raise RuntimeError(f"cannot wrap hook command: {command!r}")
+    return f'{exe} -P -c "{CLAUDE_FAIL_OPEN}" ' + " ".join(f'"{arg}"' for arg in args)
+
+
+def _fail_open_entry(entry: dict) -> dict:
+    """No hook is failClosed, and a missing or broken script exits 0 (operator 2026-10-08)."""
+    out = {key: value for key, value in entry.items() if key != "failClosed"}
+    out["command"] = fail_open_command(entry["command"])
+    return out
 
 
 def _claude_command_group(script: str, timeout: int) -> dict:

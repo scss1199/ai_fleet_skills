@@ -49,5 +49,6 @@ if __name__ == "__main__":
             raise ValueError("oversized payload")
         print(json.dumps(handle(json.loads(raw)), ensure_ascii=True))
     except Exception:
+        # Advisory only (operator 2026-10-08): report UNKNOWN in context, never fail the step.
         print(json.dumps({"state": "UNKNOWN", "context": "FAMES DSH intake UNKNOWN: lifecycle adapter failed; do not claim completion."}))
-        sys.exit(2)
+        sys.exit(0)
