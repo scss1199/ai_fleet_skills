@@ -249,24 +249,37 @@ def complete_turn(workspace, turn, result, closure, residual=None):
 
 RECEIPT_MAX_AGE_S = 86400
 
+def aware_timestamp(value):
+    """An ISO-8601 instant WITH a UTC offset -> epoch seconds. A naive string is unreadable (ValueError), never read as
+    local time: on a UTC+8 box a naive UTC intake would move not_before 8 h into the past (round-17 review R-D)."""
+    parsed = dt.datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError('naive_timestamp')
+    return parsed.timestamp()
+
+def exited_zero(value):
+    """The engine records an exit status as an int; `false` (a bool, which Python counts as 0) is not an exit code."""
+    return type(value) is int and value == 0
+
 def mechanical_receipt_anchor(workspace, result_path, turn=None):
     """A seat writes result.json itself; this is the one part of it that another program must have produced.
 
     At least one evidence_ref must be a receipt the receipt engine minted by RUNNING a command: under
-    _registry/fames-evidence/receipts, bytes equal to the ref's sha256, JSON with state PASS, ok true, exit_status 0,
-    a non-empty commands list, validator_identity naming fames-receipt.py, generated within 24 h AND not before
-    this turn's intake (a receipt from an earlier turn, another goal or another seat does not bind this completion;
-    round-17 review R2). Anything else is a seat-authored assertion and gets no completion (round-16 P8, audit H1)."""
+    _registry/fames-evidence/receipts, bytes equal to the ref's sha256, a JSON object with state PASS, ok true,
+    exit_status 0, a non-empty commands list whose every command exited 0, validator_identity naming fames-receipt.py,
+    an offset-carrying timestamp within 24 h AND not before this turn's intake (a receipt from an earlier turn, another
+    goal or another seat does not bind this completion; round-17 review R2). Anything else is a seat-authored assertion
+    and gets no completion (round-16 P8, audit H1; round 18: review R-A, R-C, R-D)."""
     try:
         result = json.loads(Path(result_path).read_text(encoding='utf-8-sig'))
-    except (OSError, ValueError):
+    except (OSError, ValueError, RecursionError):  # seat-written JSON may nest without bound (round-19 review R-E)
         return {'ok': False, 'reason': 'result_unreadable'}
     receipts_root = (Path(workspace) / '_registry/fames-evidence/receipts').resolve()
     now = dt.datetime.now(dt.timezone.utc).timestamp()
     not_before = -1.0
     if isinstance(turn, dict):
         try:
-            not_before = dt.datetime.fromisoformat(str(turn.get('generated')).replace('Z', '+00:00')).timestamp() - 5
+            not_before = aware_timestamp(turn.get('generated')) - 5
         except (ValueError, TypeError):
             return {'ok': False, 'reason': 'turn_intake_time_unreadable'}
     reasons = []
@@ -280,26 +293,39 @@ def mechanical_receipt_anchor(workspace, result_path, turn=None):
                 reasons.append('ref_sha_mismatch')
                 continue
             doc = json.loads(raw.decode('utf-8-sig'))
-        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        except (OSError, ValueError, KeyError, TypeError, AttributeError, RecursionError):
+            reasons.append('ref_not_a_registry_receipt')
+            continue
+        if not isinstance(doc, dict):  # a JSON list, string, number or null is not a receipt (round-17 review R-A)
             reasons.append('ref_not_a_registry_receipt')
             continue
         validator = str(doc.get('validator_identity') or '').replace(chr(92), '/').lower()
         if not validator.endswith('/fames-receipt.py'):
             reasons.append('not_minted_by_receipt_engine')
             continue
-        if doc.get('state') != 'PASS' or doc.get('ok') is not True or doc.get('exit_status') != 0:
+        if doc.get('state') != 'PASS' or doc.get('ok') is not True or not exited_zero(doc.get('exit_status')):
             reasons.append('receipt_not_pass')
             continue
-        if not isinstance(doc.get('commands'), list) or not doc['commands']:
+        commands = doc.get('commands')
+        if not isinstance(commands, list) or not commands:
             reasons.append('receipt_without_commands')
             continue
+        if any(not isinstance(c, dict) or not exited_zero(c.get('exit_status')) for c in commands):  # round-17 review R-C
+            reasons.append('receipt_command_not_zero')
+            continue
         generated = doc.get('generated_at')
-        if not isinstance(generated, (int, float)) or isinstance(generated, bool):  # engine epoch; ISO fallback (round-17 N4)
+        if generated is None:  # a receipt dated only by ISO text (round-17 N4)
             try:
-                generated = dt.datetime.fromisoformat(str(doc.get('generated_at_iso')).replace('Z', '+00:00')).timestamp()
-            except (ValueError, TypeError):
-                generated = None
-        if generated is None or not (-5 <= now - generated <= RECEIPT_MAX_AGE_S):
+                generated = aware_timestamp(doc.get('generated_at_iso'))
+            except (ValueError, TypeError, OverflowError):
+                reasons.append('receipt_time_unreadable')
+                continue
+        elif isinstance(generated, bool) or not isinstance(generated, (int, float)) or not (0 <= generated <= 1e11):
+            # an epoch that is present must be a sane number: a bool, a string, NaN, inf, a negative or a 400-digit int is
+            # unreadable, never a fallback (round-18 review R-4, round-19 review N-7)
+            reasons.append('receipt_time_unreadable')
+            continue
+        if not (-5 <= now - generated <= RECEIPT_MAX_AGE_S):
             reasons.append('receipt_stale')
             continue
         if generated < not_before:
@@ -308,17 +334,41 @@ def mechanical_receipt_anchor(workspace, result_path, turn=None):
         return {'ok': True, 'receipt': str(path)}
     return {'ok': False, 'reason': ','.join(sorted(set(reasons))) or 'no_receipt_ref'}
 
+def record_outcome(folder, outcome):
+    """Round 18 (review N-A): a non-PASS declared completion leaves its reason in <goal folder>/refusal.json so the Stop
+    worker can surface it (the child's stdout is discarded); a PASS removes an earlier refusal. Best effort: a failure
+    here never changes the verdict, and the file grants nothing (completion_status reads seal.json only)."""
+    target = Path(folder) / 'refusal.json'
+    try:
+        if outcome.get('state') == 'PASS':
+            if target.is_file():
+                target.unlink()
+            return outcome
+        target.parent.mkdir(parents=True, exist_ok=True)
+        stage = target.with_name('refusal.json.tmp')
+        try:
+            stage.write_text(json.dumps({**outcome, 'schema': 'fames-completion-refusal/1',
+                                         'observed_at': dt.datetime.now(dt.timezone.utc).isoformat()},
+                                        indent=2, ensure_ascii=True, default=str) + '\n', encoding='utf-8')  # the record's own keys win (round-19 N-5)
+            stage.replace(target)
+        except (OSError, ValueError, TypeError, RecursionError):
+            stage.unlink(missing_ok=True)  # no staging leftover (round-18 review N-3)
+            raise
+        return {**outcome, 'refusal': str(target)}
+    except (OSError, ValueError, TypeError, RecursionError):
+        return outcome
+
 def _complete_turn_unlocked(workspace, turn, result, closure, residual):
     goal = goal_identity(turn)
     folder = workspace/'_registry/fames-phase'/goal
     anchor = mechanical_receipt_anchor(workspace, result, turn)
     if not anchor.get('ok'):
-        return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': 'result_without_mechanical_receipt',
-                'detail': anchor.get('reason'), 'path': str(folder)}
+        return record_outcome(folder, {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': 'result_without_mechanical_receipt',
+                'detail': anchor.get('reason'), 'path': str(folder)})
     begin = _begin_turn_unlocked(workspace, turn)
     if begin['state'] != 'PASS':
-        return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': begin.get('reason', 'intake_phase_not_pass'),
-                'phases': {p:g['state'] for p,g in begin['guards'].items()}, 'path': str(folder)}
+        return record_outcome(folder, {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': begin.get('reason', 'intake_phase_not_pass'),
+                'phases': {p:g['state'] for p,g in begin['guards'].items()}, 'path': str(folder)})
     snapshot = folder/'turn.json'
     previous = ref('previous_guard', folder/'mtm.json') if (folder/'mtm.json').is_file() else None
     extra = [ref('result', Path(result)), ref('closure', Path(closure))]
@@ -327,11 +377,21 @@ def _complete_turn_unlocked(workspace, turn, result, closure, residual):
     phases = dict(begin['guards'])
     for phase in ('SCF', 'AEX', 'SEAL'):
         inactive = phase == 'AEX' and not residual
-        guard, previous = advance(workspace, snapshot, phase, previous_guard=previous, extra_refs=extra,
-            mode='skip' if inactive else 'execute', skip_reason='No comparable cross-cycle measurement exists' if inactive else '')
+        try:
+            guard, previous = advance(workspace, snapshot, phase, previous_guard=previous, extra_refs=extra,
+                mode='skip' if inactive else 'execute', skip_reason='No comparable cross-cycle measurement exists' if inactive else '')
+        except Exception as exc:  # noqa: BLE001 - as in _begin_turn_unlocked: UNKNOWN, and the refusal records why (round-19 review R-D)
+            phases[phase] = {'state': 'UNKNOWN', 'reasons': [type(exc).__name__], 'phase': phase,
+                             'goal_identity': goal, 'phase_identity': phase_identity(goal, phase)}
+            break
         phases[phase] = guard
-    return {'state': phases['SEAL']['state'], 'goal_identity': goal,
-            'phases': {p:g['state'] for p,g in phases.items()}, 'path': str(folder)}
+    final = {'state': phases.get('SEAL', {}).get('state', 'UNKNOWN'), 'goal_identity': goal,
+             'phases': {p:g.get('state', 'UNKNOWN') for p,g in phases.items()}, 'path': str(folder)}
+    if final['state'] != 'PASS':  # round-18 review R-6: the refusal names what did not pass
+        final['reason'] = 'seal_phase_not_pass'
+        final['detail'] = ','.join(p + '=' + str(g.get('state')) + (':' + ','.join(map(str, g['reasons'])) if g.get('reasons') else '')
+                                   for p, g in phases.items() if g.get('state') != 'PASS')
+    return record_outcome(folder, final)
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)

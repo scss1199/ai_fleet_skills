@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Issue, validate, and install a provider-only LINE Messaging API token.
 
-The access token exists only in process memory and Fly's encrypted secret store.
+The access token exists only in process memory and the providers' encrypted secret stores: the Cloudflare
+Worker ai-fleet-fly-hooks (required; it serves the kyloren_bot webhook since the 2026-10-05 Fly retirement) and
+Fly's fleet-line-hooks while that app and a Fly credential still exist.
 It is never printed, written to dotenv, passed in argv, or persisted in receipts.
 """
 from __future__ import annotations
@@ -11,6 +13,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -28,6 +31,8 @@ LOCK = WORKSPACE / "_temp" / "line-provider-token.lock"
 FLYCTL = Path(os.environ.get("USERPROFILE", "")) / ".fly" / "bin" / "flyctl.exe"
 FLY_CONFIG = Path(os.environ.get("USERPROFILE", "")) / ".fly" / "config.yml"
 APP = "fleet-line-hooks"
+CF_WORKER = "ai-fleet-fly-hooks"
+WRANGLER_PKG = "wrangler@4.143.1"
 SECRET_NAME = "LINE_BOT_CHANNEL_ACCESS_TOKEN"
 ISSUE_URL = "https://api.line.me/v2/oauth/accessToken"
 VERIFY_URL = "https://api.line.me/v2/oauth/verify"
@@ -140,7 +145,37 @@ def _validate(token: str, channel_id: str, expected_basic_id: str) -> dict:
     }
 
 
-def _install(token: str) -> None:
+def _install_worker(token: str) -> None:
+    """`wrangler secret put` reads the value from stdin, so the token never reaches argv or disk."""
+    npx = shutil.which("npx.cmd") or shutil.which("npx")
+    if not npx:
+        raise RuntimeError("worker_provider_store_unavailable")
+    proc = subprocess.run(
+        [npx, "--yes", WRANGLER_PKG, "secret", "put", SECRET_NAME, "--name", CF_WORKER],
+        input=token + "\n",
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        capture_output=True,
+        cwd=str(WORKSPACE / "_temp"),
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        timeout=300,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"worker_secret_put_failed:{proc.returncode}")
+
+
+def _install(token: str) -> list[str]:
+    """Install into every live store; the Worker is required, Fly only while a Fly credential exists."""
+    _install_worker(token)
+    stores = ["cloudflare-worker"]
+    if _fly_token() and FLYCTL.is_file():
+        _install_fly(token)
+        stores.append("fly")
+    return stores
+
+
+def _install_fly(token: str) -> None:
     fly_token = _fly_token()
     if not fly_token or not FLYCTL.is_file():
         raise RuntimeError("fly_provider_store_unavailable")
@@ -203,15 +238,16 @@ def recover(*, force: bool = False) -> dict:
             raise RuntimeError("line_management_credentials_missing")
         token, expires_in = _issue(channel_id, channel_secret)
         validation = _validate(token, channel_id, expected_basic_id)
-        _install(token)
+        stores = _install(token) or ["unknown"]
         issued = _now()
         receipt = {
             "schema": 1,
             "provider": "line-messaging-api",
             "bot": "kyloren_bot",
             "status": "installed",
-            "store": "fly-provider-only",
-            "fly_app": APP,
+            "store": "+".join(stores),
+            "worker": CF_WORKER,
+            "fly_app": APP if "fly" in stores else None,
             "secret_name": SECRET_NAME,
             "token_type": "short-lived",
             "issued_at": _iso(issued),

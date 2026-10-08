@@ -68,9 +68,6 @@ def _apply(workspace):
             return {"ok": False, "state": "UNKNOWN", "reason": "configured_hook_workspace_mismatch"}
         if hooks.main(["--fames-only"]) != 0:
             return {"ok": False, "state": "UNKNOWN", "reason": "hook_readback_failed"}
-        managed = refresh_existing_managed(workspace)
-        if managed.get("ok") is not True:
-            return {"ok": False, "state": "UNKNOWN", "reason": "existing_managed_hook_refresh_failed", "managed": managed}
     hook_receipt = json.loads((workspace / "_registry/cursor-hooks-sync.json").read_text(encoding="utf-8"))
     # Package may have changed during deployment. Never seal mixed revisions.
     final = verifier.verify_package(package)
@@ -86,34 +83,8 @@ def _apply(workspace):
         "unsupported_surfaces_and_cwds": "UNKNOWN", "model_api_calls": 0,
         "new_resident_processes": 0, "restarts": 0,
         "phase_conformance": phase_proof,
-        "managed_hook_refresh": managed,
     }
     return receipt
-
-
-def refresh_existing_managed(workspace):
-    """Update pins only for an already installed user FAMES hook; no new scope."""
-    settings = Path.home() / '.claude/settings.json'
-    if not settings.is_file():
-        return {"ok": True, "state": "NOT_INSTALLED", "native_adoption": "UNKNOWN"}
-    try:
-        config = json.loads(settings.read_text(encoding='utf-8-sig'))
-        installed = any(str(arg).replace('\\', '/').lower().endswith('/hooks/fames_managed_gate.py')
-                        for entries in (config.get('hooks') or {}).values() for entry in entries
-                        for handler in entry.get('hooks', []) for arg in handler.get('args', []))
-        if not installed:
-            return {"ok": True, "state": "NOT_INSTALLED", "native_adoption": "UNKNOWN"}
-        output = workspace / '_registry/fames-managed-refresh' / uuid.uuid4().hex
-        command = [sys.executable, '-B', str(workspace/'_harness/runtime/install_fames_enforcement.py'),
-                   '--apply', '--scope', 'user', '--output', str(output)]
-        run = subprocess.run(command, capture_output=True, timeout=60,
-                             creationflags=0x08000000 if os.name == 'nt' else 0)
-        receipt = json.loads((output/'installation-user.json').read_text(encoding='utf-8'))
-        ok = run.returncode == 0 and receipt.get('files_readback_equal') is True and receipt.get('policy_readback_equal') is True
-        return {"ok": ok, "state": "PASS" if ok else "UNKNOWN", "receipt": str(output/'installation-user.json'),
-                "native_adoption": "UNKNOWN"}
-    except Exception as exc:
-        return {"ok": False, "state": "UNKNOWN", "reason": type(exc).__name__}
 
 
 def ensure_conformance(workspace):
@@ -143,7 +114,7 @@ def ensure_conformance(workspace):
             target.parent.mkdir(parents=True, exist_ok=True)
             command = [sys.executable, "-B", str(root / "phase_conformance.py"), "--producer",
                        str(workspace / "_harness/runtime/fames_phase_runtime.py"), "--out", str(target)]
-            for name in ("fames_session_harness.py", "fames_enforcement.py", "local_skill_router.py",
+            for name in ("fames_session_harness.py", "local_skill_router.py",
                          "jev_skill_advisor.py", "jev_phase_advisor.py"):
                 command.extend(["--bind", str(workspace / "_harness/runtime" / name)])
             result = subprocess.run(command, capture_output=True, timeout=600,

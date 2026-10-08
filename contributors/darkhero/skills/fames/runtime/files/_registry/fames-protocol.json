@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.42.3",
+  "version": "1.43.0",
   "updated": "2026-09-23",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -2488,7 +2488,8 @@
         "SEAL"
       ],
       "advice_grants_authority": false,
-      "unknown": "deny_phase_admission_and_completion_claim",
+      "unknown": "report_UNKNOWN_and_withhold_completion_claim",
+      "host_enforcement": "none: FAMES is a task contract and evidence discipline carried by context and reports. No FAMES hook blocks a prompt or a tool call, and no hook command carries a pinned hash or version. The managed gate and operator_intent_guard were retired by the operator on 2026-10-08 (_harness/docs/fames-host-enforcement.md).",
       "proof_boundary": "Source-bound formal admission over independently read artifacts; no semantic, OS isolation, native adoption or business-outcome theorem",
       "inactive": "SCF/AEX only with measured false predicate and explicit reason",
       "runtime_release": "One verified package transports allowlisted runtime and formal sources through the existing fames-converge rider; destination evidence is separate from native adoption"

@@ -324,11 +324,28 @@ def write_codex_fames_hook(path: str) -> dict:
     return {"path": str(target), "sha": hashlib.sha256(data).hexdigest(), "read_back": True}
 
 
+# A hook must never lock a session (operator 2026-10-08). `python "hook.py"` exits 2
+# when the script is missing, and Claude Code reads exit 2 as a block. This launcher
+# runs the script in-process and turns a missing file, a crash or any SystemExit into
+# exit 0; whatever the script printed before that still reaches Claude. -P keeps the
+# session cwd off sys.path, and the script's own folder takes its usual sys.path[0].
+CLAUDE_FAIL_OPEN = (
+    "with __import__('contextlib').suppress(Exception,SystemExit):"
+    "import os,runpy,sys;sys.argv=sys.argv[1:];"
+    "sys.path.insert(0,os.path.dirname(sys.argv[0]));"
+    "runpy.run_path(sys.argv[0],run_name='__main__')"
+)
+
+
+def claude_hook_command(script: str) -> str:
+    return f'"{PYW}" -P -c "{CLAUDE_FAIL_OPEN}" "{script}"'
+
+
 def _claude_command_group(script: str, timeout: int) -> dict:
     return {
         "hooks": [{
             "type": "command",
-            "command": f'"{PYW}" "{script}"',
+            "command": claude_hook_command(script),
             "timeout": timeout,
         }]
     }
@@ -374,9 +391,11 @@ def write_claude_fames_hooks(path: str) -> dict:
         ]
 
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("w", encoding="utf-8", newline="\n") as fh:
+    staged = target.with_name(f".{target.name}.{os.getpid()}.tmp")
+    with staged.open("w", encoding="utf-8", newline="\n") as fh:
         json.dump(doc, fh, ensure_ascii=False, indent=2)
         fh.write("\n")
+    os.replace(staged, target)
     read_back = json.loads(target.read_text(encoding="utf-8-sig"))
     for event, (script, _timeout) in wanted.items():
         installed = [
