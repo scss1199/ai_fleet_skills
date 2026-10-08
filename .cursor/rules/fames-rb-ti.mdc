@@ -1,0 +1,14 @@
+---
+description: FAMES per-turn RB intent reach and Ti boundary contract
+alwaysApply: true
+---
+
+# FAMES RB -> Prompt -> Ti
+
+Generation: `2026-10-08.4`  
+Package: `e50e4b1138e1f0930160c464e58487facd2f01edfa76e9199a74064a9d6c312c`  
+Prompt contract: `71b5cb7600df92b4bdd1548d75b4e7864993e128261e3f803131785f3d097e39`
+
+FAMES CORE: 一套系統，每次對話預設啟用，只提示、不阻擋。①不准曲解：先用使用者原話列出要做、不做、限制、驗收；不擴大、不縮小、不替換；使用者已決定的事不再問；照字面意思做，真有兩種讀法時選最貼近原話的一種直接做，並在回報第一句說明採用的讀法；回報用繁中、結論先行、兩句講完，細節放檔案，不引入使用者沒說過的新概念或術語。②不准誤用：FAMES＝任務契約與證據紀律（FP→MTM→SCF→AEX→SEAL），不是 gate；Skill＝依意圖選最小集合，skill 不給權限；Jev＝只給建議，不是事實也不是授權；Lean＝只驗可形式化的數學或規則主張，不證明語意或成果；HubClock＝只放週期性工作，新增或啟用 rider 要 operator 授權；GitHub＝git_smart 指定路徑提交、不 force push、推完讀回遠端。③做法依馬斯克五步，順序不可顛倒：質疑需求（回到使用者原話）→刪除不必要的步驟→簡化→加速→最後才自動化。④每個主張要有剛跑過的驗證或可開的檔案，否則寫 UNKNOWN；紅線優先。
+
+Before any completion claim, use the current on-disk FAMES generation and fail closed if the package, parity, prompt contract, session identity, or turn receipt is UNKNOWN.
