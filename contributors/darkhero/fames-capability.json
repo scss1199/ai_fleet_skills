@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-08T04:32:24.698540+00:00",
+  "observed_at": "2026-10-08T06:04:43.428139+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -380,6 +380,12 @@
         "receipt_sha256": "d267aa3692f1d3224ecf1ac4a72c2cebf3480dcd872377d8c12df658018ae355"
       },
       {
+        "agent": "sinopac-trading-system",
+        "surface": "claude",
+        "observed_at": "2026-10-08T14:04:14+08:00",
+        "receipt_sha256": "770adb5a8ced848fa850c39fe5f6b43aaa8a3df999ef926ab817b9cce8cfa9a9"
+      },
+      {
         "agent": "ai_ziyaoastro",
         "surface": "claude",
         "observed_at": "2026-10-07T14:47:16+08:00",
@@ -388,8 +394,14 @@
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-08T12:27:25+08:00",
-        "receipt_sha256": "0afebccc87467f233d6dab6a5be991f084a9262fdc4e0c34f9f3a683d71ae11f"
+        "observed_at": "2026-10-08T14:01:19+08:00",
+        "receipt_sha256": "6c575ebdef4150db2a6be216fd01f949ef5bc503558ee16ab7751ff53150b068"
+      },
+      {
+        "agent": "ai_workspace",
+        "surface": "claude",
+        "observed_at": "2026-10-08T13:40:43+08:00",
+        "receipt_sha256": "cb7c3ddea9afebe9b6521c22c9d2c2eaba9db8a4348d5bf2c293dcaf700b7a78"
       },
       {
         "agent": "ai_darkhero",
@@ -400,8 +412,8 @@
       {
         "agent": "ai_ziyaoastro",
         "surface": "claude",
-        "observed_at": "2026-10-08T10:57:18+08:00",
-        "receipt_sha256": "694733403f7c284f379d5dcb96d48e3a44ae9ad00b4f802217a4fd229c725c9f"
+        "observed_at": "2026-10-08T14:01:44+08:00",
+        "receipt_sha256": "2ac894a76ccfe41eb97faa29d500d4adba8700b964586fc49e347db3e271f897"
       }
     ],
     "runtime_release_sha256": "99b77456de341b7c617c7cecdaf771eb232ce244eba769199c01cb6fb434f093"
