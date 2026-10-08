@@ -3,132 +3,131 @@
   "hooks": {
     "sessionStart": [
       {
-        "command": "\"C:\\Python312\\pythonw.exe\" \"C:\\ai_workspace\\_skill\\engines\\cursor-agent-session-open.py\"",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-agent-session-open.py\"",
         "timeout": 90
       },
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py C:\\ai_workspace\\_skill\\engines\\hooks\\session-start-notice.ps1",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py\" \"C:\\ai_workspace\\_skill\\engines\\hooks\\session-start-notice.ps1\"",
         "timeout": 20
       },
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-session-inbox.py",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-session-inbox.py\"",
         "timeout": 20
       },
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-mtm-session-inject.py",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-mtm-session-inject.py\"",
         "timeout": 15
       },
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-agc-session-inject.py",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-agc-session-inject.py\"",
         "timeout": 15
       },
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-adus-session-hint.py",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-adus-session-hint.py\"",
         "timeout": 10
       },
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-seal-session-open.py",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-seal-session-open.py\"",
         "timeout": 15
       }
     ],
     "postToolUse": [
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-seal-post-tool.py",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-seal-post-tool.py\"",
         "timeout": 12
       }
     ],
     "afterShellExecution": [
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-seal-after-shell.py",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-seal-after-shell.py\"",
         "timeout": 12
       }
     ],
     "beforeSubmitPrompt": [
       {
-        "command": "\"C:\\Python312\\pythonw.exe\" \"C:\\ai_workspace\\_skill\\engines\\cursor-fames-hot-refresh.py\"",
-        "timeout": 20,
-        "failClosed": true
-      },
-      {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-fleet-inbox-auto.py",
-        "timeout": 15
-      },
-      {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-mtm-mto-remind.py",
-        "timeout": 12
-      },
-      {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-mtm-hot-inject.py",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-fames-hot-refresh.py\"",
         "timeout": 20
       },
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-agc-auto-compact.py",
-        "timeout": 18
-      },
-      {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-auto-gate-unblock.py",
-        "timeout": 18
-      },
-      {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-a2a-read-gate.py",
-        "timeout": 12
-      },
-      {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-accountability-gate.py",
-        "timeout": 12
-      },
-      {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py C:\\ai_workspace\\_skill\\engines\\hooks\\prework-gate.ps1",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-fleet-inbox-auto.py\"",
         "timeout": 15
       },
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py C:\\ai_workspace\\_skill\\engines\\hooks\\claim-linter-gate.ps1",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-mtm-mto-remind.py\"",
         "timeout": 12
       },
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-seal-claim-check.py",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-mtm-hot-inject.py\"",
+        "timeout": 20
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-agc-auto-compact.py\"",
+        "timeout": 18
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-auto-gate-unblock.py\"",
+        "timeout": 18
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-a2a-read-gate.py\"",
         "timeout": 12
       },
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-ztm-broad-gate.py",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-accountability-gate.py\"",
         "timeout": 12
       },
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-pfkt-gate.py",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py\" \"C:\\ai_workspace\\_skill\\engines\\hooks\\prework-gate.ps1\"",
+        "timeout": 15
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py\" \"C:\\ai_workspace\\_skill\\engines\\hooks\\claim-linter-gate.ps1\"",
+        "timeout": 12
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-seal-claim-check.py\"",
+        "timeout": 12
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-ztm-broad-gate.py\"",
+        "timeout": 12
+      },
+      {
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-pfkt-gate.py\"",
         "timeout": 12
       }
     ],
     "preCompact": [
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py C:\\ai_workspace\\_skill\\engines\\hooks\\compaction-guard.ps1",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py\" \"C:\\ai_workspace\\_skill\\engines\\hooks\\compaction-guard.ps1\"",
         "timeout": 12
       }
     ],
     "stop": [
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py C:\\ai_workspace\\_skill\\engines\\hooks\\claim-linter-gate.ps1",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py\" \"C:\\ai_workspace\\_skill\\engines\\hooks\\claim-linter-gate.ps1\"",
         "timeout": 15
       },
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\log_session.py",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\log_session.py\"",
         "timeout": 25
       },
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-seal-finalize.py",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-seal-finalize.py\"",
         "timeout": 20
       }
     ],
     "subagentStop": [
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py C:\\ai_workspace\\_skill\\engines\\hooks\\claim-linter-gate.ps1",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\hooks\\run_hidden.py\" \"C:\\ai_workspace\\_skill\\engines\\hooks\\claim-linter-gate.ps1\"",
         "timeout": 15
       },
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\log_session.py",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\log_session.py\"",
         "timeout": 25
       },
       {
-        "command": "C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\cursor-seal-finalize.py",
+        "command": "C:\\Python312\\pythonw.exe -P -c \"with __import__('contextlib').suppress(Exception,SystemExit):import os,runpy,sys;sys.argv=sys.argv[1:];sys.path.insert(0,os.path.dirname(sys.argv[0]));runpy.run_path(sys.argv[0],run_name='__main__')\" \"C:\\ai_workspace\\_skill\\engines\\cursor-seal-finalize.py\"",
         "timeout": 20
       }
     ]
