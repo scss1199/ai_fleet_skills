@@ -2,7 +2,7 @@
   "schema": 1,
   "id": "FAMES",
   "version": "1.45.0",
-  "skill_gen": "2026-10-08.6",
+  "skill_gen": "2026-10-09.2",
   "execution_order": [
     "FP",
     "MTM",
@@ -24,7 +24,7 @@
   "source_git_commit": null,
   "files": {
     ".gitattributes": "448f5307a4b4eaab3e5e0615e1b57e125c2e6419d590025c4ac3d2e2c004955e",
-    "SKILL.md": "14532c0d96742b6d6f067bf54665f422330473d4d8c00baad236ffecd6fb3a12",
+    "SKILL.md": "efa2896351614f2ae281ff65ccd574dadf217ed60176a066e09ea35055cbcf83",
     "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
     "references/autonomous-knowledge.md": "b34ca6beb034909aaade75be4707c772e90155c6c12b8278c7b3964ec8238df5",
     "references/cases.json": "2ebbb062b8e58241dfd2a70ec423678c4c16e40303d436ffa6de6e5560f67a40",
@@ -87,8 +87,8 @@
     "runtime/files/_skill/engines/lane_taxonomy.py": "e8cb50dd7a0ea47368196320ad4ce3e1ce90379beb757be0f3d38fe193d26888",
     "runtime/files/_skill/engines/mtm-fleet-skill-github.py": "dd548a7faafd1a589952eed2ae740395fc52e6cd6f1972a51387d917ad1232b7",
     "runtime/files/_skill/engines/sync-cursor-hooks.py": "b1082262151f88af55328b6cf1a14905f05ab6c1b1e38a4f0ba5c359a4388a53",
-    "runtime/files/_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py": "1571688d5a8ef0b62c77f5475a9c31aa8dfa7e6f153b08bc9bdc8eb9ba784b65",
-    "runtime/manifest.json": "f4a816e1713b059ce8a6ba844429a7bb322a0686b3a4ca5ea4453f250c2174ae",
+    "runtime/files/_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py": "e0ce43d86140d29b1281b6e296a71df09666b0a2245e0e08f54de141dce687b3",
+    "runtime/manifest.json": "fbb72b5b196a5792b8116d95449b33dbda81388414a62e91a28a4ab44918b2f3",
     "scripts/adaptive_response_controller.py": "07a19c6e0bda90f25800617a274d5f641709676d0d71cdfae8e17dec91e0d911",
     "scripts/claude_live_ab.py": "3aaa4276c505e1eceea33207c6c4baeb190b6319b737f081fd53fbc055834261",
     "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
@@ -103,5 +103,5 @@
     "scripts/test_work_efficiency.py": "e4250ba4c05f616c79cf97182507d1ff3585487c788546151a97b2dad74f0536",
     "scripts/work_efficiency.py": "42d41b64b8075280b1212625b46a25ab32bba35d27f5c019cf79dde02552022e"
   },
-  "package_sha": "e8f2a8106889db89b741371accbdc0e980105d980d0224cd8ba74f88667ae0a8"
+  "package_sha": "c27dce21d74fc8a4d396cf542fe4902abbbc9b0cdf7d56ca8a7c1b82a5242f31"
 }

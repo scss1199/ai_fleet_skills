@@ -9,6 +9,7 @@ from pathlib import Path
 HUB=Path(os.environ.get("AI_WORKSPACE") or Path(__file__).resolve().parents[4])
 STATUS=HUB/"_registry"/"token-preflight"/"claude-hook-status.json"
 T1_DELIVERY=HUB/"_registry"/"token-preflight"/"t1-delivery"
+CHARTER_DELIVERY=HUB/"_registry"/"token-preflight"/"charter-delivery"
 CODEX_STATUS=HUB/"_registry"/"token-preflight"/"codex-hook-status.json"
 
 
@@ -103,6 +104,135 @@ def _t1_refresh(surface_id: str, session_id: str, *, at_start: bool) -> str:
         return ""
 
 
+def _instruction_files(surface_id: str, cwd: str) -> list[Path]:
+    """The instruction files the host loaded when this conversation started, with their @imports.
+
+    Claude Code: ~/.claude/CLAUDE.md plus CLAUDE.md, CLAUDE.local.md and .claude/CLAUDE.md in cwd and every
+    ancestor. The open-agent surface (Codex): ~/.codex/AGENTS.md plus AGENTS.md in cwd and every ancestor.
+    """
+    import re
+    base = Path(cwd).resolve()
+    dirs = [*reversed(base.parents), base]
+    if surface_id == "open-agent-standard":
+        roots = [Path(os.environ.get("CODEX_HOME") or Path.home() / ".codex") / "AGENTS.md"]
+        roots += [d / "AGENTS.md" for d in dirs]
+    else:
+        roots = [Path.home() / ".claude" / "CLAUDE.md"]
+        roots += [d / name for d in dirs for name in ("CLAUDE.md", "CLAUDE.local.md", ".claude/CLAUDE.md")]
+    found: list[Path] = []
+    pending = [(p, 0) for p in roots]
+    while pending:
+        path, depth = pending.pop(0)
+        if path in found or not path.is_file():
+            continue
+        found.append(path)
+        if depth >= 5 or path.stat().st_size > 1 << 20:
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for ref in re.findall(r"(?:^|\s)@((?:~[\\/])?[\w.\\/:-]+\.md)\b", text):
+            target = Path.home() / ref[2:] if ref.startswith("~") else Path(ref)
+            pending.append(((target if target.is_absolute() else path.parent / target).resolve(), depth + 1))
+    return found
+
+
+def _transcript_cwd(transcript_path: str) -> str:
+    """The first cwd a Claude (top-level "cwd") or Codex (session_meta payload "cwd") transcript records, or ""."""
+    try:
+        with open(transcript_path, encoding="utf-8", errors="replace") as handle:
+            for _, line in zip(range(200), handle):
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if not isinstance(row, dict):
+                    continue
+                payload = row.get("payload")
+                found = row.get("cwd") or (payload.get("cwd") if isinstance(payload, dict) else None)
+                if isinstance(found, str) and found.strip():
+                    return found
+    except (OSError, TypeError, ValueError):
+        pass
+    return ""
+
+
+def _charter_refresh(surface_id: str, session_id: str, cwd: str, *, at_start: bool, transcript_path: str = "",
+                     max_chars: int = 8000) -> str:
+    """Return what changed in this conversation's instruction files since it last received them.
+
+    SessionStart records the files as loaded; a later prompt gets a diff of every file that changed (new and
+    removed files included), so a CLAUDE.md or AGENTS.md upgrade never needs a restarted conversation. A
+    conversation with no record (opened before this existed) gets the files changed after its transcript was
+    created. Over max_chars the reply names the files to re-read instead. Never raises.
+    """
+    if not session_id.strip():
+        return ""
+    try:
+        import difflib
+        import hashlib
+        key = hashlib.sha256(f"{surface_id}\0{session_id}".encode("utf-8")).hexdigest()
+        record = CHARTER_DELIVERY / f"{key}.json"
+        try:
+            last_doc = json.loads(record.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            last_doc = {}
+        # The host loaded its files for the cwd the conversation opened in; a later `cd` changes the hook's cwd
+        # but not what the conversation loaded, so the file set stays anchored to the recorded cwd (or, with no
+        # record yet, to the first cwd its transcript names).
+        anchor = cwd if at_start else str(last_doc.get("cwd") or _transcript_cwd(transcript_path) or cwd)
+        last = last_doc.get("files") if not at_start else None
+        files = _instruction_files(surface_id, anchor)
+        texts = {str(p): p.read_text(encoding="utf-8", errors="replace") for p in files}
+        current = {k: hashlib.sha256(v.encode("utf-8")).hexdigest() for k, v in texts.items()}
+        root = CHARTER_DELIVERY
+        blobs = root / "blobs"
+        blobs.mkdir(parents=True, exist_ok=True)
+        for path, digest in current.items():
+            blob = blobs / f"{digest}.txt"
+            if not blob.is_file():
+                stage = blob.with_suffix(".tmp")
+                stage.write_text(texts[path], encoding="utf-8")
+                os.replace(stage, blob)
+        if last != current or last_doc.get("cwd") != anchor:
+            stage = record.with_suffix(".tmp")
+            stage.write_text(json.dumps({"files": current, "cwd": anchor,
+                                         "at": datetime.now(timezone.utc).isoformat()}), encoding="utf-8")
+            os.replace(stage, record)
+        if at_start or last == current:
+            return ""
+        if last is None:
+            transcript = Path(transcript_path) if transcript_path else None
+            if not transcript or not transcript.is_file():
+                return ""
+            stat = transcript.stat()
+            opened = getattr(stat, "st_birthtime", stat.st_ctime)
+            changed = [p for p in current if Path(p).stat().st_mtime > opened]
+            last = {}
+        else:
+            changed = [p for p in current if last.get(p) != current[p]]
+        removed = [p for p in last if p not in current]
+        if not changed and not removed:
+            return ""
+        parts = []
+        for path in changed:
+            old_blob = blobs / f"{last.get(path)}.txt"
+            if last.get(path) and old_blob.is_file():
+                diff = difflib.unified_diff(old_blob.read_text(encoding="utf-8").splitlines(),
+                                            texts[path].splitlines(), path + " (as loaded)", path + " (now)",
+                                            n=1, lineterm="")
+                parts.append("\n".join(diff))
+            else:
+                parts.append(f"=== {path} (current text) ===\n{texts[path]}")
+        parts += [f"=== {path} === removed; its instructions no longer apply" for path in removed]
+        head = "INSTRUCTIONS UPDATED (these files changed since this conversation loaded them; the current text applies from this turn):\n"
+        body = "\n".join(parts)
+        if len(body) > max_chars:
+            body = "Too large to inline; re-read these files now with the Read tool before acting:\n" + "\n".join(
+                f"- {p}" for p in changed + removed)
+        return head + body
+    except Exception:
+        return ""
+
+
 def main():
     doc=_read_hook_input(sys.stdin)
     cwd=str(doc.get("cwd") or os.getcwd())
@@ -156,9 +286,6 @@ def main():
             )
             context=((token_core+"\n") if result.get("should_inject") else "") + result.get("plan_text", "")
             state=result.get("state")
-            t1_update=_t1_refresh(surface_id, session_id, at_start=False)
-            if t1_update:
-                context=(context+"\n"+t1_update).strip()
         else:
             harness.reset_turn_context(HUB, surface_id, session_id)
             result=harness.run_session(
@@ -171,10 +298,20 @@ def main():
             )
             context=(token_core+"\n"+result.get("plan_text", "")).strip()
             state=result.get("state")
-            _t1_refresh(surface_id, session_id, at_start=True)
     except Exception as exc:
         state="UNKNOWN"
         context=token_core+f"\nFAMES ALWAYS-ON — UNKNOWN — {type(exc).__name__}"
+    # Upgrades reach open conversations even when the FAMES harness above failed; both helpers never raise.
+    if event == "UserPromptSubmit":
+        for update in (_t1_refresh(surface_id, session_id, at_start=False),
+                       _charter_refresh(surface_id, session_id, cwd, at_start=False, transcript_path=transcript_path)):
+            if update:
+                context=(context+"\n"+update).strip()
+    else:
+        _t1_refresh(surface_id, session_id, at_start=True)
+        if session_source != "compact":
+            # A fresh, resumed or cleared conversation loads its instruction files now; compaction may not.
+            _charter_refresh(surface_id, session_id, cwd, at_start=True)
     t1_state=None
     if event == "SessionStart":
         # The hard lines must not depend on the FAMES harness above having succeeded.
