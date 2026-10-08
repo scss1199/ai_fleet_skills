@@ -24,7 +24,7 @@ STANDING RULES (_registry/rules-blueprint.json — portal rules tab = this sourc
 - 零彈窗: 前端零彈窗(總禁令,operator 2026-06-16,全 fleet,非僅 claude.html):任何 agent 出貨的前端 UI 一律 inline、非阻塞——嚴禁 alert()/confirm()/prompt() 與 window.open() 及任何搶焦點的模態或彈出視窗。確認動作用就地兩段式按鈕(arm→再點 confirm),圖片用頁內 lightbox 而非 window.open,通知用非阻塞 inline toast(pointer-events 關閉、自動淡出)。同一條「不搶使用者焦點」紅線:背景不彈 cmd、前端不彈模態。機器強制:zt-popup-gate.py 掃全 claude_<agent> 前端與生成器(.html 只計 script 區塊與 on 事件屬性、排除渲染文字;.py 與 .js 去註解;無空格 regex 排除散文),已 arm 進 ship-queue.py——出貨或 bake 前對該 repo 跑 gate,違規 exit 1 擋下 push 並記 failed/;各 agent 另須把同道閘加進自家 ship 流程。違反即停。
 - KB 唯讀: _skill/technique_output 對 curator 以外唯讀(hook 強制);要交東西寫 _inbox/from_projects/<proj>/。
 - pfkt-work-graph: 【PFKT v4 2026-09-30,取代 07-04 全艦硬阻擋】PFKT=FAMES 可選的 MTM work graph:不逐 prompt deny,也不再 mint fragment 解鎖。多個可獨立驗證的交付或明確平行工作:pfkt_work_graph.py open(--plan 或 --from-fragments)→status 取可派 wave(singleton 見 parallel-gates.json)→close-node 綁 evidence(sha256)→closure 交 SEAL。硬線:graph OPEN/UNKNOWN 時 SEAL 擋完成宣稱;dispatch、process exit、建議不算 close;UNKNOWN 或 OPEN 逾 24h=pfkt-graph-unknown/stale 合規 flag。SSOT:_registry/pfkt-protocol.json(pfkt-v4)。
-- fames-one-system: 【operator 2026-10-08】每次對話預設使用 FAMES 一套系統，只提示不阻擋：不准曲解（原話列需求，不擴不縮不替換，已決定不再問，結論先行兩句講完）；不准誤用（FAMES 是契約不是 gate；Skill 不給權限；Jev 只給建議；Lean 只驗形式化主張；HubClock 只放週期工作且需授權；GitHub 用 git_smart、不 force push）；做法依馬斯克五步（質疑→刪除→簡化→加速→自動化）。managed gate 與阻擋型 operator_intent_guard 已退役；任何 hook 不得擋 prompt、工具或 Stop，不得把 hash 或版本釘進命令，缺檔或壞掉必須 fail-open。全文：_registry/fames-protocol.json unified_entrypoint.hot_directive。
+- fames-one-system: 【operator 2026-10-08】每次對話預設使用 FAMES 一套系統，只提示不阻擋：不准曲解（原話列需求，不擴不縮不替換，已決定不再問，結論先行兩句講完）；不准誤用（元件按需啟用、不一次叫全部；FAMES 是契約不是 gate；Skill 不給權限；Jev 只在挑選或排序時給建議；Lean 只驗形式化主張；HubClock 只放週期工作且需授權；GitHub 用 git_smart、不 force push；單說 FAMES＝回報各階段狀態）；做法依馬斯克五步（質疑→刪除→簡化→加速→自動化），先重用再自己寫。managed gate 與阻擋型 operator_intent_guard 已退役；任何 hook 不得擋 prompt、工具或 Stop，不得把 hash 或版本釘進命令，缺檔或壞掉必須 fail-open。全文：_registry/fames-protocol.json unified_entrypoint.hot_directive。
 
 ## Session open (ZTM — SessionStart 三層 hook)
 
@@ -40,10 +40,7 @@ Debug: `python C:\\ai_workspace\\_skill\\engines\\agent-session-open.py`
 
 ## FAMES complete-contract trigger
 
-Standalone `FAMES` means the full `FP -> MTM -> SCF -> AEX -> SEAL` contract; report every phase, fail closed on UNKNOWN, and never expand user authority. SSOT: `_registry/fames-protocol.json`; Skill: `fames`.
-
-FAMES is the always-on conversation harness for `ai_fleet_skills`. SessionStart must produce `_registry/fames-session/ai_fleet_skills.json` through the existing session-open orchestrator, with zero model/API calls. Every non-trivial task, continuation, and resumed session executes the task-adaptive FAMES envelope without requiring a trigger. FP and MTM activate at task intake; SCF and AEX remain predicate-gated; SEAL closes every completion claim. On every user turn, resolve FAMES from disk and compile the exact current prompt through RB SOURCE→INTENT→PROMPT→Ti→EXECUTE→PRESENT: every load-bearing intent maps to a prompt clause, and every clause maps to a Ti invariant, counterexample, discriminating test, stop rule, and verified/UNKNOWN/FORBIDDEN terminal state. Unmapped meaning fails closed. This changes completeness only; authority_after stays a subset of authority_before and task scope, credentials, destructive authority, and safety boundaries never expand.
-
+FAMES 是預設契約，不是一次叫全部（operator 2026-10-08）：每次對話照 T1 `fames-one-system`。FP、MTM 每個任務都做；SCF 要有已驗證結果，AEX 要有可比較的量測差距，SEAL 在宣稱完成時；Lean、Jev、HubClock、GitHub 只在各自條件成立時啟用。使用者單說「FAMES」＝在回報列出各階段狀態。SSOT：`_registry/fames-protocol.json`；Skill：`fames`。
 
 ## Milestone handoff
 
