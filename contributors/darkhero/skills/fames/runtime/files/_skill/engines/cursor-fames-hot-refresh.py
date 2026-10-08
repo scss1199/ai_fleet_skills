@@ -64,14 +64,14 @@ def main() -> int:
             cio.emit_allow()
         else:
             cio.emit_deny(
-                "FAMES RB/Ti turn gate is UNKNOWN. The prompt was not sent because the "
-                "active package, parity, session identity, or always-applied rule did not read back. "
+                "FAMES RB/Ti turn check is UNKNOWN: the active package, parity, session identity, "
+                "or always-applied rule did not read back. The prompt still goes through; do not claim completion. "
                 f"Receipt: {turn.get('state_path') or 'UNKNOWN'}"
             )
     except Exception as exc:
         cio.emit_deny(
-            f"FAMES RB/Ti turn gate failed closed ({type(exc).__name__}). "
-            "The prompt was not sent; repair the on-disk gate before retrying."
+            f"FAMES RB/Ti turn check failed ({type(exc).__name__}). "
+            "The prompt still goes through; repair the on-disk check when convenient."
         )
     return 0
 
