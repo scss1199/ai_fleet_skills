@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-09T11:06:06.573726+00:00",
+  "observed_at": "2026-10-09T11:53:36.912353+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -358,8 +358,8 @@
       {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-09T13:05:35+08:00",
-        "receipt_sha256": "edea35ae7ad3647cdf27ed6de981e94c63d15c1e36b0ed7389d8db608b79c21d"
+        "observed_at": "2026-10-09T19:23:31+08:00",
+        "receipt_sha256": "d443da7a971d18c5bf6ed233ae6a7bfbdc5425dc9666cee47fd5e2cc364610f9"
       },
       {
         "agent": "ai_metadata",
@@ -370,14 +370,14 @@
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-09T13:05:29+08:00",
-        "receipt_sha256": "888a594a57723d495917582261958db054ad2ab2ddc3b8edf9b15b043d0c3523"
+        "observed_at": "2026-10-09T19:23:35+08:00",
+        "receipt_sha256": "5c9e2ab6b01ad814a45b9856addf528f0496a77edbfd1e6d1c61fe62c6d16954"
       },
       {
-        "agent": "ai_workspace",
+        "agent": "sinopac-trading-system",
         "surface": "claude",
-        "observed_at": "2026-10-09T07:48:21+08:00",
-        "receipt_sha256": "24f79a09777c293f290bc859e2a7edd34d427e8dd886f0563d28bb4bdb18e40d"
+        "observed_at": "2026-10-09T19:24:20+08:00",
+        "receipt_sha256": "29c3397844abbd960cef889c9c646f2f5665ec3b2e7b2fd5796ee26a62c5f4b0"
       },
       {
         "agent": "ai_workspace",
