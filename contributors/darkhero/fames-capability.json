@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-09T16:20:33.723735+00:00",
+  "observed_at": "2026-10-09T16:54:18.251409+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -370,8 +370,8 @@
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-10T00:17:55+08:00",
-        "receipt_sha256": "5690e1e72df773c750c608949c954f0f1eb04ebd1cc1a2b6dee6b163811359b6"
+        "observed_at": "2026-10-10T00:52:06+08:00",
+        "receipt_sha256": "c38e947b8b1a3c81813de401037d8f2586c6bc7990435efb924233664b083d11"
       },
       {
         "agent": "ai_trader-dev",
@@ -384,6 +384,12 @@
         "surface": "claude",
         "observed_at": "2026-10-09T07:34:35+08:00",
         "receipt_sha256": "4cc3ce0428148a3af8599f50d074078e6c39c3a6cadb4b7b5398e867ea0e6014"
+      },
+      {
+        "agent": "ai_theater",
+        "surface": "claude",
+        "observed_at": "2026-10-10T00:26:14+08:00",
+        "receipt_sha256": "5082b5cb467e3bd4b4b12a8bf2e88368cd358e6920b8af6971b43690725fcada"
       }
     ],
     "runtime_release_sha256": "74d89de8a2b222c3c582d8cd7650ff2aebd6de9688c8d6d3bef030d506af068d"
