@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-09T23:20:59.377057+00:00",
+  "observed_at": "2026-10-09T23:57:33.163218+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,10 +356,10 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
-        "agent": "ai_workspace",
+        "agent": "tray",
         "surface": "claude",
-        "observed_at": "2026-10-10T07:16:51+08:00",
-        "receipt_sha256": "2981c4398309303c96b4afe932044c7ae6711d24b3840f86f9cca0f7c0f78001"
+        "observed_at": "2026-10-10T07:28:27+08:00",
+        "receipt_sha256": "c9ecfb9773f12621f3ef0c8595c7ab0361b67d6624f8e8f5b635b487fe633f61"
       },
       {
         "agent": "ai_metadata",
@@ -368,10 +368,10 @@
         "receipt_sha256": "cbb320fc468bc639c39aef6e0db7dbc0b5e74fd632834b7303fc2b15ba19dfaf"
       },
       {
-        "agent": "ai_theater",
+        "agent": "ai_workspace",
         "surface": "claude",
-        "observed_at": "2026-10-10T07:19:23+08:00",
-        "receipt_sha256": "dba713c1d6bf2510072d57df7670ab3a4beaf831d5c55d070214d7615f5ed16f"
+        "observed_at": "2026-10-10T07:22:57+08:00",
+        "receipt_sha256": "d36ffd050f937ffc7713d99828c9f242df9c9b0d0c7a6dfd1856932ba19aa40d"
       },
       {
         "agent": "ai_nuwa",
@@ -384,12 +384,6 @@
         "surface": "claude",
         "observed_at": "2026-10-10T00:18:37+08:00",
         "receipt_sha256": "9558853dbf809c5c679184ecc487bd11ca8fa80d7b20431b1384900ddfa23dc2"
-      },
-      {
-        "agent": "ai_workspace",
-        "surface": "claude",
-        "observed_at": "2026-10-09T07:34:35+08:00",
-        "receipt_sha256": "4cc3ce0428148a3af8599f50d074078e6c39c3a6cadb4b7b5398e867ea0e6014"
       },
       {
         "agent": "ai_metadata",
