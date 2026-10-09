@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-09T15:03:59.590432+00:00",
+  "observed_at": "2026-10-09T15:34:35.226836+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,10 +356,10 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
-        "agent": "ai_workspace",
+        "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-09T22:17:34+08:00",
-        "receipt_sha256": "51e4d613f8c23c3bd9b1c33a8545140d5fdf5148a74cd419105498f5a5804e8b"
+        "observed_at": "2026-10-09T23:26:49+08:00",
+        "receipt_sha256": "313efee5260bdfe5b09ad57aac104375f561791d47f86dc19e6977e143457cdf"
       },
       {
         "agent": "ai_metadata",
@@ -370,14 +370,14 @@
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-09T22:17:32+08:00",
-        "receipt_sha256": "27e8e5134f6514689723a25b6075b949114fc6c6c302a6f35981c0c87128d7c8"
+        "observed_at": "2026-10-09T23:26:53+08:00",
+        "receipt_sha256": "59a86df12e9fa037eb2f25b250b58a350f053038fc7b13fb6c0a95568d9b0692"
       },
       {
         "agent": "ai_trader",
         "surface": "claude",
-        "observed_at": "2026-10-09T22:17:29+08:00",
-        "receipt_sha256": "65b98ec198648692e08a892473149da28b8b9d269af143b50844faf75ab67ccb"
+        "observed_at": "2026-10-09T23:29:10+08:00",
+        "receipt_sha256": "63da78bb1bb057eb8ccd73b99e95209f84dd541ffa847bc04bf327860062d55e"
       },
       {
         "agent": "ai_workspace",
