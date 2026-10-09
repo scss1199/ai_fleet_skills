@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-09T12:34:53.551909+00:00",
+  "observed_at": "2026-10-09T13:05:49.387973+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,28 +356,28 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
-        "agent": "engines",
+        "agent": "ai_workspace",
         "surface": "claude",
-        "observed_at": "2026-10-09T20:09:04+08:00",
-        "receipt_sha256": "ddf23e126eea913657e8dccaf24c987a3c279ceb7c947440677ebef4a4271658"
+        "observed_at": "2026-10-09T20:48:21+08:00",
+        "receipt_sha256": "86de66717d70c8e1fab18f07ba1163c41e0e7e50e6020196aa7cabf7be355d03"
       },
       {
         "agent": "ai_metadata",
         "surface": "claude",
-        "observed_at": "2026-10-09T20:06:20+08:00",
-        "receipt_sha256": "5000c6165f9d0e483d979c38f9380403a29ec04551e36208190d65f50eb08977"
+        "observed_at": "2026-10-09T20:48:23+08:00",
+        "receipt_sha256": "af4535aa2ff4c4e64a72f555e1732e66b4d7778045d81694e0aebf6eaa05d43b"
       },
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-09T20:06:06+08:00",
-        "receipt_sha256": "1b106533af8b778463c5c9e8a35ca98aec92da3f873ed575cccc778b1dce9652"
+        "observed_at": "2026-10-09T20:48:25+08:00",
+        "receipt_sha256": "46fb734e7f3149d360928066d71bd95b3edf2d90dfd7b20450e46799b0ec2b1b"
       },
       {
-        "agent": "sinopac-trading-system",
+        "agent": "ai_trader",
         "surface": "claude",
-        "observed_at": "2026-10-09T20:15:03+08:00",
-        "receipt_sha256": "d987461ffeda52bb782917db23753a930892628f0ba4920121f33684e0059bc8"
+        "observed_at": "2026-10-09T20:48:26+08:00",
+        "receipt_sha256": "e84c0ebcb30f8beaf66c6d2ca55ca6875a70c579d4cc914754e08f9bd0d5a048"
       },
       {
         "agent": "ai_workspace",
