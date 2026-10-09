@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-09T13:49:44.784844+00:00",
+  "observed_at": "2026-10-09T14:19:43.278201+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,28 +356,28 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
-        "agent": "ai_darkhero",
+        "agent": "ai_workspace",
         "surface": "claude",
-        "observed_at": "2026-10-09T21:47:55+08:00",
-        "receipt_sha256": "b082828581a8749f9fdbf7ff5e00cc0f46c98cd386b5535026a9838e7f5fbe0f"
+        "observed_at": "2026-10-09T22:17:34+08:00",
+        "receipt_sha256": "51e4d613f8c23c3bd9b1c33a8545140d5fdf5148a74cd419105498f5a5804e8b"
       },
       {
         "agent": "ai_metadata",
         "surface": "claude",
-        "observed_at": "2026-10-09T20:48:23+08:00",
-        "receipt_sha256": "af4535aa2ff4c4e64a72f555e1732e66b4d7778045d81694e0aebf6eaa05d43b"
+        "observed_at": "2026-10-09T21:54:49+08:00",
+        "receipt_sha256": "2c4e69d06db7d756616cecc9c85f2a9e99cd03817266422a809ff0037cb8b6a8"
       },
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-09T21:46:16+08:00",
-        "receipt_sha256": "f25a577e73181e5de889b58ece97812cd19fa73c4c63316859d7f6575b7f011b"
+        "observed_at": "2026-10-09T22:17:32+08:00",
+        "receipt_sha256": "27e8e5134f6514689723a25b6075b949114fc6c6c302a6f35981c0c87128d7c8"
       },
       {
         "agent": "ai_trader",
         "surface": "claude",
-        "observed_at": "2026-10-09T21:31:23+08:00",
-        "receipt_sha256": "c3d4d89bb1d8f8e92b4eab15d0dd9a8cf8b247801434a34919228a29a8acba9a"
+        "observed_at": "2026-10-09T22:17:29+08:00",
+        "receipt_sha256": "65b98ec198648692e08a892473149da28b8b9d269af143b50844faf75ab67ccb"
       },
       {
         "agent": "ai_workspace",
