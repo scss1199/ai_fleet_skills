@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-10T18:18:31.581440+00:00",
+  "observed_at": "2026-10-10T18:49:30.136141+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -358,32 +358,38 @@
       {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-10T22:28:23+08:00",
-        "receipt_sha256": "81689843d54ee43f90aa769221c8b7a885416ba699e4cf5f28e8179e4fafa3a4"
+        "observed_at": "2026-10-11T02:48:11+08:00",
+        "receipt_sha256": "dba38ffb4e7a4d6de4d085b9ec58457d8eb3306d402448141936b1d377ca5e80"
       },
       {
         "agent": "ai_metadata",
         "surface": "claude",
-        "observed_at": "2026-10-10T21:41:12+08:00",
-        "receipt_sha256": "043b1a7effbffff634153c16063911bedcc16f1c7b83ee8e8a7ee4dd1fce9671"
+        "observed_at": "2026-10-11T02:45:30+08:00",
+        "receipt_sha256": "610b9a0eb235dee2fa0e102a68afff22c9151e928260af4108817277cb5edfce"
       },
       {
-        "agent": "ai_theater",
+        "agent": "ai_workspace",
         "surface": "claude",
-        "observed_at": "2026-10-10T21:43:27+08:00",
-        "receipt_sha256": "f335ea6ebc35c2e3de0ac8a457c614926a69358f128ec45299eb6a768e5b8221"
+        "observed_at": "2026-10-11T02:47:52+08:00",
+        "receipt_sha256": "89c9b87c7ef2a20753ab452feedac05c1cde2bb49f11f3bbd79bdd01866ab1b2"
       },
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-10T21:21:09+08:00",
-        "receipt_sha256": "ffcd313b8286e94377649182cffbbcd050738be44d353de094f50b8618a817da"
+        "observed_at": "2026-10-11T02:44:07+08:00",
+        "receipt_sha256": "ab80b3391564f5b3f978d8320db1c5ac56296147a7de9a9eb79515886e5debee"
       },
       {
-        "agent": "ai_metadata",
+        "agent": "ai_ziyaoastro",
         "surface": "claude",
-        "observed_at": "2026-10-10T21:17:14+08:00",
-        "receipt_sha256": "f7b9d86fe9a8cd091318cb981646f5d20518d3280cd412470841523cb5ed1a6b"
+        "observed_at": "2026-10-11T02:28:38+08:00",
+        "receipt_sha256": "dbfa5b8a35cf1b3f1192d4bee9f4818694caf4da34f61aa8d0a7974efd05509e"
+      },
+      {
+        "agent": "ai_workspace",
+        "surface": "claude",
+        "observed_at": "2026-10-11T02:41:29+08:00",
+        "receipt_sha256": "201a8954d11682be533ebbcea56c650043d4c6f668b5d05b6ff881e9b0ea8bb2"
       }
     ],
     "runtime_release_sha256": "74d89de8a2b222c3c582d8cd7650ff2aebd6de9688c8d6d3bef030d506af068d"
