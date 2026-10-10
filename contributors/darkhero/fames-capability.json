@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-10T00:36:19.046615+00:00",
+  "observed_at": "2026-10-10T01:22:47.836091+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
