@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-10T13:06:10.235203+00:00",
+  "observed_at": "2026-10-10T13:54:04.358455+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,28 +356,28 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
-        "agent": "tray",
+        "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-10T10:19:31+08:00",
-        "receipt_sha256": "760b1ec218dc08dbe62fb1e2a0debe2640a7e43e824bde5aaf8def879c3b2562"
+        "observed_at": "2026-10-10T21:43:38+08:00",
+        "receipt_sha256": "ea6fadc7f1e319392cf7358c83b5d8a8cf821201724b979f67a6b7c57fc235c3"
       },
       {
         "agent": "ai_metadata",
         "surface": "claude",
-        "observed_at": "2026-10-10T07:16:25+08:00",
-        "receipt_sha256": "cbb320fc468bc639c39aef6e0db7dbc0b5e74fd632834b7303fc2b15ba19dfaf"
+        "observed_at": "2026-10-10T21:41:12+08:00",
+        "receipt_sha256": "043b1a7effbffff634153c16063911bedcc16f1c7b83ee8e8a7ee4dd1fce9671"
       },
       {
-        "agent": "ai_workspace",
+        "agent": "ai_theater",
         "surface": "claude",
-        "observed_at": "2026-10-10T07:22:57+08:00",
-        "receipt_sha256": "d36ffd050f937ffc7713d99828c9f242df9c9b0d0c7a6dfd1856932ba19aa40d"
+        "observed_at": "2026-10-10T21:43:27+08:00",
+        "receipt_sha256": "f335ea6ebc35c2e3de0ac8a457c614926a69358f128ec45299eb6a768e5b8221"
       },
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-10T06:56:40+08:00",
-        "receipt_sha256": "586d761e06d061302489dd547f33616dbdf440e11971b4bc6b63776fe98bd4a8"
+        "observed_at": "2026-10-10T21:21:09+08:00",
+        "receipt_sha256": "ffcd313b8286e94377649182cffbbcd050738be44d353de094f50b8618a817da"
       },
       {
         "agent": "ai_trader-dev",
@@ -388,8 +388,8 @@
       {
         "agent": "ai_metadata",
         "surface": "claude",
-        "observed_at": "2026-10-10T10:27:24+08:00",
-        "receipt_sha256": "8111b9ef28d8c2365d8c38c87676b6f9a6c1bf2d8f6014198ed271b62474394f"
+        "observed_at": "2026-10-10T21:17:14+08:00",
+        "receipt_sha256": "f7b9d86fe9a8cd091318cb981646f5d20518d3280cd412470841523cb5ed1a6b"
       }
     ],
     "runtime_release_sha256": "74d89de8a2b222c3c582d8cd7650ff2aebd6de9688c8d6d3bef030d506af068d"
