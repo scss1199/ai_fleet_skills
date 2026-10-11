@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-11T18:06:51.937032+00:00",
+  "observed_at": "2026-10-11T18:49:46.179703+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -382,14 +382,14 @@
       {
         "agent": "ai_theater",
         "surface": "claude",
-        "observed_at": "2026-10-11T18:51:10+08:00",
-        "receipt_sha256": "a48f44173ad842cc0b1acf0d5f7fcdce361fbe51572f7bc8bd24c59fca0a2395"
+        "observed_at": "2026-10-12T02:29:46+08:00",
+        "receipt_sha256": "e9ff3f3ab58934fdf3b718a41ee4a2f363cdd1f6bda1968a13825843078f0896"
       },
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-11T19:19:58+08:00",
-        "receipt_sha256": "462cd4fca94552c9c69e64749ca8e414d148d4056d69a8584b69f3a236af6325"
+        "observed_at": "2026-10-12T02:27:22+08:00",
+        "receipt_sha256": "5b89fc8cb41d0be72a4cdff6e7386e1846d1f88794e75517e30e4378b73e8565"
       },
       {
         "agent": "ai_guitar",
@@ -426,12 +426,6 @@
         "surface": "claude",
         "observed_at": "2026-10-11T20:23:41+08:00",
         "receipt_sha256": "f33f094383593a65719ffc5895da1fd292033bab4213117767d6153cd6d2f2f0"
-      },
-      {
-        "agent": "ai_workspace",
-        "surface": "claude",
-        "observed_at": "2026-10-11T02:41:29+08:00",
-        "receipt_sha256": "201a8954d11682be533ebbcea56c650043d4c6f668b5d05b6ff881e9b0ea8bb2"
       }
     ],
     "runtime_release_sha256": "74d89de8a2b222c3c582d8cd7650ff2aebd6de9688c8d6d3bef030d506af068d"
