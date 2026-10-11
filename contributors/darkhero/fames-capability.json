@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-11T02:32:28.736158+00:00",
+  "observed_at": "2026-10-11T03:17:30.754567+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,28 +356,28 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
-        "agent": "ai_darkhero",
+        "agent": "ai_theater",
         "surface": "claude",
-        "observed_at": "2026-10-11T09:25:41+08:00",
-        "receipt_sha256": "a35893d1ae9774792ed4b301a53ae802aae28fb122eb0d8ac2ebb34d1840406b"
+        "observed_at": "2026-10-11T10:35:43+08:00",
+        "receipt_sha256": "231175dcee9c364bd21fe8715ea233c5613e188a99583f2d61e18077e2cd13a5"
       },
       {
         "agent": "ai_metadata",
         "surface": "claude",
-        "observed_at": "2026-10-11T09:03:06+08:00",
-        "receipt_sha256": "14e26de565ef0bbd8b9c0f0b5b3816d7921747df606705378c4ff516bf51a2e3"
+        "observed_at": "2026-10-11T10:59:21+08:00",
+        "receipt_sha256": "a8bc41197d70144a59f2818c64385de0001490e4fd8fad72520e427bef037474"
       },
       {
         "agent": "ai_theater",
         "surface": "claude",
-        "observed_at": "2026-10-11T10:20:19+08:00",
-        "receipt_sha256": "c265c8dbbab1fbefc5922380319545710f181b704cba75d334aa71f701ecb230"
+        "observed_at": "2026-10-11T10:54:36+08:00",
+        "receipt_sha256": "afcdab72871b03c8019b618573a9d189ab592e6be1b723cbbe1dcbd5abc77c5b"
       },
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-11T10:12:16+08:00",
-        "receipt_sha256": "22c143c3eecd29cd9301d7b661b79bdcd81cb29d3d644138ab59f9b6287fe1bd"
+        "observed_at": "2026-10-11T11:10:29+08:00",
+        "receipt_sha256": "874abfa61d2f29600cce54623911b40133881b64a9477bed42d8125683a2929f"
       },
       {
         "agent": "ai_darkhero",
