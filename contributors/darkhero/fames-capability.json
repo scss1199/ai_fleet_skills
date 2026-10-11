@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-11T00:20:28.529332+00:00",
+  "observed_at": "2026-10-11T01:03:29.986775+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -358,14 +358,14 @@
       {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-11T03:35:38+08:00",
-        "receipt_sha256": "87759d599821f0eaf70122b7bc682e2e0d507d04f5231e6c153fc432059d75a3"
+        "observed_at": "2026-10-11T09:02:58+08:00",
+        "receipt_sha256": "30dcfc863c7b22cead4b54c01b07ad5b1f1275f49f37201b8ca9e30220d8b2ca"
       },
       {
         "agent": "ai_metadata",
         "surface": "claude",
-        "observed_at": "2026-10-11T07:48:29+08:00",
-        "receipt_sha256": "e5d4e4a893054cea56786a6ef8842dfd4120a4caef72f0353efcccba5959c9ab"
+        "observed_at": "2026-10-11T09:03:06+08:00",
+        "receipt_sha256": "14e26de565ef0bbd8b9c0f0b5b3816d7921747df606705378c4ff516bf51a2e3"
       },
       {
         "agent": "ai_theater",
@@ -376,26 +376,26 @@
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-11T07:52:41+08:00",
-        "receipt_sha256": "8f8509266176f9c0b0bf5ac472f6376555f58bc0825c96c3403993479835f90f"
+        "observed_at": "2026-10-11T09:03:04+08:00",
+        "receipt_sha256": "92d334b21835a8a94758a3340131b6fba20d3d4f8efaaa993db4914a098b493b"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-10-11T08:45:08+08:00",
+        "receipt_sha256": "9bffb411cf3cac621c6ad4ac79368f983fab8e58c551079d001b124451c50059"
       },
       {
         "agent": "ai_workspace",
         "surface": "claude",
-        "observed_at": "2026-10-11T08:09:48+08:00",
-        "receipt_sha256": "54168598eca196d234fab81dc32eef1d38517e92fd74bf32e6ef26e880780816"
-      },
-      {
-        "agent": "tray",
-        "surface": "claude",
-        "observed_at": "2026-10-11T08:19:46+08:00",
-        "receipt_sha256": "1c314ee7b55cc0e5db47daf6ac0c86f8c8a47b5edca5b6f501e13fee4cb527b6"
+        "observed_at": "2026-10-11T09:02:40+08:00",
+        "receipt_sha256": "f10b05bb9439022c615bba026b4c4ea0725a19529349b644d1782c37fe82d97f"
       },
       {
         "agent": "ai_ziyaoastro",
         "surface": "claude",
-        "observed_at": "2026-10-11T08:10:07+08:00",
-        "receipt_sha256": "352eede73d788a78537462edd0402ee76e326fc27b40b71608cc49c0ee1dd45b"
+        "observed_at": "2026-10-11T08:53:34+08:00",
+        "receipt_sha256": "a9b9c7a7332dbee4d1a519eb9a15f05aeb02d23a5b66b04c77820d07c0b7849b"
       },
       {
         "agent": "ai_workspace",
