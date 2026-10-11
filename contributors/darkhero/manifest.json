@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-10-08T23:00:17Z",
-  "manifest_sha": "1a496bfaed843a48",
+  "generated_at": "2026-10-11T01:05:23Z",
+  "manifest_sha": "64a2ff3ce8aeccca",
   "required": [
     "fames",
     "independent-review",
@@ -22,7 +22,7 @@
     "ztm-fleet-intelligence",
     "token-preflight"
   ],
-  "skill_count": 41,
+  "skill_count": 44,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -88,6 +88,26 @@
       "package_sha": "997afa8f78040823e28f367a74ca77e904179d5752b2753671f4f70925974d56",
       "files": {
         "SKILL.md": "d3a55e4a16f3104b98f70f49a794417a130cf2eace3ac093a29c50bdb2b50885"
+      }
+    },
+    {
+      "name": "burn-captions",
+      "sha": "55d96d59b5ead956",
+      "required": false,
+      "lane": "zero-token-mechanism",
+      "package_sha": "9008eac5a64033ad504f3136df639bd55f9f1e70e9770d699f551a7a6ef6bd55",
+      "files": {
+        "SKILL.md": "55d96d59b5ead956e6995e8be0378d9249dfbf9e137b2514222c0b2e5fab87c6"
+      }
+    },
+    {
+      "name": "chapter-compose",
+      "sha": "72cd2a8bfac26e43",
+      "required": false,
+      "lane": "zero-token-mechanism",
+      "package_sha": "71c48df25899c682f75932d94df307bbf8dd7385483200ac3469dcd16ebe677b",
+      "files": {
+        "SKILL.md": "72cd2a8bfac26e43ec00ae681feaadb3be454affaeb4017bffed8c022d3ba7d9"
       }
     },
     {
@@ -407,6 +427,16 @@
         "references/concept-map.md": "889f919398e94745d31314ca9835ed21758d193e6c351e0e4fc512ade6499044",
         "scripts/claude_session_hook.py": "e0ce43d86140d29b1281b6e296a71df09666b0a2245e0e08f54de141dce687b3",
         "scripts/preflight.py": "969d214be3867a61d8d58c5ec73d5b9173358d41efbadc9396a8adc090c23437"
+      }
+    },
+    {
+      "name": "zh-tts-narrate",
+      "sha": "5178875462514349",
+      "required": false,
+      "lane": "zero-token-mechanism",
+      "package_sha": "c6b9a245b21150109ed97ca133228adc790261320fc4591577e18024b99301d8",
+      "files": {
+        "SKILL.md": "517887546251434909c9b2542aaf26c6f8561c5d23ae3b06216398e72e8da6bd"
       }
     },
     {
