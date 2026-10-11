@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-11T05:03:18.255760+00:00",
+  "observed_at": "2026-10-11T10:02:38.632730+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -362,6 +362,12 @@
         "receipt_sha256": "231175dcee9c364bd21fe8715ea233c5613e188a99583f2d61e18077e2cd13a5"
       },
       {
+        "agent": "ai_trader",
+        "surface": "claude",
+        "observed_at": "2026-10-11T17:59:18+08:00",
+        "receipt_sha256": "e5ca10ef05f29507d431cfffe5d927786aabc5fe53600718bfea0a2cd0dfd313"
+      },
+      {
         "agent": "ai_metadata",
         "surface": "claude",
         "observed_at": "2026-10-11T10:59:21+08:00",
@@ -376,14 +382,14 @@
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-11T11:10:29+08:00",
-        "receipt_sha256": "b5d799f72ef08c78adf270acd4f7ca8a9e7598eef263a50987cadbd35fe27f1d"
+        "observed_at": "2026-10-11T17:47:37+08:00",
+        "receipt_sha256": "72335537bcfe21c43959f4bb9dc0324e9878772bc00a21c4ae73801f9d256b4d"
       },
       {
-        "agent": "ai_darkhero",
+        "agent": "ai_workspace",
         "surface": "claude",
-        "observed_at": "2026-10-11T08:45:08+08:00",
-        "receipt_sha256": "3e73dc649428277fffc3633ad40d9c2356b874b7eb7b957697cc922e1221213b"
+        "observed_at": "2026-10-11T18:01:22+08:00",
+        "receipt_sha256": "4a0c656da1b19f3b868134cf1086c79b5eb783687f5e659b209d9cb4136e2970"
       },
       {
         "agent": "stock_flows",
@@ -402,6 +408,12 @@
         "surface": "claude",
         "observed_at": "2026-10-11T08:53:34+08:00",
         "receipt_sha256": "a9b9c7a7332dbee4d1a519eb9a15f05aeb02d23a5b66b04c77820d07c0b7849b"
+      },
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-10-11T17:54:43+08:00",
+        "receipt_sha256": "94940921da8cd414761f70df6a1eba060ba56a8ec3b570bb7fd72c682db7fd91"
       },
       {
         "agent": "ai_workspace",
