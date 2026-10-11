@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-11T22:02:33.913125+00:00",
+  "observed_at": "2026-10-11T22:47:35.402890+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -370,8 +370,8 @@
       {
         "agent": "ai_trader",
         "surface": "claude",
-        "observed_at": "2026-10-12T02:56:30+08:00",
-        "receipt_sha256": "fb2089ef205fde5b74bfee24c653b90100a2b2ffa89d5ac8ff5c531babfec5b4"
+        "observed_at": "2026-10-12T06:16:25+08:00",
+        "receipt_sha256": "94d28483d9eaf1d8c096925243c0d803b66ac32b0b83d9b0848f7b8e841858c6"
       },
       {
         "agent": "ai_metadata",
@@ -382,14 +382,14 @@
       {
         "agent": "ai_theater",
         "surface": "claude",
-        "observed_at": "2026-10-12T02:56:35+08:00",
-        "receipt_sha256": "2fcfc549d9f492f80c05ba36638ddd1dbf8e66bb4de522166d88a83f21b54364"
+        "observed_at": "2026-10-12T06:17:50+08:00",
+        "receipt_sha256": "55144b8a538a905285f335b3636210cdfaff0c2511ff5df1978b200b7b5f0f73"
       },
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-12T02:56:51+08:00",
-        "receipt_sha256": "10960e0461f72668432f83e1cc591343a0890bd08c38b682e567f3bd309fb22f"
+        "observed_at": "2026-10-12T06:23:06+08:00",
+        "receipt_sha256": "94bc8b10ea627eff252becd7b68003169b6b0a8c5144fdf6a4baf0c08d263c30"
       },
       {
         "agent": "ai_guitar",
@@ -424,8 +424,8 @@
       {
         "agent": "jci_taipei",
         "surface": "claude",
-        "observed_at": "2026-10-11T20:23:41+08:00",
-        "receipt_sha256": "f33f094383593a65719ffc5895da1fd292033bab4213117767d6153cd6d2f2f0"
+        "observed_at": "2026-10-12T06:18:13+08:00",
+        "receipt_sha256": "a4000190d8dd74abaf3038838c61e2e9073bdc0e00dca61d95acc04eba1d1c77"
       }
     ],
     "runtime_release_sha256": "74d89de8a2b222c3c582d8cd7650ff2aebd6de9688c8d6d3bef030d506af068d"
