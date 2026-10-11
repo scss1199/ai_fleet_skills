@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-11T10:33:37.234242+00:00",
+  "observed_at": "2026-10-11T11:20:32.875878+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -364,8 +364,14 @@
       {
         "agent": "ai_career",
         "surface": "claude",
-        "observed_at": "2026-10-11T18:10:11+08:00",
-        "receipt_sha256": "4d1338830d5785f1ba84bded98cbfe7c46542d088321b20ce8fcf2b9c38746ba"
+        "observed_at": "2026-10-11T19:09:38+08:00",
+        "receipt_sha256": "a5b738347939b76ad4b571776002ec54448ad1e6554d1b1183c647c1e2b9b7c6"
+      },
+      {
+        "agent": "ai_trader",
+        "surface": "claude",
+        "observed_at": "2026-10-11T19:11:48+08:00",
+        "receipt_sha256": "034f9bd44446dee306ecd70e89f8f48be38a46f8857d624701264d55fce8dc39"
       },
       {
         "agent": "ai_metadata",
@@ -376,14 +382,14 @@
       {
         "agent": "ai_theater",
         "surface": "claude",
-        "observed_at": "2026-10-11T10:54:36+08:00",
-        "receipt_sha256": "e149329f6b77763b2ccee8e2fa48c9a9cf6e1bff861918fac0b9590d39f8c1c6"
+        "observed_at": "2026-10-11T18:51:10+08:00",
+        "receipt_sha256": "a48f44173ad842cc0b1acf0d5f7fcdce361fbe51572f7bc8bd24c59fca0a2395"
       },
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-11T18:22:07+08:00",
-        "receipt_sha256": "b2305918bdd893f0e4b9b570672b85106a4a7374e6fc2e0202d68ab20033b913"
+        "observed_at": "2026-10-11T19:19:58+08:00",
+        "receipt_sha256": "a73e714bbd1633ec1245d6a6cb0fa5641c89ad267dc790ad0070d9d2d665fea5"
       },
       {
         "agent": "ai_guitar",
@@ -392,10 +398,10 @@
         "receipt_sha256": "dc0e4b09516d71086cff5e1a67c33c1d93d21f6182f528df6e7fa966dc52815e"
       },
       {
-        "agent": "stock_flows",
+        "agent": "sinopac-trading-system",
         "surface": "claude",
-        "observed_at": "2026-10-11T11:17:35+08:00",
-        "receipt_sha256": "0fc090e7a4d98ceb0693fc752f8ed849eb4bed077fc022f7ca3df935ead8f46c"
+        "observed_at": "2026-10-11T19:10:51+08:00",
+        "receipt_sha256": "83a7ea89113b9dcdaead8eaf786bd09c97504039613d41ae2ac6a6d957a8aa5b"
       },
       {
         "agent": "ai_darkhero",
@@ -412,8 +418,8 @@
       {
         "agent": "jci_taipei",
         "surface": "claude",
-        "observed_at": "2026-10-11T18:22:41+08:00",
-        "receipt_sha256": "a8a57f435b365c8f1114c5859b340c0634dbae7541a1bfb0d53f985b4f060d2e"
+        "observed_at": "2026-10-11T18:51:15+08:00",
+        "receipt_sha256": "a0a47c05b94b0d8c972fe499b0c297014cf38ac178d60477da503690d9c7d81a"
       },
       {
         "agent": "ai_workspace",
