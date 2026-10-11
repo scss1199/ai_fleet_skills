@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-11T01:03:29.986775+00:00",
+  "observed_at": "2026-10-11T01:47:12.441896+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -358,8 +358,8 @@
       {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-11T09:02:58+08:00",
-        "receipt_sha256": "30dcfc863c7b22cead4b54c01b07ad5b1f1275f49f37201b8ca9e30220d8b2ca"
+        "observed_at": "2026-10-11T09:25:41+08:00",
+        "receipt_sha256": "a35893d1ae9774792ed4b301a53ae802aae28fb122eb0d8ac2ebb34d1840406b"
       },
       {
         "agent": "ai_metadata",
@@ -370,8 +370,8 @@
       {
         "agent": "ai_theater",
         "surface": "claude",
-        "observed_at": "2026-10-11T03:15:37+08:00",
-        "receipt_sha256": "f4cd14d1eb1ff582822e3e50cfccd124130583b30bd3669a8d443db0acae60b5"
+        "observed_at": "2026-10-11T09:45:24+08:00",
+        "receipt_sha256": "4a8033d52e03801e5db0e15529ae25423812ab95dc7e4261be32b37b1377a093"
       },
       {
         "agent": "ai_nuwa",
@@ -386,10 +386,16 @@
         "receipt_sha256": "9bffb411cf3cac621c6ad4ac79368f983fab8e58c551079d001b124451c50059"
       },
       {
-        "agent": "ai_workspace",
+        "agent": "ai_trader",
         "surface": "claude",
-        "observed_at": "2026-10-11T09:02:40+08:00",
-        "receipt_sha256": "f10b05bb9439022c615bba026b4c4ea0725a19529349b644d1782c37fe82d97f"
+        "observed_at": "2026-10-11T09:25:44+08:00",
+        "receipt_sha256": "b3a40592070e3014c33e354bd2e2c3dff4dda87362dd1faa89d214595345abe1"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-10-11T09:25:29+08:00",
+        "receipt_sha256": "0a7c6fd7871e2035cfb57eefc4e5b2448d1e75f87471174d21f4d40a1b8f000d"
       },
       {
         "agent": "ai_ziyaoastro",
