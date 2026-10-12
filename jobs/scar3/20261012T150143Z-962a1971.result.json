@@ -1,0 +1,31 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261012T150143Z-962a1971",
+  "host": "scar3",
+  "started_at": "2026-10-12T15:03:02+00:00",
+  "kind": "prompt",
+  "ok": false,
+  "blocker": "claude_auth_unverified",
+  "check": {
+    "cli": "C:\\Users\\scss1\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Anthropic.ClaudeCode_Microsoft.Winget.Source_8wekyb3d8bbwe\\claude.EXE",
+    "cli_ok": true,
+    "auth_source": "cli_credentials_file",
+    "auth_present": true,
+    "auth_state": "present_unverified",
+    "auth_ok": false,
+    "enabled": true,
+    "probe": "skipped",
+    "probe_stamp": {
+      "found": true,
+      "ok": false,
+      "auth_source": "cli_credentials_file",
+      "age_sec": 1683.6,
+      "fresh": true,
+      "ttl_sec": 43200.0
+    },
+    "ready": false,
+    "blocker": "claude_auth_unverified",
+    "blocker_detail": "claude_auth_unverified: a credential source exists but nothing has proven it works.\n  Prove it (spends one small real call, then caches the verdict for probe_ttl_sec):\n    python %AI_WORKSPACE%\\_skill\\engines\\claude-remote-exec.py check --probe\n  Presence is not authentication: an empty, expired or revoked store still satisfies\n  'the file exists', so readiness stays false until a probe succeeds."
+  },
+  "finished_at": "2026-10-12T15:03:02+00:00"
+}
