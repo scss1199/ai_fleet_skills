@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261012T144251Z-51f63110",
+  "host": "dark-hero-z790",
+  "started_at": "2026-10-12T14:46:14+00:00",
+  "kind": "prompt",
+  "ok": false,
+  "exit": 1,
+  "stdout": "Invalid API key · Fix external API key · Invalid X-Api-Key header value from ANTHROPIC_API_KEY: it contains a non-ASCII character at character 14 (24 characters).\n",
+  "stderr": "claude_local_rc1:Invalid API key · Fix external API key · Invalid X-Api-Key header value from ANTHROPIC_API_KEY: it contains a non-ASCII character at character 14 (24 characters).\n",
+  "finished_at": "2026-10-12T14:46:35+00:00"
+}
