@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "53acfbdf7ab1f6d35cf2c1e4ba260f00c93a353f324b3855be33608c8e0bae47",
+  "package_sha": "0e4d7dc4a4ee7671d35d0c037cd56e9e42054a338b12ee842d1bf55bef5b3eca",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "573dd1a29acec301ef50bdd7a80d3aeff5f500e402044bbc9f6199258edf5d4a",
   "runner_state": "armed",
-  "observed_at": "2026-10-12T16:50:20.514956+00:00",
+  "observed_at": "2026-10-12T17:06:10.414339+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -358,59 +358,17 @@
       {
         "agent": "ai_zonghe",
         "surface": "claude",
-        "observed_at": "2026-10-13T00:11:19+08:00",
-        "receipt_sha256": "b2e7b933e3cd8bf50947b3d150e6160416c3344d662b744b2da096758659cd5b"
-      },
-      {
-        "agent": "ai_trader",
-        "surface": "claude",
-        "observed_at": "2026-10-13T00:16:38+08:00",
-        "receipt_sha256": "4fedccecd3648b033e673322b7a53ecbc9c0f0cb4149c34c8dbcf2b8471401f7"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-10-13T00:40:52+08:00",
-        "receipt_sha256": "887929d233a722a0bf281409e9e54f7ddf98d6d39c476fc835902008a935b819"
-      },
-      {
-        "agent": "ai_career",
-        "surface": "claude",
-        "observed_at": "2026-10-12T23:24:23+08:00",
-        "receipt_sha256": "470ee4e5c9eedc707c48d8730e0278d40fa2cceedff66036143657de9cc3f75f"
-      },
-      {
-        "agent": "ai_network",
-        "surface": "claude",
-        "observed_at": "2026-10-13T00:12:54+08:00",
-        "receipt_sha256": "14cd7b2b1306472b2fc6baafb5fbb4cace630cf29cd3eb19b16fb37a845e0e6d"
+        "observed_at": "2026-10-13T01:03:41+08:00",
+        "receipt_sha256": "5d396ed34a19ce4e542d43894365c618c340d39cfbe9dadade42f78adad9b9c5"
       },
       {
         "agent": "ai_ut",
         "surface": "claude",
-        "observed_at": "2026-10-13T00:44:25+08:00",
-        "receipt_sha256": "bbd735df6afeafdb864fe5a32f1fd49eb6ccf00e723605df1b39f7b17a87067c"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-10-12T23:43:48+08:00",
-        "receipt_sha256": "dd5110da5b8ccc51f7f85248c2fb025f85e00b0dd4aca2f57fc25f5df402e473"
-      },
-      {
-        "agent": "ai_nuwa",
-        "surface": "claude",
-        "observed_at": "2026-10-13T00:50:10+08:00",
-        "receipt_sha256": "ccf530d109bf2308990920fcd983bb559b041a52483ba14260fb278461377f9c"
-      },
-      {
-        "agent": "ai_career",
-        "surface": "claude",
-        "observed_at": "2026-10-13T00:40:13+08:00",
-        "receipt_sha256": "77eb5776c81d95ee7196f4f05f9015111d22a19f59fed440dec7c3f2918fc8d1"
+        "observed_at": "2026-10-13T01:05:57+08:00",
+        "receipt_sha256": "f4e57d7441956bd1aad8b1d741d5e4bc21254d7c3a7ce596f641cd521c08d5ea"
       }
     ],
-    "runtime_release_sha256": "397f44fb730d4a217449e9eaca064d92cbaed0de289a8323acfeed69f31332b6"
+    "runtime_release_sha256": "22294c60b799111ead2cec8668bc13a2f0efa589c3cc24b638eb31221cd789b6"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
