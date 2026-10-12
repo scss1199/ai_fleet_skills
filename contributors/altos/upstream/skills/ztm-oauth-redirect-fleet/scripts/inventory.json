@@ -1,0 +1,107 @@
+{
+  "schema": 1,
+  "_note": [
+    "Coverage source for the redirect_uri probe. Two things live here that used",
+    "to be implicit in probe_redirect_uri.py and could not be audited:",
+    "",
+    "  expects_login   Does this service have Google SSO at all? A service that",
+    "                  declares true and has no working login endpoint is a",
+    "                  BLOCKING failure (LOGIN_MISSING / LOGIN_UNREACHABLE). The",
+    "                  old code called that NO_LOGIN and excluded it from BAD, so",
+    "                  a site could lose its login endpoint and the gate still",
+    "                  reached BAD=0.",
+    "  canonical_origin  The origin the callback MUST point at. Every generated",
+    "                  ADD line is built from this plus the callback path — never",
+    "                  from the URI the app currently emits, which may be stale.",
+    "",
+    "A worker found in _registry/cf-deploy-configs but absent here is UNDECLARED",
+    "and blocks (see unknown_service_expects_login). That is deliberate: the fix",
+    "is one line in this file, and the alternative is a new deployment silently",
+    "counting as covered."
+  ],
+  "default_login_paths": [
+    "/api/auth/login",
+    "/api/auth/google/login",
+    "/api/auth/google/start"
+  ],
+  "unknown_service_expects_login": true,
+  "services": {
+    "ai-fracdigi": {
+      "expects_login": true,
+      "login_paths": ["/api/auth/google/start"],
+      "canonical_origin": "https://ai-fracdigi.kyloren.workers.dev",
+      "callback_path": "/api/auth/google/callback",
+      "note": "Cloudflare Worker on a custom domain (wrangler.jsonc routes -> new.messages.fracdigi.com), but that name did not resolve as of 2026-08-06 (getaddrinfo failed), so the live origin is the workers.dev one. Probe what exists, not what the config intends. Login client is the Firebase web client 786327629029-..., NOT the 174364... Ads/credential client."
+    },
+    "ai-jci-taipei": {
+      "expects_login": true,
+      "login_paths": ["/api/auth/login"],
+      "canonical_origin": "https://ai-jci-taipei.kyloren.workers.dev",
+      "callback_path": "/api/auth/callback"
+    },
+    "ai-darkhero": {
+      "expects_login": true,
+      "login_paths": ["/api/auth/login"],
+      "canonical_origin": "https://ai-darkhero.kyloren.workers.dev",
+      "callback_path": "/api/auth/callback"
+    },
+    "ai-search": {
+      "expects_login": true,
+      "login_paths": ["/api/auth/login"],
+      "canonical_origin": "https://ai-search.kyloren.workers.dev",
+      "callback_path": "/api/auth/callback"
+    },
+    "ai-ut": {
+      "expects_login": true,
+      "login_paths": ["/api/auth/login"],
+      "canonical_origin": "https://ai-ut.kyloren.workers.dev",
+      "callback_path": "/api/auth/callback",
+      "note": "Shares OAuth client 433379372607-ra924imb... with ai-eatery. ADD ONLY on that client."
+    },
+    "ai-career": {
+      "expects_login": true,
+      "login_paths": ["/api/auth/login"],
+      "canonical_origin": "https://ai-career.kyloren.workers.dev",
+      "callback_path": "/api/auth/callback"
+    },
+    "ai-busker": {
+      "expects_login": true,
+      "login_paths": ["/api/auth/login"],
+      "canonical_origin": "https://ai-busker.kyloren.workers.dev",
+      "callback_path": "/api/auth/callback",
+      "note": "No _registry/cf-deploy-configs entry as of 2026-08-10; covered by this inventory only."
+    },
+    "ai-heartlink": {
+      "expects_login": true,
+      "login_paths": ["/api/auth/login"],
+      "canonical_origin": "https://ai-heartlink.kyloren.workers.dev",
+      "callback_path": "/api/auth/callback"
+    },
+    "ai-eatery": {
+      "expects_login": true,
+      "login_paths": ["/api/auth/login"],
+      "canonical_origin": "https://ai-eatery.kyloren.workers.dev",
+      "callback_path": "/api/auth/callback",
+      "note": "No _registry/cf-deploy-configs entry as of 2026-08-10; covered by this inventory only. Shares OAuth client 433379372607-ra924imb... with ai-ut."
+    },
+    "ai-ziyaoastro": {
+      "expects_login": true,
+      "login_paths": ["/api/auth/google/login", "/api/auth/login", "/api/login/google"],
+      "canonical_origin": "https://ai-ziyaoastro.kyloren.workers.dev",
+      "callback_path": "/api/auth/google/callback",
+      "note": "Emitted ai-ziyaoastro.vercel.app until 2026-08-09; that host answers 402 DEPLOYMENT_DISABLED. This is the origin-staleness case the probe exists to catch."
+    },
+    "ai-fleet-fly-hooks": {
+      "expects_login": false,
+      "login_paths": [],
+      "canonical_origin": "https://ai-fleet-fly-hooks.kyloren.workers.dev",
+      "note": "LINE/AEX webhook gateway. No browser SSO by design — routes are /health, /v1/line/*, /v1/aex/*, all machine-to-machine. Nothing to register."
+    },
+    "ai-trader": {
+      "expects_login": false,
+      "login_paths": [],
+      "canonical_origin": "https://ai-trader.kyloren.workers.dev",
+      "note": "Calls the hooks gateway over the FLEET_HOOKS service binding. No browser SSO by design."
+    }
+  }
+}
