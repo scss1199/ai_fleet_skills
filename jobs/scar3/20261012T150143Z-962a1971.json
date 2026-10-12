@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261012T150143Z-962a1971",
+  "target_host": "scar3",
+  "kind": "prompt",
+  "seat": "ai_scar3",
+  "prompt": "Reply with exactly one line: OK <hostname> (run the hostname command; no other output, no file changes).",
+  "from": "ai_darkhero",
+  "created_at": "2026-10-12T15:01:43+00:00",
+  "expires_at": "2026-10-14T15:01:43+00:00"
+}
