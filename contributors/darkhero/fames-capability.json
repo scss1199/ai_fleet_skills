@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "160ea8b65cfff0c1b4901b8b319aed1e6d34664964ef4b7ab3c68448a92c6d5b",
+  "package_sha": "53acfbdf7ab1f6d35cf2c1e4ba260f00c93a353f324b3855be33608c8e0bae47",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "573dd1a29acec301ef50bdd7a80d3aeff5f500e402044bbc9f6199258edf5d4a",
   "runner_state": "armed",
-  "observed_at": "2026-10-12T15:04:57.379365+00:00",
+  "observed_at": "2026-10-12T15:20:30.049349+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,31 +356,19 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
-        "agent": "ai_trader-dev",
-        "surface": "claude",
-        "observed_at": "2026-10-12T23:03:58+08:00",
-        "receipt_sha256": "42919d54f1d1c11747e281e3359423358d37fe729b776d8d0960257d903535f6"
-      },
-      {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-12T23:04:29+08:00",
-        "receipt_sha256": "f57b0fa185fae1707e31440e80ccc2593cbd7c53dbc83420c7e99388a60de0b4"
+        "observed_at": "2026-10-12T23:14:26+08:00",
+        "receipt_sha256": "edfae5f075b64ad15a6b7a4e32a7d1278bf79faef4622326e38a578fe8c48ad9"
       },
       {
-        "agent": "ai_theater",
+        "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-12T23:01:41+08:00",
-        "receipt_sha256": "1f3a161c794df89bbfe24ba1bc3d750683bd62f9cee9afcfa9c2db4863a6e242"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-10-12T22:53:18+08:00",
-        "receipt_sha256": "f9814598d60dfa0238c8a0c2cdff01cf96f447b44a9e87c3b38211db463d4b16"
+        "observed_at": "2026-10-12T23:18:49+08:00",
+        "receipt_sha256": "8aeede84781d8dfe69e9aa20050fa60a7ebe0e14e46170e0d3d1a269305cccb6"
       }
     ],
-    "runtime_release_sha256": "5a4b5e23de70fb3ce8033ba5569bbd1a4892911cbcd141dffe59cba865e2967e"
+    "runtime_release_sha256": "397f44fb730d4a217449e9eaca064d92cbaed0de289a8323acfeed69f31332b6"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
