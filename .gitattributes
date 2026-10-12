@@ -1,0 +1,3 @@
+# Fleet skill transport must be byte-exact on every machine: no EOL conversion anywhere.
+# (The fames package already pins this for itself; receivers and the FAMES release compare raw bytes.)
+* -text
