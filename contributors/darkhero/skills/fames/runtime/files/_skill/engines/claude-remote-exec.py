@@ -243,12 +243,37 @@ def write_probe_stamp(ok: bool, src: str | None, err: str | None, cfg: dict) -> 
         return "probe_stamp_unwritable:%s" % type(exc).__name__
 
 
+OAUTH_VARS = ("CLAUDE_CODE_OAUTH_TOKEN",)
+API_KEY_VARS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
+
+
+def _sanitize_child_env(env: dict, src: str, vpath: str | None) -> dict:
+    """Leave the child exactly ONE credential: the chosen source's.
+
+    The CLI prefers ANTHROPIC_API_KEY over an OAuth token. 2026-10-12: the HubClock daemon's
+    environment carried a malformed ANTHROPIC_API_KEY (24 chars, non-ASCII) beside a valid
+    CLAUDE_CODE_OAUTH_TOKEN; the readiness probe passed on the token, then every job died with
+    "Invalid X-Api-Key header value". Competing variables are removed, never printed."""
+    uses_api_key = src == "env:ANTHROPIC_API_KEY" or src == "env:ANTHROPIC_AUTH_TOKEN" or (
+        vpath is not None and "oauth" not in vpath)
+    drop = OAUTH_VARS if uses_api_key else API_KEY_VARS
+    for var in drop:
+        env.pop(var, None)
+    if src.startswith("env:"):
+        keep = src[4:]
+        for var in OAUTH_VARS + API_KEY_VARS:
+            if var != keep and var not in drop:
+                env.pop(var, None)
+    return env
+
+
 def _child_env(cfg: dict) -> tuple[dict, str | None, str | None]:
     """(env, source, err). The vault value lands in the child env and nowhere else."""
     env = dict(os.environ)
     src, vpath = auth_source(cfg)
     if src is None:
         return env, None, NOT_LOGGED_IN
+    env = _sanitize_child_env(env, src, vpath)
     if vpath:
         try:
             import _secrets
