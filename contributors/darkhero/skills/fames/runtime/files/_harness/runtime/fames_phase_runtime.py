@@ -241,7 +241,51 @@ def completion_status(workspace, turn):
     except Exception as exc:
         return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': type(exc).__name__}
 
+WORKSPACE_MARKER = '_registry/fames-phase-conformance.json'
+
+
+def validate_paths(workspace, turn=None, result=None, closure=None, residual=None):
+    """Refuse relative or drive-relative paths before anything is read or written.
+
+    2026-10-12: `--workspace C:\\ai_workspace` typed in a bash shell arrived as `C:ai_workspace`
+    (drive-relative, not absolute); the receipts root then resolved under the current directory,
+    the verdict read "ref_not_a_registry_receipt" and a refusal.json landed in a stray tree.
+    Every path must be absolute and resolvable, and the workspace must hold the phase
+    conformance file. Returns a list of error codes; empty means usable."""
+    errors = []
+    try:
+        root = Path(workspace)
+        if not root.is_absolute():
+            errors.append('workspace_not_absolute')
+        else:
+            root = root.resolve(strict=True)
+            if not (root / WORKSPACE_MARKER).is_file():
+                errors.append('workspace_missing_conformance')
+    except (OSError, RuntimeError, TypeError, ValueError):
+        errors.append('workspace_unresolvable')
+    for name, value in (('turn', turn), ('result', result), ('closure', closure), ('residual', residual)):
+        if value is None:
+            continue
+        try:
+            path = Path(value)
+            if not path.is_absolute():
+                errors.append(f'{name}_not_absolute')
+                continue
+            path.resolve(strict=True)
+        except (OSError, RuntimeError, TypeError, ValueError):
+            errors.append(f'{name}_unresolvable')
+    return errors
+
+
 def complete_turn(workspace, turn, result, closure, residual=None):
+    invalid = validate_paths(workspace, None, result, closure, residual)
+    if invalid:  # no transaction, no refusal.json: nothing on disk is touched for a path we cannot trust
+        try:
+            goal = goal_identity(turn)
+        except Exception:  # noqa: BLE001 - the turn itself may be malformed; the path error still stands
+            goal = None
+        return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': 'invalid_paths', 'errors': invalid,
+                'workspace': str(workspace)}
     # Completion and intake share the same goal transaction. Locking each write
     # alone cannot protect the snapshot/previous_guard hashes between phases.
     with phase_transaction(workspace, turn):
@@ -401,8 +445,14 @@ def main():
     parser.add_argument('--closure', type=Path, required=True)
     parser.add_argument('--residual', type=Path)
     args = parser.parse_args()
+    invalid = validate_paths(args.workspace, args.turn, args.result, args.closure, args.residual)
+    if invalid:
+        print(json.dumps({'state': 'UNKNOWN', 'reason': 'invalid_paths', 'errors': invalid,
+                          'workspace': str(args.workspace), 'turn': str(args.turn)}))
+        return 2
     turn = json.loads(args.turn.read_text(encoding='utf-8'))
-    outcome = complete_turn(args.workspace, turn, args.result, args.closure, args.residual)
+    outcome = complete_turn(args.workspace.resolve(), turn, args.result.resolve(), args.closure.resolve(),
+                            args.residual.resolve() if args.residual else None)
     print(json.dumps(outcome))
     return 0 if outcome['state'] == 'PASS' else 1
 
