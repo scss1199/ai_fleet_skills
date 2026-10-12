@@ -1,0 +1,64 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261012T130722Z-f98937e9",
+  "host": "scar3",
+  "started_at": "2026-10-12T13:11:56+00:00",
+  "kind": "probe",
+  "ok": true,
+  "probe": {
+    "hostname": "scar3",
+    "hub": "C:\\ai_workspace",
+    "collected_at": "2026-10-12T13:11:56+00:00",
+    "hub_commit": "99ebe69",
+    "hub_branch": "codex/scar3-tray-consolidation-20260810",
+    "fames": {
+      "version": "1.45.9",
+      "package_sha": "970a101c8a067db178516b09e802c1ad4291e1916ce87e9b470be9cfe0c884aa"
+    },
+    "runtime_release": {
+      "generation": 33,
+      "state": "INSTALLED"
+    },
+    "receipt": {
+      "expected": "970a101c8a067db178516b09e802c1ad4291e1916ce87e9b470be9cfe0c884aa",
+      "nodes": {
+        "ai_darkhero": [
+          "PASS",
+          "970a101c8a067db178516b09e802c1ad4291e1916ce87e9b470be9cfe0c884aa"
+        ],
+        "ai_scar3": [
+          "PASS",
+          "970a101c8a067db178516b09e802c1ad4291e1916ce87e9b470be9cfe0c884aa"
+        ],
+        "ai_altos": [
+          "UNKNOWN",
+          "993a891861a06c2dc6ebd6a89a7e139e5a2ef394d0c2be06d057cd3b2bd46041"
+        ]
+      }
+    },
+    "riders": [
+      {
+        "id": "fleet-skill-github-sync",
+        "enabled": false,
+        "cmd": "C:\\Python311\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\mtm-fleet-skill-github.py sync"
+      },
+      {
+        "id": "claude-app-health",
+        "enabled": null,
+        "cmd": "C:\\Python311\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\claude-app-health-tick.py --workspace C:\\ai_workspace --host sca"
+      },
+      {
+        "id": "fames-converge",
+        "enabled": null,
+        "cmd": "C:\\Python311\\pythonw.exe C:\\ai_workspace\\ai_scar3\\scripts\\darkhero_architecture_sync.py"
+      }
+    ],
+    "claude_cli": {
+      "ready": false,
+      "blocker": "claude_auth_unverified",
+      "cli": "C:\\Users\\scss1\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Anthropic.ClaudeCode_Microsoft.Winget.Source_8wekyb3d8bbwe\\claude.EXE"
+    },
+    "nested_hub_folder_present": false
+  },
+  "finished_at": "2026-10-12T13:12:03+00:00"
+}
