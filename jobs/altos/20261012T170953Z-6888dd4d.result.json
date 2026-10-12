@@ -1,0 +1,74 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261012T170953Z-6888dd4d",
+  "host": "altos",
+  "started_at": "2026-10-12T17:15:01+00:00",
+  "kind": "probe",
+  "ok": true,
+  "probe": {
+    "hostname": "desktop-rsniapr",
+    "hub": "C:\\ai_workspace",
+    "collected_at": "2026-10-12T17:15:01+00:00",
+    "hub_commit": "UNKNOWN",
+    "hub_branch": "UNKNOWN",
+    "fames": {
+      "version": "1.45.15",
+      "package_sha": "0e4d7dc4a4ee7671d35d0c037cd56e9e42054a338b12ee842d1bf55bef5b3eca"
+    },
+    "runtime_release": {
+      "generation": 39,
+      "state": "INSTALLED"
+    },
+    "receipt": {
+      "expected": "0e4d7dc4a4ee7671d35d0c037cd56e9e42054a338b12ee842d1bf55bef5b3eca",
+      "nodes": {
+        "ai_darkhero": [
+          "PASS",
+          "0e4d7dc4a4ee7671d35d0c037cd56e9e42054a338b12ee842d1bf55bef5b3eca"
+        ],
+        "ai_altos": [
+          "PASS",
+          "0e4d7dc4a4ee7671d35d0c037cd56e9e42054a338b12ee842d1bf55bef5b3eca"
+        ]
+      }
+    },
+    "riders": [
+      {
+        "id": "fleet-skill-github-sync",
+        "enabled": null,
+        "cmd": "C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe C:\\ai_workspace\\ai_altos\\scripts\\altos_fleet_sync.py s"
+      },
+      {
+        "id": "fleet-job-dispatch",
+        "enabled": null,
+        "cmd": "C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\fleet-job-dispatch.py t"
+      }
+    ],
+    "claude_cli": {
+      "ready": true,
+      "blocker": null,
+      "cli": "C:\\Users\\USER\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Anthropic.ClaudeCode_Microsoft.Winget.Source_8wekyb3d8bbwe\\claude.EXE"
+    },
+    "nested_hub_folder_present": false,
+    "claude_hooks": {
+      "Stop": [
+        "claude-claim-integrity-hook.py",
+        "claude-run-until-done-hook.py",
+        "claude-proof-hook.py"
+      ],
+      "SubagentStop": [
+        "claude-claim-integrity-hook.py",
+        "claude-proof-hook.py"
+      ],
+      "SessionStart": [
+        "claude_session_hook.py"
+      ],
+      "UserPromptSubmit": [
+        "claude_session_hook.py"
+      ]
+    },
+    "has_claude_proof_hook": true,
+    "has_claude_run_until_done_hook": true
+  },
+  "finished_at": "2026-10-12T17:15:05+00:00"
+}
