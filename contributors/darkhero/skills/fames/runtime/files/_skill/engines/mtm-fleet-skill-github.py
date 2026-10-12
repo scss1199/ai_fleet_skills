@@ -1236,7 +1236,9 @@ def _run_fames_follow(node_name: str, node: dict) -> dict:
         encoding="utf-8",
         errors="replace",
         creationflags=FLAGS,
-        timeout=120,
+        # A follower's follow installs the runtime and runs immediate activation; scar3 measured 570 s
+        # (2026-10-12), so 120 s killed it mid-install from the periodic sync rider.
+        timeout=900,
     )
     try:
         payload = json.loads(result.stdout)
