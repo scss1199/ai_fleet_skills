@@ -5,8 +5,8 @@
   "role": "downstream_curator",
   "machine": "scar3",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-08-17T11:02:35Z",
-  "manifest_sha": "a0e120c696dd4f7e",
+  "generated_at": "2026-10-12T05:12:14Z",
+  "manifest_sha": "06d64161658c0973",
   "required": [
     "fames",
     "independent-review",
@@ -15,7 +15,6 @@
     "ztm-skill-submit",
     "ztm-git-ship",
     "ztm-web-auth-ops",
-    "ztm-goal-compact-enforce",
     "agc-auto-goal-compact",
     "ztm-verify-before-done",
     "mtm-mto-first",
@@ -23,7 +22,7 @@
     "ztm-fleet-intelligence",
     "token-preflight"
   ],
-  "skill_count": 42,
+  "skill_count": 47,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -37,12 +36,12 @@
     },
     {
       "name": "adus-auto-deploy-upgrading-skill",
-      "sha": "baa99f4e531e20fe",
+      "sha": "10059f499625d959",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "24c58cb41b3ae07a5768e6ac6e3cd7d3ab11ff0fa44d6a2d745190e27755789d",
+      "package_sha": "44958961030b98f80909cd0ac2a57a57a1736a26e330d0bf644500e1c87c17cb",
       "files": {
-        "SKILL.md": "9d0739f558bcc23bcc584d527c2baa941a5c76e44d2b2e476c3c2bac612b443e"
+        "SKILL.md": "9d1675633ca60b72a54ea2a8d23f2ada731adfbb73145e0d984b0624f2978c37"
       }
     },
     {
@@ -57,12 +56,28 @@
     },
     {
       "name": "agc-auto-goal-compact",
-      "sha": "881779f57bf6321f",
+      "sha": "1449a3c9c996b576",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "418adcd08a8963b236be6d73c3af7187659f2ff2fba1b0a8d5448753a591743a",
+      "package_sha": "4d94a3e73bfb43163f640817dd766e0755d36f45cd88544cf4d8aa359145b265",
       "files": {
-        "SKILL.md": "a892ace07cd4f0198c277c7305d7b089233d10a9bab11ea3450b6d4a5fde4d90"
+        "SKILL.md": "1449a3c9c996b5765dc8cae2cdb586e82ac8ecec515fd1310788e1ada1cec28e"
+      }
+    },
+    {
+      "name": "api-key-apply",
+      "sha": "7b607d5fc931393e",
+      "required": false,
+      "lane": null,
+      "package_sha": "0e48289f2558d42b26e8e559965f1fe8d952937c0b0fdfee1d091c76408a1296",
+      "files": {
+        "SKILL.md": "1ade5881bf32ae3a040772c03d82c3887c606be5348875bbff6a4e2076d75325",
+        "agents/openai.yaml": "ef1d9d6f4ccc3e291101cce0f335140d5fc3db7120651f1e8743b227a88918a8",
+        "references/api-matrix-schema.md": "911b0be27961d1bd09b6d16849f7be0cb5b7421d4bf6efef03cee5006e1ee3da",
+        "references/current-inventory.md": "18648d13bb39886ddc9117a682c4480fd10740b25479e182eff7672e77dae8ac",
+        "scripts/deepgram-provider-secret.py": "ce70b70183f17654aef7888cdf89b235a04494d05817d1d094f24cd7f35a3933",
+        "scripts/line-provider-token.py": "44397e7f7ed5612d555e6d9e6ea00bad6a00621fae2d686c201fdd4ed79e0146",
+        "tests/test_deepgram_provider_secret.py": "cb3c47637a1081f3f61f3da8501b0ea6835d3f546eb748c0677a42190402f829"
       }
     },
     {
@@ -86,46 +101,143 @@
       }
     },
     {
-      "name": "deploy-nextjs-cloudflare",
-      "sha": "abe8d2baa69402af",
+      "name": "burn-captions",
+      "sha": "55d96d59b5ead956",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "43728b58235ecaf07b4c9574699a775de6874d3a4159fccd41ee35012816d124",
+      "package_sha": "9008eac5a64033ad504f3136df639bd55f9f1e70e9770d699f551a7a6ef6bd55",
       "files": {
-        "SKILL.md": "abe8d2baa69402afd9200bcbf36946eaee1fcbd8f519ac41a36358033000a6ab",
+        "SKILL.md": "55d96d59b5ead956e6995e8be0378d9249dfbf9e137b2514222c0b2e5fab87c6"
+      }
+    },
+    {
+      "name": "chapter-compose",
+      "sha": "72cd2a8bfac26e43",
+      "required": false,
+      "lane": "zero-token-mechanism",
+      "package_sha": "71c48df25899c682f75932d94df307bbf8dd7385483200ac3469dcd16ebe677b",
+      "files": {
+        "SKILL.md": "72cd2a8bfac26e43ec00ae681feaadb3be454affaeb4017bffed8c022d3ba7d9"
+      }
+    },
+    {
+      "name": "deploy-nextjs-cloudflare",
+      "sha": "39c89196bcfd5868",
+      "required": false,
+      "lane": "zero-token-mechanism",
+      "package_sha": "fe60b36d65c5eb98a30cfc301c39137cb08cbc5b5728a7c8fae46ab1a635129c",
+      "files": {
+        "SKILL.md": "39c89196bcfd5868d25bd161c23ef62ae3a4f1142416f1038d5e7a65d6f4ddab",
         "agents/openai.yaml": "138a80cd1780892c6b4f1f1b9395e3a601f80790782a4b8681deae98eadf5f39",
         "assets/claude-cloudflare-migration-prompt.md": "7b1ae8438ea664637a75f107c1797f2a0b5af89c710493bf572d2e35873dd5a9",
         "assets/fames-ship-receipt.template.json": "865456a3bd3511c884334446579f1f92bfef78106126830fb25162e0cf91681f",
-        "references/known-failures.md": "1f495b0051598336b714d7efd0e17d26d5ec0d8e715e2bbacd0a0b2ce76e5687",
+        "references/known-failures.md": "cb19875c353acb729da91f9673255127d98e06764e2caed983db1fe4786b92d8",
         "scripts/cf_secret_push.py": "c584ab31e54a8ce5a37ffb67c8715d6f44702f0698f726e6155c6ccf9cdb49de",
-        "scripts/fames_ship_gate.py": "3db4fea25ee0d178cc32a03e90affa7e604074c866ad7e444824df8fa9a769a6",
+        "scripts/fames_ship_gate.py": "195386185ebb55434c31bf5e5c4479887d5b0dc8677d6c41bbf208c1061973b1",
         "scripts/local_smoke.py": "2bfd81c2c7c8a3940083b21a39cd850fd957111800afa34e6c527c4684155320",
         "scripts/preflight.py": "437740c989ea5b8db53186d9caaecd98d299938890aa2fe53ca2969e58b2ece2",
         "scripts/prepare_project.py": "b7120579ebb77eae3bd8f53a0f314493cf1c4114de5ded92b1328d624f2da2ec",
         "scripts/quick_validate.py": "be293b71b766dcade8a380c867a325fed1a1f7a494d88e5fc37c804f5afae96c",
         "scripts/record_failure.py": "87723a5609f6c0ef135da94d6208535c0784a0c2a38663a806f989bfd35a9d11",
-        "scripts/selftest_fames_ship_gate.py": "4a0f106e00e791ad33e589426f42fd657ef308c0d3a6ff343253122b640e3804",
+        "scripts/selftest_fames_ship_gate.py": "1e3e783c5acc0a84ce9a42d50f3cac29305a8928aeccf3aad5f6abb7597436ce",
         "scripts/selftest_quick_validate.py": "41d345f312b0737b9df9e45fb0acb4eb4233c28c460214cd3810e349cfebd503",
-        "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37"
+        "scripts/selftest_verify_ztm_recipe.py": "c9e401560018acdfb7cf2ee3da1ef3f173abf725a279d664c9392f15d43c6686",
+        "scripts/verify_deployment.py": "439d3953a43f0be49458aedb6f843665cece19faeb0538a173ead740e807fd37",
+        "scripts/verify_ztm_recipe.py": "1a84a4184da614a525434ec8e4b450e0288ec4c284e369997e66ac4a47a5f4b2"
       }
     },
     {
       "name": "fames",
-      "sha": "8d375fc551975025",
+      "sha": "dbd0f5105fe3956f",
       "required": true,
       "lane": null,
-      "package_sha": "5c3832983cad3639ddb4431fb6d39d2f4e9d1f08edeee60be6d5a87b6cbd67a1",
+      "package_sha": "1034472f4bcdf7fdb437589dd974486dc559b9878c662427ba59aa5f6301d874",
       "files": {
-        "SKILL.md": "8d375fc551975025d34e942e114420979b983af4e4214b315178a68148c259b7",
-        "bundle-manifest.json": "e9a5ac6c1b898962f916882f6ae238b15f28a22b4d6798f01713d53bae2a80d6",
-        "references/cases.json": "b57487b88bbb17cc8dcb49cff2802118302b8ad54bf0b8598d21c91ae5a41209",
-        "references/protocols/fames-protocol.json": "0491b05a27ecec9385640168d5137ec8a8199d9f1d2cd2c8963af1173fdbbf1b",
-        "references/protocols/fleet-token-ladder.json": "7b21978d874c7635864185432b39c55e87c1134b1578163eb65c399a8ca65bdd",
-        "references/protocols/goal-vector-protocol.json": "e275d26d537619b430b897634eda2d6c7664a59c05c2cc77f33a9174ddc880d4",
-        "references/protocols/mtm-protocol.json": "9aa50ad4bb0c0103fc74fb8aa530c1f3ccda842c2fca01da877f269ce96038c5",
-        "references/protocols/scf-protocol.json": "de206fa7da126c54b858fbf35da244f27372867e796842fc5db84b5aacd991b3",
-        "references/protocols/seal-protocol.json": "68e1dccea89dbadf236707d4c4cef50113f1c57c9ed64caab629c9f67695d170",
-        "scripts/fames_fleet.py": "f7935a40d3849f7e500d6119c8447988b529fc3b685cfcfc9dbffde108db326b"
+        ".gitattributes": "448f5307a4b4eaab3e5e0615e1b57e125c2e6419d590025c4ac3d2e2c004955e",
+        "SKILL.md": "dbd0f5105fe3956f4e07318f142aec462aa75b49e512ac5e9607850ed3bb2e6e",
+        "bundle-manifest.json": "a840a99e320632ed4c29245672b2a907f1c34766cc63878ce274ca2fc92d2b8f",
+        "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
+        "references/autonomous-knowledge.md": "b34ca6beb034909aaade75be4707c772e90155c6c12b8278c7b3964ec8238df5",
+        "references/cases.json": "2ebbb062b8e58241dfd2a70ec423678c4c16e40303d436ffa6de6e5560f67a40",
+        "references/claude-live-eval.json": "8946d081f4c71be8b82004e8253c9cda9aa301ef4f09b277dc8a9fb981431a86",
+        "references/hardware-compute.json": "e0792dce63c4894107fd63e43e3e0095ce4c4999686811279fd12543106a8df4",
+        "references/incremental-review.md": "bc98ed38ef36c20ad2191aa61462d724d6a8563dadb64d440920c91bd0d0596f",
+        "references/knowledge-evidence.md": "8a2e015c6273856185500a2ec61e31d233fdb546ed55b2510d6e624b5c394ef8",
+        "references/minimal-context.md": "f5c24bd6cc37901d7e71187ef9d273a88676be4c1393faaedf1664ff794478da",
+        "references/operator-manual.md": "ddfdafdb484c5233b59bf91d80f44a0060b161f822342db9669e7bcf63b0903c",
+        "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
+        "references/runtime-sources.json": "97deab7897ca37d7a0c04a4ad2b94af1537eb47b83823e581bbcd1e5e3f6f701",
+        "references/scoped-skills.md": "b8d6178efa7c1700b13cab721a208900f0d088e3f416c9a906eb661c22362f85",
+        "references/protocols/fames-protocol.json": "7581db1c64a89a6c001d4de914d2275c66bb67d25562a70e73946636f95ad5f4",
+        "references/protocols/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
+        "references/protocols/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
+        "references/protocols/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
+        "references/protocols/scf-protocol.json": "6688d7370af1040b421dfcc715e7b730d4a74331b60bf316e3b527285be27906",
+        "references/protocols/seal-protocol.json": "7de5562242692e0827a64bbc94f7a5a71fc418601558f51dc54371a11820b9a4",
+        "runtime/manifest.json": "8dbffa8b4885eb37ae57446d9b71f18b89417bd5a46211be027be9dc8d448753",
+        "runtime/files/_harness/runtime/document_preservation.py": "7af583a1d534c54332a2d9444afba1430f73a81f06627379965d5c137b6e5d48",
+        "runtime/files/_harness/runtime/dsh_fames_hook.py": "35f126d239b2ae1d333dc21d14e3e05b51dfac380f324228b5fe7e92ac1c3f54",
+        "runtime/files/_harness/runtime/dsh_fames_plugin.mjs": "cde86d6be7cfcb5729c17f7e46c65f30d7681e8fa6ede9a60e3c2c30b52f4ed7",
+        "runtime/files/_harness/runtime/fames_capabilities.py": "323f4d69d67ab15cea6fddb4a6fe3bd16e555c3b20d8f47376f1fae49bfc7ffe",
+        "runtime/files/_harness/runtime/fames_phase_runtime.py": "8a3ee464bf48f49dbbc3ced264e2ff31fae5350f8a5991e2f53cc077afbf8193",
+        "runtime/files/_harness/runtime/fames_session_harness.py": "b8b8e920aa0fc251571ecaaebfceb0a4533b4c55308571b95d02b0bc3a49e973",
+        "runtime/files/_harness/runtime/fames_turn_binding.py": "ebc57eb024b976d79db90fa5d176b8d25571f2c18587684be060f65979f14b6f",
+        "runtime/files/_harness/runtime/jev_phase_advisor.py": "3512af5166341135e29f083b807a6e159286d2e04599ef15c914c1df45752d40",
+        "runtime/files/_harness/runtime/jev_skill_advisor.py": "438e0e7c39ee6105483d1e9f689de582161e0464c36d69939498f6afbfbd9057",
+        "runtime/files/_harness/runtime/jev_task_projection.py": "b902a14055a9c411fe502e6557775720e83f63c66d93a7043cfe364cafe66c4c",
+        "runtime/files/_harness/runtime/jev_turn_router.py": "a097aa79a61963bee9750a69de396c9bd77572f699b62e430fce3383c57f8aef",
+        "runtime/files/_harness/runtime/local_skill_router.py": "56e939aa220e460c233e9ad5df483b0395b862487edfa0b5ecfc4f6cc077e348",
+        "runtime/files/_harness/runtime/native_skill_scope.py": "6c69f8254178a4fe30506dd5f9dead04a9a9b782db381b884a63b26adf0530cf",
+        "runtime/files/_harness/runtime/skill_scope.py": "372ffcefe9d41ac5c73cc795e52526670605fc3aae9bf3cb9a46cd9cc13da5d3",
+        "runtime/files/_lean/install_lean.py": "ae4119e20e8eea93ac367d5da4f2a1981127ac85c34d7604ec6f60f8e2a3bb86",
+        "runtime/files/_lean/leanctl.py": "2cde11126976a17c88a927375b56c5c09a2115b7b0a6708ec8f563a068c7d7a3",
+        "runtime/files/_lean/fames/FamesKernel.lean": "d1b4cef5faec73b47bef915df5e18d612bd52e021224212eed86929f81533cbc",
+        "runtime/files/_lean/fames/FamesPhaseContract.lean": "74941a3d2731985692bd2c34dabb7209c50b1f1b95ae18b2d6ae8e567e68ef5c",
+        "runtime/files/_lean/fames/FamesTurnRecovery.lean": "c7535908561b0d13ddf1533ec6e178785d46f933611bcc670a8728f075f8b6c3",
+        "runtime/files/_lean/fames/conformance.py": "2cc97944eec22196b61d31b62cfe00b7788366c6610248d9c87418aba622ed42",
+        "runtime/files/_lean/fames/lean_gate.py": "10aeb5e6e90f4e220a69616cb62e4db5dda675049eac103ea0921f730f705ecb",
+        "runtime/files/_lean/fames/phase_conformance.py": "ba60fd7f4aa8f850968239279dfa354ba0ce4a53243c383aeec873af65e1f989",
+        "runtime/files/_lean/fames/phase_contract.py": "6b03b9d4fe4569cf69bbb14b23ff7244710bae4181f08f9027887c448e6e5726",
+        "runtime/files/_lean/fames/turn_recovery_contract.py": "b4e6861fef6e2b4d42fd0e7a4ec93f3d5fe24a647362d1383a24950df5615193",
+        "runtime/files/_registry/agent-surfaces.json": "b36cebd6b0f912587f117bc7df19c352496bbb6bcf7c9d3293b0940e951e8f60",
+        "runtime/files/_registry/fames-protocol.json": "7581db1c64a89a6c001d4de914d2275c66bb67d25562a70e73946636f95ad5f4",
+        "runtime/files/_registry/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
+        "runtime/files/_registry/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
+        "runtime/files/_registry/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
+        "runtime/files/_registry/rules-blueprint.json": "43f300044aa022b2c362c8003835ee22c14df36c1d04309a03ffb6a2c8a92686",
+        "runtime/files/_registry/scf-protocol.json": "6688d7370af1040b421dfcc715e7b730d4a74331b60bf316e3b527285be27906",
+        "runtime/files/_registry/seal-protocol.json": "7de5562242692e0827a64bbc94f7a5a71fc418601558f51dc54371a11820b9a4",
+        "runtime/files/_skill/engines/_hub_curator.py": "67ff1f8a997803d1edaf0ace5829f0b507f1f5199bdbfb6368f74278797451e3",
+        "runtime/files/_skill/engines/_local_curator.py": "bbde553cb31488c914c2c151b396b604d8c7a9a3f94cf8d4d13c6a489ba5b35d",
+        "runtime/files/_skill/engines/_paths.py": "9cb40fd10674d680cbef0c1f8f363adfad8719e62a4cd9b1c8440d77a3eb4337",
+        "runtime/files/_skill/engines/_projects.py": "9121798be38115430276d2b4f98200d75917ac2c0680aa990efbd0b730d7e046",
+        "runtime/files/_skill/engines/claim-linter.py": "b81bace525467206964a96751ca38043266fd9143e9d2e5085c57b8f2cd503f2",
+        "runtime/files/_skill/engines/claude-claim-integrity-hook.py": "a13bfb56f0523caa27cbe6cf08fb69adbd2f1b4e962d617a3bfeb6ea09352c5f",
+        "runtime/files/_skill/engines/cursor-fames-hot-refresh.py": "fe8b65f32894e5dc5661039f0502a0ae3abd09ff38b9f8795e47142223e78f97",
+        "runtime/files/_skill/engines/cursor_bootstrap_pack.py": "517116cb0da0fb19e520677df20f9e65e85c3454273f18d4c12be542288e1892",
+        "runtime/files/_skill/engines/fames-immediate-apply.py": "7473fb1f1d9494798f02403e15456a150e38cda9fdc79156c464faf10c052be6",
+        "runtime/files/_skill/engines/fames_execution_evidence.py": "47f1ef6470401c155a88355816e2a13377e8d6730a440b9d7032a0a391bbacf5",
+        "runtime/files/_skill/engines/fleet-skill-sync.py": "20937e6b7ece58cd862af6963eaf71f798f809374a394d97b07f604adb1775dc",
+        "runtime/files/_skill/engines/hub_python.py": "94e826b861844e6ab0b199ccc3ab1d2d2f639412302e6841f9371651506ec167",
+        "runtime/files/_skill/engines/lane_taxonomy.py": "e8cb50dd7a0ea47368196320ad4ce3e1ce90379beb757be0f3d38fe193d26888",
+        "runtime/files/_skill/engines/mtm-fleet-skill-github.py": "2b8b1091fe6b4273755a2108e4a9d5dc1e27c1386fb4f98390401f2daaba95b5",
+        "runtime/files/_skill/engines/rules_brief.py": "6d86344dae5f4260fd77675b43a1ac7c9d028571e34d667cd74e9fbae4a0434e",
+        "runtime/files/_skill/engines/sync-cursor-hooks.py": "b1082262151f88af55328b6cf1a14905f05ab6c1b1e38a4f0ba5c359a4388a53",
+        "runtime/files/_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py": "257c2fb07d9d23cb552960ca4a01ad28f1c6d950dca977f2094c81276646e7f5",
+        "scripts/adaptive_response_controller.py": "07a19c6e0bda90f25800617a274d5f641709676d0d71cdfae8e17dec91e0d911",
+        "scripts/claude_live_ab.py": "3aaa4276c505e1eceea33207c6c4baeb190b6319b737f081fd53fbc055834261",
+        "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
+        "scripts/context_packet.py": "83ea5f25d31ed03b70d1b29b3ed33c7076fd5192ed85cb093804da4b7ff91adb",
+        "scripts/execution_evidence.py": "a0e15c249ff1ee86048647b314c926eb54006877038dcc9060fe538fdcdb73c1",
+        "scripts/fames_fleet.py": "92190031bccfd3152f7a5873ac73a3bd5b8804b9a4cb045de7d8727a215dd95b",
+        "scripts/knowledge_evidence.py": "aee01474f7ab6f4b7c43a008700d498fffc1ba64803598c2c48a9ad57bbac2da",
+        "scripts/runtime_release.py": "47872a754dfcbe40dbdc0ea37a54f11a051726366bf65c4416b71b8051045ca6",
+        "scripts/test_context_packet.py": "4046deb01229db855de71f9dc42c3e469231a9a9456054dbfeb2c56a8c6133d8",
+        "scripts/test_execution_evidence.py": "c772c1bf23058ccc51fde55ad544eef584cf9f2e9a74ed7fbc03a19601a15b71",
+        "scripts/test_knowledge_evidence.py": "fecf1dc7cee04f3dc67edc3e632da7ce85254e3e26cbef149416e12505566447",
+        "scripts/test_runtime_release.py": "fd89b473d9bd381e31a1813fcb8d9374345907ef73f7f650e3138889509aef18",
+        "scripts/test_work_efficiency.py": "e4250ba4c05f616c79cf97182507d1ff3585487c788546151a97b2dad74f0536",
+        "scripts/work_efficiency.py": "42d41b64b8075280b1212625b46a25ab32bba35d27f5c019cf79dde02552022e"
       }
     },
     {
@@ -151,6 +263,16 @@
       }
     },
     {
+      "name": "lean-math-prover",
+      "sha": "1e27090f88c91241",
+      "required": false,
+      "lane": "zero-token-mechanism",
+      "package_sha": "72f5feb21e0a0f65823d4fa51f51a83382c73d26845f0ad86168cb4fff8d40af",
+      "files": {
+        "SKILL.md": "1e27090f88c912415e01f09795b9ed6825611e013d77d68e2e280c01b1dfe6b4"
+      }
+    },
+    {
       "name": "library-bookmark-coverage",
       "sha": "d71a4834c86636d3",
       "required": false,
@@ -162,15 +284,15 @@
     },
     {
       "name": "line-oa-ingest",
-      "sha": "fef4ef90e7207cda",
+      "sha": "b51119caa2fa8022",
       "required": false,
       "lane": null,
-      "package_sha": "f0322839b86587f6d0d117548c44d7ad2616b7a68bdc4b1bb1828e90fe99d0b3",
+      "package_sha": "54c02860d560f6d29a9d7b08809b82c18da84b56d1a034e6861a9a4ed66f699a",
       "files": {
-        "SKILL.md": "fef4ef90e7207cdab2a94fdd84d2733a3f36cc71bff3835009429b33010714ac",
+        "SKILL.md": "5b0dcb0fb40f06db1d0ff52dd432a2cfbaead456132c75fab965f6ebfe6dbcbb",
         "agents/openai.yaml": "3b3a5bb4f3fc5b43bd8242ef17dec4e8503111acc39ca46ef8c6019f83342002",
         "references/line-api-boundaries.md": "c5f8bb100756aa34dd2266601caf25bd16bcd339dbc96858602f000895e4d516",
-        "scripts/fetch_public_social.mjs": "00181a1a3e0a2d2020990ff9fd6ae2a0a14e64b189aa75dd3b22d94323374e0a",
+        "scripts/fetch_public_social.mjs": "21569d6a98596fa3ff36076a5da900066052fb1f11954ec5363202edd71017b9",
         "scripts/inspect_line_inbox.py": "460168215f3ecf231dbd202d87922dd1a234530deaf14937b7df23c0c6f10fa1",
         "scripts/test_inspect_line_inbox.py": "de695f9296a1d47af6721aa16b8aff95d6fb4642719db8a9ce771ec1d34f36e8"
       }
@@ -227,24 +349,25 @@
     },
     {
       "name": "mtm-fleet-skill-github",
-      "sha": "2a37fc1df5cba610",
+      "sha": "6ba6f0ba91d6555f",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "e67decddec3de4f5d0b82dc47a085c647cc29a658d3bed76a6fe0bb134500abe",
+      "package_sha": "4ce702956accd082903d51a407eeda19fde8897e3a895e66828f23c2155e3d4b",
       "files": {
-        "SKILL.md": "2a37fc1df5cba61094a119fea73740a71f3df7e54d703ba74454749369e337e5",
+        "SKILL.md": "6ba6f0ba91d6555fee2801fede576a0698bc49de8b6f2bb7cb28064d1799aad1",
         "references/config.example.json": "0cb692744258680bd0de8b1034d1ad62031515a9d1e5c2c27922502de4acfed9",
         "scripts/receiver.py": "0be72e55d4c796cfad90d761e846ab77338ad37ce530500398cca47a3eb99e3d"
       }
     },
     {
       "name": "mtm-github-ops",
-      "sha": "294596e0625c974c",
+      "sha": "cc6b6b366d5066eb",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "350e3657554a03554ecc3c8cc5d4d68b385e4724e635f7750ce237181823f7e8",
+      "package_sha": "b767c3b7a7bc63a1b10d6fed1e04d01aaf375554cf048e04dd0a91ef92d0b2db",
       "files": {
-        "SKILL.md": "ab0beb18ec80d06126c5add559e667f1819fc591c5c02895f47de47d46ad0b59"
+        "SKILL.md": "0c00da6ca2f0ab9ee7580dd16f2a4e8959b86dc451314655fb7ec12349cd1c5d",
+        "scripts/quick_validate.py": "0544c8efc19d9467af6ad679ee0f02e58c94a6dba0592aed110d701e3db7149a"
       }
     },
     {
@@ -259,12 +382,12 @@
     },
     {
       "name": "mtm-mto-first",
-      "sha": "b69a2b8c078e82bb",
+      "sha": "49f3ed0cef08e582",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "6054373e6c52cb8cbe7eeca3885e3db0d5b173989efd3d964cbab6dc0fd67938",
+      "package_sha": "c93b07e488a0dcdd98af79ab3dfcc6cc17b1f3488a416dff5f09be80a01239f6",
       "files": {
-        "SKILL.md": "2f708aa33b32c5756278d6f92a0f4c7c836599771cbe5a8826d6138592b8f0d9"
+        "SKILL.md": "8e96414f43b795d9c4a05c0c15099d3e9d4d2e59b4eb306e2bca82e75cf76cc8"
       }
     },
     {
@@ -279,7 +402,7 @@
     },
     {
       "name": "mtm-token-ladder",
-      "sha": "866acf2908d337fa",
+      "sha": "96c57d956342e4e2",
       "required": false,
       "lane": "zero-token-mechanism",
       "package_sha": "f4e2f03db1ddafe99d0cdae78b30990a3ea6bde871ddf8b70c03982ee13a2784",
@@ -289,12 +412,12 @@
     },
     {
       "name": "pfkt-auto-unblock",
-      "sha": "bbf3a1ffefff038b",
+      "sha": "ccdb99d387c9a26e",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "17e2ff71de3fe58ad9001e33726b64b5e1b2a02c910085a583bbcf11d047cd0f",
+      "package_sha": "052320a27edcee136d7a0d070ece5c513bb83915e368a00a4d028e70b89c80cc",
       "files": {
-        "SKILL.md": "e6b65bed5416d310eaafaab3fe825709bc82f63a702f2d83547b0c34e8021112"
+        "SKILL.md": "ccdb99d387c9a26ef43cb2622db0c9675aa4aae89017531a4771df7788cf2048"
       }
     },
     {
@@ -320,26 +443,36 @@
     },
     {
       "name": "token-preflight",
-      "sha": "c3ae761bc4edee8d",
+      "sha": "fbb45ceb569d3b87",
       "required": true,
-      "lane": "zero-token-mechanism",
-      "package_sha": "ff89019a761ea676b213cd4b4a7f1a0f3ad90be946e0651bf284aa5e1606be5f",
+      "lane": null,
+      "package_sha": "614c8d4f88ab40aca54a760b6a1bb751057e6dff4c8d964b5f87bd411735f926",
       "files": {
-        "SKILL.md": "c3ae761bc4edee8d1431f12166b972f41baa8e37265671ca008741db44219fe2",
+        "SKILL.md": "fbb45ceb569d3b878025dbe61e15a5e89658ca51d0d10c844b82899f6e42f6a1",
         "agents/openai.yaml": "3e6775a97aeefe019b1c41ea53d1801934988be12922960e7eb2a345b6c92265",
         "references/concept-map.md": "889f919398e94745d31314ca9835ed21758d193e6c351e0e4fc512ade6499044",
-        "scripts/claude_session_hook.py": "9a89630622943843eb2756839d4297cab0a373c5007136c74b3a617d4711dacf",
+        "scripts/claude_session_hook.py": "257c2fb07d9d23cb552960ca4a01ad28f1c6d950dca977f2094c81276646e7f5",
         "scripts/preflight.py": "969d214be3867a61d8d58c5ec73d5b9173358d41efbadc9396a8adc090c23437"
       }
     },
     {
-      "name": "ztm-cursor-edge-auth",
-      "sha": "7ab227a7a294ac38",
+      "name": "zh-tts-narrate",
+      "sha": "5178875462514349",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "4aed6ae953b732859f61c3f53ec1bfcced9588173312f526409fc2a4ba9f829b",
+      "package_sha": "c6b9a245b21150109ed97ca133228adc790261320fc4591577e18024b99301d8",
       "files": {
-        "SKILL.md": "c1477fe15ed84a7b80225b4492376be74a6a58f1dd82363e53674493853f3ced",
+        "SKILL.md": "517887546251434909c9b2542aaf26c6f8561c5d23ae3b06216398e72e8da6bd"
+      }
+    },
+    {
+      "name": "ztm-cursor-edge-auth",
+      "sha": "4820658c263577e6",
+      "required": false,
+      "lane": "zero-token-mechanism",
+      "package_sha": "d2623e83fc6f44a07b46f75d2ff3403afbeefdf7e78c9708754216c4b6c057ce",
+      "files": {
+        "SKILL.md": "4820658c263577e62a7a60f41a091260eb51c49ba938f39df701a84ed6ba13fb",
         "inapp-browser-secret-transfer.md": "a1f9b6a1f4f0a6283b296dc64e36a253e8528c796338477cbd44090336682af8"
       }
     },
@@ -375,18 +508,20 @@
     },
     {
       "name": "ztm-git-ship",
-      "sha": "763b5727f9bc59b1",
+      "sha": "31dd939e6088af8c",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "fb1d8b25737f39ed949d58e31774fb4a02fbe21f958115cca218985fa8d284c8",
+      "package_sha": "efef9f077c3c7bbb7f79b1d9d2f2bdc885dff1089525d5c46bc2d3ba912d9ecf",
       "files": {
-        "SKILL.md": "4be35fde873124f2635efd3d5f7fb1b15dbf44417791f2ff611a11e528c0daa8"
+        "SKILL.md": "6bfd386d319100228ea6913e9aae1a3afc8e3208ee50984b3d6cd8284a4f4320",
+        "engines/git_repo_detect.py": "86a8275e600a2aa990dc6ffc4de2cf854b5dd3172f79b8451f4b75b00586f2a7",
+        "tests/test_git_repo_detect.py": "84966608e5bf9e1f32127a44654e77c38b25586478aa4e64099235eb3012aeff"
       }
     },
     {
       "name": "ztm-goal-compact-enforce",
       "sha": "0f5a161e39d17287",
-      "required": true,
+      "required": false,
       "lane": "zero-token-mechanism",
       "package_sha": "3acaf533cf4cadd106f11813c37b38277eea8daae9bcf64cf6401d05510e2cd0",
       "files": {
@@ -408,7 +543,7 @@
       "sha": "38482e844475ac22",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "1834e93084d103fc853379119612343a2b2f83347e311ad758f2ad037f5c6c83",
+      "package_sha": "d5ccb533ca7aad7a390cb238939c7176bb8b6625241fc68d81a885a5d7fce4fa",
       "files": {
         "SKILL.md": "38482e844475ac22a161e19fc2841d2aa73770c6b07b82dc26bd0cdb92c7f3bd",
         "references/known-failures.md": "fa595164adf25da421eb54a9615e53cde6d7232833820e69f85ed891a179e74c",
@@ -419,7 +554,7 @@
         "scripts/probe_redirect_uri.py": "f2e2a892e5de7e7e39bdffe6efccb9e824211262f276c50e2686d919a1734610",
         "scripts/redirect_uri_fix_handoff.md": "eebde5add450a312fe295a4fb20ca7a8aba3e1a0aa1a3c395b558e79e55fe342",
         "scripts/redirect_uri_state.json": "5aee1a8811232bfd0c64b74b89c6de0623bb2e2a7302a10660095627d8a12cd4",
-        "scripts/test_redirect_uri.py": "d37e8d3cbd3d5888aca64db7a26fe92b66ec993963c68bdaad739fa8754c2887"
+        "scripts/test_redirect_uri.py": "dcb79c421021d3a019a001c25006dfbd56889aadea65b72edfbbde3ec9144302"
       }
     },
     {
@@ -455,14 +590,17 @@
     },
     {
       "name": "ztm-web-auth-ops",
-      "sha": "cfe103c127cd7733",
+      "sha": "afde5fe2facfd12f",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "5a84a238a8754e5eb7604c1a7a47baee92fa36ca2f6dc4810a7996a20156ad32",
+      "package_sha": "7967a402968a2b1a8396b633489fda82d13354cae69b826332f6d5c627a7a254",
       "files": {
-        "SKILL.md": "400baad5495ded5a0331fa8b68f4f98be56be4efd68d591eb8d0f1760a5fe9a3",
+        "SKILL.md": "afde5fe2facfd12f9bb6edc157f9445e5b735a5955c795981584babb8cbb9848",
+        "host-adapter-contract.md": "1723252087a9129ee17f87f4222f72743ef11d77f87ae9d809402a88b11728d6",
         "oauth-verify-ledger.md": "00b3e5aa744e3fbcf1f622b125af4524982e9282906e598d2a561afa356f2302",
-        "reference.md": "0f890af0f5e9acb38e12f6dcf6ebaaa5be868ce0cda1e0c1b099a044d093a9d6"
+        "reference.md": "0f890af0f5e9acb38e12f6dcf6ebaaa5be868ce0cda1e0c1b099a044d093a9d6",
+        "scripts/auth-surface-resolver.py": "146c2fc8897df79185cc6ee6fd69fe8400cb9a37f5b33a36b30ee6cf4898dfc2",
+        "tests/test_auth_surface_resolver.py": "4fd45bd99a4885528cd370d85d1c04a276898ceab6faee69059cf9b62070d995"
       }
     },
     {

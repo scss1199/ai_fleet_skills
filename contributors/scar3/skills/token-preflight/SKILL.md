@@ -17,8 +17,8 @@ Use this phase order:
 2. MTM selects a bounded route and read budget.
 3. PFKT activates only for multiple independently verifiable deliverables or explicit parallel work.
 4. SCF computes residual only after a verified result exists.
-5. SEAL checks evidence, identity, and graph closure.
-6. AEX activates only when a verified cross-cycle residual remains.
+5. AEX activates only when a verified cross-cycle residual remains.
+6. SEAL checks evidence, identity, and graph closure after any active AEX adaptation.
 
 Treat probe/config errors as UNKNOWN. Never treat UNKNOWN as clear, consumed, healthy, or complete. Do not load linked protocols until their phase becomes active.
 
@@ -31,4 +31,3 @@ Read [references/concept-map.md](references/concept-map.md) only when changing f
      Claude-to-Codex review route it governed are quarantined in
      _delete/2026-08-13-codex-purge (hub-skills/, hub-engines/). Cross-provider token usage is
      no longer a route this hub can take. -->
-
