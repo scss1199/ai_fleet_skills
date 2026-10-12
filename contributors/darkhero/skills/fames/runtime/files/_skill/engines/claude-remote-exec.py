@@ -133,9 +133,9 @@ def auth_source(cfg: dict) -> tuple[str | None, str | None]:
     for var in auth.get("env") or []:
         if os.environ.get(var):
             return "env:" + var, None
-    cred = os.path.expandvars(auth.get("credentials_file") or "")
-    if cred and _cred_file_has_substance(cred):
-        return "cli_credentials_file", None
+    # The hub vault outranks the CLI's own credential store. 2026-10-12: on darkhero and
+    # scar3 an expired `.credentials.json` (OAuth session that could not be refreshed) shadowed
+    # the vault, so a freshly minted setup-token placed in the vault was never even tried.
     for path in auth.get("vault_paths") or []:
         try:
             import _secrets
@@ -144,6 +144,9 @@ def auth_source(cfg: dict) -> tuple[str | None, str | None]:
                 return "vault:" + path, path
         except Exception:  # noqa: BLE001  (an unreadable vault is UNKNOWN, not absent)
             return None, None
+    cred = os.path.expandvars(auth.get("credentials_file") or "")
+    if cred and _cred_file_has_substance(cred):
+        return "cli_credentials_file", None
     return None, None
 
 
