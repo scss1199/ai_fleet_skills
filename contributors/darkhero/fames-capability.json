@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "573dd1a29acec301ef50bdd7a80d3aeff5f500e402044bbc9f6199258edf5d4a",
   "runner_state": "armed",
-  "observed_at": "2026-10-12T15:20:30.049349+00:00",
+  "observed_at": "2026-10-12T16:06:04.056553+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,16 +356,52 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
+        "agent": "ai_zonghe",
+        "surface": "claude",
+        "observed_at": "2026-10-13T00:00:34+08:00",
+        "receipt_sha256": "f7e8dbb7171541592c43a0f6be651257b5086a1b0c30c7d735379e0002580349"
+      },
+      {
+        "agent": "ai_trader",
+        "surface": "claude",
+        "observed_at": "2026-10-13T00:03:09+08:00",
+        "receipt_sha256": "5ab881da002ac4cfb308a74158878eb3129380e8524308b4e50906bf4b9812c1"
+      },
+      {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-12T23:14:26+08:00",
-        "receipt_sha256": "edfae5f075b64ad15a6b7a4e32a7d1278bf79faef4622326e38a578fe8c48ad9"
+        "observed_at": "2026-10-12T23:47:48+08:00",
+        "receipt_sha256": "9d22d697ad35aa51694419307928f5d8ac04ec3dd5b2688b5b6944930f7b93d9"
+      },
+      {
+        "agent": "ai_career",
+        "surface": "claude",
+        "observed_at": "2026-10-12T23:24:23+08:00",
+        "receipt_sha256": "470ee4e5c9eedc707c48d8730e0278d40fa2cceedff66036143657de9cc3f75f"
+      },
+      {
+        "agent": "ai_network",
+        "surface": "claude",
+        "observed_at": "2026-10-13T00:03:19+08:00",
+        "receipt_sha256": "78060b217878feffa6f4c3d9f03be384be455cd4f760d720a5476273c3d66ac5"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-10-12T23:43:48+08:00",
+        "receipt_sha256": "dd5110da5b8ccc51f7f85248c2fb025f85e00b0dd4aca2f57fc25f5df402e473"
       },
       {
         "agent": "ai_nuwa",
         "surface": "claude",
         "observed_at": "2026-10-12T23:18:49+08:00",
         "receipt_sha256": "8aeede84781d8dfe69e9aa20050fa60a7ebe0e14e46170e0d3d1a269305cccb6"
+      },
+      {
+        "agent": "ai_career",
+        "surface": "claude",
+        "observed_at": "2026-10-12T23:52:53+08:00",
+        "receipt_sha256": "6458cef2f45426d8606b1747518ccd3be1e94e28ed6fb4bc0c3d105e80335648"
       }
     ],
     "runtime_release_sha256": "397f44fb730d4a217449e9eaca064d92cbaed0de289a8323acfeed69f31332b6"
