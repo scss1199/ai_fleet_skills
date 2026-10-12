@@ -27,9 +27,22 @@ if sys.platform == "win32":
 
 ENGINES = os.path.dirname(os.path.abspath(__file__))            # <WORKSPACE>\_skill\engines
 SKILL   = os.path.dirname(ENGINES)                              # <WORKSPACE>\_skill
-COMMON  = (os.environ.get("AI_WORKSPACE")
-           or os.environ.get("CLAUDE_COMMON")
-           or os.path.dirname(SKILL))                           # <WORKSPACE>
+def _hub_root_from_env() -> str | None:
+    """A hub root from AI_WORKSPACE / CLAUDE_COMMON is used only when it is an absolute path to
+    a directory that holds `_registry`. A drive-relative value such as `C:ai_workspace` resolves
+    against the current directory, and on scar3 every follow then installed a second hub
+    (3.9 GB, Lean toolchain included) under C:\\ai_workspace\\ai_workspace\\ (2026-10-12).
+    Anything else falls back to this file's own location, which is always the real hub."""
+    for name in ("AI_WORKSPACE", "CLAUDE_COMMON"):
+        value = (os.environ.get(name) or "").strip().strip('"')
+        if not value:
+            continue
+        if os.path.isabs(value) and os.path.isdir(os.path.join(value, "_registry")):
+            return os.path.normpath(value)
+    return None
+
+
+COMMON  = _hub_root_from_env() or os.path.dirname(SKILL)         # <WORKSPACE>
 
 # --- neutral shared surfaces (underscore-prefixed, never committed) ---
 SECRETS          = os.path.join(COMMON, "_secrets")

@@ -7378,6 +7378,26 @@ def _emit(payload: dict, as_json: bool) -> int:
     return 0 if payload.get("ok") else 1
 
 
+def _hub_workspace_errors(workspace) -> list[str]:
+    """A --workspace must be the real hub, never a folder the installer itself can create.
+
+    scar3 2026-10-12: a FAMES command run with a wrong workspace built and kept refreshing a
+    second hub (3.9 GB, Lean toolchain included) under C:/ai_workspace/ai_workspace/. The
+    installer writes _registry/*.json, _skill/engines and the skill surfaces, so their presence
+    proves nothing; _registry/project-matrix.json and .git are never produced by it."""
+    errors: list[str] = []
+    try:
+        root = Path(workspace)
+        if not root.is_absolute():
+            return ["workspace_not_absolute"]
+        root = root.resolve(strict=True)
+    except (OSError, RuntimeError, TypeError, ValueError):
+        return ["workspace_unresolvable"]
+    if not ((root / "_registry" / "project-matrix.json").is_file() or (root / ".git").exists()):
+        errors.append("workspace_is_not_a_hub")
+    return errors
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -7426,6 +7446,12 @@ def main() -> int:
     knowledge.add_argument("--root", type=Path, required=True)
     knowledge.add_argument("--json", action="store_true")
     args = parser.parse_args()
+    if getattr(args, "workspace", None) is not None:
+        workspace_errors = _hub_workspace_errors(args.workspace)
+        if workspace_errors:
+            print(json.dumps({"ok": False, "state": "UNKNOWN", "reason": "invalid_workspace",
+                              "errors": workspace_errors, "workspace": str(args.workspace)}))
+            return 2
     if args.command == "validate-knowledge":
         import importlib.util
         spec = importlib.util.spec_from_file_location("fames_knowledge_evidence", PACKAGE_ROOT / "scripts" / "knowledge_evidence.py")
