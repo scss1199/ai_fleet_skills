@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-12T01:50:55.321418+00:00",
+  "observed_at": "2026-10-12T02:36:52.018570+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,12 +356,6 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
-        "agent": "ai_theater",
-        "surface": "claude",
-        "observed_at": "2026-10-11T10:35:43+08:00",
-        "receipt_sha256": "231175dcee9c364bd21fe8715ea233c5613e188a99583f2d61e18077e2cd13a5"
-      },
-      {
         "agent": "ai_career",
         "surface": "claude",
         "observed_at": "2026-10-11T19:09:38+08:00",
@@ -370,14 +364,14 @@
       {
         "agent": "sinopac-trading-system",
         "surface": "claude",
-        "observed_at": "2026-10-12T09:42:12+08:00",
-        "receipt_sha256": "02eb77513a71339edc66ecfe893ae528f78b88baa864b4fbf40fc6cfee705031"
+        "observed_at": "2026-10-12T10:32:04+08:00",
+        "receipt_sha256": "c265ca607723e2198d0c58860458dc8dbc7c4ee58d8be4facbbdba7e5307524d"
       },
       {
-        "agent": "tray",
+        "agent": "xtu-popup-20261012",
         "surface": "claude",
-        "observed_at": "2026-10-12T09:46:43+08:00",
-        "receipt_sha256": "4fb757a0993c7313b246ee38a7eb4e6561dd42a3d98e45c39f4674c4d701f0c0"
+        "observed_at": "2026-10-12T10:33:48+08:00",
+        "receipt_sha256": "84d012ad3c357fb5cb6e27d0679a0c9ac8bcb485317d000dc20c4d98dabb690d"
       },
       {
         "agent": "ai_metadata",
@@ -388,14 +382,14 @@
       {
         "agent": "ai_theater",
         "surface": "claude",
-        "observed_at": "2026-10-12T06:17:50+08:00",
-        "receipt_sha256": "55144b8a538a905285f335b3636210cdfaff0c2511ff5df1978b200b7b5f0f73"
+        "observed_at": "2026-10-12T10:01:41+08:00",
+        "receipt_sha256": "ec2e0f7e73bf4ea2d1bff92b434cddac392552ca648cc649836ba222f1a70520"
       },
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-12T06:23:06+08:00",
-        "receipt_sha256": "94bc8b10ea627eff252becd7b68003169b6b0a8c5144fdf6a4baf0c08d263c30"
+        "observed_at": "2026-10-12T09:59:20+08:00",
+        "receipt_sha256": "f9fed6d74b57c8922be41799bf0661c2b61360da1cae43a3cdb6092a5e6c7905"
       },
       {
         "agent": "ai_guitar",
