@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "id": "run-until-done",
+  "authority": "operator 2026-10-10 「現在一直跑到沒有下一步為止」; armed 2026-10-11 (A+B)",
+  "hook": "_skill/engines/claude-run-until-done-hook.py",
+  "event": "Stop",
+  "enabled": true,
+  "max_blocks_per_turn": 2,
+  "max_blocks_per_session": 12,
+  "note": "pending_patterns / done_patterns may be overridden here; omitted keys use the hook's defaults. Set enabled=false to park."
+}

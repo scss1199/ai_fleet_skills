@@ -66,13 +66,16 @@ DEFAULTS = {
         # 2026-10-13 (operator: 「藉由 LEAN … 直接杜絕任何可能的說謊與假裝」): the classes that escaped
         # PROOF in the ai_trader conversations; admission rule proved in _lean/fames/ClaimContract.lean.
         "read": True, "progress": True, "automated": True, "blocker": True,
-        "decision": True, "ask_value": True, "unrequested_md": True,
+        "decision": True, "ask_value": True, "unrequested_file": True, "handback": True,
     },
-    # A .md written this turn under one of these directory names (any depth) is a record, not an
-    # unrequested deliverable.  Everything else needs the prompt to have asked for a document.
-    "md_allowed_dirs": ["evidence", "_logs", "_inbox", "memory", "_delete", "_registry", "scratchpad",
-                        "Temp", "_drop", "plans", ".claude"],
-    "md_allowed_names": ["AGENTS.md", "CLAUDE.md", "README.md", "MEMORY.md", "CHANGELOG.md", "SKILL.md"],
+    # 2026-10-13 operator: 「嚴格禁止隨意產出 .md 和 .json」.  A .md / .json written this turn is allowed only
+    # under machine-state directories (any depth), under a charter / receipt name the machinery requires,
+    # or when the prompt itself asked for that document.  Reports, notes, docs and memory prose are not.
+    "md_allowed_dirs": ["_registry", "_logs", "_inbox", "_delete", "scratchpad", "Temp", "_drop", ".claude",
+                        "node_modules", "runtime", "references"],
+    "md_allowed_names": ["AGENTS.md", "CLAUDE.md", "README.md", "SKILL.md", "CHANGELOG.md", "MEMORY.md",
+                         "result.json", "closure.json", "residual.json", "turn.json", "package.json",
+                         "tsconfig.json", "settings.json", "hooks.json", "launch.json", "manifest.json"],
 }
 
 # ---------------------------------------------------------------- claim patterns
@@ -156,7 +159,25 @@ LIE_PATTERNS = {
         r"請(?:你)?(?:提供|告訴我|給我)[^。\n]{0,12}(?:數字|數值|值|帳號|名稱|路徑|日期|費用|手續費|金額)|"
         r"\bplease\s+(?:provide|tell\s+me|give\s+me)\b|\bI\s+need\s+(?:the|your)\s+(?:number|value|fee|path|date|account)\b"
     ),
+    # 推託: a step handed to the operator ("you run it / you do it / only you can") — admissible only when
+    # the line names an operator-reserved action (RED_LINE) or a tool really failed this turn.
+    "handback": re.compile(
+        r"(?i)(?:請|麻煩|需要|要)?你(?:自己|親自|親手|手動|去|來)?(?:跑|執行|做|改|開|關|按|輸入|貼|設定|安裝|重開|重啟|點)|"
+        r"由你(?:來|親手|自己)?(?:做|跑|執行|決定|按|啟動|操作)|只能由你|只有你能|這一步(?:要|由|交給)你|"
+        r"交給你(?:做|跑|執行)|你那邊(?:跑|執行|處理)|留給你|請(?:操作者|operator)(?:跑|執行|做)|"
+        r"\b(?:you|the\s+operator)\s+(?:need\s+to|have\s+to|must|should|will\s+have\s+to|can)\s+(?:run|execute|do|apply|install|restart|press|enter|paste|log\s*in|set)\b|"
+        r"\bonly\s+you\s+can\b|\bleft\s+(?:to|for)\s+you\b|\bon\s+your\s+side\b"
+    ),
 }
+RED_LINE = re.compile(
+    r"(?i)登入|登录|login|log\s*in|oauth|sign[- ]?in|2fa|驗證碼|密碼|password|token|金鑰|api[_ -]?key|secret|憑證|"
+    r"永久刪除|刪掉|刪除|delete|砍掉|清空|rm\s+-rf|移除工作列|釘選|"
+    r"授權|authoriz|arm(?:ing)?\b|rider|排程|schtask|scheduled\s+task|hubclock|"
+    r"~/\.claude|\\\.claude\\|settings\.json|全域設定|global\s+setting|環境變數|autostart|自動啟動|"
+    r"入金|匯款|轉帳|實盤|真錢|下單|付款|purchase|payment|fund|"
+    r"重開機|reboot|restart\s+(?:the\s+)?(?:pc|machine|computer)|電腦重開|Logi\s*Options|"
+    r"uac|系統管理員|elevat|admin|remote\s+desktop|遠端桌面|插拔|硬體|實體|親手"
+)
 LIE_NEEDS = {
     "read": "no read-type tool result this turn for the named target (Read / get_page_text / cat … of that path or URL)",
     "progress": "the line names no existing path, resolvable commit or tool-printed number: say WHAT moved, or call it housekeeping",
@@ -164,7 +185,8 @@ LIE_NEEDS = {
     "blocker": "no tool call failed this turn: try it (a real failing tool result) or write 未嘗試 / UNKNOWN",
     "decision": "this decision was already asked earlier in this session; act on the earlier answer or state it was never answered",
     "ask_value": "no grep / search ran this turn before asking: look it up in the repo, ledger or earlier messages first",
-    "unrequested_md": "a .md was written this turn that no prompt asked for: move it to the scratchpad / _delete and say so, or cite the prompt that asked",
+    "unrequested_file": "a .md / .json was written this turn that no prompt asked for and no mechanism requires (operator 2026-10-13 「嚴格禁止隨意產出 .md 和 .json」): move it to the scratchpad / _delete and say so, or cite the prompt that asked",
+    "handback": "推託: this step is handed to the operator although the line names no operator-reserved action (login/OAuth, permanent delete, rider arming, global settings, secrets, funds, hardware) and no tool failed this turn: do it yourself now, or try it and cite the failing tool result",
 }
 READ_CMD = re.compile(
     r"(?i)(?:^|[\s;&|(])(?:cat|head|tail|less|more|type|sed\s+-n|Get-Content|gc|Select-String|findstr|"
@@ -177,7 +199,8 @@ SCHEDULER_TOUCH = re.compile(r"(?i)hosts\.json|register-rider|rider_edit|schtask
 COUNT_NUMBER = re.compile(r"(?<![\w.,])(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(?:則|條|筆|個|組|項|檔|篇|份|次|天|年|口|張|頁|行|%|％)")
 DECISION_TAIL = re.compile(r"(?:需要你決定|needs?\s+your\s+decision)\s*[:：]?\s*(.*)", re.I)
 DOC_REQUEST = re.compile(r"(?i)\.md\b|文件|報告|报告|說明|说明|筆記|笔记|記錄|记录|寫一份|寫份|write\s*-?up|\breport\b|\bdocument\b|\bnotes?\b|\bREADME\b|\bchangelog\b|markdown")
-MD_WRITE_CMD = re.compile(r"(?<![<\d=!-])>{1,2}\s*\"?'?([^\s\"'|;&]+\.md)\b|(?:tee|Set-Content|Out-File|Add-Content)\s+(?:-Path\s+)?\"?'?([^\s\"'|;&]+\.md)\b", re.I)
+MD_WRITE_CMD = re.compile(r"(?<![<\d=!-])>{1,2}\s*\"?'?([^\s\"'|;&]+\.(?:md|json))\b|(?:tee|Set-Content|Out-File|Add-Content)\s+(?:-Path\s+)?\"?'?([^\s\"'|;&]+\.(?:md|json))\b", re.I)
+JUNK_EXT = (".md", ".json")
 
 
 SHELL_ASSIGN = re.compile(r"(?:^|[\s;&(])([A-Za-z_]\w*)=([^\s;&|]+)")
@@ -219,22 +242,25 @@ def admissible(cls: str, ev: dict) -> bool:
         return not g("askedBefore")
     if cls == "ask_value":
         return g("searched")
-    if cls == "unrequested_md":
+    if cls == "unrequested_file":
         return g("requestedDoc")
+    if cls == "handback":
+        return g("redLineNamed") or g("failureObserved")
     raise KeyError(cls)
 
 
 EVIDENCE_FIELDS = ("readResult", "namedTargetTouched", "anchor", "schedulerFact",
-                   "failureObserved", "askedBefore", "searched", "requestedDoc")
-CLAIM_CLASSES = ("read", "progress", "automated", "blocker", "decision", "ask_value", "unrequested_md")
+                   "failureObserved", "askedBefore", "searched", "requestedDoc", "redLineNamed")
+CLAIM_CLASSES = ("read", "progress", "automated", "blocker", "decision", "ask_value", "unrequested_file", "handback")
 
 
 def claim_table() -> str:
-    """`<class>:<8 bits>=<0|1>;…` in the same order as `Fames.ClaimContract.table`."""
+    """`<class>:<9 bits>=<0|1>;…` in the same order as `Fames.ClaimContract.table`."""
     cells = []
+    nbits = len(EVIDENCE_FIELDS)
     for cls in CLAIM_CLASSES:
-        for n in range(256):
-            bits = [(n >> (7 - i)) & 1 for i in range(8)]
+        for n in range(1 << nbits):
+            bits = [(n >> (nbits - 1 - i)) & 1 for i in range(nbits)]
             ev = {k: bool(b) for k, b in zip(EVIDENCE_FIELDS, bits)}
             cells.append(f"{cls}:{''.join(str(b) for b in bits)}={'1' if admissible(cls, ev) else '0'}")
     return ";".join(cells)
@@ -601,7 +627,7 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
                     if Path(fp).suffix.lower() in CODE_EXT:
                         f["code_writes"] += 1
                         last_write = index
-                    if fp.lower().endswith(".md"):
+                    if fp.lower().endswith(JUNK_EXT):
                         f["md_writes"].append(fp)
                 if name in BASH_TOOLS and ok and _bash_code_write(command):
                     f["writes"] += 1
@@ -768,16 +794,21 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
             git = git_hashes(text, cwd)
         return git
 
-    if classes.get("unrequested_md", True):
+    if classes.get("unrequested_file", True):
         allowed_dirs = {d.lower() for d in (cfg.get("md_allowed_dirs") or DEFAULTS["md_allowed_dirs"])}
         allowed_names = {n.lower() for n in (cfg.get("md_allowed_names") or DEFAULTS["md_allowed_names"])}
+        prompt_text = f.get("prompt_text") or ""
         for mdp in f.get("md_writes") or []:
             parts = {p.lower() for p in Path(mdp).parts[:-1]}
-            if parts & allowed_dirs or Path(mdp).name.lower() in allowed_names:
+            name = Path(mdp).name
+            if parts & allowed_dirs or name.lower() in allowed_names:
                 continue
-            if not admissible("unrequested_md", {"requestedDoc": prompt_asks_doc}):
-                violations.append({"line": 0, "class": "unrequested_md", "snippet": str(mdp)[:SNIPPET],
-                                   "need": LIE_NEEDS["unrequested_md"]})
+            # the prompt asked for THIS file (its name or stem appears) or for a document in general
+            requested = prompt_asks_doc or name.lower() in prompt_text.lower() or (
+                len(Path(name).stem) >= 4 and Path(name).stem.lower() in prompt_text.lower())
+            if not admissible("unrequested_file", {"requestedDoc": requested}):
+                violations.append({"line": 0, "class": "unrequested_file", "snippet": str(mdp)[:SNIPPET],
+                                   "need": LIE_NEEDS["unrequested_file"]})
 
     fenced = False
     for number, raw in enumerate(lines, 1):
@@ -813,6 +844,8 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
                       or _message_paths_exist(stripped, cwd, f.get("write_paths") or [])}
             elif name == "blocker":
                 ev = {"failureObserved": f.get("failure_observed")}
+            elif name == "handback":
+                ev = {"redLineNamed": bool(RED_LINE.search(stripped)), "failureObserved": f.get("failure_observed")}
             else:  # ask_value
                 ev = {"searched": f.get("searched")}
             if not admissible(name, ev):

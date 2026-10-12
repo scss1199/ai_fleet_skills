@@ -52,6 +52,7 @@
     "_skill/engines/claude-run-until-done-hook.py",
     "_skill/engines/cursor-fames-hot-refresh.py",
     "_skill/engines/cursor_bootstrap_pack.py",
+    "_skill/engines/f1s-transcript-audit.py",
     "_skill/engines/fames-immediate-apply.py",
     "_skill/engines/fames_execution_evidence.py",
     "_skill/engines/fleet-job-dispatch.py",

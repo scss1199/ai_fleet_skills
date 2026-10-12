@@ -271,7 +271,13 @@ def validate_paths(workspace, turn=None, result=None, closure=None, residual=Non
             if not path.is_absolute():
                 errors.append(f'{name}_not_absolute')
                 continue
-            path.resolve(strict=True)
+            # `turn` and `residual` are inputs and must exist; `result` and `closure` are the receipts this
+            # run WRITES, so what must resolve is their parent directory (2026-10-13: a strict resolve of
+            # the not-yet-written receipt refused every first completion with `result_unresolvable`).
+            if name in ('result', 'closure'):
+                path.parent.resolve(strict=True)
+            else:
+                path.resolve(strict=True)
         except (OSError, RuntimeError, TypeError, ValueError):
             errors.append(f'{name}_unresolvable')
     return errors
