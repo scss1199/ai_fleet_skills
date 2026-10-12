@@ -1,0 +1,60 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261012T125533Z-c87225fb",
+  "host": "scar3",
+  "started_at": "2026-10-12T13:03:53+00:00",
+  "kind": "probe",
+  "ok": true,
+  "probe": {
+    "hostname": "scar3",
+    "hub": "C:\\ai_workspace",
+    "collected_at": "2026-10-12T13:03:53+00:00",
+    "hub_commit": "99ebe69",
+    "hub_branch": "codex/scar3-tray-consolidation-20260810",
+    "fames": {
+      "version": "1.45.8",
+      "package_sha": "e6f5bef3db9c8b68d48b855a314dee53ed66928b75581aab6163324fc00b52a5"
+    },
+    "runtime_release": {
+      "generation": 32,
+      "state": "INSTALLED"
+    },
+    "receipt": {
+      "expected": "e6f5bef3db9c8b68d48b855a314dee53ed66928b75581aab6163324fc00b52a5",
+      "nodes": {
+        "ai_darkhero": [
+          "PASS",
+          "e6f5bef3db9c8b68d48b855a314dee53ed66928b75581aab6163324fc00b52a5"
+        ],
+        "ai_scar3": [
+          "PASS",
+          "e6f5bef3db9c8b68d48b855a314dee53ed66928b75581aab6163324fc00b52a5"
+        ],
+        "ai_altos": [
+          "UNKNOWN",
+          "993a891861a06c2dc6ebd6a89a7e139e5a2ef394d0c2be06d057cd3b2bd46041"
+        ]
+      }
+    },
+    "riders": [
+      {
+        "id": "fleet-skill-github-sync",
+        "enabled": false,
+        "cmd": "C:\\Python311\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\mtm-fleet-skill-github.py sync"
+      },
+      {
+        "id": "claude-app-health",
+        "enabled": null,
+        "cmd": "C:\\Python311\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\claude-app-health-tick.py --workspace C:\\ai_workspace --host sca"
+      },
+      {
+        "id": "fames-converge",
+        "enabled": null,
+        "cmd": "C:\\Python311\\pythonw.exe C:\\ai_workspace\\ai_scar3\\scripts\\darkhero_architecture_sync.py"
+      }
+    ],
+    "claude_cli": "UNKNOWN",
+    "nested_hub_folder_present": false
+  },
+  "finished_at": "2026-10-12T13:04:00+00:00"
+}
