@@ -43,6 +43,7 @@
     "_skill/engines/cursor_bootstrap_pack.py",
     "_skill/engines/fames-immediate-apply.py",
     "_skill/engines/fames_execution_evidence.py",
+    "_skill/engines/fleet-job-dispatch.py",
     "_skill/engines/fleet-skill-sync.py",
     "_skill/engines/hub_python.py",
     "_skill/engines/lane_taxonomy.py",
