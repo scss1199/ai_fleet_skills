@@ -161,8 +161,14 @@ def _probe_paths(cfg: dict) -> tuple[str, float]:
     return path, max(0.0, ttl)
 
 
-def read_probe_stamp(cfg: dict) -> dict:
-    """Last probe verdict. Missing/unreadable/stale all mean NOT verified, never verified."""
+def read_probe_stamp(cfg: dict, src: str | None = None) -> dict:
+    """Last probe verdict FOR ONE AUTH SOURCE. Missing/unreadable/stale all mean NOT verified.
+
+    Schema 2 keeps one slot per auth_source: the HubClock daemon (env token from HKCU) and an
+    interactive shell (CLI credentials file) resolve different sources, and a single slot let
+    each probe invalidate the other for probe_ttl_sec (2026-10-12: rider jobs reported
+    claude_auth_unverified minutes after a shell probe had passed). A schema-1 file is read
+    as the slot of whatever source it names."""
     path, ttl = _probe_paths(cfg)
     try:
         with open(path, encoding="utf-8-sig") as fh:
@@ -171,15 +177,25 @@ def read_probe_stamp(cfg: dict) -> dict:
         return {"found": False, "ok": False, "fresh": False, "ttl_sec": ttl}
     if not isinstance(doc, dict):
         return {"found": False, "ok": False, "fresh": False, "ttl_sec": ttl}
+    slot = None
+    sources = doc.get("sources") if isinstance(doc.get("sources"), dict) else None
+    if sources is not None:
+        slot = sources.get(src) if src else None
+        if slot is None and not src and sources:
+            slot = max(sources.values(), key=lambda d: float(d.get("epoch") or 0) if isinstance(d, dict) else 0)
+    elif src is None or doc.get("auth_source") == src:
+        slot = doc
+    if not isinstance(slot, dict):
+        return {"found": False, "ok": False, "fresh": False, "ttl_sec": ttl, "auth_source": src}
     age = None
     try:
-        age = max(0.0, time.time() - float(doc.get("epoch") or 0)) if doc.get("epoch") else None
+        age = max(0.0, time.time() - float(slot.get("epoch") or 0)) if slot.get("epoch") else None
     except (TypeError, ValueError):
         age = None
     return {
         "found": True,
-        "ok": bool(doc.get("ok")),
-        "auth_source": doc.get("auth_source"),
+        "ok": bool(slot.get("ok")),
+        "auth_source": slot.get("auth_source") or src,
         "age_sec": None if age is None else round(age, 1),
         "fresh": age is not None and age <= ttl,
         "ttl_sec": ttl,
@@ -190,15 +206,31 @@ def write_probe_stamp(ok: bool, src: str | None, err: str | None, cfg: dict) -> 
     """Record the verdict so a @5m rider can trust it without spending another call."""
     path, _ = _probe_paths(cfg)
     err_lines = (err or "").splitlines()
-    doc = {
-        "schema": 1,
+    slot = {
         "ok": bool(ok),
         "auth_source": src,
         "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "epoch": round(time.time(), 3),
         "err": (err_lines[0][:160] if err_lines else None),
-        "_doc": "Auth-state only. Written by claude-remote-exec.py check --probe; a failed "
-                "probe is recorded too, so a revoked token cannot keep reading as verified.",
+    }
+    sources: dict = {}
+    try:
+        with open(path, encoding="utf-8-sig") as fh:
+            prev = json.load(fh)
+        if isinstance(prev, dict):
+            if isinstance(prev.get("sources"), dict):
+                sources = {k: v for k, v in prev["sources"].items() if isinstance(v, dict)}
+            elif prev.get("auth_source"):
+                sources[str(prev["auth_source"])] = {k: prev.get(k) for k in ("ok", "auth_source", "ts", "epoch", "err")}
+    except (OSError, ValueError):
+        sources = {}
+    sources[str(src)] = slot
+    doc = {
+        "schema": 2,
+        **slot,  # legacy top-level view = the latest probe
+        "sources": sources,
+        "_doc": "Auth-state only, one slot per auth_source. Written by claude-remote-exec.py check --probe; a "
+                "failed probe is recorded too, so a revoked token cannot keep reading as verified.",
     }
     try:
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -320,7 +352,7 @@ def check(cfg: dict, *, probe: bool = False) -> dict:
     """
     cli = resolve_cli(cfg)
     src, _ = auth_source(cfg)
-    stamp = read_probe_stamp(cfg)
+    stamp = read_probe_stamp(cfg, src)
     # A stamp only speaks for the credential it was minted against: swapping env var for
     # vault path, or re-minting under a different label, invalidates the old verdict.
     verified = bool(
@@ -356,7 +388,7 @@ def check(cfg: dict, *, probe: bool = False) -> dict:
         werr = write_probe_stamp(ok, src, err, cfg)
         if werr:
             out["probe_stamp_error"] = werr
-        out["probe_stamp"] = read_probe_stamp(cfg)
+        out["probe_stamp"] = read_probe_stamp(cfg, src)
         verified = ok and not werr
         out["auth_state"] = "verified" if verified else "present_unverified"
         out["auth_ok"] = verified
