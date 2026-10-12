@@ -1,0 +1,69 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261012T170402Z-f79320f3",
+  "host": "scar3",
+  "started_at": "2026-10-12T17:06:02+00:00",
+  "kind": "probe",
+  "ok": true,
+  "probe": {
+    "hostname": "scar3",
+    "hub": "C:\\ai_workspace",
+    "collected_at": "2026-10-12T17:06:02+00:00",
+    "hub_commit": "c6ab753",
+    "hub_branch": "codex/scar3-tray-consolidation-20260810",
+    "fames": {
+      "version": "1.45.14",
+      "package_sha": "53acfbdf7ab1f6d35cf2c1e4ba260f00c93a353f324b3855be33608c8e0bae47"
+    },
+    "runtime_release": {
+      "generation": 38,
+      "state": "INSTALLED"
+    },
+    "receipt": {
+      "expected": "0e4d7dc4a4ee7671d35d0c037cd56e9e42054a338b12ee842d1bf55bef5b3eca",
+      "nodes": {
+        "ai_darkhero": [
+          "UNKNOWN",
+          "0e4d7dc4a4ee7671d35d0c037cd56e9e42054a338b12ee842d1bf55bef5b3eca"
+        ],
+        "ai_scar3": [
+          "UNKNOWN",
+          "53acfbdf7ab1f6d35cf2c1e4ba260f00c93a353f324b3855be33608c8e0bae47"
+        ],
+        "ai_altos": [
+          "UNKNOWN",
+          "53acfbdf7ab1f6d35cf2c1e4ba260f00c93a353f324b3855be33608c8e0bae47"
+        ]
+      }
+    },
+    "riders": [
+      {
+        "id": "fleet-skill-github-sync",
+        "enabled": false,
+        "cmd": "C:\\Python311\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\mtm-fleet-skill-github.py sync"
+      },
+      {
+        "id": "claude-app-health",
+        "enabled": null,
+        "cmd": "C:\\Python311\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\claude-app-health-tick.py --workspace C:\\ai_workspace --host sca"
+      },
+      {
+        "id": "fames-converge",
+        "enabled": null,
+        "cmd": "C:\\Python311\\pythonw.exe C:\\ai_workspace\\ai_scar3\\scripts\\darkhero_architecture_sync.py"
+      },
+      {
+        "id": "fleet-job-dispatch",
+        "enabled": null,
+        "cmd": "C:\\Python311\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\fleet-job-dispatch.py tick"
+      }
+    ],
+    "claude_cli": {
+      "ready": true,
+      "blocker": null,
+      "cli": "C:\\Users\\scss1\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Anthropic.ClaudeCode_Microsoft.Winget.Source_8wekyb3d8bbwe\\claude.EXE"
+    },
+    "nested_hub_folder_present": false
+  },
+  "finished_at": "2026-10-12T17:06:07+00:00"
+}
