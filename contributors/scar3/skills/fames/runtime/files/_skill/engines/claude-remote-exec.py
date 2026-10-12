@@ -133,9 +133,9 @@ def auth_source(cfg: dict) -> tuple[str | None, str | None]:
     for var in auth.get("env") or []:
         if os.environ.get(var):
             return "env:" + var, None
-    cred = os.path.expandvars(auth.get("credentials_file") or "")
-    if cred and _cred_file_has_substance(cred):
-        return "cli_credentials_file", None
+    # The hub vault outranks the CLI's own credential store. 2026-10-12: on darkhero and
+    # scar3 an expired `.credentials.json` (OAuth session that could not be refreshed) shadowed
+    # the vault, so a freshly minted setup-token placed in the vault was never even tried.
     for path in auth.get("vault_paths") or []:
         try:
             import _secrets
@@ -144,6 +144,9 @@ def auth_source(cfg: dict) -> tuple[str | None, str | None]:
                 return "vault:" + path, path
         except Exception:  # noqa: BLE001  (an unreadable vault is UNKNOWN, not absent)
             return None, None
+    cred = os.path.expandvars(auth.get("credentials_file") or "")
+    if cred and _cred_file_has_substance(cred):
+        return "cli_credentials_file", None
     return None, None
 
 
@@ -158,8 +161,14 @@ def _probe_paths(cfg: dict) -> tuple[str, float]:
     return path, max(0.0, ttl)
 
 
-def read_probe_stamp(cfg: dict) -> dict:
-    """Last probe verdict. Missing/unreadable/stale all mean NOT verified, never verified."""
+def read_probe_stamp(cfg: dict, src: str | None = None) -> dict:
+    """Last probe verdict FOR ONE AUTH SOURCE. Missing/unreadable/stale all mean NOT verified.
+
+    Schema 2 keeps one slot per auth_source: the HubClock daemon (env token from HKCU) and an
+    interactive shell (CLI credentials file) resolve different sources, and a single slot let
+    each probe invalidate the other for probe_ttl_sec (2026-10-12: rider jobs reported
+    claude_auth_unverified minutes after a shell probe had passed). A schema-1 file is read
+    as the slot of whatever source it names."""
     path, ttl = _probe_paths(cfg)
     try:
         with open(path, encoding="utf-8-sig") as fh:
@@ -168,15 +177,25 @@ def read_probe_stamp(cfg: dict) -> dict:
         return {"found": False, "ok": False, "fresh": False, "ttl_sec": ttl}
     if not isinstance(doc, dict):
         return {"found": False, "ok": False, "fresh": False, "ttl_sec": ttl}
+    slot = None
+    sources = doc.get("sources") if isinstance(doc.get("sources"), dict) else None
+    if sources is not None:
+        slot = sources.get(src) if src else None
+        if slot is None and not src and sources:
+            slot = max(sources.values(), key=lambda d: float(d.get("epoch") or 0) if isinstance(d, dict) else 0)
+    elif src is None or doc.get("auth_source") == src:
+        slot = doc
+    if not isinstance(slot, dict):
+        return {"found": False, "ok": False, "fresh": False, "ttl_sec": ttl, "auth_source": src}
     age = None
     try:
-        age = max(0.0, time.time() - float(doc.get("epoch") or 0)) if doc.get("epoch") else None
+        age = max(0.0, time.time() - float(slot.get("epoch") or 0)) if slot.get("epoch") else None
     except (TypeError, ValueError):
         age = None
     return {
         "found": True,
-        "ok": bool(doc.get("ok")),
-        "auth_source": doc.get("auth_source"),
+        "ok": bool(slot.get("ok")),
+        "auth_source": slot.get("auth_source") or src,
         "age_sec": None if age is None else round(age, 1),
         "fresh": age is not None and age <= ttl,
         "ttl_sec": ttl,
@@ -187,15 +206,31 @@ def write_probe_stamp(ok: bool, src: str | None, err: str | None, cfg: dict) -> 
     """Record the verdict so a @5m rider can trust it without spending another call."""
     path, _ = _probe_paths(cfg)
     err_lines = (err or "").splitlines()
-    doc = {
-        "schema": 1,
+    slot = {
         "ok": bool(ok),
         "auth_source": src,
         "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "epoch": round(time.time(), 3),
         "err": (err_lines[0][:160] if err_lines else None),
-        "_doc": "Auth-state only. Written by claude-remote-exec.py check --probe; a failed "
-                "probe is recorded too, so a revoked token cannot keep reading as verified.",
+    }
+    sources: dict = {}
+    try:
+        with open(path, encoding="utf-8-sig") as fh:
+            prev = json.load(fh)
+        if isinstance(prev, dict):
+            if isinstance(prev.get("sources"), dict):
+                sources = {k: v for k, v in prev["sources"].items() if isinstance(v, dict)}
+            elif prev.get("auth_source"):
+                sources[str(prev["auth_source"])] = {k: prev.get(k) for k in ("ok", "auth_source", "ts", "epoch", "err")}
+    except (OSError, ValueError):
+        sources = {}
+    sources[str(src)] = slot
+    doc = {
+        "schema": 2,
+        **slot,  # legacy top-level view = the latest probe
+        "sources": sources,
+        "_doc": "Auth-state only, one slot per auth_source. Written by claude-remote-exec.py check --probe; a "
+                "failed probe is recorded too, so a revoked token cannot keep reading as verified.",
     }
     try:
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -208,12 +243,37 @@ def write_probe_stamp(ok: bool, src: str | None, err: str | None, cfg: dict) -> 
         return "probe_stamp_unwritable:%s" % type(exc).__name__
 
 
+OAUTH_VARS = ("CLAUDE_CODE_OAUTH_TOKEN",)
+API_KEY_VARS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
+
+
+def _sanitize_child_env(env: dict, src: str, vpath: str | None) -> dict:
+    """Leave the child exactly ONE credential: the chosen source's.
+
+    The CLI prefers ANTHROPIC_API_KEY over an OAuth token. 2026-10-12: the HubClock daemon's
+    environment carried a malformed ANTHROPIC_API_KEY (24 chars, non-ASCII) beside a valid
+    CLAUDE_CODE_OAUTH_TOKEN; the readiness probe passed on the token, then every job died with
+    "Invalid X-Api-Key header value". Competing variables are removed, never printed."""
+    uses_api_key = src == "env:ANTHROPIC_API_KEY" or src == "env:ANTHROPIC_AUTH_TOKEN" or (
+        vpath is not None and "oauth" not in vpath)
+    drop = OAUTH_VARS if uses_api_key else API_KEY_VARS
+    for var in drop:
+        env.pop(var, None)
+    if src.startswith("env:"):
+        keep = src[4:]
+        for var in OAUTH_VARS + API_KEY_VARS:
+            if var != keep and var not in drop:
+                env.pop(var, None)
+    return env
+
+
 def _child_env(cfg: dict) -> tuple[dict, str | None, str | None]:
     """(env, source, err). The vault value lands in the child env and nowhere else."""
     env = dict(os.environ)
     src, vpath = auth_source(cfg)
     if src is None:
         return env, None, NOT_LOGGED_IN
+    env = _sanitize_child_env(env, src, vpath)
     if vpath:
         try:
             import _secrets
@@ -317,7 +377,7 @@ def check(cfg: dict, *, probe: bool = False) -> dict:
     """
     cli = resolve_cli(cfg)
     src, _ = auth_source(cfg)
-    stamp = read_probe_stamp(cfg)
+    stamp = read_probe_stamp(cfg, src)
     # A stamp only speaks for the credential it was minted against: swapping env var for
     # vault path, or re-minting under a different label, invalidates the old verdict.
     verified = bool(
@@ -353,7 +413,7 @@ def check(cfg: dict, *, probe: bool = False) -> dict:
         werr = write_probe_stamp(ok, src, err, cfg)
         if werr:
             out["probe_stamp_error"] = werr
-        out["probe_stamp"] = read_probe_stamp(cfg)
+        out["probe_stamp"] = read_probe_stamp(cfg, src)
         verified = ok and not werr
         out["auth_state"] = "verified" if verified else "present_unverified"
         out["auth_ok"] = verified
