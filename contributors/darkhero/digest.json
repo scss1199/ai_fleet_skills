@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-10-11T08:13:36",
+  "generated": "2026-10-12T10:12:42",
   "required": [
     "fames",
     "independent-review",
@@ -20,6 +20,8 @@
     "accountability-unblock",
     "api-key-apply",
     "aware-dual-field",
+    "burn-captions",
+    "chapter-compose",
     "deploy-nextjs-cloudflare",
     "hubpulse-ops",
     "lean-math-prover",
@@ -37,6 +39,7 @@
     "pfkt-auto-unblock",
     "pfkt-parallel-wave",
     "sso-browser-session",
+    "zh-tts-narrate",
     "ztm-cursor-edge-auth",
     "ztm-fracdigi-psync",
     "ztm-meta-oauth-console",

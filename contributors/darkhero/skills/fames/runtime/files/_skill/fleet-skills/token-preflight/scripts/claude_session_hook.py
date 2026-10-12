@@ -233,10 +233,43 @@ def _charter_refresh(surface_id: str, session_id: str, cwd: str, *, at_start: bo
         return ""
 
 
+def _seat_for_cwd(cwd: str) -> str:
+    """Seat name for a hook cwd: registered seat (project-matrix, longest path prefix, hub root ->
+    local curator) -> nearest `ai_*` ancestor inside the hub -> basename.
+
+    The old rule was basename(cwd), so a shell that had drifted into
+    ai_darkhero/evidence/<topic> stamped the intake with agent="<topic>" (phantom seat,
+    2026-10-12). Every step fails open to the next one; this never raises."""
+    base = Path(cwd).name
+    try:
+        projects_path = HUB / "_skill" / "engines" / "_projects.py"
+        spec = importlib.util.spec_from_file_location("fames_hook_projects", projects_path)
+        if projects_path.is_file() and spec is not None and spec.loader is not None:
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            name = module.whoami(cwd)[0]
+            if name and name != "unknown":
+                return str(name)
+    except Exception:
+        pass
+    try:
+        hub = HUB.resolve()
+        node = Path(cwd).resolve()
+        while True:
+            if node.name.startswith("ai_") and node.parent == hub:
+                return node.name
+            if node == hub or node.parent == node:
+                break
+            node = node.parent
+    except Exception:
+        pass
+    return base
+
+
 def main():
     doc=_read_hook_input(sys.stdin)
     cwd=str(doc.get("cwd") or os.getcwd())
-    agent="ai_"+Path(cwd).name[3:] if Path(cwd).name.startswith("ai_") else Path(cwd).name
+    agent=_seat_for_cwd(cwd)
     event=str(doc.get("hook_event_name") or "SessionStart")
     session_id=str(doc.get("session_id") or doc.get("conversation_id") or "")
     # AGC lane inputs: the transcript path lets the context meter measure THIS session's
