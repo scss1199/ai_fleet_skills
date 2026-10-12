@@ -1,0 +1,55 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261012T125544Z-6f39801b",
+  "host": "altos",
+  "started_at": "2026-10-12T16:26:43+00:00",
+  "kind": "probe",
+  "ok": true,
+  "probe": {
+    "hostname": "desktop-rsniapr",
+    "hub": "C:\\ai_workspace",
+    "collected_at": "2026-10-12T16:26:43+00:00",
+    "hub_commit": "UNKNOWN",
+    "hub_branch": "UNKNOWN",
+    "fames": {
+      "version": "1.45.14",
+      "package_sha": "53acfbdf7ab1f6d35cf2c1e4ba260f00c93a353f324b3855be33608c8e0bae47"
+    },
+    "runtime_release": {
+      "generation": 38,
+      "state": "INSTALLED"
+    },
+    "receipt": {
+      "expected": "53acfbdf7ab1f6d35cf2c1e4ba260f00c93a353f324b3855be33608c8e0bae47",
+      "nodes": {
+        "ai_darkhero": [
+          "PASS",
+          "53acfbdf7ab1f6d35cf2c1e4ba260f00c93a353f324b3855be33608c8e0bae47"
+        ],
+        "ai_altos": [
+          "UNKNOWN",
+          "993a891861a06c2dc6ebd6a89a7e139e5a2ef394d0c2be06d057cd3b2bd46041"
+        ]
+      }
+    },
+    "riders": [
+      {
+        "id": "fleet-job-dispatch",
+        "enabled": null,
+        "cmd": "\"C:\\Python310\\pythonw.exe\" \"C:\\ai_workspace\\_skill\\engines\\fleet-job-dispatch.py\" tick --host altos"
+      },
+      {
+        "id": "fleet-skill-github-sync",
+        "enabled": null,
+        "cmd": "C:\\Python310\\pythonw.exe C:\\ai_workspace\\ai_altos\\scripts\\altos_fleet_sync.py sync --node ai_altos"
+      }
+    ],
+    "claude_cli": {
+      "ready": false,
+      "blocker": "claude_cli_not_found",
+      "cli": null
+    },
+    "nested_hub_folder_present": false
+  },
+  "finished_at": "2026-10-12T16:26:46+00:00"
+}
