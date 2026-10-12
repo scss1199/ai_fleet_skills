@@ -280,6 +280,8 @@ def _skills_for_root(root: str) -> tuple[str, ...]:
     # Keep entrypoints explicit for static consumers and bootstrap readability.
     alias_dirs = {a for aliases in SKILL_ALIAS_DEPLOY.values() for a in aliases}
     for cand in sorted(os.listdir(CANON) if os.path.isdir(CANON) else ()):
+        if cand.startswith("."):
+            continue  # installer rollback copies (.fames.previous-*) and staging dirs are never skills
         if cand in extra or cand in SEAT_SCOPED_ONLY or cand in alias_dirs:
             continue  # alias dirs ship through SKILL_ALIAS_DEPLOY, never as a second skill
         if os.path.isfile(os.path.join(CANON, cand, "SKILL.md")):
@@ -370,6 +372,8 @@ def _list_skill_folder(base: str) -> list[dict]:
     if not os.path.isdir(base):
         return out
     for name in sorted(os.listdir(base)):
+        if name.startswith("."):
+            continue  # .fames.previous-* / .fames.failed-* carry a SKILL.md but are rollback copies
         md = os.path.join(base, name, "SKILL.md")
         if os.path.isfile(md):
             out.append({
@@ -384,8 +388,8 @@ def _list_skill_folder(base: str) -> list[dict]:
 def _scan_canonical() -> list[dict]:
     rows = []
     for name in sorted(os.listdir(CANON)) if os.path.isdir(CANON) else []:
-        if name == "incubator":
-            continue
+        if name == "incubator" or name.startswith("."):
+            continue  # dot-prefixed = installer rollback/staging copies (scar3 2026-10-12: 4 x .fames.previous-* became "skills")
         md = os.path.join(CANON, name, "SKILL.md")
         if os.path.isfile(md):
             tags = _parse_skill_tags(md)
