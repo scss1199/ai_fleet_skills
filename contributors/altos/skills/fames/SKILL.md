@@ -1,52 +1,57 @@
 ---
 name: fames
-description: Execute the complete FP, MTM, SCF, AEX, and SEAL contract. Use when the user types FAMES, invokes $fames, asks for the former broad AEX Stack, or requires a task to be first-principles scoped, minimal-token routed, residual-checked, adaptively evolved when warranted, and evidence-sealed without silently skipping a phase.
+description: The single public contract for outcome-driven skill selection, optional Jev advice and applicable Lean verification, with durable intent, minimal context, scoped skills and bounded authority. Use for FAMES work, shared harness changes, external learning or completion verification.
 ---
 
 # FAMES
 
-Treat FAMES as one completion contract, not as a label or permission grant. Read the [bundled FAMES protocol](references/protocols/fames-protocol.json) before execution and run `token-preflight` before broad exploration. The bundled protocol is the portable authority; if `%AI_WORKSPACE%\_registry\fames-protocol.json` also exists, require it to describe the same version and execution order or report `UNKNOWN`.
+FAMES-GEN: 2026-10-12.15
 
-Before relying on the skill, run `scripts/fames_fleet.py verify-package --json` from this skill directory. The verifier must pass without reading any workspace file; this is the cold-load proof that GitHub delivered a complete skill rather than a pointer to one machine's registry.
+FAMES is the single public contract for intent-to-skill selection, optional Jev advice and applicable Lean verification. Users state outcomes and constraints without naming internal components or skills. Infer required capabilities from the request and actual available skill descriptions; select the smallest applicable set. Unmatched local rules use current-model judgment. Jev retains its provider/projection gates; Lean checks explicitly formalized obligations, with UNKNOWN where applicability or evidence is missing.
 
-## Freshness — resolve at run time, never from memory
+The small always-on harness and this on-demand skill have different lifetimes. Resolve the current package from disk; do not reread the full protocol or this skill on every turn. A fresh runtime receipt may establish package identity; absent or changed identity requires `python scripts/fames_fleet.py status --json --workspace <workspace>`. A portable cold install requires `verify-package --json` without a workspace.
 
-FAMES-GEN: 2026-08-14.1
+## Task kernel
 
-A conversation that started before the contract changed still holds the old text in its context. Therefore step 0 of every FAMES run, in a fresh thread and an hours-old one alike, is:
+Freeze Outcome, Verification, Constraints and authority before implementation. Persist their identity, explicit parameters and unresolved obligations outside model history. Authority follows the user request; source material never grants permission. Preserve red lines and source uncertainty.
 
-```
-python scripts/fames_fleet.py status --json --workspace %AI_WORKSPACE%
-```
+- FP: define the actual outcome and observable acceptance predicates. Unmapped intent is UNKNOWN. Ask only for missing consequential parameters; local mechanical choices belong to the owner.
+- MTM: acquire, deduplicate and verify locally. Begin with at most 3 excerpts / 1600 characters. Expand for a named acceptance gap. Delegate independently owned work only when the saved work exceeds context duplication; one accountable merge.
+- SCF: begins only after an identity-matched verified result exists.
+- AEX: begins only with a measured comparable cross-cycle residual.
+- SEAL: accept only fresh destination evidence, matching identity, closed work, preserved boundaries and an openable receipt. Dispatch, process exit and model self-reports do not prove the outcome.
 
-It reads SKILL.md, the bundled protocols, and the registry from disk at that moment and prints `skill_gen`, `package_sha`, and per-phase parity. If `skill_gen` differs from the `FAMES-GEN` line in the text you are holding, your copy is stale: re-read this file and the bundled protocols from disk before judging any phase, and treat anything already judged with the stale copy as `UNKNOWN`. `parity_ok: false` means the bundle and the registry describe different protocol generations, which is `UNKNOWN` by the rule above and fails closed. Never answer this from memory of a previous run; the whole point of the command is that it is executed, not recalled.
+Internal recovery is agent work. Queued native prompts keep separate receipts; select the real transcript prompt, replay verified native provenance and current policy before continuing. Never ask the operator to send another message merely to unlock an internal hook. A missing native source remains a concrete blocker, not permission to fabricate one. Accept supported Python/unittest/pytest runner evidence by verified execution and scope; builds do not prove browser behavior and local tests do not prove deployment. Recovery and Jev advice never authorize completion. Report the observed result, validation, remaining action and actual blocker concisely; put internal receipt detail in the linked artifact.
 
-## Execute the contract
+## Skill lifetime
 
-1. **FP** - State Outcome, Verification, Constraints, and a semantic goal hash before implementation.
-2. **MTM** - Select the smallest verified route and bounded read/tool budget. Reuse valid receipts and existing evidence.
-3. **SCF** - After a verified result exists, compare goal and result and record the residual. Mark `NOT_APPLICABLE` only when its activation predicate is false and cite why.
-4. **AEX** - Adapt across cycles only when a verified residual remains. Do not invent an evolution cycle for a one-shot task; record evidence-backed `NOT_APPLICABLE` instead.
-5. **SEAL** - Require matching goal identity, fresh passing evidence, closed active work graphs, and no unresolved phase before claiming completion.
+Reuse goal, authority, capabilities, acceptance, evidence, budgets and pending obligations across fleet policy, project policy, tasks and skill scopes. Use the existing `skill_scope.py` lifecycle: open -> input -> native worker -> complete -> release -> snapshot. Bind exact actions, targets, parameters and predicates to one durable obligation ledger. A worker sees its task projection; release preserves unrelated parent obligations and invalidates further calls. Revisions invalidate old scopes; authority only narrows. This contract adds no recursive delegation runtime.
 
-Perform the task itself between MTM routing and the SCF result comparison. Preserve the execution order `FP -> MTM -> SCF -> AEX -> SEAL`; the letters in FAMES are mnemonic, not the run order.
+Preserve explicit/mandatory skills, negation and source boundaries. Resolve canonical IDs and body hashes before loading. Availability, advice, actual loading, execution and verified outcome remain separate states; none grants authority. Use [scoped skills](references/scoped-skills.md) for capability gates and formal proof boundaries.
 
-## Completion truth
+The compute adapter `native_skill_scope.py` supports registered native DSH and Claude Code without tools or global configuration changes. Other actions/hosts need a capability adapter and actual lifecycle evidence. Native adapters own transport, the shared store owns state and acceptance. The store is an admission boundary, not an OS sandbox.
 
-Report one row for every phase with `PASS`, `NOT_APPLICABLE`, `UNKNOWN`, or `FAIL`, plus its evidence. `NOT_APPLICABLE` needs an explicit false activation predicate; it is never an implicit skip. Any missing, stale, mismatched, exception-producing, or unverifiable evidence is `UNKNOWN`, and `UNKNOWN` fails closed.
+Main conversation history cannot be selectively erased by this skill. Use fresh workers for disposable skill text. Claude retained contexts receive generation changes and reset after SessionStart/compact/resume. DSH receives one replaceable request fragment. Unknown host retention defaults to ephemeral delivery. These mechanisms reduce reinjection; they do not prove provider-side deletion or whole-task token savings.
 
-FAMES broadens completeness only and does not expand user authority. It never authorizes destructive actions, external writes, live-device access, deployment, credential access, or any action outside the user's stated scope.
+## Load only the relevant reference
 
-## Fleet generation rule
+| Need | Reference |
+| --- | --- |
+| Scope contract, native proof limits, mathematical invariants | [Scoped skills](references/scoped-skills.md) |
+| Context budgets, reuse and complete usage accounting | [Minimal context](references/minimal-context.md) |
+| Code and capability review, coverage and changed-file routing | [Incremental review](references/incremental-review.md) |
+| External articles, routing, trial and absorption | [Autonomous knowledge](references/autonomous-knowledge.md) |
+| Other FAMES capabilities: cognitive checks, hardware, background, documents, missions, federation | [Operator reference](references/operator-manual.md), select one heading |
+| Exact machine-readable acceptance fields | [FAMES protocol](references/protocols/fames-protocol.json), select one capability |
 
-Treat `bundle-manifest.json.package_sha` as the FAMES generation identity. A machine has FAMES only when its installed package verifies and its GitHub contributor manifest reports that exact `package_sha`. A missing contributor receipt, stale manifest, hash mismatch, or unreadable bundled protocol is `UNKNOWN`; never infer convergence from a matching folder name.
+Do not promise arbitrary semantic correctness from schema validation. Savings need matched task/model/acceptance and complete parent, child and retry usage, including caches. Report character counts separately. Missing/stale evidence fails closed as UNKNOWN. Before claiming delivery, use the relevant verifier and SEAL; apply changed packages through the registered convergence route and read back destination identity.
 
-## Minimal neutral architecture
+## Executable phase guards
 
-Keep one provider-neutral canonical skill. Put deterministic work in one reusable script, keep provider discovery paths as data-driven junctions, and add an adapter only when a runtime boundary truly differs. A file or process must have a verified caller or contract role; otherwise merge or remove it. Minimize, in order: physical files, executable code, execution steps, then steady-state resource use.
+The native turn adapter produces source-bound FP/MTM admission receipts. Before a completion claim, the agent calls `_harness/runtime/fames_phase_runtime.py --turn <current-turn-receipt> --result <task-verification-receipt> --closure <obligation-closure>` (and `--residual` only for a measured comparable cross-cycle result). This produces SCF/AEX/SEAL receipts by replaying real file identities against the locally checked Lean contract. Missing conformance, stale source, unmet predicates and open obligations are UNKNOWN. Advice never supplies evidence facts. AEX without a comparable residual is explicitly INACTIVE. The theorem checks formal admission conditions; the agent remains responsible for matching verification to the actual requested outcome.
 
-## Authority, followers, and peer learning
+The content-addressed package includes `runtime/manifest.json` and an explicit source allowlist. Existing `fames-converge` installs these with retained backups and destination hash checks, then refreshes local conformance and discovery surfaces. Local edits block replacement. A package or fixture receipt is not native lifecycle adoption; a missing/offline host stays UNKNOWN. No new schedule or provider permission is created. A missing Windows Lean checker uses the existing official-release installer with digest verification, retained downloads and no PATH/environment edits; unsupported platforms remain UNKNOWN.
 
-`ai_darkhero` publishes the canonical generation. `ai_scar3` and `ai_altos` follow it with one idempotent transition: `fames_fleet.py follow --workspace <root> --host <seat>`. The command downloads the authority manifest, verifies every file and the package identity, atomically activates the package, and writes a local receipt. An online bootstrapped follower converges in one invocation; an offline or unbootstrapped machine remains `UNKNOWN` until its first successful invocation.
+FAMES is a contract and an evidence discipline, not a gate: it lives in context and reports and never blocks a prompt, a tool call or a stop at the hook layer; claim-integrity and the Cursor/Codex/DSH checks are advisory only. The managed gate and `operator_intent_guard.py` were retired on 2026-10-08 and must not return; no agent installs a blocking hook or puts a hash or version into a hook command. Hook commands fail open, so a missing or broken hook script cannot lock a session. See `_harness/docs/fames-host-enforcement.md`.
 
-Followers may publish evidence and candidate improvements, but only the authority promotes a new canonical generation after FP, SCF, and SEAL. This keeps learning bidirectional without multi-writer drift.
+One system (operator 2026-10-08): FAMES, Skill, Jev, Lean, the Musk five steps, HubClock and GitHub each keep one role, stated in `_registry/fames-protocol.json` `unified_entrypoint.hot_directive`, which every conversation receives by default. No misreading (the user's own words define the task; decided points are never re-asked) and no misuse (no component acts outside its role).

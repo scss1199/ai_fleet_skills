@@ -1,0 +1,142 @@
+﻿{
+  "schema": 1,
+  "id": "SEAL",
+  "version": "1.4.0",
+  "full_en": "systematic-evidence-alignment-loop",
+  "zh": "封環 — 儀器／閘門／消費回饋對齊後再跑 Krylov；第一性原理減肥偏離；世代鎖綁定 Outcome↔g↔AGC↔FP",
+  "parent": "FAMES",
+  "fames_phase": "SEAL",
+  "fames_ref": "_registry/fames-protocol.json",
+  "rung": "GUARD",
+  "updated": "2026-08-20",
+  "phases": ["SENSE", "EXEC", "AUDIT", "LOCK"],
+  "phase_meaning": {
+    "SENSE": "讀儀器真相（hubpulse heartbeat、pptt/EFF、brownfield、R_aex）+ Outcome 第一性",
+    "EXEC": "修洞；只動本質目標或剔除偏離（禁疊床架屋）",
+    "AUDIT": "seal-audit.py 複審（含 first_principles / session_evidence）；holes=[] 才進 LOCK",
+    "LOCK": "lexicon/protocol/promote；下一圈才允許宣稱 AEX 收斂"
+  },
+  "standing_rules": {
+    "first_principles": {
+      "id": "SEAL-FP-1",
+      "zh": "第一性原理：除動態調整本質 Outcome 外，必須把已嚴重偏離目標的工作／程式提出並去除（code diet）。每次更動批次審查 diverge → prune 或 justify，禁止以新碼掩蓋偏離。",
+      "en": "First principles: besides dynamically adjusting the essential Outcome, surface and remove severely goal-divergent work/code (diet). Every change batch must review diverge candidates → prune or justify; never layer new code over drift.",
+      "allows": ["adjust SEAT-SPEC Outcome / goal vector when essence changes"],
+      "forbids": [
+        "inventing parallel goals outside Outcome",
+        "keeping dead/divergent modules because 'might need later'",
+        "SHIPPED without diverge review when change batch is large"
+      ],
+      "engine": "_skill/engines/seal-first-principles.py",
+      "digest": "_registry/seal-first-principles/{agent}.md",
+      "ownership_ssot": "_registry/seal-diet-ownership.json",
+      "ownership_note": "intentional_keep + curator_absorb_owned are NOT prune targets; mis_home → relocate; runtime_noise → skill_mine_then_prune; ai_master absorb→operator delete"
+    },
+    "session_evidence": {
+      "id": "SEAL-EV-1",
+      "zh": "完成宣稱需 evidence.jsonl verify/tool；否則 HARD DENY",
+      "engine": "_skill/engines/seal-session-ledger.py"
+    },
+    "artifact_path": {
+      "id": "SEAL-AP-1",
+      "zh": "可引用工件路徑：每個完成宣稱必須附至少一個驗證者能直接開啟的 artifact 路徑（檔案、報告、registry receipt、或 commit hash+repo 身分）。宣稱當下路徑不存在或只有敘述 = UNKNOWN fail-closed。",
+      "en": "Citable artifact path: every completion claim must carry at least one artifact path a verifier can open directly (file, report, registry receipt, or commit hash with repo identity). A claim whose cited path does not exist at claim time, or that is prose-only, is UNKNOWN and fails closed.",
+      "allows": [
+        "repo-relative or absolute file paths that exist at claim time",
+        "registry receipts (e.g. _registry/fames-session/<agent>.json)",
+        "commit hash paired with repo identity",
+        "report/state files written by a verified engine run"
+      ],
+      "forbids": [
+        "prose-only completion claims with no openable artifact",
+        "citing a path that does not exist when the claim is made",
+        "citing the generator's own unverified output as the sole artifact"
+      ],
+      "enforcement": "contract rule applied at SEAL AUDIT review; no dedicated enforcement engine exists yet — do not cite one as enforcing this rule until it exists and its enforcement is verified"
+    },
+    "generation_lock": {
+      "id": "SEAL-GL-1",
+      "zh": "世代鎖：Outcome 升級 → remint g → invalidate AGC → refresh FP digest；三戳一致才准 SEAL LOCK／宣稱 Krylov",
+      "en": "Generation lock: Outcome bump → remint g → invalidate AGC → refresh FP digest; stamps must match before SEAL LOCK / Krylov claim.",
+      "engine": "_skill/engines/seal-generation-lock.py",
+      "state": "_registry/seal-generation-lock.json",
+      "stamps": ["outcome_hash", "g.outcome_hash", "fp.outcome_hash", "agc.bound_or_invalidated"],
+      "on_change": [
+        "goal-field.py mint",
+        "agc-compact invalidate (SEAL-GENLOCK STALE banner)",
+        "seal-first-principles.py brief"
+      ],
+      "cite": [
+        "_registry/goal-vector-protocol.json#goal_compact_link.phase_transition",
+        "_registry/scf-protocol.json"
+      ]
+    }
+  },
+  "closes": [
+    "instrument_blind → false GMRES",
+    "hubpulse vs hubclock truth split",
+    "session-open PY311 NameError",
+    "harvest without INSTR consumption",
+    "brownfield green vs R_aex high dual-metric lie",
+    "PFKT verify whitelist vs curator readonly probes",
+    "hub-selfbeat missing → rc=2",
+    "tray auto_poll orphan scrcpy/adb without janitor",
+    "session_claim_without_evidence",
+    "p_verified_without_verify_event",
+    "goal_diverge_without_prune",
+    "missing_seat_outcome",
+    "outcome_g_agc_fp_generation_drift",
+    "completion_claim_without_citable_artifact_path"
+  ],
+  "engines": {
+    "audit": "_skill/engines/seal-audit.py",
+    "fleet_close": "_skill/engines/seal-fleet-close.py",
+    "consumption": "_skill/engines/aex-consumption-ledger.py",
+    "selfbeat": "_skill/engines/hub-selfbeat.py",
+    "aex": "_skill/engines/fleet-token-ladder.py",
+    "p_bridge": "_skill/engines/pptt-p-bridge.py",
+    "tray_janitor": "ai_darkhero/tray/tray_janitor.py",
+    "plan_reuse": "_skill/engines/seal-plan-reuse.py",
+    "trader_strategy_seal": "_skill/engines/trader-strategy-aex-seal.py",
+    "materials_relevance": "_skill/engines/aex-materials-relevance.py",
+    "session_evidence": "_skill/engines/seal-session-ledger.py",
+    "first_principles": "_skill/engines/seal-first-principles.py",
+    "generation_lock": "_skill/engines/seal-generation-lock.py"
+  },
+  "cli": {
+    "audit": "python %AI_WORKSPACE%\\_skill\\engines\\seal-audit.py run --agent ai_darkhero",
+    "consume": "python %AI_WORKSPACE%\\_skill\\engines\\aex-consumption-ledger.py touch-session --agent <seat>",
+    "tray_janitor": "python %AI_WORKSPACE%\\ai_darkhero\\tray\\tray_janitor.py once --apply",
+    "plan_reuse": "python %AI_WORKSPACE%\\_skill\\engines\\seal-plan-reuse.py lookup --agent <seat> --goal \"...\"",
+    "trader_strategy": "python %AI_WORKSPACE%\\_skill\\engines\\trader-strategy-aex-seal.py brief",
+    "session_evidence": "python %AI_WORKSPACE%\\_skill\\engines\\seal-session-ledger.py digest --fleet",
+    "session_audit": "python %AI_WORKSPACE%\\_skill\\engines\\seal-session-ledger.py audit --agent <seat>",
+    "first_principles": "python %AI_WORKSPACE%\\_skill\\engines\\seal-first-principles.py brief --agent <seat>",
+    "diet_scan": "python %AI_WORKSPACE%\\_skill\\engines\\seal-first-principles.py diet-scan --agent <seat>",
+    "change_review": "python %AI_WORKSPACE%\\_skill\\engines\\seal-first-principles.py review --agent <seat> --git",
+    "generation_lock_sync": "python %AI_WORKSPACE%\\_skill\\engines\\seal-generation-lock.py sync --agent <seat>",
+    "generation_lock_fleet": "python %AI_WORKSPACE%\\_skill\\engines\\seal-generation-lock.py fleet --sync --json"
+  },
+  "backlog_after_seal": [
+    {
+      "id": "cloud_fintrend_news",
+      "status": "not_migrated",
+      "note": "Fly handlers for fintrend-feed + news-channel-watch"
+    },
+    {
+      "id": "cloud_kyloren_transcript",
+      "status": "not_migrated",
+      "note": "Fly caption distill → Drive digest pull"
+    },
+    {
+      "id": "adus_auto_promote_policy",
+      "status": "manual_gate",
+      "note": "verify OK drafts still need curator --auto-promote judgment"
+    }
+  ],
+  "cite": [
+    "_registry/aex-mtm-architecture-audit-2026-07-21.md",
+    "_registry/fleet-lexicon.json#SEAL",
+    "_registry/fleet-token-ladder.json"
+  ]
+}
