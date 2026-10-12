@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-12T03:21:16.934461+00:00",
+  "observed_at": "2026-10-12T03:51:38.935494+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -364,26 +364,32 @@
       {
         "agent": "sinopac-trading-system",
         "surface": "claude",
-        "observed_at": "2026-10-12T11:15:06+08:00",
-        "receipt_sha256": "b2ea7a80760a1813092eeca8eec39bdc2c0a4130a5f13c59e9d93146d39fb89d"
+        "observed_at": "2026-10-12T11:34:18+08:00",
+        "receipt_sha256": "01b8ad5c582d60e7c3371836686506a90baabd6220f1a749a08d5c64e5215741"
       },
       {
         "agent": "xtu-popup-20261012",
         "surface": "claude",
-        "observed_at": "2026-10-12T10:45:25+08:00",
-        "receipt_sha256": "93b5053580b3c8e72a7629893606f6744d126e95da6080c4c725caef0b9cc4c0"
+        "observed_at": "2026-10-12T11:45:01+08:00",
+        "receipt_sha256": "08ebf785b5dbd25b4cf1484dd990bcdbb72d6d8549bec27f31e91f42332946ac"
       },
       {
         "agent": "ai_career",
         "surface": "claude",
-        "observed_at": "2026-10-12T11:17:59+08:00",
-        "receipt_sha256": "1b90c481dc6c4ec8186de52021aa2e2b82a82fe2d7ceb09ffa6a3075a906ee1c"
+        "observed_at": "2026-10-12T11:23:19+08:00",
+        "receipt_sha256": "40c3468ffb283b89639093d30aa346611fcff7612f8138cfa189450268abff49"
       },
       {
         "agent": "ai_theater",
         "surface": "claude",
         "observed_at": "2026-10-12T10:01:41+08:00",
         "receipt_sha256": "ec2e0f7e73bf4ea2d1bff92b434cddac392552ca648cc649836ba222f1a70520"
+      },
+      {
+        "agent": "ai_theater",
+        "surface": "claude",
+        "observed_at": "2026-10-12T11:37:40+08:00",
+        "receipt_sha256": "01e831b78d6e16ceeaba7ca14fb8cf520988cecab92c1cf2918f6c66870774eb"
       },
       {
         "agent": "ai_nuwa",
