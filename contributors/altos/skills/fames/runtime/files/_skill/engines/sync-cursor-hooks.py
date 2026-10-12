@@ -24,6 +24,42 @@ FAMES_CONTEXT_HOOK = os.path.join(
 CLAUDE_CLAIM_INTEGRITY_HOOK = os.path.join(
     COMMON, "_skill", "engines", "claude-claim-integrity-hook.py"
 )
+# F1S Stop hooks (operator 2026-10-11 armed on the hub; 2026-10-13 「f1s 最新能力套用到所有對話與裝置」):
+# wired on every host whose package carries the script, in this order after the claim-integrity gate.
+CLAUDE_RUN_UNTIL_DONE_HOOK = os.path.join(COMMON, "_skill", "engines", "claude-run-until-done-hook.py")
+CLAUDE_PROOF_HOOK = os.path.join(COMMON, "_skill", "engines", "claude-proof-hook.py")
+
+
+def claude_managed_hooks() -> list:
+    """(event, script, timeout) rows in wiring order; a Stop hook whose script is absent on this host is
+    skipped (the package has not delivered it yet), never wired to a missing file."""
+    rows = [
+        ("SessionStart", FAMES_CONTEXT_HOOK, 10),
+        ("UserPromptSubmit", FAMES_CONTEXT_HOOK, 20),
+        ("Stop", CLAUDE_CLAIM_INTEGRITY_HOOK, 15),
+        ("SubagentStop", CLAUDE_CLAIM_INTEGRITY_HOOK, 15),
+    ]
+    if os.path.isfile(CLAUDE_RUN_UNTIL_DONE_HOOK):
+        rows.append(("Stop", CLAUDE_RUN_UNTIL_DONE_HOOK, 10))
+    if os.path.isfile(CLAUDE_PROOF_HOOK):
+        rows.append(("Stop", CLAUDE_PROOF_HOOK, 15))
+        rows.append(("SubagentStop", CLAUDE_PROOF_HOOK, 15))
+    return rows
+
+
+def claude_hooks_missing(settings_path: str) -> list:
+    """Managed (event, script basename) pairs that the Claude settings file does not wire yet."""
+    try:
+        doc = json.loads(Path(settings_path).read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        doc = {}
+    hooks = doc.get("hooks") if isinstance(doc, dict) and isinstance(doc.get("hooks"), dict) else {}
+    missing = []
+    for event, script, _timeout in claude_managed_hooks():
+        groups = hooks.get(event) if isinstance(hooks.get(event), list) else []
+        if not any(_contains_script(group, script) for group in groups):
+            missing.append((event, os.path.basename(script)))
+    return missing
 
 # Extra workspace roots (user opens subfolder as Cursor workspace — hooks must exist there).
 # 2026-08-13 (operator: 一個 cwd 一個 surface): only a sub-path that is a real cwd —
@@ -391,20 +427,20 @@ def write_claude_fames_hooks(path: str) -> dict:
     if not isinstance(hooks, dict):
         raise RuntimeError(f"Claude hooks field is not an object: {target}")
 
-    wanted = {
-        "SessionStart": (FAMES_CONTEXT_HOOK, 10),
-        "UserPromptSubmit": (FAMES_CONTEXT_HOOK, 20),
-        "Stop": (CLAUDE_CLAIM_INTEGRITY_HOOK, 15),
-        "SubagentStop": (CLAUDE_CLAIM_INTEGRITY_HOOK, 15),
-    }
-    for event, (script, timeout) in wanted.items():
+    wanted = claude_managed_hooks()
+    by_event: dict = {}
+    for event, script, timeout in wanted:
+        by_event.setdefault(event, []).append((script, timeout))
+    for event, scripts in by_event.items():
         current = hooks.get(event)
         if current is not None and not isinstance(current, list):
             raise RuntimeError(f"Claude hook event is not a list: {target}: {event}")
         groups = list(current) if isinstance(current, list) else []
+        for script, _timeout in scripts:
+            groups = _without_managed_handlers(groups, script)
         hooks[event] = [
-            _claude_command_group(script, timeout),
-            *_without_managed_handlers(groups, script),
+            *(_claude_command_group(script, timeout) for script, timeout in scripts),
+            *groups,
         ]
 
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -414,7 +450,7 @@ def write_claude_fames_hooks(path: str) -> dict:
         fh.write("\n")
     os.replace(staged, target)
     read_back = json.loads(target.read_text(encoding="utf-8-sig"))
-    for event, (script, _timeout) in wanted.items():
+    for event, script, _timeout in wanted:
         installed = [
             group for group in (read_back.get("hooks") or {}).get(event) or []
             if _contains_script(group, script)
@@ -422,7 +458,8 @@ def write_claude_fames_hooks(path: str) -> dict:
         if len(installed) != 1:
             raise RuntimeError(f"Claude FAMES hook read-back mismatch: {target}: {event}")
     data = target.read_bytes()
-    return {"path": str(target), "sha": hashlib.sha256(data).hexdigest(), "read_back": True}
+    return {"path": str(target), "sha": hashlib.sha256(data).hexdigest(), "read_back": True,
+            "stop_hooks": [os.path.basename(s) for e, s, _t in wanted if e == "Stop"]}
 
 
 def main(argv=None):
