@@ -66,6 +66,26 @@ def _hard_lines(cwd: str) -> tuple[str, str]:
     return ("injected", text) if text else ("charter", "")
 
 
+def _f1s_record(agent: str, max_age_hours: float = 6.0) -> str:
+    """The seat's own F1S record line from the transcript sweep; starts a hidden sweep when stale."""
+    try:
+        path = HUB / "_skill" / "engines" / "f1s-transcript-audit.py"
+        if not path.is_file():
+            return ""
+        spec = importlib.util.spec_from_file_location("f1s_transcript_audit", path)
+        if spec is None or spec.loader is None:
+            return ""
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        line = str(module.record_line(agent) or "")
+        if module.stale(max_age_hours):
+            started = module.spawn_hidden()
+            line += " — sweep restarted" if started else ""
+        return line
+    except Exception:  # noqa: BLE001 — advisory context only
+        return ""
+
+
 def _t1_refresh(surface_id: str, session_id: str, *, at_start: bool) -> str:
     """Return the current T1 text when it differs from what this conversation last received.
 
@@ -351,6 +371,11 @@ def main():
         t1_state,hard_lines=_hard_lines(cwd)
         if hard_lines:
             context=(context+"\n"+hard_lines).strip()
+        # operator 2026-10-13: every conversation sees its seat's own lying / 推託 / junk-file record, and
+        # the sweep that produces it restarts itself (hidden) when stale.  Never raises, never blocks.
+        record=_f1s_record(agent)
+        if record:
+            context=(context+"\n"+record).strip()
     status_path=CODEX_STATUS if surface_id == "open-agent-standard" else STATUS
     status_path.parent.mkdir(parents=True,exist_ok=True)
     status_path.write_text(json.dumps({"schema":3,"last_fired":datetime.now(timezone.utc).isoformat(),"event":event,"cwd":cwd,"agent":agent,"surface_id":surface_id,"runtime_event_observed":bool(locals().get("runtime_event_observed", False)),"fames_state":state,"t1_hard_lines":t1_state,"session_source":session_source or None,"agc":{k:(result.get("auto_goal_compact") or {}).get(k) for k in ("state","agent","seat_resolution","refreshed","trigger","precompact_hook_armed","elapsed_ms")} if isinstance(locals().get("result"),dict) else None},indent=2),encoding="utf-8")

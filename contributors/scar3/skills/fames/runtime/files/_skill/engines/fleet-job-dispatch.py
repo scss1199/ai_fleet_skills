@@ -254,6 +254,24 @@ def probe(hub: Path) -> dict:
     except (ValueError, KeyError, TypeError):
         out["claude_cli"] = "UNKNOWN"
     out["nested_hub_folder_present"] = (hub / hub.name).is_dir()
+    # 2026-10-13: which F1S Stop hooks this host's Claude settings actually wire (the lie gate lands only
+    # when claude-proof-hook.py is listed here, not when the file merely exists).
+    try:
+        settings = Path.home() / ".claude" / "settings.json"
+        doc = _read_json(settings)
+        wired: dict = {}
+        for event in ("Stop", "SubagentStop", "SessionStart", "UserPromptSubmit"):
+            names = []
+            for group in (doc.get("hooks") or {}).get(event) or []:
+                for handler in (group.get("hooks") or []) if isinstance(group, dict) else []:
+                    cmd = str((handler or {}).get("command") or "")
+                    names.append(cmd.rstrip('"').replace("/", "\\").rsplit("\\", 1)[-1].strip('"'))
+            wired[event] = names
+        out["claude_hooks"] = wired
+    except (OSError, ValueError, AttributeError, TypeError):
+        out["claude_hooks"] = "UNKNOWN"
+    for name in ("claude-proof-hook.py", "claude-run-until-done-hook.py"):
+        out[f"has_{name.split('.')[0].replace('-', '_')}"] = (hub / "_skill/engines" / name).is_file()
     return out
 
 
