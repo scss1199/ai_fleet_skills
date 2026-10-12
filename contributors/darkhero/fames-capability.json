@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "8da4af635e5782f8efd1093a6b39f32a1c09194c06f3e3aca8133c824b00ab27",
   "runner_state": "armed",
-  "observed_at": "2026-10-12T02:36:52.018570+00:00",
+  "observed_at": "2026-10-12T03:21:16.934461+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -364,20 +364,20 @@
       {
         "agent": "sinopac-trading-system",
         "surface": "claude",
-        "observed_at": "2026-10-12T10:32:04+08:00",
-        "receipt_sha256": "c265ca607723e2198d0c58860458dc8dbc7c4ee58d8be4facbbdba7e5307524d"
+        "observed_at": "2026-10-12T11:15:06+08:00",
+        "receipt_sha256": "b2ea7a80760a1813092eeca8eec39bdc2c0a4130a5f13c59e9d93146d39fb89d"
       },
       {
         "agent": "xtu-popup-20261012",
         "surface": "claude",
-        "observed_at": "2026-10-12T10:33:48+08:00",
-        "receipt_sha256": "84d012ad3c357fb5cb6e27d0679a0c9ac8bcb485317d000dc20c4d98dabb690d"
+        "observed_at": "2026-10-12T10:45:25+08:00",
+        "receipt_sha256": "93b5053580b3c8e72a7629893606f6744d126e95da6080c4c725caef0b9cc4c0"
       },
       {
-        "agent": "ai_metadata",
+        "agent": "ai_career",
         "surface": "claude",
-        "observed_at": "2026-10-11T10:59:21+08:00",
-        "receipt_sha256": "a8bc41197d70144a59f2818c64385de0001490e4fd8fad72520e427bef037474"
+        "observed_at": "2026-10-12T11:17:59+08:00",
+        "receipt_sha256": "1b90c481dc6c4ec8186de52021aa2e2b82a82fe2d7ceb09ffa6a3075a906ee1c"
       },
       {
         "agent": "ai_theater",
@@ -388,8 +388,8 @@
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-12T09:59:20+08:00",
-        "receipt_sha256": "f9fed6d74b57c8922be41799bf0661c2b61360da1cae43a3cdb6092a5e6c7905"
+        "observed_at": "2026-10-12T11:15:09+08:00",
+        "receipt_sha256": "a8b857d09880ae8b18158c255f404029d9bbc8915f043dabd9a514c52460b377"
       },
       {
         "agent": "ai_guitar",
