@@ -4195,6 +4195,35 @@ def _content_ref_errors(value: object, label: str, replay: bool = False) -> list
     return errors
 
 
+def _is_authority_host(workspace: Path) -> bool:
+    """Authority = the host that curates the canonical package.
+
+    The cases source (_registry/fames-cases.json) is a tracked hub file, so every git
+    checkout carries it and its presence proves nothing on a follower: scar3 ran the
+    authority-only AGC cases and failed them (2026-10-12). The fleet node registry
+    says which hostnames are the upstream curator; without a registry or a hostnames
+    list the legacy rule (cases source present) still applies.
+    """
+    legacy = (workspace / CASES_SOURCE).is_file()
+    try:
+        doc = _read_json(workspace / "_registry" / "fleet-skill-github.json")
+    except (OSError, ValueError):
+        return legacy
+    nodes = doc.get("nodes") if isinstance(doc, dict) else None
+    declared: set[str] = set()
+    for node in (nodes or {}).values():
+        if isinstance(node, dict) and node.get("role") == "upstream_curator":
+            declared.update(str(h).strip().lower() for h in (node.get("hostnames") or []) if str(h).strip())
+    if not declared:
+        return legacy
+    try:
+        import socket
+        host = socket.gethostname().strip().lower()
+    except Exception:
+        return False
+    return legacy and host in declared
+
+
 def _active_workspace() -> Path:
     for candidate in (PACKAGE_ROOT, *PACKAGE_ROOT.parents):
         if (candidate / "_registry" / "fames-protocol.json").is_file():
@@ -6614,7 +6643,7 @@ def _hydrate_promotion_fixtures(node: object, fixture_root: Path) -> None:
         if node.pop("auto_promotion_contract", False):
             validator_identity = _sha256(Path(__file__).resolve())
             script_ref = _local_content_ref(Path(__file__), "file://fames_fleet.py")
-            workspace = PACKAGE_ROOT.parents[2]
+            workspace = _active_workspace()  # on a follower the package sits inside the skills clone, not under the hub
             review_ref = {
                 "uri": "file://promotion-review.json",
                 "path": str((fixture_root / "promotion-review.json").resolve()),
@@ -6851,7 +6880,7 @@ def _hydrate_context_trial_case(node: object) -> None:
             trial = asset.get("measured_trial")
             if not isinstance(trial, dict):
                 continue
-            target = PACKAGE_ROOT.parents[2] / str(trial.get("source_ref") or "")
+            target = _active_workspace() / str(trial.get("source_ref") or "")
             if not target.is_file():
                 target = PACKAGE_ROOT / str(trial.get("source_ref") or "")
             if trial.get("content_sha256") == "auto" and target.is_file():
@@ -7240,7 +7269,7 @@ def run_cases(
         }
     except (OSError, json.JSONDecodeError):
         refs = {}
-    authority = (workspace / CASES_SOURCE).is_file()
+    authority = _is_authority_host(workspace)
 
     rows: list[dict] = []
     residual = {key: 0 for key in RESIDUAL_DIMENSIONS}
