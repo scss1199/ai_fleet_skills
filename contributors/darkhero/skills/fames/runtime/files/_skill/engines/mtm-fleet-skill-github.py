@@ -231,7 +231,7 @@ def _skill_names(reg: dict) -> list[str]:
     names: list[str] = []
     for c in reg.get("canonical") or []:
         n = c.get("name")
-        if n and n not in names:
+        if n and not str(n).startswith(".") and n not in names:  # never export rollback copies
             names.append(n)
     return names
 
