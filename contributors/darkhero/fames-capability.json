@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "294919d5fd63c461c925c386a63328a4834a45a77b316a951b8e8285670d0a86",
+  "package_sha": "778d2d4a08e85697e6cbe1ef6821783d0582b7a7560dc9e00354c9a160b35f57",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "573dd1a29acec301ef50bdd7a80d3aeff5f500e402044bbc9f6199258edf5d4a",
   "runner_state": "armed",
-  "observed_at": "2026-10-13T01:06:12.002892+00:00",
+  "observed_at": "2026-10-13T16:06:18.510905+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,19 +356,19 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
-        "agent": "ai_darkhero",
+        "agent": "ai_ut",
         "surface": "claude",
-        "observed_at": "2026-10-13T02:56:06+08:00",
-        "receipt_sha256": "a136907c1831bdd9680e2e0d2ccad00531876d2983640bd24cbb999d36d7567b"
+        "observed_at": "2026-10-14T00:03:13+08:00",
+        "receipt_sha256": "a276dd50f59a244781e1743f6158911c4fd62256153d0c2041a78f2dcd3437e1"
       },
       {
-        "agent": "ai_nuwa",
+        "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-13T06:00:59+08:00",
-        "receipt_sha256": "f79153f60efb5ff669464b7a5f1ab61017ab870cb12ac489e2c52f96a877a60c"
+        "observed_at": "2026-10-13T23:59:43+08:00",
+        "receipt_sha256": "543a0af95ce85c6e2c7162aa8e48a356a6ee29c49328a1d169318881a8510fe6"
       }
     ],
-    "runtime_release_sha256": "87e43cc9f399c0c091e01854fc1142995c07f9355a3901b27417f670584578e3"
+    "runtime_release_sha256": "028d3bfa2a128f8a60c3264df5c7c0f681ffaeb59b92e282c950035f3c307fec"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
