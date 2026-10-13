@@ -199,8 +199,14 @@ READ_TOOL_SUFFIX = ("get_page_text", "read_page", "find", "read_file_content", "
 SCHEDULER_TOUCH = re.compile(r"(?i)hosts\.json|register-rider|rider_edit|schtasks|CurrentVersion\\\\?Run|hubclock-heartbeat|crontab|Register-ScheduledTask")
 COUNT_NUMBER = re.compile(r"(?<![\w.,])(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(?:則|條|筆|個|組|項|檔|篇|份|次|天|年|口|張|頁|行|%|％)")
 DECISION_TAIL = re.compile(r"(?:需要你決定|needs?\s+your\s+decision)\s*[:：]?\s*(.*)", re.I)
-DOC_REQUEST = re.compile(r"(?i)\.md\b|文件|報告|报告|說明|说明|筆記|笔记|記錄|记录|寫一份|寫份|write\s*-?up|\breport\b|\bdocument\b|\bnotes?\b|\bREADME\b|\bchangelog\b|markdown")
-MD_WRITE_CMD = re.compile(r"(?<![<\d=!-])>{1,2}\s*\"?'?([^\s\"'|;&]+\.(?:md|json))\b|(?:tee|Set-Content|Out-File|Add-Content)\s+(?:-Path\s+)?\"?'?([^\s\"'|;&]+\.(?:md|json))\b", re.I)
+# 2026-10-13 operator 「用LEAN和F1S嚴格要求不准寫多餘且無用的垃圾檔案」: a prompt that merely mentions 報告 /
+# 記錄 / notes no longer opens the door for every .md / .json the turn writes.  A document counts as asked
+# for only when the prompt names the file, or explicitly asks to CREATE a document.
+DOC_CREATE = re.compile(
+    r"(?i)(?<!不准)(?<!不要)(?<!禁止)(?<!不得)(?:寫|產出|产出|建立|新增|生成|存成|存為|輸出成)[一個份篇成到入下]{0,3}\s*"
+    r"[^\s，。,.；;]{0,6}?(?:文件|報告|报告|筆記|笔记|說明檔|\.md|\.json|markdown|README)"
+    r"|\b(?:write|create|generate|draft|save)\b\W+(?:\w+\W+){0,3}?(?:report|document|notes?|write-?up|README|markdown|md|json)\b")
+MD_WRITE_CMD = re.compile(r"(?<![<\d=!-])>{1,2}\s*\"?'?([^\s\"'|;&]+\.(?:md|json))\b|(?:tee|Set-Content|Out-File|Add-Content)\s+(?:-(?:Literal|File)?Path\s+)?\"?'?([^\s\"'|;&]+\.(?:md|json))\b", re.I)
 JUNK_EXT = (".md", ".json")
 
 
@@ -225,6 +231,82 @@ def _bash_md_targets(command: str) -> list[str]:
             target = cds[-1].rstrip("/\\") + "/" + target
         out.append(target)
     return out
+
+
+def _win_path(raw: str, cwd: str = "") -> Path:
+    """A Write / shell target as a Windows path: `/c/x` -> `C:/x`, relative -> under `cwd`."""
+    m = re.match(r"^/([a-zA-Z])/(.*)$", raw)
+    if m:
+        raw = f"{m.group(1).upper()}:/{m.group(2)}"
+    p = Path(raw).expanduser()
+    if not p.is_absolute() and not raw.startswith(("/", "\\")) and cwd:
+        p = Path(cwd) / p
+    return p
+
+
+def junk_target(p: Path, cfg: dict) -> bool:
+    """A .md / .json outside machine-state directories and not a charter / receipt name."""
+    if p.suffix.lower() not in JUNK_EXT:
+        return False
+    allowed_dirs = {d.lower() for d in (cfg.get("md_allowed_dirs") or DEFAULTS["md_allowed_dirs"])}
+    allowed_names = {n.lower() for n in (cfg.get("md_allowed_names") or DEFAULTS["md_allowed_names"])}
+    return not ({x.lower() for x in p.parts[:-1]} & (allowed_dirs | {"tmp"}) or p.name.lower() in allowed_names)
+
+
+def doc_requested(p: Path, prompt_text: str) -> bool:
+    """The prompt named THIS file (name, or a stem of 4+ chars) or explicitly asked to create a document."""
+    low = (prompt_text or "").lower()
+    stem = p.stem.lower()
+    return bool(p.name.lower() in low or (len(stem) >= 4 and stem in low) or DOC_CREATE.search(prompt_text or ""))
+
+
+WRITE_GATE_REASON = (
+    "PROOF write gate (operator 2026-10-13 「用LEAN和F1S嚴格要求不准寫多餘且無用的垃圾檔案」, Lean "
+    "ClaimContract.unrequested_file_needs_request): creating {paths} is denied - no prompt asked for this "
+    ".md / .json. Put the report / notes / summary in your reply; machine state goes under runtime/ or "
+    "_registry/; scratch goes to the scratchpad. Editing an existing file is allowed."
+)
+
+
+def pre_tool_use(doc: dict, cfg: dict) -> dict | None:
+    """Deny the CREATION of an unrequested .md / .json before it is written (Write, or a shell redirect)."""
+    if not (cfg.get("classes") or {}).get("unrequested_file", True):
+        return None
+    tool = str(doc.get("tool_name") or "")
+    ti = doc.get("tool_input") if isinstance(doc.get("tool_input"), dict) else {}
+    cwd = str(doc.get("cwd") or "")
+    if tool == "Write":
+        raw = [str(ti.get("file_path") or "")]
+    elif tool in ("Bash", "PowerShell"):
+        raw = _bash_md_targets(str(ti.get("command") or ""))
+    else:
+        return None
+    new_junk = []
+    for r in raw:
+        if not r:
+            continue
+        try:
+            p = _win_path(r, cwd)
+            if junk_target(p, cfg) and not p.exists():
+                new_junk.append(p)
+        except (OSError, ValueError):
+            continue
+    if not new_junk:
+        return None
+    prompt_text = ""
+    path = _safe_transcript_path(doc)
+    if path is not None:
+        _, prompt, _, _, _ = current_turn_ex(path)
+        prompt_text = _text_of(((prompt or {}).get("message") or {}).get("content"))
+    denied = [p for p in new_junk if not admissible("unrequested_file", {"requestedDoc": doc_requested(p, prompt_text)})]
+    _log({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "session_id": str(doc.get("session_id") or ""),
+          "event": "PreToolUse", "cwd": cwd, "tool": tool, "verdict": "deny" if denied else "allow",
+          "matched": "unrequested_file", "md_writes": [str(p) for p in new_junk][:6]})
+    if not denied:
+        return None
+    return {"hookSpecificOutput": {
+        "hookEventName": "PreToolUse", "permissionDecision": "deny",
+        "permissionDecisionReason": WRITE_GATE_REASON.format(paths=", ".join(str(p) for p in denied)[:400])}}
 
 
 def admissible(cls: str, ev: dict) -> bool:
@@ -787,8 +869,6 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
     path_ok = None  # lazily computed, message-level
     git: dict | None = None  # lazily computed, message-level
     earlier_decisions = earlier_decisions or []
-    prompt_asks_doc = bool(DOC_REQUEST.search(f.get("prompt_text") or ""))
-
     def git_state() -> dict:
         nonlocal git
         if git is None:
@@ -796,18 +876,18 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
         return git
 
     if classes.get("unrequested_file", True):
-        allowed_dirs = {d.lower() for d in (cfg.get("md_allowed_dirs") or DEFAULTS["md_allowed_dirs"])}
-        allowed_names = {n.lower() for n in (cfg.get("md_allowed_names") or DEFAULTS["md_allowed_names"])}
         prompt_text = f.get("prompt_text") or ""
         for mdp in f.get("md_writes") or []:
-            parts = {p.lower() for p in Path(mdp).parts[:-1]}
-            name = Path(mdp).name
-            if parts & allowed_dirs or name.lower() in allowed_names:
+            if not junk_target(Path(mdp), cfg):
                 continue
-            # the prompt asked for THIS file (its name or stem appears) or for a document in general
-            requested = prompt_asks_doc or name.lower() in prompt_text.lower() or (
-                len(Path(name).stem) >= 4 and Path(name).stem.lower() in prompt_text.lower())
-            if not admissible("unrequested_file", {"requestedDoc": requested}):
+            # The remedy the hook asks for is to move the file away; a target that no longer exists at
+            # judge time (moved, or a shell path like /tmp that is not a Windows path) was not produced.
+            try:
+                if not Path(mdp).expanduser().exists():
+                    continue
+            except (OSError, ValueError):
+                continue
+            if not admissible("unrequested_file", {"requestedDoc": doc_requested(Path(mdp), prompt_text)}):
                 violations.append({"line": 0, "class": "unrequested_file", "snippet": str(mdp)[:SNIPPET],
                                    "need": LIE_NEEDS["unrequested_file"]})
 
@@ -942,6 +1022,8 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
     if not cfg.get("enabled", True):
         return None
     event = str(doc.get("hook_event_name") or "")
+    if event == "PreToolUse":
+        return pre_tool_use(doc, cfg)
     if event not in (cfg.get("events") or DEFAULTS["events"]):
         return None
     path = _safe_transcript_path(doc)

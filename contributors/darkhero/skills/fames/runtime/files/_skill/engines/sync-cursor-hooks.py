@@ -44,7 +44,13 @@ def claude_managed_hooks() -> list:
     if os.path.isfile(CLAUDE_PROOF_HOOK):
         rows.append(("Stop", CLAUDE_PROOF_HOOK, 15))
         rows.append(("SubagentStop", CLAUDE_PROOF_HOOK, 15))
+        # 2026-10-13 operator 「用LEAN和F1S嚴格要求不准寫多餘且無用的垃圾檔案」: deny an unrequested .md / .json
+        # before it is created (CLAUDE_MATCHERS limits it to the tools that write files).
+        rows.append(("PreToolUse", CLAUDE_PROOF_HOOK, 10))
     return rows
+
+
+CLAUDE_MATCHERS = {("PreToolUse", CLAUDE_PROOF_HOOK): "Write|Bash|PowerShell"}
 
 
 def claude_hooks_missing(settings_path: str) -> list:
@@ -394,14 +400,16 @@ def _fail_open_entry(entry: dict) -> dict:
     return out
 
 
-def _claude_command_group(script: str, timeout: int) -> dict:
-    return {
+def _claude_command_group(script: str, timeout: int, event: str = "") -> dict:
+    group = {
         "hooks": [{
             "type": "command",
             "command": claude_hook_command(script),
             "timeout": timeout,
         }]
     }
+    matcher = CLAUDE_MATCHERS.get((event, script))
+    return {"matcher": matcher, **group} if matcher else group
 
 
 def _contains_script(group: object, script: str) -> bool:
@@ -439,7 +447,7 @@ def write_claude_fames_hooks(path: str) -> dict:
         for script, _timeout in scripts:
             groups = _without_managed_handlers(groups, script)
         hooks[event] = [
-            *(_claude_command_group(script, timeout) for script, timeout in scripts),
+            *(_claude_command_group(script, timeout, event) for script, timeout in scripts),
             *groups,
         ]
 
