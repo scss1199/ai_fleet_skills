@@ -14,7 +14,8 @@ Classes come from the 2026-10-13 audit of the ai_trader conversations
   progress      「本輪推進完成 / 有進展」               — housekeeping reported as progress 18 times
   automated     「已自動化 / 會自動跑」                 — the 09-21 pre-market check was never automated
   blocker       「做不到 / 會被拉回來 / cannot」        — a deletable obstacle presented as a constraint
-  decision      「需要你決定：X」 repeated               — the same decision re-asked 12 / 27 / 50 times
+  decision      「需要你決定：X」 repeated, or not the operator's — re-asked 12 / 27 / 50 times; F1SCore: only
+                                                          an operator-reserved / data-loss decision may be asked
   askValue      「需要你的一個數字 / 請提供」           — asked for a fee already in the repo
   unrequestedFile a .md / .json written that no prompt asked for and no mechanism requires
   handback      「請你去跑 / 由你來做 / 你自己執行」    — 推託: a step handed to the operator that
@@ -48,7 +49,7 @@ def admissible : ClaimClass → Evidence → Bool
   | .progress, e => e.anchor
   | .automated, e => e.schedulerFact
   | .blocker, e => e.failureObserved
-  | .decision, e => !e.askedBefore
+  | .decision, e => !e.askedBefore && e.redLineNamed   -- a decision is the operator's only on a red line / data loss
   | .askValue, e => e.searched
   | .unrequestedFile, e => e.requestedDoc
   | .handback, e => e.redLineNamed || e.failureObserved
@@ -93,6 +94,11 @@ theorem blocker_needs_observed_failure (e : Evidence) (h : e.failureObserved = f
   simp [admissible, h]
 
 theorem repeated_decision_inadmissible (e : Evidence) (h : e.askedBefore = true) :
+    admissible .decision e = false := by
+  simp [admissible, h]
+
+/-- 「需要你決定」 about something that is not the operator's (no red line, no data loss) is 推託. -/
+theorem decision_needs_operator_authority (e : Evidence) (h : e.redLineNamed = false) :
     admissible .decision e = false := by
   simp [admissible, h]
 

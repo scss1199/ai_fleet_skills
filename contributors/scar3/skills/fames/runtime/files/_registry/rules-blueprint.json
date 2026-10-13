@@ -35,7 +35,7 @@
         },
         {
           "id": "no-operator-zct-waste",
-          "rule": "【operator 2026-06-24 鐵律】禁止問 operator 機械活:git commit/push、部署、編譯、套件升級、要不要設排程、權限/oauth。一律 ZCT 自己跑:git→git_smart.py commit-push .;deploy→ship-queue.py request <repo>或fleet-ztm-ship.py(背景HubClock ship-dispatch@2m兜底);build→py_compile/npm build;週期/高頻→HubClock register-rider 提案寫SUBMIT(arming=operator);憑證→auth_check.py+vault。問=浪費 operator 時間=P=0。路由表:_registry/ztm-task-routes.json;python ztm-task-router.py。",
+          "rule": "【operator 2026-06-24 鐵律】禁止問 operator 機械活:git commit/push、部署、編譯、套件升級、要不要設排程、權限/oauth。一律 ZCT 自己跑:git→git_smart.py commit-push .;deploy→ship-queue.py request <repo>或fleet-ztm-ship.py(背景HubClock ship-dispatch@2m兜底);build→py_compile/npm build;週期/高頻→HubClock register-rider 提案寫SUBMIT(arming=operator);憑證→auth_check.py+vault(互動式 OAuth 登入=operator)。問=浪費 operator 時間=P=0。路由表:_registry/ztm-task-routes.json;python ztm-task-router.py。",
           "source": [
             "operator 2026-06-24",
             "_registry/ztm-task-routes.json",
@@ -83,7 +83,7 @@
         },
         {
           "id": "operator-auth",
-          "rule": "新排程任務/~/.claude 全域設定/autostart/環境變數變更,需 operator 明確授權。",
+          "rule": "新排程任務/~/.claude 全域設定/autostart/環境變數變更,需 operator 明確授權。(F1S hook 接線已授權 2026-10-13)",
           "source": [
             "C:/ai_workspace/CLAUDE.md"
           ]
@@ -129,7 +129,7 @@
         },
         {
           "id": "f1s",
-          "rule": "【operator 2026-10-08；2026-10-11 縮名 F1S】F1S＝FAMES 一套系統：每次對話預設使用，只提示不阻擋：不准曲解（原話列需求，不擴不縮不替換，已決定不再問，結論先行兩句講完）；不准誤用（元件按需啟用、不一次叫全部；FAMES 是契約不是 gate；Skill 不給權限；Jev 只在挑選或排序時給建議；Lean 只驗形式化主張；HubClock 只放週期工作且需授權；GitHub 用 git_smart、不 force push；單說 FAMES＝回報各階段狀態）；做法依馬斯克五步（質疑→刪除→簡化→加速→自動化），先重用再自己寫。任何 hook 不得擋 prompt、工具或 Stop（例外：run-until-no-next-step、proof Stop hook），不得把 hash 或版本釘進命令，缺檔或壞掉必須 fail-open。⑤不准說謊／推託、⑥嚴禁隨意產出 .md/.json（PROOF 擋，2026-10-13）。全文：_registry/fames-protocol.json unified_entrypoint.hot_directive。",
+          "rule": "【operator 2026-10-08】F1S＝FAMES 一套系統：每次對話預設使用，只提示不阻擋：不准曲解（原話列需求，不擴不縮不替換，已決定不再問，結論先行兩句講完，細節放回覆）；不准誤用（元件按需啟用、不一次叫全部；FAMES 是契約不是 gate；Skill 不給權限；Jev 只在挑選或排序時給建議；Lean 只驗形式化主張；HubClock 只放週期工作且需授權；GitHub 用 git_smart、不 force push；單說 FAMES＝回報各階段狀態）；做法依馬斯克五步（質疑→刪除→簡化→加速→自動化），先重用再自己寫。任何 hook 不得擋 prompt、工具或 Stop（例外：run-until-no-next-step、proof Stop hook），不釘 hash/版本，缺檔壞掉 fail-open。⑤不准說謊／推託、⑥嚴禁隨意產出 .md/.json（PROOF 擋）。全文：_registry/fames-protocol.json unified_entrypoint.hot_directive。",
           "source": [
             "operator 2026-10-08",
             "_harness/docs/fames-host-enforcement.md"
