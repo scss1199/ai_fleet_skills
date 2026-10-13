@@ -176,14 +176,15 @@ RED_LINE = re.compile(
     r"~/\.claude|\\\.claude\\|settings\.json|全域設定|global\s+setting|環境變數|autostart|自動啟動|"
     r"入金|匯款|轉帳|實盤|真錢|下單|付款|purchase|payment|fund|"
     r"重開機|reboot|restart\s+(?:the\s+)?(?:pc|machine|computer)|電腦重開|Logi\s*Options|"
-    r"uac|系統管理員|elevat|admin|remote\s+desktop|遠端桌面|插拔|硬體|實體|親手"
+    r"uac|系統管理員|elevat|admin|remote\s+desktop|遠端桌面|插拔|硬體|實體|親手|"
+    r"資料遺失|遺失|丟失|覆蓋|overwrite|data\s+loss|lose\s+data|irreversible|不可逆|砍"
 )
 LIE_NEEDS = {
     "read": "no read-type tool result this turn for the named target (Read / get_page_text / cat … of that path or URL)",
     "progress": "the line names no existing path, resolvable commit or tool-printed number: say WHAT moved, or call it housekeeping",
     "automated": "no scheduler fact: name a rider id in _registry/hosts.json, a Run value / task the turn read, or an existing path",
     "blocker": "no tool call failed this turn: try it (a real failing tool result) or write 未嘗試 / UNKNOWN",
-    "decision": "this decision was already asked earlier in this session; act on the earlier answer or state it was never answered",
+    "decision": "a 「需要你決定」 is admissible only once and only for the operator's own call (login/OAuth, permanent delete, rider arming, global settings, secrets, funds, hardware, data loss): decide the rest yourself",
     "ask_value": "no grep / search ran this turn before asking: look it up in the repo, ledger or earlier messages first",
     "unrequested_file": "a .md / .json was written this turn that no prompt asked for and no mechanism requires (operator 2026-10-13 「嚴格禁止隨意產出 .md 和 .json」): move it to the scratchpad / _delete and say so, or cite the prompt that asked",
     "handback": "推託: this step is handed to the operator although the line names no operator-reserved action (login/OAuth, permanent delete, rider arming, global settings, secrets, funds, hardware) and no tool failed this turn: do it yourself now, or try it and cite the failing tool result",
@@ -239,7 +240,7 @@ def admissible(cls: str, ev: dict) -> bool:
     if cls == "blocker":
         return g("failureObserved")
     if cls == "decision":
-        return not g("askedBefore")
+        return (not g("askedBefore")) and g("redLineNamed")
     if cls == "ask_value":
         return g("searched")
     if cls == "unrequested_file":
@@ -823,7 +824,8 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
         # A decision request is a question to the operator: a hedge word on the line does not excuse
         # asking it again, so this class is judged before the qualifier exemption.
         if classes.get("decision", True) and LIE_PATTERNS["decision"].search(stripped):
-            if not admissible("decision", {"askedBefore": asked_before(stripped, earlier_decisions)}):
+            if not admissible("decision", {"askedBefore": asked_before(stripped, earlier_decisions),
+                                           "redLineNamed": bool(RED_LINE.search(stripped))}):
                 violations.append({"line": number, "class": "decision", "snippet": snippet, "need": LIE_NEEDS["decision"]})
         if QUALIFIER.search(line):
             continue
