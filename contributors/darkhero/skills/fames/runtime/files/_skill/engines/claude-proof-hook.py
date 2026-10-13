@@ -212,13 +212,18 @@ JUNK_EXT = (".md", ".json")
 
 SHELL_ASSIGN = re.compile(r"(?:^|[\s;&(])([A-Za-z_]\w*)=([^\s;&|]+)")
 SHELL_CD = re.compile(r"(?:^|[\s;&(])cd\s+(?:/d\s+)?\"?'?([^\s;&|\"']+)")
+# A heredoc / PowerShell here-string body is data, not a command: `cat > x.py <<'EOF'` with a body that
+# mentions a redirect into some .json writes x.py only.  The header line (and its redirect) is kept.
+HEREDOC_BODY = re.compile(r"(<<-?\s*['\"]?(\w+)['\"]?[^\n]*\n).*?\n[ \t]*\2[ \t]*(?=\n|$)", re.S)
+HERESTRING_BODY = re.compile(r"@(['\"])\r?\n.*?\r?\n\1@", re.S)
 
 
 def _bash_md_targets(command: str) -> list[str]:
     """.md files a shell command writes, with `$VAR` / `${VAR}` expanded from assignments in the same
     command and relative paths resolved against the last `cd` in it.  A target that still carries an
     unexpanded variable is unknown and is NOT reported (fail open)."""
-    env = {m.group(1): m.group(2).strip("\"'") for m in SHELL_ASSIGN.finditer(command or "")}
+    command = HERESTRING_BODY.sub("", HEREDOC_BODY.sub(lambda m: m.group(1), command or ""))
+    env ={m.group(1): m.group(2).strip("\"'") for m in SHELL_ASSIGN.finditer(command or "")}
     cds = [m.group(1) for m in SHELL_CD.finditer(command or "")]
     out: list[str] = []
     for m in MD_WRITE_CMD.finditer(command or ""):
@@ -268,45 +273,67 @@ WRITE_GATE_REASON = (
 )
 
 
+PATCH_ADD = re.compile(r"^\*\*\* Add File:\s*(.+?)\s*$", re.M)
+SHELL_TOOLS = ("Bash", "PowerShell", "Shell")
+
+
+def _tool_targets(tool: str, ti: dict) -> list[str]:
+    """Paths a tool call would CREATE: Claude/Cursor `Write.file_path`, shell redirects in any `command`
+    (Claude Bash/PowerShell, Cursor Shell, Codex shell as a string or argv list), and `*** Add File:` lines
+    of a Codex apply_patch."""
+    if tool == "Write":
+        return [str(ti.get("file_path") or "")]
+    out: list[str] = []
+    for key, val in ti.items():
+        text = " ".join(map(str, val)) if isinstance(val, list) else str(val) if isinstance(val, str) else ""
+        if not text:
+            continue
+        out.extend(m.group(1) for m in PATCH_ADD.finditer(text))
+        if key in ("command", "cmd") or tool in SHELL_TOOLS:
+            out.extend(_bash_md_targets(text))
+    return out
+
+
 def pre_tool_use(doc: dict, cfg: dict) -> dict | None:
-    """Deny the CREATION of an unrequested .md / .json before it is written (Write, or a shell redirect)."""
+    """Deny the CREATION of an unrequested .md / .json before it is written.  One gate for Claude Code
+    (`PreToolUse`), Codex (`PreToolUse`, same reply shape) and Cursor (`preToolUse`, `permission` reply).
+    Cursor and Codex hand the hook no prompt text, so there a new .md / .json is never "requested"."""
     if not (cfg.get("classes") or {}).get("unrequested_file", True):
         return None
     tool = str(doc.get("tool_name") or "")
     ti = doc.get("tool_input") if isinstance(doc.get("tool_input"), dict) else {}
     cwd = str(doc.get("cwd") or "")
-    if tool == "Write":
-        raw = [str(ti.get("file_path") or "")]
-    elif tool in ("Bash", "PowerShell"):
-        raw = _bash_md_targets(str(ti.get("command") or ""))
-    else:
-        return None
+    raw = _tool_targets(tool, ti)
     new_junk = []
     for r in raw:
         if not r:
             continue
         try:
-            p = _win_path(r, cwd)
+            p = _win_path(r.strip("\"'"), cwd)
             if junk_target(p, cfg) and not p.exists():
                 new_junk.append(p)
         except (OSError, ValueError):
             continue
     if not new_junk:
         return None
+    cursor = "cursor_version" in doc or str(doc.get("hook_event_name") or "") == "preToolUse"
     prompt_text = ""
     path = _safe_transcript_path(doc)
-    if path is not None:
+    if path is not None and not cursor:
         _, prompt, _, _, _ = current_turn_ex(path)
         prompt_text = _text_of(((prompt or {}).get("message") or {}).get("content"))
     denied = [p for p in new_junk if not admissible("unrequested_file", {"requestedDoc": doc_requested(p, prompt_text)})]
-    _log({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "session_id": str(doc.get("session_id") or ""),
-          "event": "PreToolUse", "cwd": cwd, "tool": tool, "verdict": "deny" if denied else "allow",
-          "matched": "unrequested_file", "md_writes": [str(p) for p in new_junk][:6]})
+    _log({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "session_id": str(doc.get("session_id") or doc.get("conversation_id") or ""),
+          "event": "PreToolUse", "engine": "cursor" if cursor else "claude/codex", "cwd": cwd, "tool": tool,
+          "verdict": "deny" if denied else "allow", "matched": "unrequested_file",
+          "md_writes": [str(p) for p in new_junk][:6]})
     if not denied:
         return None
+    reason = WRITE_GATE_REASON.format(paths=", ".join(str(p) for p in denied)[:400])
+    if cursor:
+        return {"permission": "deny", "user_message": reason, "agent_message": reason}
     return {"hookSpecificOutput": {
-        "hookEventName": "PreToolUse", "permissionDecision": "deny",
-        "permissionDecisionReason": WRITE_GATE_REASON.format(paths=", ".join(str(p) for p in denied)[:400])}}
+        "hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": reason}}
 
 
 def admissible(cls: str, ev: dict) -> bool:
@@ -1022,7 +1049,7 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
     if not cfg.get("enabled", True):
         return None
     event = str(doc.get("hook_event_name") or "")
-    if event == "PreToolUse":
+    if event.lower() == "pretooluse":
         return pre_tool_use(doc, cfg)
     if event not in (cfg.get("events") or DEFAULTS["events"]):
         return None
