@@ -40,6 +40,9 @@ TEXTS = {
     "run_until_done_hook": HUB / "_skill" / "engines" / "claude-run-until-done-hook.py",
     "claim_conformance": HERE / "evidence" / "claim-conformance.json",
     "phase_conformance": HUB / "_registry" / "fames-phase-conformance.json",
+    "skill_intake": HUB / "_skill" / "fleet-skills" / "f1s-intake" / "SKILL.md",
+    "skill_method": HUB / "_skill" / "fleet-skills" / "mtm-mto-first" / "SKILL.md",
+    "skill_verify": HUB / "_skill" / "fleet-skills" / "ztm-verify-before-done" / "SKILL.md",
 }
 
 # The architecture scan.  `requires` names the Lean theorem that must be PROVED for the verdict to stand;
@@ -124,6 +127,15 @@ ELEMENTS = [
      "requires": None, "detail": "MTM local_skill_router + host catalog discovery already route skills per prompt; reply under the post (明年都不需要) and ③ delete: no new skills installed"},
     {"id": "H-code-change-scratch", "element": "code_change class counted session scratch scripts (scratchpad / Temp) as brownfield code", "verdict": "REFINE",
      "requires": "ClaimContract.code_change_needs_prior_search", "detail": "false positive found 2026-10-14 (a scratch parser for the Threads page); scratch paths no longer start the search-before-write clock"},
+    {"id": "KB-skills-how", "element": "kyloren_bot IG DeRQeVDHdBH (2026-10-09, 15 skills): prompt says what, skills teach how", "verdict": "REFINE",
+     "requires": None, "detail": "wave 1 (2026-10-15): hot_directive 1399 -> 548 chars, the how of ① moved to skill f1s-intake",
+     "check_text": ("skill_intake", "原話綁定")},
+    {"id": "KB-skills-method", "element": "③ Musk five steps / reuse order / brownfield search / precise edits as skill text", "verdict": "REFINE",
+     "requires": None, "detail": "moved from hot_directive into mtm-mto-first; PROOF code_change still judges it",
+     "check_text": ("skill_method", "F1S ③")},
+    {"id": "KB-skills-verify", "element": "④⑤⑥ evidence / no lying / no junk files as skill text", "verdict": "REFINE",
+     "requires": None, "detail": "moved from hot_directive into ztm-verify-before-done; PROOF Stop hook still judges it",
+     "check_text": ("skill_verify", "F1S ④⑤⑥")},
     {"id": "KB-noise", "element": "kyloren_bot cards 31019056, e904d45b, f1047cdb, dbea9c8c, a199503d, 3776cbe2, c18d2b35, e7c5cba9, 44b1a930 (IG reels, ASR noise / promos)", "verdict": "DELETE",
      "requires": None, "detail": "no implementable content beyond what ③ already says (fewer lines, reuse); nothing fused"},
 ]

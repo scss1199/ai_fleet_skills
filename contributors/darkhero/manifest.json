@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-10-14T08:31:41Z",
-  "manifest_sha": "a1ed5c81ed4fb91f",
+  "generated_at": "2026-10-14T17:10:57Z",
+  "manifest_sha": "e7ca79f6bc5f7bda",
   "required": [
     "fames",
     "independent-review",
@@ -22,7 +22,7 @@
     "ztm-fleet-intelligence",
     "token-preflight"
   ],
-  "skill_count": 44,
+  "skill_count": 45,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -137,15 +137,25 @@
       }
     },
     {
+      "name": "f1s-intake",
+      "sha": "db34696878c55670",
+      "required": false,
+      "lane": "zero-token-mechanism",
+      "package_sha": "ddbcad484b8ba4f91abded180e918a678beaf712299939d0452d8f2161a70243",
+      "files": {
+        "SKILL.md": "db34696878c5567087a8bfbaa2fefcb9c045a8e67170a7cbaeac414d3fbeb525"
+      }
+    },
+    {
       "name": "fames",
-      "sha": "0ab2830d7c3b8462",
+      "sha": "9e8fe8323aa46a7e",
       "required": true,
       "lane": null,
-      "package_sha": "ef17d56d478bc6c6f49449014010d72b9e0f970570998007c94763b49123be4a",
+      "package_sha": "03136b0ec5f5b2d15c17a0c5f6b34c5035474278c5a8a472a8b4817f24fb0d5e",
       "files": {
         ".gitattributes": "448f5307a4b4eaab3e5e0615e1b57e125c2e6419d590025c4ac3d2e2c004955e",
-        "SKILL.md": "0ab2830d7c3b846265967ac67757be9d3de2aacbfcd098c96e5c87b9b6332369",
-        "bundle-manifest.json": "30629a5c859471bea6490c99918490a75a247bc3077b02b5dd841ed67266f9cc",
+        "SKILL.md": "9e8fe8323aa46a7ed0403354866c848e7893c338eb0ccc9464b4cbec58f09b8c",
+        "bundle-manifest.json": "1fd7666e0730ffdf41d1b7f6d75f2de672bb75589238b450d360b6989d1c4482",
         "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
         "references/autonomous-knowledge.md": "b34ca6beb034909aaade75be4707c772e90155c6c12b8278c7b3964ec8238df5",
         "references/cases.json": "2ebbb062b8e58241dfd2a70ec423678c4c16e40303d436ffa6de6e5560f67a40",
@@ -158,13 +168,13 @@
         "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
         "references/runtime-sources.json": "16e2c0efa1ccb5524477742f7d23de54903b38218d455ac18ac2c60283a90886",
         "references/scoped-skills.md": "b8d6178efa7c1700b13cab721a208900f0d088e3f416c9a906eb661c22362f85",
-        "references/protocols/fames-protocol.json": "028021647ec51df0f10e03bce238290477a421608e949e25d4729534c2ea427e",
+        "references/protocols/fames-protocol.json": "90b72b95c4aeffc35b129a2c6f09a505f2688a31348b51727f68e07186a600cb",
         "references/protocols/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
         "references/protocols/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
         "references/protocols/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
         "references/protocols/scf-protocol.json": "6688d7370af1040b421dfcc715e7b730d4a74331b60bf316e3b527285be27906",
         "references/protocols/seal-protocol.json": "7de5562242692e0827a64bbc94f7a5a71fc418601558f51dc54371a11820b9a4",
-        "runtime/manifest.json": "e9e0cc0fbf7b6d32f22ab814188c313fdeddd9f712e5a1122d964d1acc3e09f0",
+        "runtime/manifest.json": "37010e23fcd997607c3e17df3be918722336a2dcc77515d7c8dc835d63fe7f98",
         "runtime/files/_harness/runtime/document_preservation.py": "7af583a1d534c54332a2d9444afba1430f73a81f06627379965d5c137b6e5d48",
         "runtime/files/_harness/runtime/dsh_fames_hook.py": "35f126d239b2ae1d333dc21d14e3e05b51dfac380f324228b5fe7e92ac1c3f54",
         "runtime/files/_harness/runtime/dsh_fames_plugin.mjs": "cde86d6be7cfcb5729c17f7e46c65f30d7681e8fa6ede9a60e3c2c30b52f4ed7",
@@ -188,14 +198,14 @@
         "runtime/files/_lean/fames/FamesTurnRecovery.lean": "c7535908561b0d13ddf1533ec6e178785d46f933611bcc670a8728f075f8b6c3",
         "runtime/files/_lean/fames/claim_conformance.py": "47bb78d57a08d6f5aa9a185e4b383a017fdfc9c193686c69f5fc9ca2df555dec",
         "runtime/files/_lean/fames/conformance.py": "2cc97944eec22196b61d31b62cfe00b7788366c6610248d9c87418aba622ed42",
-        "runtime/files/_lean/fames/f1s_audit.py": "b1220996ede1a67a8fc62e8a6617d6f923cf4932693d975d92dacb0335f8225f",
+        "runtime/files/_lean/fames/f1s_audit.py": "c2b7d029de389d296c68d9c5994088d967d1f586535cc308b4431729f61fec7b",
         "runtime/files/_lean/fames/lean_gate.py": "10aeb5e6e90f4e220a69616cb62e4db5dda675049eac103ea0921f730f705ecb",
         "runtime/files/_lean/fames/phase_conformance.py": "ba60fd7f4aa8f850968239279dfa354ba0ce4a53243c383aeec873af65e1f989",
         "runtime/files/_lean/fames/phase_contract.py": "6b03b9d4fe4569cf69bbb14b23ff7244710bae4181f08f9027887c448e6e5726",
         "runtime/files/_lean/fames/turn_recovery_contract.py": "b4e6861fef6e2b4d42fd0e7a4ec93f3d5fe24a647362d1383a24950df5615193",
         "runtime/files/_registry/agent-surfaces.json": "b36cebd6b0f912587f117bc7df19c352496bbb6bcf7c9d3293b0940e951e8f60",
         "runtime/files/_registry/claude-remote-control.json": "44f271d7e0700238d5351698be0638cb1f798669d9f30c8aa3ad1c7d2fc2cfa2",
-        "runtime/files/_registry/fames-protocol.json": "028021647ec51df0f10e03bce238290477a421608e949e25d4729534c2ea427e",
+        "runtime/files/_registry/fames-protocol.json": "90b72b95c4aeffc35b129a2c6f09a505f2688a31348b51727f68e07186a600cb",
         "runtime/files/_registry/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
         "runtime/files/_registry/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
         "runtime/files/_registry/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -213,7 +223,7 @@
         "runtime/files/_skill/engines/_secrets.py": "0918c1b3a8f2a314567127312cd2b1f9f61a2f8c12124196815a4a347bc9a073",
         "runtime/files/_skill/engines/claim-linter.py": "b81bace525467206964a96751ca38043266fd9143e9d2e5085c57b8f2cd503f2",
         "runtime/files/_skill/engines/claude-claim-integrity-hook.py": "a13bfb56f0523caa27cbe6cf08fb69adbd2f1b4e962d617a3bfeb6ea09352c5f",
-        "runtime/files/_skill/engines/claude-proof-hook.py": "364dcb3760baf7a4467685c54f557d9145f1a37f435acc3c09e13005ac33836e",
+        "runtime/files/_skill/engines/claude-proof-hook.py": "5c16f09df79e18b20480f796383cb904e1d4e9555d8236daa469345364f1852a",
         "runtime/files/_skill/engines/claude-remote-exec.py": "75ae863890f75862669fe9f910d3a89ab8bdba03d34e4ce758c49849625ffbae",
         "runtime/files/_skill/engines/claude-run-until-done-hook.py": "f8f1e198d5094d699195c055641a6e3a0727fcff3b889674a28a13385f7f9209",
         "runtime/files/_skill/engines/cursor-fames-hot-refresh.py": "fe8b65f32894e5dc5661039f0502a0ae3abd09ff38b9f8795e47142223e78f97",
@@ -389,12 +399,12 @@
     },
     {
       "name": "mtm-mto-first",
-      "sha": "49f3ed0cef08e582",
+      "sha": "e838709559e03157",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "c93b07e488a0dcdd98af79ab3dfcc6cc17b1f3488a416dff5f09be80a01239f6",
+      "package_sha": "9dd6ced59aa48f111221d4b24e1d7aff5c4d54fe5dd1839296ae49c90b43a238",
       "files": {
-        "SKILL.md": "8e96414f43b795d9c4a05c0c15099d3e9d4d2e59b4eb306e2bca82e75cf76cc8"
+        "SKILL.md": "f886cb19a40f72bf02f2978b63404584d8a0d2fa1ce1ed8877403c4df18ce944"
       }
     },
     {
@@ -567,12 +577,12 @@
     },
     {
       "name": "ztm-verify-before-done",
-      "sha": "c2e4d81b0d26cd88",
+      "sha": "a1a4db1d8a433962",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "769a0f0045e705cf1f491cba586a60af3d6e97221129747b4dbf9a416a055ac0",
+      "package_sha": "374ea4dec37acb5cde8b0ca5941e3cc3e6cb4853919f501e5cb787fa0411a070",
       "files": {
-        "SKILL.md": "33159e7d480fc78cece6cb99f84243527c88d941aa5c18f73acdd9581ed6a8a4"
+        "SKILL.md": "843a5afb16e41e63c9c571d9c83ff3e252bed68e544a880895ab309d09cc5455"
       }
     },
     {

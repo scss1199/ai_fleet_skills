@@ -973,7 +973,8 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
         snippet = stripped[:SNIPPET]
         # A decision request is a question to the operator: a hedge word on the line does not excuse
         # asking it again, so this class is judged before the qualifier exemption.
-        if classes.get("decision", True) and LIE_PATTERNS["decision"].search(stripped):
+        # judged on `line` (quoted spans removed): a quoted mention of 「需要你決定」 is not a question to the operator
+        if classes.get("decision", True) and LIE_PATTERNS["decision"].search(line):
             if not admissible("decision", {"askedBefore": asked_before(stripped, earlier_decisions),
                                            "redLineNamed": bool(RED_LINE.search(stripped))}):
                 violations.append({"line": number, "class": "decision", "snippet": snippet, "need": LIE_NEEDS["decision"]})
