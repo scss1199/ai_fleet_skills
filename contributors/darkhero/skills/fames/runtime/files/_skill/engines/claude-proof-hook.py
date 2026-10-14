@@ -67,6 +67,8 @@ DEFAULTS = {
         # PROOF in the ai_trader conversations; admission rule proved in _lean/fames/ClaimContract.lean.
         "read": True, "progress": True, "automated": True, "blocker": True,
         "decision": True, "ask_value": True, "unrequested_file": True, "handback": True,
+        # 2026-10-14 (kyloren_bot cards cea9bf31 Ponytail / 89f0cb75 Brownfield): code touched with no prior search
+        "code_change": True,
     },
     # 2026-10-13 operator: 「嚴格禁止隨意產出 .md 和 .json」.  A .md / .json written this turn is allowed only
     # under machine-state directories (any depth), under a charter / receipt name the machinery requires,
@@ -187,6 +189,7 @@ LIE_NEEDS = {
     "decision": "a 「需要你決定」 is admissible only once and only for the operator's own call (login/OAuth, permanent delete, rider arming, global settings, secrets, funds, hardware, data loss): decide the rest yourself",
     "ask_value": "no grep / search ran this turn before asking: look it up in the repo, ledger or earlier messages first",
     "unrequested_file": "a .md / .json was written this turn that no prompt asked for and no mechanism requires (operator 2026-10-13 「嚴格禁止隨意產出 .md 和 .json」): move it to the scratchpad / _delete and say so, or cite the prompt that asked",
+    "code_change": "F1S ③ 先重用再自己寫 / Brownfield: code was written or edited this turn with no grep / glob / find before the first write — search existing implementations and usages first (then write), or revert the write",
     "handback": "推託: this step is handed to the operator although the line names no operator-reserved action (login/OAuth, permanent delete, rider arming, global settings, secrets, funds, hardware) and no tool failed this turn: do it yourself now, or try it and cite the failing tool result",
 }
 READ_CMD = re.compile(
@@ -356,16 +359,18 @@ def admissible(cls: str, ev: dict) -> bool:
         return g("requestedDoc")
     if cls == "handback":
         return g("redLineNamed") or g("failureObserved")
+    if cls == "code_change":
+        return g("searchedBeforeWrite")
     raise KeyError(cls)
 
 
 EVIDENCE_FIELDS = ("readResult", "namedTargetTouched", "anchor", "schedulerFact",
-                   "failureObserved", "askedBefore", "searched", "requestedDoc", "redLineNamed")
-CLAIM_CLASSES = ("read", "progress", "automated", "blocker", "decision", "ask_value", "unrequested_file", "handback")
+                   "failureObserved", "askedBefore", "searched", "requestedDoc", "redLineNamed", "searchedBeforeWrite")
+CLAIM_CLASSES = ("read", "progress", "automated", "blocker", "decision", "ask_value", "unrequested_file", "handback", "code_change")
 
 
 def claim_table() -> str:
-    """`<class>:<9 bits>=<0|1>;…` in the same order as `Fames.ClaimContract.table`."""
+    """`<class>:<10 bits>=<0|1>;…` in the same order as `Fames.ClaimContract.table`."""
     cells = []
     nbits = len(EVIDENCE_FIELDS)
     for cls in CLAIM_CLASSES:
@@ -701,7 +706,7 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
         "readonly_ok": False, "writes": 0, "code_writes": 0, "verify_after_write": False, "write_paths": [],
         # 2026-10-13 evidence fields (ClaimContract.lean)
         "read_result": False, "failure_observed": False, "searched": False, "scheduler_touched": False,
-        "md_writes": [], "prompt_text": "",
+        "md_writes": [], "prompt_text": "", "searched_before_write": False, "first_code_write": None, "first_search": None,
     }
     last_write = -1
     last_read = -1
@@ -737,12 +742,16 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
                     if Path(fp).suffix.lower() in CODE_EXT:
                         f["code_writes"] += 1
                         last_write = index
+                        if f["first_code_write"] is None:
+                            f["first_code_write"] = index
                     if fp.lower().endswith(JUNK_EXT):
                         f["md_writes"].append(fp)
                 if name in BASH_TOOLS and ok and _bash_code_write(command):
                     f["writes"] += 1
                     f["code_writes"] += 1
                     last_write = index
+                    if f["first_code_write"] is None:
+                        f["first_code_write"] = index
                 if name in BASH_TOOLS and ok:
                     f["md_writes"].extend(_bash_md_targets(command))
                 if name in READ_TOOLS and ok:
@@ -756,6 +765,8 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
                 if ok and (name in {"Grep", "Glob"} or name.endswith(("find", "search_files", "search_session_transcripts"))
                            or (name in BASH_TOOLS and SEARCH_CMD.search(command))):
                     f["searched"] = True
+                    if f["first_search"] is None:
+                        f["first_search"] = index
                 if SCHEDULER_TOUCH.search(command) or SCHEDULER_TOUCH.search(result or ""):
                     f["scheduler_touched"] = True
                 if name in BASH_TOOLS:
@@ -768,6 +779,8 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
                     if ok and DEPLOY.search(command) and not CMD_FAIL.search(result):
                         f["deployed"] = True
     f["verify_after_write"] = f["code_writes"] == 0 or (last_read > last_write)
+    f["searched_before_write"] = f["code_writes"] == 0 or (
+        f["first_search"] is not None and f["first_code_write"] is not None and f["first_search"] < f["first_code_write"])
     f["haystack"] = "\n".join(haystack) + "\n" + (history or "")
     return f
 
@@ -917,6 +930,11 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
             if not admissible("unrequested_file", {"requestedDoc": doc_requested(Path(mdp), prompt_text)}):
                 violations.append({"line": 0, "class": "unrequested_file", "snippet": str(mdp)[:SNIPPET],
                                    "need": LIE_NEEDS["unrequested_file"]})
+
+    if classes.get("code_change", True) and (f.get("code_writes") or 0) > 0:
+        if not admissible("code_change", {"searchedBeforeWrite": f.get("searched_before_write")}):
+            first = (f.get("write_paths") or ["(shell write)"])[0]
+            violations.append({"line": 0, "class": "code_change", "snippet": str(first)[:SNIPPET], "need": LIE_NEEDS["code_change"]})
 
     fenced = False
     for number, raw in enumerate(lines, 1):
@@ -1084,7 +1102,7 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
     entry.update({
         "tool_calls": f["tool_calls"], "writes": f["writes"],
         "facts": {k: f[k] for k in ("tests_pass", "pushed", "committed", "deployed", "readonly_ok", "verify_after_write",
-                                    "read_result", "failure_observed", "searched", "scheduler_touched")},
+                                    "read_result", "failure_observed", "searched", "scheduler_touched", "searched_before_write")},
         "md_writes": (f.get("md_writes") or [])[:6], "earlier_decisions": len(earlier_decisions),
         "violations": violations[:12],
     })

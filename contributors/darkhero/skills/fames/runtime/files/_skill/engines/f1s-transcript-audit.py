@@ -43,6 +43,9 @@ SCHEMA = "f1s-transcript-audit/1"
 MAX_TURNS = 400           # per transcript, newest first
 MAX_BYTES = 96 * 1024 * 1024
 WORST_KEEP = 6
+import re
+FLIPFLOP = re.compile(r"(?:你說得對|你說的對|你是對的|你講得對|You're right|You are right|Fair point)")
+PROOF_LOG = HUB / "_registry" / "proof" / "log.jsonl"
 NW = 0x08000000 if os.name == "nt" else 0
 
 
@@ -107,6 +110,8 @@ def audit_transcript(hook, path: Path, cfg: dict) -> dict:
     per_class: collections.Counter = collections.Counter()
     blocked = 0
     judged = 0
+    tool_calls = 0
+    flipflop = 0  # 「你說得對 / You're right」 openers after a challenge (kyloren_bot card 6e8ec744: overconfident then flip-flop)
     worst: list = []
     first_ts = str((turns[0][0].get("timestamp") if turns else "") or "")[:19]
     last_ts = str((turns[-1][0].get("timestamp") if turns else "") or "")[:19]
@@ -114,8 +119,11 @@ def audit_transcript(hook, path: Path, cfg: dict) -> dict:
         text = hook.closing_text(body)
         if text.strip():
             judged += 1
+            if FLIPFLOP.match(text.lstrip()):
+                flipflop += 1
             try:
                 f = hook.facts(body, prompt, "")
+                tool_calls += int(f.get("tool_calls") or 0)
                 v = hook.judge(text, f, cfg, "", earlier)
             except Exception:  # noqa: BLE001 — one bad turn never stops the sweep
                 v = []
@@ -134,7 +142,7 @@ def audit_transcript(hook, path: Path, cfg: dict) -> dict:
                             if hook.LIE_PATTERNS["decision"].search(ln):
                                 earlier.append(ln.strip())
     return {"turns": judged, "blocked": blocked, "per_class": dict(per_class), "worst": worst,
-            "first": first_ts, "last": last_ts, "decisions": len(earlier)}
+            "first": first_ts, "last": last_ts, "decisions": len(earlier), "tool_calls": tool_calls, "flipflop": flipflop}
 
 
 def load_state() -> dict:
@@ -187,12 +195,15 @@ def run(full: bool = False) -> dict:
         agg["turns"] += int(s.get("turns") or 0)
         agg["blocked"] += int(s.get("blocked") or 0)
         agg["per_class"].update(s.get("per_class") or {})
+        agg["tool_calls"] = agg.get("tool_calls", 0) + int(s.get("tool_calls") or 0)
+        agg["flipflop"] = agg.get("flipflop", 0) + int(s.get("flipflop") or 0)
         if len(agg["worst"]) < WORST_KEEP:
             agg["worst"].extend(s.get("worst") or [])
     for agg in seats.values():
         agg["per_class"] = dict(agg["per_class"])
         agg["worst"] = agg["worst"][:WORST_KEEP]
         agg["block_rate"] = round(agg["blocked"] / agg["turns"], 3) if agg["turns"] else None
+        agg["tool_calls_per_turn"] = round(agg.get("tool_calls", 0) / agg["turns"], 1) if agg["turns"] else None
     total_turns = sum(a["turns"] for a in seats.values())
     total_blocked = sum(a["blocked"] for a in seats.values())
     doc = {"schema": SCHEMA, "generated": time.strftime("%Y-%m-%dT%H:%M:%S"), "hook_sha": _sha(HOOK),
@@ -200,9 +211,45 @@ def run(full: bool = False) -> dict:
            "totals": {"sessions": len(sessions), "turns": total_turns, "blocked": total_blocked,
                       "block_rate": round(total_blocked / total_turns, 3) if total_turns else None,
                       "per_class": dict(sum((collections.Counter(a["per_class"]) for a in seats.values()), collections.Counter()))},
+           "proof_remediation": proof_remediation(),
            "seats": dict(sorted(seats.items())), "sessions": sessions}
     save_state(doc)
     return doc
+
+
+def proof_remediation() -> dict:
+    """False-positive control for the gate (kyloren_bot card 3030cf47: decide with data): for every PROOF block in
+    _registry/proof/log.jsonl, was the next push in the same turn an allow (the model fixed it) or another block /
+    budget exhaustion?  Counts only; the transcript decides what "fixed" meant."""
+    out = {"blocks": 0, "fixed_next_push": 0, "reblocked": 0, "budget_exhausted": 0, "per_class": {}}
+    try:
+        rows = [json.loads(l) for l in PROOF_LOG.read_text(encoding="utf-8", errors="replace").splitlines() if l.strip()]
+    except OSError:
+        return out
+    by_turn: dict = collections.defaultdict(list)
+    for r in rows:
+        if isinstance(r, dict) and r.get("turn"):
+            by_turn[(r.get("session_id"), r.get("turn"))].append(r)
+    cls = collections.Counter()
+    for seq in by_turn.values():
+        for i, r in enumerate(seq):
+            if r.get("verdict") != "block":
+                continue
+            out["blocks"] += 1
+            for v in r.get("violations") or []:
+                cls[v.get("class")] += 1
+            nxt = seq[i + 1] if i + 1 < len(seq) else None
+            if nxt is None:
+                continue
+            if nxt.get("verdict") == "allow" and nxt.get("matched") == "all_claims_supported":
+                out["fixed_next_push"] += 1
+            elif nxt.get("verdict") == "block":
+                out["reblocked"] += 1
+            elif nxt.get("matched") == "budget_exhausted":
+                out["budget_exhausted"] += 1
+    out["per_class"] = dict(cls)
+    out["fixed_rate"] = round(out["fixed_next_push"] / out["blocks"], 3) if out["blocks"] else None
+    return out
 
 
 def _sha(path: Path) -> str:
@@ -224,9 +271,11 @@ def record_line(seat: str) -> str:
         return (f"F1S RECORD — {seat}: no audited sessions; fleet {tot.get('blocked')}/{tot.get('turns')} turns would block "
                 f"(sweep {doc.get('generated')})")
     top = ", ".join(f"{k} {v}" for k, v in sorted((agg.get("per_class") or {}).items(), key=lambda kv: -kv[1])[:4])
+    pr = doc.get("proof_remediation") or {}
     return (f"F1S RECORD — {seat}: {agg['blocked']}/{agg['turns']} turns would block ({top or 'none'}); "
-            f"fleet {tot.get('blocked')}/{tot.get('turns')}; lying / 推託 / unrequested .md .json are PROOF-blocked at Stop "
-            f"(sweep {doc.get('generated')})")
+            f"{agg.get('tool_calls_per_turn')} tool calls/turn, {agg.get('flipflop', 0)} 你說得對 openers; "
+            f"fleet {tot.get('blocked')}/{tot.get('turns')}; PROOF blocks {pr.get('blocks')} fixed-next-push {pr.get('fixed_rate')}; "
+            f"lying / 推託 / unrequested .md .json / code change without search are PROOF-blocked at Stop (sweep {doc.get('generated')})")
 
 
 def stale(max_age_hours: float) -> bool:

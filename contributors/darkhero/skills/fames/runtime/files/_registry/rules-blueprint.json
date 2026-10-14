@@ -129,7 +129,7 @@
         },
         {
           "id": "f1s",
-          "rule": "【operator 2026-10-08】F1S＝FAMES 一套系統：每次對話預設使用，只提示不阻擋：不准曲解（原話列需求，不擴不縮不替換，已決定不再問，結論先行兩句講完，細節放回覆）；不准誤用（元件按需啟用、不一次叫全部；FAMES 是契約不是 gate；Skill 不給權限；Jev 只在挑選或排序時給建議；Lean 只驗形式化主張；HubClock 只放週期工作且需授權；GitHub 用 git_smart、不 force push；單說 FAMES＝回報各階段狀態）；做法依馬斯克五步（質疑→刪除→簡化→加速→自動化），先重用再自己寫。任何 hook 不得擋 prompt、工具或 Stop（例外：run-until-no-next-step、proof hook），不釘 hash/版本，缺檔壞掉 fail-open。⑤不准說謊／推託、⑥嚴禁隨意產出 .md/.json（PROOF 擋）。全文：_registry/fames-protocol.json unified_entrypoint.hot_directive。",
+          "rule": "【operator 2026-10-08】F1S＝FAMES 一套系統：每次對話預設使用，只提示不阻擋：不准曲解（原話列需求，不擴不縮不替換，已決定不再問，結論先行兩句講完，細節放回覆）；不准誤用（元件按需啟用、不一次叫全部；FAMES 是契約不是 gate；Skill 不給權限；Jev 只在挑選或排序時給建議；Lean 只驗形式化主張；HubClock 只放週期工作且需授權；GitHub 用 git_smart、不 force push；單說 FAMES＝回報各階段狀態）；做法依馬斯克五步（質疑→刪除→簡化→加速→自動化），先重用再自己寫，改碼前先搜尋用法。任何 hook 不得擋 prompt、工具或 Stop（例外：run-until-no-next-step、proof hook），不釘 hash/版本，缺檔壞掉 fail-open。⑤不准說謊／推託、⑥嚴禁隨意產出 .md/.json（PROOF 擋）。全文：_registry/fames-protocol.json unified_entrypoint.hot_directive。",
           "source": [
             "operator 2026-10-08",
             "_harness/docs/fames-host-enforcement.md"

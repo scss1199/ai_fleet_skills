@@ -93,6 +93,20 @@ ELEMENTS = [
      "requires": "F1SCore.f1s_satisfiable", "detail": "both hold in the exemplar; archive only when no next step"},
     {"id": "R-memory", "element": "feedback memory as the carrier of F1S (f1s-forbidden-errors.md)", "verdict": "REDUNDANT",
      "requires": None, "detail": "operator: 存記憶沒用; the carrier is the hook + Lean + sweep; the memory stays as a pointer only"},
+{"id": "KB-ponytail-reuse", "element": "kyloren_bot cea9bf31 (threads 2026-10-02): ask whether new code is needed; reuse order; smaller diffs; never drop validation/security", "verdict": "FORMALIZED",
+     "requires": "ClaimContract.code_change_needs_prior_search", "detail": "already ③ text; now mechanical: PROOF class code_change (code written with no prior grep/glob/find in the turn)"},
+    {"id": "KB-brownfield-search", "element": "kyloren_bot 89f0cb75 (youtube 2026-07-21): before handing any line to AI, global-search the hook / usages", "verdict": "FORMALIZED",
+     "requires": "F1SCore.blocked_implies_violation", "detail": "same class code_change; F1SCore rule3 gains codeChangeWithoutSearch and PROOF judges it"},
+    {"id": "KB-context-trim", "element": "kyloren_bot 96e6934e: trim conversation context, reuse cache", "verdict": "INFO",
+     "requires": None, "detail": "AGC / MTM already; sweep now reports tool calls per turn per seat (churn) in F1S RECORD"},
+    {"id": "KB-knows-when-unknown", "element": "kyloren_bot 6e8ec744: prefer an AI that knows when it does not know over confident flip-flop", "verdict": "FORMALIZED",
+     "requires": "F1SCore.f1s_satisfiable", "detail": "④ UNKNOWN rule; sweep counts 「你說得對」 flip-flop openers per seat"},
+    {"id": "KB-decide-with-data", "element": "kyloren_bot 3030cf47: decide by probability, control false positives / negatives with data", "verdict": "INFO",
+     "requires": None, "detail": "sweep adds proof_remediation: blocks, fixed-next-push rate, re-blocked, budget-exhausted — the gate's own false-positive control"},
+    {"id": "KB-jev-rerank", "element": "kyloren_bot 242a89be: Jev as a reranker beats specialised rerankers", "verdict": "INFO",
+     "requires": None, "detail": "consistent with ② (Jev only to choose / rank); no change"},
+    {"id": "KB-noise", "element": "kyloren_bot cards 31019056, e904d45b, f1047cdb, dbea9c8c, a199503d, 3776cbe2, c18d2b35, e7c5cba9, 44b1a930 (IG reels, ASR noise / promos)", "verdict": "DELETE",
+     "requires": None, "detail": "no implementable content beyond what ③ already says (fewer lines, reuse); nothing fused"},
 ]
 
 

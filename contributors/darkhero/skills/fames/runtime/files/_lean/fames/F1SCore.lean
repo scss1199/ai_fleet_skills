@@ -40,6 +40,7 @@ structure Reply where
   jevWithoutCandidates : Bool     -- ② Jev invoked with < 2 candidates (violation when true)
   reuseBeforeWrite : Bool         -- ③ 先重用再自己寫
   automatedBeforeSimplified : Bool -- ③ 順序不可顛倒 (violation when true)
+  codeChangeWithoutSearch : Bool  -- ③ / Brownfield: code touched with no prior usage search (violation when true)
   unprovenClaim : Bool            -- ④ a claim with no tool result / path and no UNKNOWN (violation)
   lies : Bool                     -- ⑤ 已讀/推進/已自動化/做不到 without evidence (violation)
   handsBackModelStep : Bool       -- ⑤ 推託: a model-doable step handed to the operator (violation)
@@ -58,7 +59,7 @@ def rule1_old (r : Reply) : Bool :=
   r.leadsWithConclusion && r.listsOriginalWords && !r.reasksDecided && !r.introducesNewTerms &&
   r.detailsInNewFile
 def rule2 (r : Reply) : Bool := r.componentsOnDemand && !r.jevWithoutCandidates
-def rule3 (r : Reply) : Bool := r.reuseBeforeWrite && !r.automatedBeforeSimplified
+def rule3 (r : Reply) : Bool := r.reuseBeforeWrite && !r.automatedBeforeSimplified && !r.codeChangeWithoutSearch
 def rule4 (r : Reply) : Bool := !r.unprovenClaim
 def rule5 (r : Reply) : Bool := !r.lies && !r.handsBackModelStep
 def rule6 (r : Reply) : Bool := !r.writesJunkFile && !r.detailsInNewFile
@@ -77,6 +78,7 @@ def exemplar : Reply :=
   { leadsWithConclusion := true, listsOriginalWords := true, reasksDecided := false, introducesNewTerms := false,
     detailsInNewFile := false, detailsInReplyOrReceipt := true, componentsOnDemand := true,
     jevWithoutCandidates := false, reuseBeforeWrite := true, automatedBeforeSimplified := false,
+    codeChangeWithoutSearch := false,
     unprovenClaim := false, lies := false, handsBackModelStep := false, writesJunkFile := false,
     listsNextStepForOperator := false, archivesWhenDone := true }
 
@@ -95,9 +97,10 @@ inductive Hook | proof | runUntilDone | claimIntegrity | sessionContext | skillA
 inductive Verdict | allow | block
   deriving DecidableEq, Repr
 
-/-- PROOF judges only ④⑤⑥ (claims without evidence, lies / hand-backs, junk files). -/
+/-- PROOF judges ④⑤⑥ and the ③ code-change clause (claims without evidence, lies / hand-backs, junk files,
+code touched without a prior search). -/
 def proofVerdict (r : Reply) : Verdict :=
-  if rule4 r && rule5 r && rule6 r then .allow else .block
+  if rule4 r && rule5 r && rule6 r && !r.codeChangeWithoutSearch then .allow else .block
 
 /-- run-until-done judges only the trailing next-step list. -/
 def runUntilDoneVerdict (r : Reply) : Verdict :=
@@ -111,13 +114,14 @@ def hookVerdict (h : Hook) (crashed : Bool) (r : Reply) : Verdict :=
   | .runUntilDone => runUntilDoneVerdict r
   | _ => .allow
 
-theorem honest_reply_not_blocked (r : Reply) (h4 : rule4 r = true) (h5 : rule5 r = true) (h6 : rule6 r = true) :
-    proofVerdict r = .allow := by
-  simp [proofVerdict, h4, h5, h6]
+theorem honest_reply_not_blocked (r : Reply) (h4 : rule4 r = true) (h5 : rule5 r = true) (h6 : rule6 r = true)
+    (h3 : r.codeChangeWithoutSearch = false) : proofVerdict r = .allow := by
+  simp [proofVerdict, h4, h5, h6, h3]
 
 theorem blocked_implies_violation (r : Reply) (h : proofVerdict r = .block) :
-    rule4 r = false ∨ rule5 r = false ∨ rule6 r = false := by
-  by_cases h4 : rule4 r = true <;> by_cases h5 : rule5 r = true <;> by_cases h6 : rule6 r = true <;> simp_all [proofVerdict]
+    rule4 r = false ∨ rule5 r = false ∨ rule6 r = false ∨ rule3 r = false := by
+  by_cases h4 : rule4 r = true <;> by_cases h5 : rule5 r = true <;> by_cases h6 : rule6 r = true <;>
+    by_cases h3 : r.codeChangeWithoutSearch = true <;> simp_all [proofVerdict, rule3]
 
 theorem only_two_hooks_block (h : Hook) (crashed : Bool) (r : Reply)
     (hv : hookVerdict h crashed r = .block) : (h = .proof ∨ h = .runUntilDone) ∧ crashed = false := by
