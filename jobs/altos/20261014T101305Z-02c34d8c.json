@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261014T101305Z-02c34d8c",
+  "target_host": "altos",
+  "kind": "probe",
+  "seat": null,
+  "prompt": null,
+  "from": "ai_darkhero",
+  "created_at": "2026-10-14T10:13:05+00:00",
+  "expires_at": "2026-10-16T10:13:05+00:00"
+}
