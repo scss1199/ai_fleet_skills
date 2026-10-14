@@ -105,6 +105,11 @@ ELEMENTS = [
      "requires": None, "detail": "sweep adds proof_remediation: blocks, fixed-next-push rate, re-blocked, budget-exhausted — the gate's own false-positive control"},
     {"id": "KB-jev-rerank", "element": "kyloren_bot 242a89be: Jev as a reranker beats specialised rerankers", "verdict": "INFO",
      "requires": None, "detail": "consistent with ② (Jev only to choose / rank); no change"},
+    {"id": "KB-unlimited-token", "element": "kyloren_bot c18d2b35 / 3ebcbcdc / bd3e87d5 (IG 2026-09-09/13/28): 無限量使用 Claude Code — route to free providers when quota runs out (OmniRoute / FreeLLMAPI)", "verdict": "FORMALIZED",
+     "requires": "F1SCore.f1s_satisfiable", "detail": "reused, not written: OmniRoute 3.8.51 (MIT) headless on 127.0.0.1:20128, 11 vault connections, claude-remote-exec lane=auto falls back on quota/auth failure (test_remote_exec_gateway_lane); persistence proposed in _inbox (operator arms)",
+     "check_text": ("hot_directive", "OmniRoute")},
+    {"id": "KB-claw-md", "element": "kyloren_bot 04171cf7 (IG 2026-10-14): Claw.md — think before writing, ask when unsure, simplest first, precise edits, define done + verify", "verdict": "INFO",
+     "requires": None, "detail": "already ①③④⑤ (嚴禁猜, 先重用, verify before done); the precise-edit rule (touch only the requested lines) has no mechanical check yet"},
     {"id": "KB-noise", "element": "kyloren_bot cards 31019056, e904d45b, f1047cdb, dbea9c8c, a199503d, 3776cbe2, c18d2b35, e7c5cba9, 44b1a930 (IG reels, ASR noise / promos)", "verdict": "DELETE",
      "requires": None, "detail": "no implementable content beyond what ③ already says (fewer lines, reuse); nothing fused"},
 ]

@@ -1,0 +1,223 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# token-class: ZT
+r"""omniroute-gateway.py — run the OmniRoute free-provider gateway headless and report its health.
+
+Operator 2026-10-14 (kyloren_bot 2026-09-09/13/28 reels: 「無限量使用 Claude Code」): when the Anthropic quota is
+exhausted, Claude Code keeps working through a local Anthropic-compatible gateway that routes to free
+providers (OmniRoute, MIT, github.com/diegosouzapw/OmniRoute; npm global install). This engine is the hub's
+only way to start/stop/inspect it: zero foreground (pythonw + CREATE_NO_WINDOW, `--no-open`), state in
+_registry/omniroute-gateway.json, no secrets printed (provider keys live in OmniRoute's own AES-256-GCM
+store; the hub only holds the gateway access token in the vault, path `omniroute/access-token`).
+
+  python omniroute-gateway.py status [--json]     # pid, port, /health, models count (read-only)
+  python omniroute-gateway.py start               # detached hidden daemon on 127.0.0.1:20128 if not running
+  python omniroute-gateway.py stop                # terminate the daemon we started (pid file only)
+  python omniroute-gateway.py models [--json]     # GET /v1/models through the gateway (names only)
+  python omniroute-gateway.py probe [--model M]   # one tiny /v1/messages call: proves a free model answers
+Persistence (autostart / HubClock rider) is proposed, never armed here (operator authority).
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+HUB = Path(os.environ.get("AI_WORKSPACE") or r"C:\ai_workspace")
+STATE = HUB / "_registry" / "omniroute-gateway.json"
+HOST, PORT = "127.0.0.1", 20128
+BASE = f"http://{HOST}:{PORT}"
+NW = 0x08000000 if os.name == "nt" else 0
+DETACHED = 0x00000008 | 0x00000200
+VAULT_TOKEN_PATH = "omniroute.access_token"  # dotted vault path (_secrets.get)
+
+
+def _cli() -> str | None:
+    for name in ("omniroute.cmd", "omniroute.CMD", "omniroute"):
+        p = shutil.which(name)
+        if p:
+            return p
+    appdata = os.environ.get("APPDATA") or ""
+    for cand in (Path(appdata) / "npm" / "omniroute.cmd", Path(appdata) / "npm" / "omniroute"):
+        if cand.is_file():
+            return str(cand)
+    return None
+
+
+def _token() -> str | None:
+    try:
+        sys.path.insert(0, str(HUB / "_skill" / "engines"))
+        import _secrets  # type: ignore
+
+        v = _secrets.get(VAULT_TOKEN_PATH)
+        return str(v) if v else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _get(path: str, timeout: float = 8.0, auth: bool = False) -> tuple[int | None, str]:
+    req = urllib.request.Request(BASE + path, headers={"User-Agent": "omniroute-gateway.py"})
+    if auth:
+        tok = _token()
+        if tok:
+            req.add_header("Authorization", "Bearer " + tok)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.status, r.read(200_000).decode("utf-8", "replace")
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.read(2000).decode("utf-8", "replace")
+    except (urllib.error.URLError, OSError, ValueError) as exc:
+        return None, type(exc).__name__
+
+
+def _state() -> dict:
+    try:
+        return json.loads(STATE.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return {}
+
+
+def _save(doc: dict) -> None:
+    STATE.parent.mkdir(parents=True, exist_ok=True)
+    tmp = STATE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(doc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    os.replace(tmp, STATE)
+
+
+def _pid_alive(pid: int) -> bool:
+    try:
+        import psutil  # type: ignore
+
+        return psutil.pid_exists(pid)
+    except Exception:  # noqa: BLE001
+        try:
+            r = subprocess.run(["tasklist", "/FI", f"PID eq {pid}"], capture_output=True, text=True, creationflags=NW, timeout=15)
+            return str(pid) in (r.stdout or "")
+        except (OSError, subprocess.SubprocessError):
+            return False
+
+
+def status() -> dict:
+    st = _state()
+    code, body = _get("/api/health")  # OmniRoute 3.8: /health is 404, /api/health answers {"status":"healthy"}
+    healthy = code == 200
+    models = None
+    if healthy:
+        mcode, mbody = _get("/v1/models", auth=True)
+        if mcode == 200:
+            try:
+                data = json.loads(mbody)
+                items = data.get("data") if isinstance(data, dict) else data
+                models = len(items) if isinstance(items, list) else None
+            except ValueError:
+                models = None
+    return {"cli": _cli(), "base_url": BASE, "healthy": healthy, "health_code": code,
+            "models": models, "pid": st.get("pid"), "pid_alive": _pid_alive(int(st["pid"])) if st.get("pid") else None,
+            "started_at": st.get("started_at"), "token_in_vault": bool(_token()), "checked_at": time.strftime("%Y-%m-%dT%H:%M:%S")}
+
+
+def start() -> dict:
+    cur = status()
+    if cur["healthy"]:
+        return {"ok": True, "already_running": True, **cur}
+    cli = _cli()
+    if not cli:
+        return {"ok": False, "reason": "omniroute_cli_not_found", "hint": "npm install -g omniroute"}
+    log_dir = HUB / "_logs"
+    log_dir.mkdir(exist_ok=True)
+    log = open(log_dir / "omniroute-gateway.log", "ab")
+    env = dict(os.environ)
+    env.setdefault("OMNIROUTE_SKIP_POSTINSTALL", "1")
+    env["PORT"] = str(PORT)
+    env["HOST"] = HOST
+    try:
+        proc = subprocess.Popen([cli, "--no-open", "--port", str(PORT)], cwd=str(HUB), env=env,
+                                stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
+                                creationflags=NW | DETACHED, close_fds=True)
+    except OSError as exc:
+        return {"ok": False, "reason": "spawn_failed:" + type(exc).__name__}
+    deadline = time.time() + 90
+    while time.time() < deadline:
+        code, _ = _get("/api/health", timeout=3)
+        if code == 200:
+            break
+        time.sleep(2)
+    doc = {"pid": proc.pid, "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "cli": cli, "port": PORT}
+    _save(doc)
+    return {"ok": _get("/api/health", timeout=3)[0] == 200, **status()}
+
+
+def stop() -> dict:
+    st = _state()
+    pid = st.get("pid")
+    if not pid or not _pid_alive(int(pid)):
+        return {"ok": True, "stopped": False, "reason": "no_daemon_of_ours"}
+    try:
+        subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True, creationflags=NW, timeout=30)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {"ok": False, "reason": type(exc).__name__}
+    st["stopped_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+    _save(st)
+    return {"ok": True, "stopped": True, "pid": pid}
+
+
+def models() -> dict:
+    code, body = _get("/v1/models", auth=True)
+    if code != 200:
+        return {"ok": False, "code": code, "body": body[:200]}
+    try:
+        data = json.loads(body)
+        items = data.get("data") if isinstance(data, dict) else data
+        ids = [str(m.get("id")) for m in items if isinstance(m, dict)] if isinstance(items, list) else []
+    except ValueError:
+        return {"ok": False, "code": code, "body": "not json"}
+    return {"ok": True, "count": len(ids), "sample": ids[:40]}
+
+
+def probe(model: str = "auto/coding") -> dict:
+    tok = _token()
+    if not tok:
+        return {"ok": False, "reason": "no_gateway_token_in_vault", "vault_path": VAULT_TOKEN_PATH}
+    payload = json.dumps({"model": model, "max_tokens": 16,
+                          "messages": [{"role": "user", "content": "Reply with exactly: OK"}]}).encode("utf-8")
+    req = urllib.request.Request(BASE + "/v1/messages", data=payload, method="POST",
+                                 headers={"Content-Type": "application/json", "anthropic-version": "2023-06-01",
+                                          "x-api-key": tok, "Authorization": "Bearer " + tok})
+    t0 = time.time()
+    try:
+        with urllib.request.urlopen(req, timeout=120) as r:
+            body = json.loads(r.read(100_000).decode("utf-8", "replace"))
+    except urllib.error.HTTPError as exc:
+        return {"ok": False, "code": exc.code, "body": exc.read(500).decode("utf-8", "replace")[:300]}
+    except (urllib.error.URLError, OSError, ValueError) as exc:
+        return {"ok": False, "reason": type(exc).__name__}
+    text = "".join(b.get("text", "") for b in body.get("content", []) if isinstance(b, dict))
+    return {"ok": "OK" in text.upper(), "model_requested": model, "model_used": body.get("model"),
+            "text": text[:80], "elapsed_s": round(time.time() - t0, 1), "usage": body.get("usage")}
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    for name in ("status", "start", "stop", "models"):
+        s = sub.add_parser(name)
+        s.add_argument("--json", action="store_true")
+    p = sub.add_parser("probe")
+    p.add_argument("--model", default="auto/coding")
+    p.add_argument("--json", action="store_true")
+    a = ap.parse_args()
+    out = {"status": status, "start": start, "stop": stop, "models": models}.get(a.cmd)
+    doc = probe(a.model) if a.cmd == "probe" else out()
+    print(json.dumps(doc, ensure_ascii=False, indent=None if getattr(a, "json", False) else 1))
+    return 0 if doc.get("ok", doc.get("healthy", False)) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
