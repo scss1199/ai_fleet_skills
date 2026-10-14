@@ -18,13 +18,15 @@ Classes come from the 2026-10-13 audit of the ai_trader conversations
                                                           an operator-reserved / data-loss decision may be asked
   askValue      「需要你的一個數字 / 請提供」           — asked for a fee already in the repo
   unrequestedFile a .md / .json written that no prompt asked for and no mechanism requires
+  codeChange    code written or edited in a turn with no usage / existing-implementation search before it
+                — F1S ③ 先重用再自己寫 + Brownfield 「先全域搜尋」 (kyloren_bot cards cea9bf31, 89f0cb75)
   handback      「請你去跑 / 由你來做 / 你自己執行」    — 推託: a step handed to the operator that
                                                           was neither tried nor on a red line
 -/
 namespace Fames.ClaimContract
 
 inductive ClaimClass
-  | read | progress | automated | blocker | decision | askValue | unrequestedFile | handback
+  | read | progress | automated | blocker | decision | askValue | unrequestedFile | handback | codeChange
   deriving DecidableEq, Repr
 
 /-- Facts the hook derives from the turn (tool results, tool inputs, disk, git, session history). -/
@@ -39,6 +41,7 @@ structure Evidence where
   requestedDoc : Bool        -- the prompt of this turn asked for that document / file
   redLineNamed : Bool        -- the line names an operator-reserved action (login/OAuth, permanent delete,
                              --   rider arming, global settings, secrets, funds)
+  searchedBeforeWrite : Bool -- a grep / glob / find ran in this turn BEFORE the first code write
   deriving DecidableEq, Repr
 
 /-- The admission rule. A line carrying an UNKNOWN / 未驗證 qualifier, or negating the claim, is not a
@@ -53,12 +56,13 @@ def admissible : ClaimClass → Evidence → Bool
   | .askValue, e => e.searched
   | .unrequestedFile, e => e.requestedDoc
   | .handback, e => e.redLineNamed || e.failureObserved
+  | .codeChange, e => e.searchedBeforeWrite
 
 /-- The worst case: nothing observed, and the decision was already asked. -/
 def noEvidence : Evidence :=
   { readResult := false, namedTargetTouched := false, anchor := false, schedulerFact := false,
     failureObserved := false, askedBefore := true, searched := false, requestedDoc := false,
-    redLineNamed := false }
+    redLineNamed := false, searchedBeforeWrite := false }
 
 /-- Evidence order: `b` knows at least what `a` knows (and `askedBefore` can only be cleared). -/
 def atLeast (a b : Evidence) : Bool :=
@@ -66,7 +70,7 @@ def atLeast (a b : Evidence) : Bool :=
   (!a.anchor || b.anchor) && (!a.schedulerFact || b.schedulerFact) &&
   (!a.failureObserved || b.failureObserved) && (!b.askedBefore || a.askedBefore) &&
   (!a.searched || b.searched) && (!a.requestedDoc || b.requestedDoc) &&
-  (!a.redLineNamed || b.redLineNamed)
+  (!a.redLineNamed || b.redLineNamed) && (!a.searchedBeforeWrite || b.searchedBeforeWrite)
 
 /-! ## Theorems (fail closed, one evidence kind per class, monotone in evidence) -/
 
@@ -115,12 +119,18 @@ theorem handback_needs_red_line_or_failure (e : Evidence) (h1 : e.redLineNamed =
     (h2 : e.failureObserved = false) : admissible .handback e = false := by
   simp [admissible, h1, h2]
 
+/-- ③ 先重用再自己寫: a code change with no prior search is never admissible. -/
+theorem code_change_needs_prior_search (e : Evidence) (h : e.searchedBeforeWrite = false) :
+    admissible .codeChange e = false := by
+  simp [admissible, h]
+
 /-- Every admissible claim rests on at least one evidence fact the hook derived (no class is
 admissible for free). -/
 theorem admissible_rests_on_evidence (c : ClaimClass) (e : Evidence)
     (h : admissible c e = true) :
     e.readResult = true ∨ e.anchor = true ∨ e.schedulerFact = true ∨ e.failureObserved = true ∨
-    e.askedBefore = false ∨ e.searched = true ∨ e.requestedDoc = true ∨ e.redLineNamed = true := by
+    e.askedBefore = false ∨ e.searched = true ∨ e.requestedDoc = true ∨ e.redLineNamed = true ∨
+    e.searchedBeforeWrite = true := by
   cases c <;> simp [admissible] at h <;> first | simp [h] | (rcases h with h | h <;> simp [h])
 
 /-- More evidence never turns an admissible claim into an inadmissible one. -/
@@ -136,26 +146,27 @@ def bools : List Bool := [false, true]
 def allEvidence : List Evidence :=
   bools.flatMap fun r => bools.flatMap fun n => bools.flatMap fun a => bools.flatMap fun s =>
   bools.flatMap fun f => bools.flatMap fun d => bools.flatMap fun q => bools.flatMap fun m =>
-  bools.map fun l =>
+  bools.flatMap fun l => bools.map fun w =>
     { readResult := r, namedTargetTouched := n, anchor := a, schedulerFact := s,
-      failureObserved := f, askedBefore := d, searched := q, requestedDoc := m, redLineNamed := l }
+      failureObserved := f, askedBefore := d, searched := q, requestedDoc := m, redLineNamed := l,
+      searchedBeforeWrite := w }
 
 def classes : List ClaimClass :=
-  [.read, .progress, .automated, .blocker, .decision, .askValue, .unrequestedFile, .handback]
+  [.read, .progress, .automated, .blocker, .decision, .askValue, .unrequestedFile, .handback, .codeChange]
 
 def bit (b : Bool) : String := if b then "1" else "0"
 
 def key (e : Evidence) : String :=
   bit e.readResult ++ bit e.namedTargetTouched ++ bit e.anchor ++ bit e.schedulerFact ++
   bit e.failureObserved ++ bit e.askedBefore ++ bit e.searched ++ bit e.requestedDoc ++
-  bit e.redLineNamed
+  bit e.redLineNamed ++ bit e.searchedBeforeWrite
 
 def className : ClaimClass → String
   | .read => "read" | .progress => "progress" | .automated => "automated" | .blocker => "blocker"
   | .decision => "decision" | .askValue => "ask_value" | .unrequestedFile => "unrequested_file"
-  | .handback => "handback"
+  | .handback => "handback" | .codeChange => "code_change"
 
-/-- `<class>:<9 evidence bits>=<0|1>;...` over all 8 × 512 cells. -/
+/-- `<class>:<10 evidence bits>=<0|1>;...` over all 9 × 1024 cells. -/
 def table : String :=
   String.intercalate ";" (classes.flatMap fun c => allEvidence.map fun e =>
     className c ++ ":" ++ key e ++ "=" ++ bit (admissible c e))
