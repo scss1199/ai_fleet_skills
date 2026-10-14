@@ -41,6 +41,7 @@ structure Reply where
   reuseBeforeWrite : Bool         -- ③ 先重用再自己寫
   automatedBeforeSimplified : Bool -- ③ 順序不可顛倒 (violation when true)
   codeChangeWithoutSearch : Bool  -- ③ / Brownfield: code touched with no prior usage search (violation when true)
+  fixWithoutRegressionTest : Bool -- ④ / tdd: 「修好」 with no green test after the last write (violation when true)
   unprovenClaim : Bool            -- ④ a claim with no tool result / path and no UNKNOWN (violation)
   lies : Bool                     -- ⑤ 已讀/推進/已自動化/做不到 without evidence (violation)
   handsBackModelStep : Bool       -- ⑤ 推託: a model-doable step handed to the operator (violation)
@@ -60,7 +61,7 @@ def rule1_old (r : Reply) : Bool :=
   r.detailsInNewFile
 def rule2 (r : Reply) : Bool := r.componentsOnDemand && !r.jevWithoutCandidates
 def rule3 (r : Reply) : Bool := r.reuseBeforeWrite && !r.automatedBeforeSimplified && !r.codeChangeWithoutSearch
-def rule4 (r : Reply) : Bool := !r.unprovenClaim
+def rule4 (r : Reply) : Bool := !r.unprovenClaim && !r.fixWithoutRegressionTest
 def rule5 (r : Reply) : Bool := !r.lies && !r.handsBackModelStep
 def rule6 (r : Reply) : Bool := !r.writesJunkFile && !r.detailsInNewFile
 def ruleRunUntilDone (r : Reply) : Bool := !r.listsNextStepForOperator
@@ -78,7 +79,7 @@ def exemplar : Reply :=
   { leadsWithConclusion := true, listsOriginalWords := true, reasksDecided := false, introducesNewTerms := false,
     detailsInNewFile := false, detailsInReplyOrReceipt := true, componentsOnDemand := true,
     jevWithoutCandidates := false, reuseBeforeWrite := true, automatedBeforeSimplified := false,
-    codeChangeWithoutSearch := false,
+    codeChangeWithoutSearch := false, fixWithoutRegressionTest := false,
     unprovenClaim := false, lies := false, handsBackModelStep := false, writesJunkFile := false,
     listsNextStepForOperator := false, archivesWhenDone := true }
 
@@ -185,5 +186,23 @@ theorem seal_receipts_allowed : ∀ k ∈ sealRequires, allowedFile k = true := 
 
 theorem reports_are_junk : allowedFile .report = false ∧ allowedFile .note = false ∧
     allowedFile .summary = false ∧ allowedFile .memoryProse = false := by decide
+
+/-! ## Threads @nashlikeai 2026-10-14 (skills.sh top list) checked against F1S -/
+
+/-- tdd: a reply that passes ④ never claims a fix without a regression test after the last write. -/
+theorem tdd_inside_rule4 (r : Reply) (h : rule4 r = true) : r.fixWithoutRegressionTest = false := by
+  simp [rule4] at h
+  exact h.2
+
+/-- grill-me (「AI 會一直追問你，直到搞懂」) is refuted as written: a second question on the same subject is
+never admissible, and a question on anything the model must do itself is never admissible either.
+F1S keeps the useful half as self-interrogation (grill-with-docs = search the repo / docs first,
+ClaimContract.ask_value_needs_search) and ① 「真有兩種讀法時選最貼近原話的一種直接做」. -/
+theorem grill_me_reask_inadmissible (a : Action) : decisionAdmissible true a = false := by
+  simp [decisionAdmissible]
+
+theorem grill_me_model_question_inadmissible (a : Action) (ha : a ∈ modelMandatory) :
+    decisionAdmissible false a = false :=
+  model_step_never_a_decision false a ha
 
 end Fames.F1S

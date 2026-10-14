@@ -4,7 +4,7 @@
 
 The Lean file proves the admission rule's properties (fail closed, one evidence kind per class,
 monotone). This runner is what ties those theorems to `_skill/engines/claude-proof-hook.py`:
-it evaluates `Fames.ClaimContract.table` with leanctl (9 classes x 1024 evidence vectors) and
+it evaluates `Fames.ClaimContract.table` with leanctl (10 classes x 2048 evidence vectors) and
 compares every cell with the hook's `claim_table()`. On success it writes the hash-bound receipt
 `evidence/claim-conformance.json`; `tests/test_claim_contract.py` fails whenever the hook or the
 Lean file no longer hashes to what was compared here.
@@ -33,7 +33,7 @@ LEAN_GATE = HERE / "lean_gate.py"
 LEANCTL = HERE.parent / "leanctl.py"
 RECEIPT = HERE / "evidence" / "claim-conformance.json"
 SCHEMA = "fames-claim-conformance/1"
-N_CELLS = 9 * 1024
+N_CELLS = 10 * 2048
 
 
 def _load(name: str, path: Path):

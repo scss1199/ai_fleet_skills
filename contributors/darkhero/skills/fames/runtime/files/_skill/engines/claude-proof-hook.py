@@ -69,6 +69,8 @@ DEFAULTS = {
         "decision": True, "ask_value": True, "unrequested_file": True, "handback": True,
         # 2026-10-14 (kyloren_bot cards cea9bf31 Ponytail / 89f0cb75 Brownfield): code touched with no prior search
         "code_change": True,
+        # 2026-10-14 (threads @nashlikeai, skills.sh tdd): 「修好」 after a code write needs a green test after it
+        "fix_claim": True,
     },
     # 2026-10-13 operator: 「嚴格禁止隨意產出 .md 和 .json」.  A .md / .json written this turn is allowed only
     # under machine-state directories (any depth), under a charter / receipt name the machinery requires,
@@ -161,6 +163,7 @@ LIE_PATTERNS = {
         r"請(?:你)?(?:提供|告訴我|給我)[^。\n]{0,12}(?:數字|數值|值|帳號|名稱|路徑|日期|費用|手續費|金額)|"
         r"\bplease\s+(?:provide|tell\s+me|give\s+me)\b|\bI\s+need\s+(?:the|your)\s+(?:number|value|fee|path|date|account)\b"
     ),
+    "fix_claim": None,  # placeholder, replaced below by FIX_CLAIM
     # 推託: a step handed to the operator ("you run it / you do it / only you can") — admissible only when
     # the line names an operator-reserved action (RED_LINE) or a tool really failed this turn.
     "handback": re.compile(
@@ -189,6 +192,7 @@ LIE_NEEDS = {
     "decision": "a 「需要你決定」 is admissible only once and only for the operator's own call (login/OAuth, permanent delete, rider arming, global settings, secrets, funds, hardware, data loss): decide the rest yourself",
     "ask_value": "no grep / search ran this turn before asking: look it up in the repo, ledger or earlier messages first",
     "unrequested_file": "a .md / .json was written this turn that no prompt asked for and no mechanism requires (operator 2026-10-13 「嚴格禁止隨意產出 .md 和 .json」): move it to the scratchpad / _delete and say so, or cite the prompt that asked",
+    "fix_claim": "tdd: this line claims a fix but no green test (pytest / unittest / selftest / npm test) ran AFTER the last code write of this turn — run the regression tests now, or write the line as 未驗證",
     "code_change": "F1S ③ 先重用再自己寫 / Brownfield: code was written or edited this turn with no grep / glob / find before the first write — search existing implementations and usages first (then write), or revert the write",
     "handback": "推託: this step is handed to the operator although the line names no operator-reserved action (login/OAuth, permanent delete, rider arming, global settings, secrets, funds, hardware) and no tool failed this turn: do it yourself now, or try it and cite the failing tool result",
 }
@@ -339,6 +343,21 @@ def pre_tool_use(doc: dict, cfg: dict) -> dict | None:
         "hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": reason}}
 
 
+SCRATCH_PARTS = {"scratchpad", "temp", "tmp"}
+FIX_CLAIM = re.compile(r"(?i)修好了?|已修復|已修复|修復(?:完成|了)|已修正|修正完成|改好了|\bfixed\b|\bbug\s+is\s+fixed\b|\bnow\s+works\b")
+
+
+LIE_PATTERNS["fix_claim"] = FIX_CLAIM
+
+
+def _scratch_path(fp: str) -> bool:
+    """A session scratch script (scratchpad / Temp) is not the brownfield code the code_change clause protects."""
+    try:
+        return bool({p.lower() for p in Path(fp).parts} & SCRATCH_PARTS)
+    except (TypeError, ValueError):
+        return False
+
+
 def admissible(cls: str, ev: dict) -> bool:
     """The admission rule, cell for cell the same as `Fames.ClaimContract.admissible` in
     _lean/fames/ClaimContract.lean (bound by claim_conformance.py; do not edit one without the other)."""
@@ -361,16 +380,18 @@ def admissible(cls: str, ev: dict) -> bool:
         return g("redLineNamed") or g("failureObserved")
     if cls == "code_change":
         return g("searchedBeforeWrite")
+    if cls == "fix_claim":
+        return g("testAfterWrite")
     raise KeyError(cls)
 
 
 EVIDENCE_FIELDS = ("readResult", "namedTargetTouched", "anchor", "schedulerFact",
-                   "failureObserved", "askedBefore", "searched", "requestedDoc", "redLineNamed", "searchedBeforeWrite")
-CLAIM_CLASSES = ("read", "progress", "automated", "blocker", "decision", "ask_value", "unrequested_file", "handback", "code_change")
+                   "failureObserved", "askedBefore", "searched", "requestedDoc", "redLineNamed", "searchedBeforeWrite", "testAfterWrite")
+CLAIM_CLASSES = ("read", "progress", "automated", "blocker", "decision", "ask_value", "unrequested_file", "handback", "code_change", "fix_claim")
 
 
 def claim_table() -> str:
-    """`<class>:<10 bits>=<0|1>;…` in the same order as `Fames.ClaimContract.table`."""
+    """`<class>:<11 bits>=<0|1>;…` in the same order as `Fames.ClaimContract.table`."""
     cells = []
     nbits = len(EVIDENCE_FIELDS)
     for cls in CLAIM_CLASSES:
@@ -707,9 +728,11 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
         # 2026-10-13 evidence fields (ClaimContract.lean)
         "read_result": False, "failure_observed": False, "searched": False, "scheduler_touched": False,
         "md_writes": [], "prompt_text": "", "searched_before_write": False, "first_code_write": None, "first_search": None,
+        "test_after_write": False,
     }
     last_write = -1
     last_read = -1
+    last_test = -1
     index = 0
     if prompt is not None:
         f["prompt_text"] = _text_of((prompt.get("message") or {}).get("content"))
@@ -739,7 +762,7 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
                     fp = str(tool_input.get("file_path") or tool_input.get("notebook_path") or "")
                     if fp:
                         f["write_paths"].append(fp)
-                    if Path(fp).suffix.lower() in CODE_EXT:
+                    if Path(fp).suffix.lower() in CODE_EXT and not _scratch_path(fp):
                         f["code_writes"] += 1
                         last_write = index
                         if f["first_code_write"] is None:
@@ -772,6 +795,7 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
                 if name in BASH_TOOLS:
                     if _green_test(exec_mod, command, result, is_error):
                         f["tests_pass"] = True
+                        last_test = index
                     if ok and GIT_PUSH.search(command) and not GIT_FAIL.search(result):
                         f["pushed"] = True
                     if ok and GIT_COMMIT.search(command) and not GIT_FAIL.search(result):
@@ -779,6 +803,7 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
                     if ok and DEPLOY.search(command) and not CMD_FAIL.search(result):
                         f["deployed"] = True
     f["verify_after_write"] = f["code_writes"] == 0 or (last_read > last_write)
+    f["test_after_write"] = f["code_writes"] == 0 or (last_test > last_write)
     f["searched_before_write"] = f["code_writes"] == 0 or (
         f["first_search"] is not None and f["first_code_write"] is not None and f["first_search"] < f["first_code_write"])
     f["haystack"] = "\n".join(haystack) + "\n" + (history or "")
@@ -971,6 +996,8 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
                       or _message_paths_exist(stripped, cwd, f.get("write_paths") or [])}
             elif name == "blocker":
                 ev = {"failureObserved": f.get("failure_observed")}
+            elif name == "fix_claim":
+                ev = {"testAfterWrite": f.get("test_after_write", True)}
             elif name == "handback":
                 ev = {"redLineNamed": bool(RED_LINE.search(stripped)), "failureObserved": f.get("failure_observed")}
             else:  # ask_value
@@ -1102,7 +1129,7 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
     entry.update({
         "tool_calls": f["tool_calls"], "writes": f["writes"],
         "facts": {k: f[k] for k in ("tests_pass", "pushed", "committed", "deployed", "readonly_ok", "verify_after_write",
-                                    "read_result", "failure_observed", "searched", "scheduler_touched", "searched_before_write")},
+                                    "read_result", "failure_observed", "searched", "scheduler_touched", "searched_before_write", "test_after_write")},
         "md_writes": (f.get("md_writes") or [])[:6], "earlier_decisions": len(earlier_decisions),
         "violations": violations[:12],
     })

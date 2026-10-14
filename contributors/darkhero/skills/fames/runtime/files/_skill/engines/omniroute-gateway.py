@@ -70,7 +70,7 @@ def _get(path: str, timeout: float = 8.0, auth: bool = False) -> tuple[int | Non
             req.add_header("Authorization", "Bearer " + tok)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
-            return r.status, r.read(200_000).decode("utf-8", "replace")
+            return r.status, r.read(8_000_000).decode("utf-8", "replace")  # /v1/models is ~1 MB
     except urllib.error.HTTPError as exc:
         return exc.code, exc.read(2000).decode("utf-8", "replace")
     except (urllib.error.URLError, OSError, ValueError) as exc:
@@ -199,7 +199,8 @@ def probe(model: str = "auto/coding") -> dict:
     except (urllib.error.URLError, OSError, ValueError) as exc:
         return {"ok": False, "reason": type(exc).__name__}
     text = "".join(b.get("text", "") for b in body.get("content", []) if isinstance(b, dict))
-    return {"ok": "OK" in text.upper(), "model_requested": model, "model_used": body.get("model"),
+    # a free model answered at all = the lane works; thinking models echo the instruction instead of "OK"
+    return {"ok": bool(text.strip()), "answered_ok": "OK" in text.upper(), "model_requested": model, "model_used": body.get("model"),
             "text": text[:80], "elapsed_s": round(time.time() - t0, 1), "usage": body.get("usage")}
 
 
