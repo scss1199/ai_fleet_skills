@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261015T154631Z-0be0e38d",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "來自 scar3 的 F1S 同步經驗（2026-10-15，scar3 已無人介入從 1.45.29 升到 1.45.32）。請在 altos（C:\\ai_workspace\\ai_altos）照做，全部用剛跑的指令輸出回報，不准推測：\n1. 跑 python C:\\ai_workspace\\_skill\\fleet-skills\\fames\\scripts\\fames_fleet.py status --workspace C:\\ai_workspace 與 verify-host --host altos --workspace C:\\ai_workspace，回報 version 與 PASS/FAIL。\n2. python C:\\ai_workspace\\_skill\\engines\\fames-update-check.py；若 update_available=true，跑一次既有 rider 命令 altos_fleet_sync.py sync --node ai_altos，再重跑步驟 1。\n3. python C:\\ai_workspace\\_skill\\engines\\register-rider.py list，確認 fleet-skill-github-sync 與 fleet-job-dispatch 都在且最近一次 rc=0（讀 _registry\\hubclock-rider-results.json）。\n4. 已知陷阱：omniroute-gateway.py start() 用 DETACHED_PROCESS 會開出可見 Windows Terminal 視窗且綁 0.0.0.0 無金鑰；上游修好前不要新增 omniroute-ensure rider，也不要手動跑 start。\n5. 紅線：不碰 Logi Options+、不永久刪除、不印金鑰、不新增排程（rider 新增需 operator 授權）、背景只用 pythonw/CREATE_NO_WINDOW。\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-10-15T15:46:31+00:00",
+  "expires_at": "2026-10-22T15:46:31+00:00"
+}
