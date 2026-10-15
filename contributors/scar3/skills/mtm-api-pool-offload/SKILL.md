@@ -35,6 +35,26 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 | 圖片 → 文字（OCR） | `python %AI_WORKSPACE%\ai_darkhero\line\image_ocr.py <image>` | 免費 Gemini |
 | 大量文件分類／比對 | `_skill/engines/_llm.py` 的 `Pool().chat(...)` | 免費池（gemini、nvidia-nim…） |
 
+## 免費模型能力標籤（2026-10-15 本機實測，程式綁定在 `_llm.Pool.chat_for(task, messages)`）
+
+| 任務標籤 `task` | 先用 | 再用 | 實測依據 |
+|---|---|---|---|
+| `summary` 中文摘要 | gemini | OmniRoute `auto/coding` | gemini 2 輪全對、1–3 秒 |
+| `extract` 抽取成 JSON | gemini | OmniRoute `auto/coding` | 兩者皆 2 輪全對 |
+| `reasoning` 計算／推理 | OmniRoute `auto/reasoning` | gemini | 推理 2 輪全對、2–4 秒 |
+| `bulk` 大量分類比對 | gemini | OmniRoute `auto/coding` | 最穩、最快 |
+| 圖片讀字 OCR | gemini 視覺（`image_ocr.py`） | — | 側欄截圖讀取正確 |
+| 語音轉文字 | 本機 faster-whisper（`distill-media.py --engine local`） | `medium` 重試 | 低信心片段改用 medium 成功 |
+| 網路搜尋 | DuckDuckGo 免金鑰＋`summary` | — | 7 秒，附來源 |
+
+不路由：OmniRoute `auto/fast`（不穩，最慢 70 秒）、`auto/writing`（不存在）、nvidia-nim（斷路器開啟中）。
+其他 provider 的金鑰狀態看 `python _skill\engines\key-health.py summary`；新金鑰可用後重跑實測再改標籤。
+
+```python
+import sys; sys.path.insert(0, r"C:\ai_workspace\_skill\engines"); import _llm
+_llm.Pool().chat_for("summary", [{"role": "user", "content": "..."}])
+```
+
 Claude Code 本身的額度用完時，`claude-remote-exec` 的 auto lane 另外走本機 OmniRoute 閘道
 （`omniroute-gateway.py status` 檢查，127.0.0.1:20128）。
 

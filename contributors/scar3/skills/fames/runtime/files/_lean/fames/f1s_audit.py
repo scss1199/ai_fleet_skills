@@ -49,6 +49,7 @@ TEXTS = {
     "skill_fleet_github": HUB / "_skill" / "fleet-skills" / "mtm-fleet-skill-github" / "SKILL.md",
     "omniroute_engine": HUB / "_skill" / "engines" / "omniroute-gateway.py",
     "session_hook": HUB / "_skill" / "fleet-skills" / "token-preflight" / "scripts" / "claude_session_hook.py",
+    "skill_pool": HUB / "_skill" / "fleet-skills" / "mtm-api-pool-offload" / "SKILL.md",
     "skill_preflight": HUB / "_skill" / "fleet-skills" / "token-preflight" / "SKILL.md",
     "git_smart": HUB / "_skill" / "engines" / "git_smart.py",
 }
@@ -180,6 +181,9 @@ ELEMENTS = [
     {"id": "OP-free-pool-research", "element": "operator 2026-10-15: free models do background search / ASR / OCR for every seat, skill-bound and automatic", "verdict": "REFINE",
      "requires": None, "detail": "skill mtm-api-pool-offload rewritten around distill-url --search, distill-media --engine local, image_ocr.py CLI; hot_directive routes every cwd to it; live: search 7 s with sources, OCR read a screenshot",
      "check_text": ("hot_directive", "mtm-api-pool-offload")},
+    {"id": "OP-free-model-labels", "element": "operator 2026-10-15: bind each free model to its strengths and label it in the F1S skills", "verdict": "REFINE",
+     "requires": None, "detail": "measured probe (2 rounds x summary/extract/reasoning): gemini default, omniroute auto/reasoning for reasoning, auto/coding fallback; auto/fast, auto/writing, nvidia-nim not routed; bound in _llm.Pool.chat_for (test_llm_task_routes)",
+     "check_text": ("skill_pool", "chat_for")},
     {"id": "OP-omniroute-zero-foreground", "element": "scar3 2026-10-15: DETACHED_PROCESS voided CREATE_NO_WINDOW (visible terminal) and 3.8.51 bound 0.0.0.0", "verdict": "REFINE",
      "requires": None, "detail": "omniroute-gateway start: CREATE_NO_WINDOW | new group only, node + omniroute.mjs directly, OMNIROUTE_SERVER_HOST=127.0.0.1 (listening 127.0.0.1:20128 verified)",
      "check_text": ("omniroute_engine", "OMNIROUTE_SERVER_HOST")},
