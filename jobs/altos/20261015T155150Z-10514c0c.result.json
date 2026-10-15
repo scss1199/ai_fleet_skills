@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261015T155150Z-10514c0c",
+  "host": "altos",
+  "started_at": "2026-10-15T15:55:01+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_altos cwd=ai_altos auth=cli_credentials_file 250.1s]\n上一則訊息最後的「需要你決定」我收回：那件事我已經自己查完並修好。altos 現在是 FAMES 1.45.36，FAMES 啟用檢查也從 `UNKNOWN` 變成 `PASS`。\n\n**為什麼第一次同步回報 `UNKNOWN`**\n- 我第一次手動同步時用的是 PATH 上的 `python`，也就是 `C:\\Python310`。\n- 我寫了一支只讀的小腳本重現問題，錯誤出在 `_lean\\fames\\lean_gate.py` 第 190 行：`AttributeError: module 'hashlib' has no attribute 'file_digest'`。`hashlib.file_digest` 要 Python 3.11 以上才有。\n- rider 本來就用 Python312，所以排程本身沒問題，問題只出在我手動跑時用錯了版本。\n\n**用 Python312 重跑後的結果**\n- 同一支重現腳本：`checker_now` 正常回傳，`conformance ok`。\n- `altos_fleet_sync.py sync --node ai_altos`：rc=0。\n- 收據 `C:\\ai_workspace\\_registry\\fames-immediate-apply.json`：`ok=True`、`state=PASS`，對應的 package_sha 是 `042249605f3c…`。\n- 再跑一次 `verify-host --host altos`：PASS，rc=0。\n\n**其餘結果維持上一則回報**\n- 更新前是 1.45.34，更新後 `status` 和 `verify-host` 都 PASS。\n- `fames-update-check.py` 本機不存在。是否有更新，我是改用遠端版本比對判斷的（遠端 `.13`，本機 `.11`）。\n- `fleet-skill-github-sync` 和 `fleet-job-dispatch` 最近一次都是 rc=0，HubClock 心跳是新的。\n- 沒有新增或啟動 omniroute，紅線一條都沒碰。\n\n另外，我把「在 altos 手動同步要用 Python312 的 `python.exe`」補進了記憶檔 `ai-altos-fleet-node.md`。\n\n沒有下一步。\n",
+  "stderr": "",
+  "finished_at": "2026-10-15T15:59:13+00:00"
+}
