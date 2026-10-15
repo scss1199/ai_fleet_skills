@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.45.26",
+  "version": "1.45.28",
   "updated": "2026-09-23",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -2429,6 +2429,7 @@
         "activation": "configured_authorized_fresh_provider_gate_and_approved_projection",
         "runtime": "_harness/runtime/jev_turn_router.py",
         "fallback": "local_candidates_and_current_model_judgment",
+        "decision_policy": "Jev answers typed questions (choice / score / noul) with calibrated confidence (kyloren_bot DdfUWJHE5Mc, 62de1f17). Confidence at or above the calibrated threshold: use the answer as the selection advice; below it: current model judgment decides; any candidate touching an operator red line goes to the operator, never auto. Thresholds stay NOT_MEASURED until a held-out comparison exists; advice never admits a phase or grants authority.",
         "preserve": [
           "explicit_skills",
           "mandatory_skills",
@@ -2472,7 +2473,7 @@
       "completion_rule": "Scope completion/release does not clear unrelated parent obligations; task completion requires fresh accepted evidence and closed work",
       "unsupported": "Arbitrary recursive child delegation, transitive lineage and cumulative child budgets are not added or proven by this entrypoint"
     },
-    "hot_directive": "F1S（FAMES 一套系統）每次對話預設啟用，只提示、不阻擋；做法放技能、按需載入：①不准曲解→技能 f1s-intake（原話列要做、不做、限制、驗收，不擴不縮不替換，已決定不再問，繁中結論先行兩句，細節放回覆或既有收據，不新開 .md/.json）；③馬斯克五步、先重用再寫、改碼前先全域搜尋、只改要改的行→技能 mtm-mto-first；④⑤⑥主張要有本回合證據否則 UNKNOWN、改碼後跑綠測試才說修好、不准說謊推託、「需要你決定」只問一次且只問使用者專屬的事、只寫使用者點名的檔案→技能 ztm-verify-before-done，PROOF Stop hook 機械擋。②元件按需、不一次叫全部：FAMES 是契約不是 gate，FP、MTM 每任務做，SCF 要已驗證結果，AEX 要可比較量測差距，SEAL 在宣稱完成時；Skill 不給權限；Jev 只在挑選或排序時給建議；Lean 只驗形式化主張；HubClock 只放週期工作且需授權；GitHub 用 git_smart、不 force push、推完讀回遠端。紅線優先。額度用完改走 OmniRoute 免費池（claude-remote-exec auto lane）。使用者單說「FAMES」＝列各階段狀態。",
+    "hot_directive": "F1S（FAMES 一套系統）每次對話預設啟用，只提示、不阻擋；做法放技能、按需載入：①不准曲解→技能 f1s-intake（原話列要做、不做、限制、驗收，不擴不縮不替換，已決定不再問，繁中結論先行兩句，細節放回覆或既有收據，不新開 .md/.json）；③馬斯克五步、先重用再寫、改碼前先全域搜尋、只改要改的行→技能 mtm-mto-first；④⑤⑥主張要有本回合證據否則 UNKNOWN、改碼後跑綠測試才說修好、不准說謊推託、「需要你決定」只問一次且只問使用者專屬的事、只寫使用者點名的檔案→技能 ztm-verify-before-done，PROOF Stop hook 機械擋。需要使用者登入網站→技能 browser-login-handoff（先找免登入路徑、探測真實登入狀態、面板可見只交接一次）。②元件按需、不一次叫全部：FAMES 是契約不是 gate，FP、MTM 每任務做，SCF 要已驗證結果，AEX 要可比較量測差距，SEAL 在宣稱完成時；Skill 不給權限；Jev 只在挑選或排序時給建議；Lean 只驗形式化主張；HubClock 只放週期工作且需授權；GitHub 用 git_smart、不 force push、推完讀回遠端。紅線優先。額度用完改走 OmniRoute 免費池（claude-remote-exec auto lane）。使用者單說「FAMES」＝列各階段狀態。",
     "phase_execution": {
       "schema": 1,
       "required": true,

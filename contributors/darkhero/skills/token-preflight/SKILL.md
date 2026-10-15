@@ -26,6 +26,10 @@ The script writes a receipt. A session touch without a receipt is not skill cons
 
 Read [references/concept-map.md](references/concept-map.md) only when changing framework architecture.
 
+## Resident context audit (kyloren_bot 7b4adc46, 003a6bd3)
+
+When auditing token usage, measure what is loaded on every turn before trimming anything: the app's usage tool (context categories: system tools, MCP tools, memory files, skills) or `/context`, and `/doctor` / `/skill-doctor` when the user runs them. Join the skill list with `_registry/skill-audit/*.jsonl` (actual Skill invocations) and propose dropping always-loaded items that are never invoked. Turning off the 1M window (`CLAUDE_CODE_DISABLE_1M_CONTEXT`) or editing `~/.claude/settings.json` is a global-settings change: operator authorization first.
+
 <!-- 2026-08-13: the line that pointed at `cca-token-governance` was removed with that skill.
      operator instruction: remove everything Codex-related from this machine; the skill and the
      Claude-to-Codex review route it governed are quarantined in

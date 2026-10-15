@@ -47,6 +47,11 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 非 trivial 的改碼在宣稱完成前，交給沒寫這段程式的 subagent 走技能 `independent-review`
 （生成者不得是自己產出的唯一裁判）；審查結果與 diff 一起引用。
 
+## 重犯的錯誤改成機械檢查（kyloren_bot 83845712，Uncle Bob）
+
+同一種錯誤第二次出現時，加一道機械檢查（測試、lint、依賴規則檔、hook 的判斷類別），不要再加一段散文規則；
+長規則文件會被模型當成建議。非 trivial 的邏輯可加 mutation test 當驗證的一部分。
+
 ## UI 驗證（token_budget: low）
 
 若 claim 含 UI/portal → 先 **ztm-webapp-verify**（MCP browser snapshot）再 verify-done。

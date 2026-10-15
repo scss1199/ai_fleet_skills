@@ -42,6 +42,13 @@ parent_skill: aex-agent-evolution
   Lean `ClaimContract.code_change_needs_prior_search`）。scratchpad 腳本不算。
 - 精準修改：只動要改的行，旁邊的程式一行都不碰。
 
+## 工具與 context 紀律（kyloren_bot b7b4e052、bac266b7、053de955）
+
+- 瀏覽器：能預先排好的 2 步以上動作合成一次 `browser_batch` 或一段 `javascript_exec`；平行的 agent 各用自己的分頁，不動使用者正在看的分頁。
+- 換模型或 effort 只在新對話的邊界做，不在對話中途換（思考區塊與快取綁定原本的模型與 context）；不把會變的資料（日期、狀態）塞進 system prompt。
+- 無人看管的 xhigh／max 長跑，先寫明 token 或回合上限再開始。
+- 大型工具輸出（log、清單、截圖）留在檔案，只把路徑和摘要帶進 context。
+
 ## MTO 四步（TR0，0 LLM token）
 
 ### 1 CONSUME — prework
