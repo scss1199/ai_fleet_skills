@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "2487390c42774d5fa1bab79965fabe11b4589bb00e0bd07a6d3a4ef00d06ecfb",
+  "package_sha": "8d9af0ca8b7a10615dfc3e51c270f51470ca0aff9e945356d900038fb5718975",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "573dd1a29acec301ef50bdd7a80d3aeff5f500e402044bbc9f6199258edf5d4a",
   "runner_state": "armed",
-  "observed_at": "2026-10-15T05:17:20.906417+00:00",
+  "observed_at": "2026-10-15T06:06:24.535495+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,31 +356,13 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
-        "agent": "engines",
-        "surface": "claude",
-        "observed_at": "2026-10-15T12:09:25+08:00",
-        "receipt_sha256": "807f79784c9d57a50442e541369010ac2921dc64bb235b5a0e5928741c8054bd"
-      },
-      {
-        "agent": "jci_taipei",
-        "surface": "claude",
-        "observed_at": "2026-10-15T12:20:13+08:00",
-        "receipt_sha256": "3e19b3639c8efdae012740bb97b96c0158f7946fcfdbfeb05ceb67194e330b61"
-      },
-      {
-        "agent": "ai_nuwa",
-        "surface": "claude",
-        "observed_at": "2026-10-15T12:22:52+08:00",
-        "receipt_sha256": "45522e90090e64f444873b0970800240bef7dd0b6ff50731e98247a9f5c0e175"
-      },
-      {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-15T12:47:15+08:00",
-        "receipt_sha256": "9889b674a15f6470bea1c1cb9b29635fe49fcd5dcb5729b8df30a4992fa78ba6"
+        "observed_at": "2026-10-15T14:05:28+08:00",
+        "receipt_sha256": "7beb787baadc803db63c7408a82420fd443969663a24af66fcb04df52c2deb2a"
       }
     ],
-    "runtime_release_sha256": "ae03e489faacad792ec77bd8084c41b55cc1464a1a7e87ba824debb208ad7c9d"
+    "runtime_release_sha256": "f7e7959ee0446dd5d5a05e8a960928e2915a697dee3a57b31b31f147232a3333"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
