@@ -416,6 +416,9 @@ def _parse_rider_argv(cmd):
         return None, True
     if not parts:
         return None, True
+    # posix=False keeps the quotes; argv items go to CreateProcess, which re-quotes, so a surviving quote is a
+    # literal (altos 2026-10-15: a quoted script path made every rider exit rc=2). Unwrap only whole-token quotes.
+    parts = [p[1:-1] if len(p) >= 2 and p[0] == p[-1] == '"' else p for p in parts]
     exe = parts[0].strip('"')
     if os.path.isabs(exe):
         # argv[0] must be the bare path -- a surviving quote is a literal character to CreateProcess.
