@@ -32,6 +32,10 @@ parent_skill: aex-agent-evolution
   `claude-remote-exec` auto lane 改走本機 OmniRoute 免費池（`omniroute-gateway.py`）。
 - ⑥ 嚴禁隨意產出 .md/.json：只寫使用者點名的檔案、charter、`_registry` 狀態與 SEAL 收據；
   報告、筆記、摘要寫在回覆裡（Lean `F1SCore.reports_are_junk`）。
+  檔案必要性三條全成立才可新開 .md/.json：(a) 使用者點名，或有程式／後續步驟會機械讀回；
+  (b) 沒有既有存放處已經裝得下（回覆、task list、`_registry` 狀態、AGC compact、commit trailer
+  Why/Verified-By、SEAL 收據）；(c) 不是摘要或報告。否則寫進回覆。mattpocock/skills 的
+  GLOSSARY.md、ADR、docs/agents/*.md、每張 ticket 的 .md、research .md、spec 檔在這裡都過不了 (b)。
 - 宣稱完成時跑 SEAL：`fames_phase_runtime.py --turn --result --closure`。
 
 ## 必跑（0-token engines 優先）
@@ -41,6 +45,11 @@ python %AI_WORKSPACE%\_skill\engines\claim-linter.py --strict --file <your-draft
 python %AI_WORKSPACE%\_skill\engines\zat-verify-gate.py verify-done --stamp <STAMP> --id fN --evidence <path>
 python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <seat>
 ```
+
+## 修 bug（mattpocock diagnosing-bugs）
+
+改碼前先做出會對這個 bug 變紅的重現；一次只立一個可證偽的假設；暫時的 debug log 加前綴
+（如 `[DEBUG-<id>]`），修好後全部移除；最後留下一個回歸測試。
 
 ## 程式審查（kyloren 15 Skills：Superpowers / Addy Osmani）
 

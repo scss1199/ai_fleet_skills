@@ -36,8 +36,6 @@ def claude_managed_hooks() -> list:
     rows = [
         ("SessionStart", FAMES_CONTEXT_HOOK, 10),
         ("UserPromptSubmit", FAMES_CONTEXT_HOOK, 20),
-        ("Stop", CLAUDE_CLAIM_INTEGRITY_HOOK, 15),
-        ("SubagentStop", CLAUDE_CLAIM_INTEGRITY_HOOK, 15),
     ]
     if os.path.isfile(CLAUDE_RUN_UNTIL_DONE_HOOK):
         rows.append(("Stop", CLAUDE_RUN_UNTIL_DONE_HOOK, 10))
@@ -51,6 +49,10 @@ def claude_managed_hooks() -> list:
 
 
 CLAUDE_MATCHERS = {("PreToolUse", CLAUDE_PROOF_HOOK): "Write|Bash|PowerShell"}
+# F1S wave 2 (2026-10-15): the advisory claim-integrity Stop hook blocked 48 times, all on 2026-10-08,
+# and never since; PROOF covers the claims. The script stays (Lean conformance imports it); only the
+# Stop/SubagentStop wiring is removed from the settings file on the next write.
+CLAUDE_RETIRED_HOOKS = [("Stop", CLAUDE_CLAIM_INTEGRITY_HOOK), ("SubagentStop", CLAUDE_CLAIM_INTEGRITY_HOOK)]
 
 
 def claude_hooks_missing(settings_path: str) -> list:
@@ -456,6 +458,11 @@ def write_claude_fames_hooks(path: str) -> dict:
     if not isinstance(hooks, dict):
         raise RuntimeError(f"Claude hooks field is not an object: {target}")
 
+    for event, script in CLAUDE_RETIRED_HOOKS:
+        if isinstance(hooks.get(event), list):
+            hooks[event] = _without_managed_handlers(hooks[event], script)
+            if not hooks[event]:
+                del hooks[event]
     wanted = claude_managed_hooks()
     by_event: dict = {}
     for event, script, timeout in wanted:
