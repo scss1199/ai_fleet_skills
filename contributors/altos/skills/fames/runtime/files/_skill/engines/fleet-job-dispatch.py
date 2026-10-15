@@ -214,6 +214,67 @@ def _run(args: list[str], timeout: int = 180, cwd: Path | None = None) -> dict:
         return {"exit": -1, "stdout": "", "stderr": type(exc).__name__}
 
 
+OMNIROUTE_NEEDS = {"node_min": (22, 22, 2), "ram_avail_mb": 1500, "disk_free_mb": 4096}  # measured on darkhero 2026-10-14: install 2205 MB, RSS 394-428 MB
+
+
+def _node_version() -> tuple[int, ...] | None:
+    import shutil
+
+    exe = shutil.which("node")
+    if not exe:
+        return None
+    try:
+        r = subprocess.run([exe, "--version"], capture_output=True, text=True, timeout=20,
+                           creationflags=0x08000000 if os.name == "nt" else 0)
+        return tuple(int(x) for x in r.stdout.strip().lstrip("v").split(".")[:3])
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+
+
+def hardware(hub: Path) -> dict:
+    """Stdlib-only facts (no platform.* calls: they spawn `cmd /c ver` when WMI is off -> visible flash)."""
+    import shutil
+
+    out: dict = {"cpu_count": os.cpu_count()}
+    try:
+        if os.name == "nt":
+            import ctypes
+
+            class MEM(ctypes.Structure):
+                _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong),
+                            ("ullTotalPhys", ctypes.c_ulonglong), ("ullAvailPhys", ctypes.c_ulonglong),
+                            ("ullTotalPageFile", ctypes.c_ulonglong), ("ullAvailPageFile", ctypes.c_ulonglong),
+                            ("ullTotalVirtual", ctypes.c_ulonglong), ("ullAvailVirtual", ctypes.c_ulonglong),
+                            ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
+
+            m = MEM()
+            m.dwLength = ctypes.sizeof(MEM)
+            ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(m))
+            out["ram_total_mb"] = m.ullTotalPhys // 2**20
+            out["ram_avail_mb"] = m.ullAvailPhys // 2**20
+            v = sys.getwindowsversion()
+            out["os"] = f"Windows {v.major}.{v.minor}.{v.build}"
+    except Exception:  # noqa: BLE001
+        out["ram_total_mb"] = out.get("ram_total_mb", "UNKNOWN")
+    try:
+        out["disk_free_mb"] = shutil.disk_usage(str(hub)).free // 2**20
+    except OSError:
+        out["disk_free_mb"] = "UNKNOWN"
+    nv = _node_version()
+    out["node"] = ".".join(map(str, nv)) if nv else None
+    reasons = []
+    if not nv:
+        reasons.append("node_missing")
+    elif not (nv >= OMNIROUTE_NEEDS["node_min"] and (nv[0] in (22,) or 24 <= nv[0] < 27)):
+        reasons.append("node_too_old_or_unsupported")
+    if isinstance(out.get("ram_avail_mb"), int) and out["ram_avail_mb"] < OMNIROUTE_NEEDS["ram_avail_mb"]:
+        reasons.append("ram_avail_below_%d_mb" % OMNIROUTE_NEEDS["ram_avail_mb"])
+    if isinstance(out.get("disk_free_mb"), int) and out["disk_free_mb"] < OMNIROUTE_NEEDS["disk_free_mb"]:
+        reasons.append("disk_free_below_%d_mb" % OMNIROUTE_NEEDS["disk_free_mb"])
+    out["omniroute_fit"] = {"fit": not reasons, "reasons": reasons, "needs": {**OMNIROUTE_NEEDS, "node_min": "22.22.2 (22.x) or 24-26"}}
+    return out
+
+
 def probe(hub: Path) -> dict:
     """Fixed read-only inventory; every field is UNKNOWN when its source is missing."""
     out: dict = {"hostname": this_host(), "hub": str(hub), "collected_at": _iso(_now())}
@@ -254,6 +315,8 @@ def probe(hub: Path) -> dict:
     except (ValueError, KeyError, TypeError):
         out["claude_cli"] = "UNKNOWN"
     out["nested_hub_folder_present"] = (hub / hub.name).is_dir()
+    # 2026-10-14 operator: 「適不適合他們的硬體環境要適合才裝」 — the facts an install decision needs.
+    out["hardware"] = hardware(hub)
     # 2026-10-13: which F1S Stop hooks this host's Claude settings actually wire (the lie gate lands only
     # when claude-proof-hook.py is listed here, not when the file merely exists).
     try:

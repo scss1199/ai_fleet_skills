@@ -44,7 +44,13 @@ def claude_managed_hooks() -> list:
     if os.path.isfile(CLAUDE_PROOF_HOOK):
         rows.append(("Stop", CLAUDE_PROOF_HOOK, 15))
         rows.append(("SubagentStop", CLAUDE_PROOF_HOOK, 15))
+        # 2026-10-13 operator 「用LEAN和F1S嚴格要求不准寫多餘且無用的垃圾檔案」: deny an unrequested .md / .json
+        # before it is created (CLAUDE_MATCHERS limits it to the tools that write files).
+        rows.append(("PreToolUse", CLAUDE_PROOF_HOOK, 10))
     return rows
+
+
+CLAUDE_MATCHERS = {("PreToolUse", CLAUDE_PROOF_HOOK): "Write|Bash|PowerShell"}
 
 
 def claude_hooks_missing(settings_path: str) -> list:
@@ -102,6 +108,14 @@ HOOKS = {
             {
                 "command": f"{PYW} {os.path.join(ENG, 'cursor-seal-session-open.py')}",
                 "timeout": 15,
+            },
+        ],
+        # 2026-10-13 operator 「Codex 和 Cursor 也擋 所有CWD都要做到」: the PROOF write gate denies an
+        # unrequested .md / .json before it is created (same engine and Lean-bound rule as Claude Code).
+        "preToolUse": [
+            {
+                "command": f"{PYW} {os.path.join(ENG, 'claude-proof-hook.py')}",
+                "timeout": 10,
             },
         ],
         "postToolUse": [
@@ -241,7 +255,7 @@ def write_hooks(path, *, fames_only=False):
     doc = _read_hook_document(target)
     hooks = doc.setdefault("hooks", {})
     doc.setdefault("version", HOOKS["version"])
-    fames_scripts = {"cursor-agent-session-open.py", "cursor-fames-hot-refresh.py"}
+    fames_scripts = {"cursor-agent-session-open.py", "cursor-fames-hot-refresh.py", "claude-proof-hook.py"}
     for event, entries in HOOKS["hooks"].items():
         wanted = [_fail_open_entry(entry) for entry in entries if not fames_only or any(
             os.path.join(ENG, script).lower() in entry["command"].lower()
@@ -325,7 +339,7 @@ def _contains_fames_context_hook(group: object) -> bool:
     )
 
 
-def write_codex_fames_hook(path: str) -> dict:
+def write_codex_fames_hook(path: str, write_gate: bool = False) -> dict:
     target = Path(path)
     try:
         doc = json.loads(target.read_text(encoding="utf-8-sig")) if target.is_file() else {}
@@ -344,6 +358,19 @@ def write_codex_fames_hook(path: str) -> dict:
         _codex_fames_group(),
         *_without_managed_handlers(groups, FAMES_CONTEXT_HOOK),
     ]
+    pre = hooks.get("PreToolUse")
+    if pre is not None and not isinstance(pre, list):
+        raise RuntimeError(f"Codex PreToolUse is not a list: {target}")
+    # The PROOF write gate lives only in ~/.codex/hooks.json: it already applies in every cwd, and Codex
+    # makes the operator review each new handler per file, so one copy means one review.
+    kept = _without_managed_handlers(list(pre or []), CLAUDE_PROOF_HOOK)
+    if write_gate and os.path.isfile(CLAUDE_PROOF_HOOK):
+        kept = [{"hooks": [{"type": "command", "command": _codex_hook_command(PYW, CLAUDE_PROOF_HOOK),
+                            "timeout": 10}]}, *kept]
+    if kept:
+        hooks["PreToolUse"] = kept
+    else:
+        hooks.pop("PreToolUse", None)
     target.parent.mkdir(parents=True, exist_ok=True)
     with target.open("w", encoding="utf-8", newline="\n") as fh:
         json.dump(doc, fh, ensure_ascii=False, indent=2)
@@ -394,14 +421,16 @@ def _fail_open_entry(entry: dict) -> dict:
     return out
 
 
-def _claude_command_group(script: str, timeout: int) -> dict:
-    return {
+def _claude_command_group(script: str, timeout: int, event: str = "") -> dict:
+    group = {
         "hooks": [{
             "type": "command",
             "command": claude_hook_command(script),
             "timeout": timeout,
         }]
     }
+    matcher = CLAUDE_MATCHERS.get((event, script))
+    return {"matcher": matcher, **group} if matcher else group
 
 
 def _contains_script(group: object, script: str) -> bool:
@@ -439,7 +468,7 @@ def write_claude_fames_hooks(path: str) -> dict:
         for script, _timeout in scripts:
             groups = _without_managed_handlers(groups, script)
         hooks[event] = [
-            *(_claude_command_group(script, timeout) for script, timeout in scripts),
+            *(_claude_command_group(script, timeout, event) for script, timeout in scripts),
             *groups,
         ]
 
@@ -494,7 +523,8 @@ def main(argv=None):
     codex_root.update(write_codex_fames_hook(os.path.join(COMMON, ".codex", "hooks.json")))
     codex_written.append(codex_root)
     codex_global = {"agent": "~/.codex (global)"}
-    codex_global.update(write_codex_fames_hook(os.path.join(os.path.expanduser("~"), ".codex", "hooks.json")))
+    codex_global.update(write_codex_fames_hook(os.path.join(os.path.expanduser("~"), ".codex", "hooks.json"),
+                                               write_gate=True))
     codex_written.append(codex_global)
     claude_global = write_claude_fames_hooks(
         os.path.join(os.path.expanduser("~"), ".claude", "settings.json")

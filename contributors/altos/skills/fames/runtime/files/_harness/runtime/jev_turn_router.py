@@ -48,6 +48,18 @@ def _sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _matrix_key(workspace):
+    """Local api-matrix key for typesafe via the existing api_registry.key_for; in-process only."""
+    try:
+        path = Path(workspace) / '_skill' / 'engines' / 'api_registry.py'
+        spec = importlib.util.spec_from_file_location('_fames_api_registry', path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.key_for('typesafe') or ''
+    except Exception:  # an unreadable matrix is the same as no credential
+        return ''
+
+
 def _time(value):
     parsed = dt.datetime.fromisoformat(value.replace('Z', '+00:00'))
     if parsed.tzinfo is None:
@@ -198,7 +210,7 @@ def advisory_for_turn(workspace, agent, *, prompt_identity, surface_id,
                           usage={'state': 'CACHED_NOT_REMEASURED'}, cache_sha256=_sha(cache_path))
             return result
         if transport is None:
-            key = os.environ.get('TYPESAFE_API_KEY', '')
+            key = os.environ.get('TYPESAFE_API_KEY', '') or _matrix_key(workspace)
             if not key:
                 return stop('provider_credential_unavailable')
             transport = advisor.make_http_transport(key, authorized=True, timeout_seconds=5)

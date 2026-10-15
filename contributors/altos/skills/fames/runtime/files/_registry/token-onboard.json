@@ -289,6 +289,18 @@
    },
    "service_key": "opencode.ai",
    "note": "OpenCode Zen gateway; free models carry the -free suffix (muse-spark-1.3-contributor-free, big-pickle, nemotron-3.5-lightning-free); quota refills ~08:00 next day (Threads @ccckmit 2026-10-01)"
+  },
+  "typesafe": {
+   "kind": "llm",
+   "token_url": "https://console.typesafe.ai/keys",
+   "scopes": [],
+   "verify_http": {
+    "url": "https://api.typesafe.ai/v1/models",
+    "headers": {"Authorization": "Bearer {token}"},
+    "expect_status": 200
+   },
+   "service_key": "typesafe.ai",
+   "note": "Jev (FAMES skill advisor, _harness/runtime/jev_turn_router.py). Paid: jev-1.13.0 $0.042 per M input tokens, output free; keys only from the console (docs.typesafe.ai/introduction/quickstart). Operator authorized Jev 2026-10-15."
   }
  }
 }

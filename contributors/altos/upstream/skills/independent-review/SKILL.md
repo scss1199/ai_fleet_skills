@@ -20,7 +20,7 @@ Missing lanes are capability facts, not blockers. Record the selected lane and u
 ## Review procedure
 
 1. Read the governing contract and exact review target.
-2. Resolve the repository root and changed-path set mechanically.
+2. Resolve the repository root and changed-path set mechanically. Then triage before reviewing (kyloren_bot bb489c62, OpenCoreReview): classify each changed hunk by risk and category (auth/secrets, data loss, concurrency, parsing, tests-only, docs), and review the flagged hunks with that category's checklist instead of sending the whole diff with a generic prompt. Record which hunks were triaged out and why; a triaged-out hunk is not "reviewed".
 3. Verify bundle identity, hashes, command receipts, test output, and dirty-worktree isolation from source artifacts.
 4. Inspect every load-bearing implementation path and test for false positives, fail-open behavior, omitted inputs, and host-specific assumptions.
 5. Re-run safe checks independently. Never trigger live financial, deployment, credential, or destructive paths merely to review them.

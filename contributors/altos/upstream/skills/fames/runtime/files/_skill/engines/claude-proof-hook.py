@@ -67,6 +67,10 @@ DEFAULTS = {
         # PROOF in the ai_trader conversations; admission rule proved in _lean/fames/ClaimContract.lean.
         "read": True, "progress": True, "automated": True, "blocker": True,
         "decision": True, "ask_value": True, "unrequested_file": True, "handback": True,
+        # 2026-10-14 (kyloren_bot cards cea9bf31 Ponytail / 89f0cb75 Brownfield): code touched with no prior search
+        "code_change": True,
+        # 2026-10-14 (threads @nashlikeai, skills.sh tdd): 「修好」 after a code write needs a green test after it
+        "fix_claim": True,
     },
     # 2026-10-13 operator: 「嚴格禁止隨意產出 .md 和 .json」.  A .md / .json written this turn is allowed only
     # under machine-state directories (any depth), under a charter / receipt name the machinery requires,
@@ -159,6 +163,7 @@ LIE_PATTERNS = {
         r"請(?:你)?(?:提供|告訴我|給我)[^。\n]{0,12}(?:數字|數值|值|帳號|名稱|路徑|日期|費用|手續費|金額)|"
         r"\bplease\s+(?:provide|tell\s+me|give\s+me)\b|\bI\s+need\s+(?:the|your)\s+(?:number|value|fee|path|date|account)\b"
     ),
+    "fix_claim": None,  # placeholder, replaced below by FIX_CLAIM
     # 推託: a step handed to the operator ("you run it / you do it / only you can") — admissible only when
     # the line names an operator-reserved action (RED_LINE) or a tool really failed this turn.
     "handback": re.compile(
@@ -176,16 +181,19 @@ RED_LINE = re.compile(
     r"~/\.claude|\\\.claude\\|settings\.json|全域設定|global\s+setting|環境變數|autostart|自動啟動|"
     r"入金|匯款|轉帳|實盤|真錢|下單|付款|purchase|payment|fund|"
     r"重開機|reboot|restart\s+(?:the\s+)?(?:pc|machine|computer)|電腦重開|Logi\s*Options|"
-    r"uac|系統管理員|elevat|admin|remote\s+desktop|遠端桌面|插拔|硬體|實體|親手"
+    r"uac|系統管理員|elevat|admin|remote\s+desktop|遠端桌面|插拔|硬體|實體|親手|"
+    r"資料遺失|遺失|丟失|覆蓋|overwrite|data\s+loss|lose\s+data|irreversible|不可逆|砍"
 )
 LIE_NEEDS = {
     "read": "no read-type tool result this turn for the named target (Read / get_page_text / cat … of that path or URL)",
     "progress": "the line names no existing path, resolvable commit or tool-printed number: say WHAT moved, or call it housekeeping",
     "automated": "no scheduler fact: name a rider id in _registry/hosts.json, a Run value / task the turn read, or an existing path",
     "blocker": "no tool call failed this turn: try it (a real failing tool result) or write 未嘗試 / UNKNOWN",
-    "decision": "this decision was already asked earlier in this session; act on the earlier answer or state it was never answered",
+    "decision": "a 「需要你決定」 is admissible only once and only for the operator's own call (login/OAuth, permanent delete, rider arming, global settings, secrets, funds, hardware, data loss): decide the rest yourself",
     "ask_value": "no grep / search ran this turn before asking: look it up in the repo, ledger or earlier messages first",
     "unrequested_file": "a .md / .json was written this turn that no prompt asked for and no mechanism requires (operator 2026-10-13 「嚴格禁止隨意產出 .md 和 .json」): move it to the scratchpad / _delete and say so, or cite the prompt that asked",
+    "fix_claim": "tdd: this line claims a fix but no green test (pytest / unittest / selftest / npm test) ran AFTER the last code write of this turn — run the regression tests now, or write the line as 未驗證",
+    "code_change": "F1S ③ 先重用再自己寫 / Brownfield: code was written or edited this turn with no grep / glob / find before the first write — search existing implementations and usages first (then write), or revert the write",
     "handback": "推託: this step is handed to the operator although the line names no operator-reserved action (login/OAuth, permanent delete, rider arming, global settings, secrets, funds, hardware) and no tool failed this turn: do it yourself now, or try it and cite the failing tool result",
 }
 READ_CMD = re.compile(
@@ -198,20 +206,31 @@ READ_TOOL_SUFFIX = ("get_page_text", "read_page", "find", "read_file_content", "
 SCHEDULER_TOUCH = re.compile(r"(?i)hosts\.json|register-rider|rider_edit|schtasks|CurrentVersion\\\\?Run|hubclock-heartbeat|crontab|Register-ScheduledTask")
 COUNT_NUMBER = re.compile(r"(?<![\w.,])(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(?:則|條|筆|個|組|項|檔|篇|份|次|天|年|口|張|頁|行|%|％)")
 DECISION_TAIL = re.compile(r"(?:需要你決定|needs?\s+your\s+decision)\s*[:：]?\s*(.*)", re.I)
-DOC_REQUEST = re.compile(r"(?i)\.md\b|文件|報告|报告|說明|说明|筆記|笔记|記錄|记录|寫一份|寫份|write\s*-?up|\breport\b|\bdocument\b|\bnotes?\b|\bREADME\b|\bchangelog\b|markdown")
-MD_WRITE_CMD = re.compile(r"(?<![<\d=!-])>{1,2}\s*\"?'?([^\s\"'|;&]+\.(?:md|json))\b|(?:tee|Set-Content|Out-File|Add-Content)\s+(?:-Path\s+)?\"?'?([^\s\"'|;&]+\.(?:md|json))\b", re.I)
+# 2026-10-13 operator 「用LEAN和F1S嚴格要求不准寫多餘且無用的垃圾檔案」: a prompt that merely mentions 報告 /
+# 記錄 / notes no longer opens the door for every .md / .json the turn writes.  A document counts as asked
+# for only when the prompt names the file, or explicitly asks to CREATE a document.
+DOC_CREATE = re.compile(
+    r"(?i)(?<!不准)(?<!不要)(?<!禁止)(?<!不得)(?:寫|產出|产出|建立|新增|生成|存成|存為|輸出成)[一個份篇成到入下]{0,3}\s*"
+    r"[^\s，。,.；;]{0,6}?(?:文件|報告|报告|筆記|笔记|說明檔|\.md|\.json|markdown|README)"
+    r"|\b(?:write|create|generate|draft|save)\b\W+(?:\w+\W+){0,3}?(?:report|document|notes?|write-?up|README|markdown|md|json)\b")
+MD_WRITE_CMD = re.compile(r"(?<![<\d=!-])>{1,2}\s*\"?'?([^\s\"'|;&]+\.(?:md|json))\b|(?:tee|Set-Content|Out-File|Add-Content)\s+(?:-(?:Literal|File)?Path\s+)?\"?'?([^\s\"'|;&]+\.(?:md|json))\b", re.I)
 JUNK_EXT = (".md", ".json")
 
 
 SHELL_ASSIGN = re.compile(r"(?:^|[\s;&(])([A-Za-z_]\w*)=([^\s;&|]+)")
 SHELL_CD = re.compile(r"(?:^|[\s;&(])cd\s+(?:/d\s+)?\"?'?([^\s;&|\"']+)")
+# A heredoc / PowerShell here-string body is data, not a command: `cat > x.py <<'EOF'` with a body that
+# mentions a redirect into some .json writes x.py only.  The header line (and its redirect) is kept.
+HEREDOC_BODY = re.compile(r"(<<-?\s*['\"]?(\w+)['\"]?[^\n]*\n).*?\n[ \t]*\2[ \t]*(?=\n|$)", re.S)
+HERESTRING_BODY = re.compile(r"@(['\"])\r?\n.*?\r?\n\1@", re.S)
 
 
 def _bash_md_targets(command: str) -> list[str]:
     """.md files a shell command writes, with `$VAR` / `${VAR}` expanded from assignments in the same
     command and relative paths resolved against the last `cd` in it.  A target that still carries an
     unexpanded variable is unknown and is NOT reported (fail open)."""
-    env = {m.group(1): m.group(2).strip("\"'") for m in SHELL_ASSIGN.finditer(command or "")}
+    command = HERESTRING_BODY.sub("", HEREDOC_BODY.sub(lambda m: m.group(1), command or ""))
+    env ={m.group(1): m.group(2).strip("\"'") for m in SHELL_ASSIGN.finditer(command or "")}
     cds = [m.group(1) for m in SHELL_CD.finditer(command or "")]
     out: list[str] = []
     for m in MD_WRITE_CMD.finditer(command or ""):
@@ -224,6 +243,119 @@ def _bash_md_targets(command: str) -> list[str]:
             target = cds[-1].rstrip("/\\") + "/" + target
         out.append(target)
     return out
+
+
+def _win_path(raw: str, cwd: str = "") -> Path:
+    """A Write / shell target as a Windows path: `/c/x` -> `C:/x`, relative -> under `cwd`."""
+    m = re.match(r"^/([a-zA-Z])/(.*)$", raw)
+    if m:
+        raw = f"{m.group(1).upper()}:/{m.group(2)}"
+    p = Path(raw).expanduser()
+    if not p.is_absolute() and not raw.startswith(("/", "\\")) and cwd:
+        p = Path(cwd) / p
+    return p
+
+
+def junk_target(p: Path, cfg: dict) -> bool:
+    """A .md / .json outside machine-state directories and not a charter / receipt name."""
+    if p.suffix.lower() not in JUNK_EXT:
+        return False
+    allowed_dirs = {d.lower() for d in (cfg.get("md_allowed_dirs") or DEFAULTS["md_allowed_dirs"])}
+    allowed_names = {n.lower() for n in (cfg.get("md_allowed_names") or DEFAULTS["md_allowed_names"])}
+    return not ({x.lower() for x in p.parts[:-1]} & (allowed_dirs | {"tmp"}) or p.name.lower() in allowed_names)
+
+
+def doc_requested(p: Path, prompt_text: str) -> bool:
+    """The prompt named THIS file (name, or a stem of 4+ chars) or explicitly asked to create a document."""
+    low = (prompt_text or "").lower()
+    stem = p.stem.lower()
+    return bool(p.name.lower() in low or (len(stem) >= 4 and stem in low) or DOC_CREATE.search(prompt_text or ""))
+
+
+WRITE_GATE_REASON = (
+    "PROOF write gate (operator 2026-10-13 「用LEAN和F1S嚴格要求不准寫多餘且無用的垃圾檔案」, Lean "
+    "ClaimContract.unrequested_file_needs_request): creating {paths} is denied - no prompt asked for this "
+    ".md / .json. Put the report / notes / summary in your reply; machine state goes under runtime/ or "
+    "_registry/; scratch goes to the scratchpad. Editing an existing file is allowed."
+)
+
+
+PATCH_ADD = re.compile(r"^\*\*\* Add File:\s*(.+?)\s*$", re.M)
+SHELL_TOOLS = ("Bash", "PowerShell", "Shell")
+
+
+def _tool_targets(tool: str, ti: dict) -> list[str]:
+    """Paths a tool call would CREATE: Claude/Cursor `Write.file_path`, shell redirects in any `command`
+    (Claude Bash/PowerShell, Cursor Shell, Codex shell as a string or argv list), and `*** Add File:` lines
+    of a Codex apply_patch."""
+    if tool == "Write":
+        return [str(ti.get("file_path") or "")]
+    out: list[str] = []
+    for key, val in ti.items():
+        text = " ".join(map(str, val)) if isinstance(val, list) else str(val) if isinstance(val, str) else ""
+        if not text:
+            continue
+        out.extend(m.group(1) for m in PATCH_ADD.finditer(text))
+        if key in ("command", "cmd") or tool in SHELL_TOOLS:
+            out.extend(_bash_md_targets(text))
+    return out
+
+
+def pre_tool_use(doc: dict, cfg: dict) -> dict | None:
+    """Deny the CREATION of an unrequested .md / .json before it is written.  One gate for Claude Code
+    (`PreToolUse`), Codex (`PreToolUse`, same reply shape) and Cursor (`preToolUse`, `permission` reply).
+    Cursor and Codex hand the hook no prompt text, so there a new .md / .json is never "requested"."""
+    if not (cfg.get("classes") or {}).get("unrequested_file", True):
+        return None
+    tool = str(doc.get("tool_name") or "")
+    ti = doc.get("tool_input") if isinstance(doc.get("tool_input"), dict) else {}
+    cwd = str(doc.get("cwd") or "")
+    raw = _tool_targets(tool, ti)
+    new_junk = []
+    for r in raw:
+        if not r:
+            continue
+        try:
+            p = _win_path(r.strip("\"'"), cwd)
+            if junk_target(p, cfg) and not p.exists():
+                new_junk.append(p)
+        except (OSError, ValueError):
+            continue
+    if not new_junk:
+        return None
+    cursor = "cursor_version" in doc or str(doc.get("hook_event_name") or "") == "preToolUse"
+    prompt_text = ""
+    path = _safe_transcript_path(doc)
+    if path is not None and not cursor:
+        _, prompt, _, _, _ = current_turn_ex(path)
+        prompt_text = _text_of(((prompt or {}).get("message") or {}).get("content"))
+    denied = [p for p in new_junk if not admissible("unrequested_file", {"requestedDoc": doc_requested(p, prompt_text)})]
+    _log({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "session_id": str(doc.get("session_id") or doc.get("conversation_id") or ""),
+          "event": "PreToolUse", "engine": "cursor" if cursor else "claude/codex", "cwd": cwd, "tool": tool,
+          "verdict": "deny" if denied else "allow", "matched": "unrequested_file",
+          "md_writes": [str(p) for p in new_junk][:6]})
+    if not denied:
+        return None
+    reason = WRITE_GATE_REASON.format(paths=", ".join(str(p) for p in denied)[:400])
+    if cursor:
+        return {"permission": "deny", "user_message": reason, "agent_message": reason}
+    return {"hookSpecificOutput": {
+        "hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": reason}}
+
+
+SCRATCH_PARTS = {"scratchpad", "temp", "tmp"}
+FIX_CLAIM = re.compile(r"(?i)修好了?|已修復|已修复|修復(?:完成|了)|已修正|修正完成|改好了|\bfixed\b|\bbug\s+is\s+fixed\b|\bnow\s+works\b")
+
+
+LIE_PATTERNS["fix_claim"] = FIX_CLAIM
+
+
+def _scratch_path(fp: str) -> bool:
+    """A session scratch script (scratchpad / Temp) is not the brownfield code the code_change clause protects."""
+    try:
+        return bool({p.lower() for p in Path(fp).parts} & SCRATCH_PARTS)
+    except (TypeError, ValueError):
+        return False
 
 
 def admissible(cls: str, ev: dict) -> bool:
@@ -239,23 +371,27 @@ def admissible(cls: str, ev: dict) -> bool:
     if cls == "blocker":
         return g("failureObserved")
     if cls == "decision":
-        return not g("askedBefore")
+        return (not g("askedBefore")) and g("redLineNamed")
     if cls == "ask_value":
         return g("searched")
     if cls == "unrequested_file":
         return g("requestedDoc")
     if cls == "handback":
         return g("redLineNamed") or g("failureObserved")
+    if cls == "code_change":
+        return g("searchedBeforeWrite")
+    if cls == "fix_claim":
+        return g("testAfterWrite")
     raise KeyError(cls)
 
 
 EVIDENCE_FIELDS = ("readResult", "namedTargetTouched", "anchor", "schedulerFact",
-                   "failureObserved", "askedBefore", "searched", "requestedDoc", "redLineNamed")
-CLAIM_CLASSES = ("read", "progress", "automated", "blocker", "decision", "ask_value", "unrequested_file", "handback")
+                   "failureObserved", "askedBefore", "searched", "requestedDoc", "redLineNamed", "searchedBeforeWrite", "testAfterWrite")
+CLAIM_CLASSES = ("read", "progress", "automated", "blocker", "decision", "ask_value", "unrequested_file", "handback", "code_change", "fix_claim")
 
 
 def claim_table() -> str:
-    """`<class>:<9 bits>=<0|1>;…` in the same order as `Fames.ClaimContract.table`."""
+    """`<class>:<11 bits>=<0|1>;…` in the same order as `Fames.ClaimContract.table`."""
     cells = []
     nbits = len(EVIDENCE_FIELDS)
     for cls in CLAIM_CLASSES:
@@ -591,10 +727,12 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
         "readonly_ok": False, "writes": 0, "code_writes": 0, "verify_after_write": False, "write_paths": [],
         # 2026-10-13 evidence fields (ClaimContract.lean)
         "read_result": False, "failure_observed": False, "searched": False, "scheduler_touched": False,
-        "md_writes": [], "prompt_text": "",
+        "md_writes": [], "prompt_text": "", "searched_before_write": False, "first_code_write": None, "first_search": None,
+        "test_after_write": False,
     }
     last_write = -1
     last_read = -1
+    last_test = -1
     index = 0
     if prompt is not None:
         f["prompt_text"] = _text_of((prompt.get("message") or {}).get("content"))
@@ -624,15 +762,19 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
                     fp = str(tool_input.get("file_path") or tool_input.get("notebook_path") or "")
                     if fp:
                         f["write_paths"].append(fp)
-                    if Path(fp).suffix.lower() in CODE_EXT:
+                    if Path(fp).suffix.lower() in CODE_EXT and not _scratch_path(fp):
                         f["code_writes"] += 1
                         last_write = index
+                        if f["first_code_write"] is None:
+                            f["first_code_write"] = index
                     if fp.lower().endswith(JUNK_EXT):
                         f["md_writes"].append(fp)
                 if name in BASH_TOOLS and ok and _bash_code_write(command):
                     f["writes"] += 1
                     f["code_writes"] += 1
                     last_write = index
+                    if f["first_code_write"] is None:
+                        f["first_code_write"] = index
                 if name in BASH_TOOLS and ok:
                     f["md_writes"].extend(_bash_md_targets(command))
                 if name in READ_TOOLS and ok:
@@ -646,11 +788,14 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
                 if ok and (name in {"Grep", "Glob"} or name.endswith(("find", "search_files", "search_session_transcripts"))
                            or (name in BASH_TOOLS and SEARCH_CMD.search(command))):
                     f["searched"] = True
+                    if f["first_search"] is None:
+                        f["first_search"] = index
                 if SCHEDULER_TOUCH.search(command) or SCHEDULER_TOUCH.search(result or ""):
                     f["scheduler_touched"] = True
                 if name in BASH_TOOLS:
                     if _green_test(exec_mod, command, result, is_error):
                         f["tests_pass"] = True
+                        last_test = index
                     if ok and GIT_PUSH.search(command) and not GIT_FAIL.search(result):
                         f["pushed"] = True
                     if ok and GIT_COMMIT.search(command) and not GIT_FAIL.search(result):
@@ -658,6 +803,9 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
                     if ok and DEPLOY.search(command) and not CMD_FAIL.search(result):
                         f["deployed"] = True
     f["verify_after_write"] = f["code_writes"] == 0 or (last_read > last_write)
+    f["test_after_write"] = f["code_writes"] == 0 or (last_test > last_write)
+    f["searched_before_write"] = f["code_writes"] == 0 or (
+        f["first_search"] is not None and f["first_code_write"] is not None and f["first_search"] < f["first_code_write"])
     f["haystack"] = "\n".join(haystack) + "\n" + (history or "")
     return f
 
@@ -786,8 +934,6 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
     path_ok = None  # lazily computed, message-level
     git: dict | None = None  # lazily computed, message-level
     earlier_decisions = earlier_decisions or []
-    prompt_asks_doc = bool(DOC_REQUEST.search(f.get("prompt_text") or ""))
-
     def git_state() -> dict:
         nonlocal git
         if git is None:
@@ -795,20 +941,25 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
         return git
 
     if classes.get("unrequested_file", True):
-        allowed_dirs = {d.lower() for d in (cfg.get("md_allowed_dirs") or DEFAULTS["md_allowed_dirs"])}
-        allowed_names = {n.lower() for n in (cfg.get("md_allowed_names") or DEFAULTS["md_allowed_names"])}
         prompt_text = f.get("prompt_text") or ""
         for mdp in f.get("md_writes") or []:
-            parts = {p.lower() for p in Path(mdp).parts[:-1]}
-            name = Path(mdp).name
-            if parts & allowed_dirs or name.lower() in allowed_names:
+            if not junk_target(Path(mdp), cfg):
                 continue
-            # the prompt asked for THIS file (its name or stem appears) or for a document in general
-            requested = prompt_asks_doc or name.lower() in prompt_text.lower() or (
-                len(Path(name).stem) >= 4 and Path(name).stem.lower() in prompt_text.lower())
-            if not admissible("unrequested_file", {"requestedDoc": requested}):
+            # The remedy the hook asks for is to move the file away; a target that no longer exists at
+            # judge time (moved, or a shell path like /tmp that is not a Windows path) was not produced.
+            try:
+                if not Path(mdp).expanduser().exists():
+                    continue
+            except (OSError, ValueError):
+                continue
+            if not admissible("unrequested_file", {"requestedDoc": doc_requested(Path(mdp), prompt_text)}):
                 violations.append({"line": 0, "class": "unrequested_file", "snippet": str(mdp)[:SNIPPET],
                                    "need": LIE_NEEDS["unrequested_file"]})
+
+    if classes.get("code_change", True) and (f.get("code_writes") or 0) > 0:
+        if not admissible("code_change", {"searchedBeforeWrite": f.get("searched_before_write")}):
+            first = (f.get("write_paths") or ["(shell write)"])[0]
+            violations.append({"line": 0, "class": "code_change", "snippet": str(first)[:SNIPPET], "need": LIE_NEEDS["code_change"]})
 
     fenced = False
     for number, raw in enumerate(lines, 1):
@@ -822,8 +973,10 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
         snippet = stripped[:SNIPPET]
         # A decision request is a question to the operator: a hedge word on the line does not excuse
         # asking it again, so this class is judged before the qualifier exemption.
-        if classes.get("decision", True) and LIE_PATTERNS["decision"].search(stripped):
-            if not admissible("decision", {"askedBefore": asked_before(stripped, earlier_decisions)}):
+        # judged on `line` (quoted spans removed): a quoted mention of 「需要你決定」 is not a question to the operator
+        if classes.get("decision", True) and LIE_PATTERNS["decision"].search(line):
+            if not admissible("decision", {"askedBefore": asked_before(stripped, earlier_decisions),
+                                           "redLineNamed": bool(RED_LINE.search(stripped))}):
                 violations.append({"line": number, "class": "decision", "snippet": snippet, "need": LIE_NEEDS["decision"]})
         if QUALIFIER.search(line):
             continue
@@ -844,6 +997,8 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
                       or _message_paths_exist(stripped, cwd, f.get("write_paths") or [])}
             elif name == "blocker":
                 ev = {"failureObserved": f.get("failure_observed")}
+            elif name == "fix_claim":
+                ev = {"testAfterWrite": f.get("test_after_write", True)}
             elif name == "handback":
                 ev = {"redLineNamed": bool(RED_LINE.search(stripped)), "failureObserved": f.get("failure_observed")}
             else:  # ask_value
@@ -940,6 +1095,8 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
     if not cfg.get("enabled", True):
         return None
     event = str(doc.get("hook_event_name") or "")
+    if event.lower() == "pretooluse":
+        return pre_tool_use(doc, cfg)
     if event not in (cfg.get("events") or DEFAULTS["events"]):
         return None
     path = _safe_transcript_path(doc)
@@ -973,7 +1130,7 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
     entry.update({
         "tool_calls": f["tool_calls"], "writes": f["writes"],
         "facts": {k: f[k] for k in ("tests_pass", "pushed", "committed", "deployed", "readonly_ok", "verify_after_write",
-                                    "read_result", "failure_observed", "searched", "scheduler_touched")},
+                                    "read_result", "failure_observed", "searched", "scheduler_touched", "searched_before_write", "test_after_write")},
         "md_writes": (f.get("md_writes") or [])[:6], "earlier_decisions": len(earlier_decisions),
         "violations": violations[:12],
     })
