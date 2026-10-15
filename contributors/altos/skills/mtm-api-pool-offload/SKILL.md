@@ -45,7 +45,7 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 | `bulk` 大量分類比對 | gemini | OmniRoute `auto/coding` | 最穩、最快 |
 | 圖片讀字 OCR | gemini 視覺（`image_ocr.py`） | — | 側欄截圖讀取正確 |
 | 語音轉文字 | 本機 faster-whisper（`distill-media.py --engine local`） | `medium` 重試 | 低信心片段改用 medium 成功 |
-| 網路搜尋 | DuckDuckGo 免金鑰＋`summary` | — | 7 秒，附來源 |
+| 網路搜尋 | gemini 的 Google 搜尋（grounding），再退 DuckDuckGo／Bing | — | 英文、中文查詢都回切題來源，期交所官網排第一 |
 
 不路由：OmniRoute `auto/fast`（不穩，最慢 70 秒）、`auto/writing`（不存在）、nvidia-nim（斷路器開啟中）。
 其他 provider 的金鑰狀態看 `python _skill\engines\key-health.py summary`；新金鑰可用後重跑實測再改標籤。
@@ -64,6 +64,13 @@ Claude Code 本身的額度用完時，`claude-remote-exec` 的 auto lane 另外
 - 不送出去的東西：金鑰、帳戶與持倉資料、`ai_ut` 的 UT.xlsx 內容（專有資料）、任何 operator 標成私密的檔案。查詢字串可以送，資料本身不送。語音預設用本機（`--engine local`）。
 - 輸出留在指令的 JSON 或既有收據，只把摘要與來源網址帶進對話，不新開 .md/.json。
 - 免費池回空或全部 provider 失敗：照實回報，再改用本對話的工具，不要編。
+
+## 2026-10-15 修掉的搜尋問題（ai_ut、ai_trader 實用回報）
+
+- DuckDuckGo 兩個後端都回 0 筆、Bing 回無關頁：改成 gemini 搜尋優先，抓取的關鍵字結果要和查詢有交集才保留。
+- Bing `ck/a` 轉址沒解：已解成真網址。
+- 「taifex.com」被當成「x.com」擋掉、`<header>` 被當成 `<head>` 刪掉整頁：期交所保證金表現在抓得到。
+- `--json` 在 cp950 主控台崩潰、輸出混入記錄行：已改成 UTF-8、記錄改走 stderr，標準輸出只剩 JSON。
 
 ## 驗收（2026-10-15 實測）
 
