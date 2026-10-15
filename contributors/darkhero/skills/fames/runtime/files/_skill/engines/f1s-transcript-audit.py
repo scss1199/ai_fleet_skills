@@ -115,6 +115,13 @@ def audit_transcript(hook, path: Path, cfg: dict) -> dict:
     worst: list = []
     first_ts = str((turns[0][0].get("timestamp") if turns else "") or "")[:19]
     last_ts = str((turns[-1][0].get("timestamp") if turns else "") or "")[:19]
+    # F1S wave 2 item 5 (measure, do not cut): how often a session loads a skill at all
+    skills: collections.Counter = collections.Counter()
+    for row in rows:
+        if row.get("type") == "assistant":
+            for b in hook._blocks(row):
+                if isinstance(b, dict) and b.get("type") == "tool_use" and b.get("name") == "Skill":
+                    skills[str((b.get("input") or {}).get("skill") or "?")] += 1
     for prompt, body in turns:
         text = hook.closing_text(body)
         if text.strip():
@@ -142,7 +149,8 @@ def audit_transcript(hook, path: Path, cfg: dict) -> dict:
                             if hook.LIE_PATTERNS["decision"].search(ln):
                                 earlier.append(ln.strip())
     return {"turns": judged, "blocked": blocked, "per_class": dict(per_class), "worst": worst,
-            "first": first_ts, "last": last_ts, "decisions": len(earlier), "tool_calls": tool_calls, "flipflop": flipflop}
+            "first": first_ts, "last": last_ts, "decisions": len(earlier), "tool_calls": tool_calls, "flipflop": flipflop,
+            "skill_loads": dict(skills)}
 
 
 def load_state() -> dict:
@@ -197,20 +205,28 @@ def run(full: bool = False) -> dict:
         agg["per_class"].update(s.get("per_class") or {})
         agg["tool_calls"] = agg.get("tool_calls", 0) + int(s.get("tool_calls") or 0)
         agg["flipflop"] = agg.get("flipflop", 0) + int(s.get("flipflop") or 0)
+        agg.setdefault("skill_loads", collections.Counter()).update(s.get("skill_loads") or {})
+        agg["skill_measured_sessions"] = agg.get("skill_measured_sessions", 0) + int("skill_loads" in s)
         if len(agg["worst"]) < WORST_KEEP:
             agg["worst"].extend(s.get("worst") or [])
     for agg in seats.values():
         agg["per_class"] = dict(agg["per_class"])
+        agg["skill_loads"] = dict(agg.get("skill_loads") or {})
         agg["worst"] = agg["worst"][:WORST_KEEP]
         agg["block_rate"] = round(agg["blocked"] / agg["turns"], 3) if agg["turns"] else None
         agg["tool_calls_per_turn"] = round(agg.get("tool_calls", 0) / agg["turns"], 1) if agg["turns"] else None
     total_turns = sum(a["turns"] for a in seats.values())
+    skill_total = sum((collections.Counter(a.get("skill_loads") or {}) for a in seats.values()), collections.Counter())
+    measured = sum(a.get("skill_measured_sessions", 0) for a in seats.values())
     total_blocked = sum(a["blocked"] for a in seats.values())
     doc = {"schema": SCHEMA, "generated": time.strftime("%Y-%m-%dT%H:%M:%S"), "hook_sha": _sha(HOOK),
            "elapsed_s": round(time.time() - started, 1), "scanned": scanned, "skipped_unchanged": skipped,
            "totals": {"sessions": len(sessions), "turns": total_turns, "blocked": total_blocked,
                       "block_rate": round(total_blocked / total_turns, 3) if total_turns else None,
                       "per_class": dict(sum((collections.Counter(a["per_class"]) for a in seats.values()), collections.Counter()))},
+           "skill_loads": {"sessions_measured": measured, "loads": sum(skill_total.values()),
+                           "per_session": round(sum(skill_total.values()) / measured, 2) if measured else None,
+                           "by_skill": dict(skill_total.most_common())},
            "proof_remediation": proof_remediation(),
            "seats": dict(sorted(seats.items())), "sessions": sessions}
     save_state(doc)
@@ -272,9 +288,11 @@ def record_line(seat: str) -> str:
                 f"(sweep {doc.get('generated')})")
     top = ", ".join(f"{k} {v}" for k, v in sorted((agg.get("per_class") or {}).items(), key=lambda kv: -kv[1])[:4])
     pr = doc.get("proof_remediation") or {}
+    sk = doc.get("skill_loads") or {}
     return (f"F1S RECORD — {seat}: {agg['blocked']}/{agg['turns']} turns would block ({top or 'none'}); "
             f"{agg.get('tool_calls_per_turn')} tool calls/turn, {agg.get('flipflop', 0)} 你說得對 openers; "
-            f"fleet {tot.get('blocked')}/{tot.get('turns')}; PROOF blocks {pr.get('blocks')} fixed-next-push {pr.get('fixed_rate')}; "
+            f"fleet {tot.get('blocked')}/{tot.get('turns')}; skill loads {sk.get('loads', 'UNKNOWN')} in {sk.get('sessions_measured', 0)} sessions "
+            f"({sk.get('per_session', 'UNKNOWN')}/session); PROOF blocks {pr.get('blocks')} fixed-next-push {pr.get('fixed_rate')}; "
             f"lying / 推託 / unrequested .md .json / code change without search are PROOF-blocked at Stop (sweep {doc.get('generated')})")
 
 
@@ -324,7 +342,7 @@ def main() -> int:
                     LOCK.unlink()
                 except OSError:
                     pass
-        out = {k: doc[k] for k in ("generated", "elapsed_s", "scanned", "skipped_unchanged", "totals")}
+        out = {k: doc[k] for k in ("generated", "elapsed_s", "scanned", "skipped_unchanged", "totals", "skill_loads")}
         out["seats"] = {k: {kk: v[kk] for kk in ("sessions", "turns", "blocked", "block_rate")} for k, v in doc["seats"].items()}
         print(json.dumps(out, ensure_ascii=False, indent=None if a.json else 1))
         return 0

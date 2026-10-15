@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-10-15T10:03:12",
+  "generated": "2026-10-15T14:03:43",
   "required": [
     "fames",
     "independent-review",
@@ -20,6 +20,7 @@
     "accountability-unblock",
     "api-key-apply",
     "aware-dual-field",
+    "browser-login-handoff",
     "burn-captions",
     "chapter-compose",
     "deploy-nextjs-cloudflare",

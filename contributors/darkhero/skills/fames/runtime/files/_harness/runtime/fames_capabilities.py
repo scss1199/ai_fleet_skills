@@ -107,21 +107,24 @@ def route_receipt(policy, *, prompt_identity, intake_state, local, advice):
 
 def render_route(receipt):
     """Compact per-turn facts; the canonical core owns the policy prose."""
-    components = receipt["components"]
-    lines = [f"FAMES ROUTE — {receipt['state']} — local={components['intent_to_skill']['local_state']}; "
-             f"Jev={components['jev']['state']}; Lean=APPLICABILITY_UNASSESSED."]
+    # Local-router candidates stay in the receipt but are not printed: the host skill
+    # catalog already lists them (F1S wave 2: 443 printed turns, 1 load). Jev is printed
+    # only when the provider actually answered (1919/1919 turns were DEFERRED, 0 advice).
+    jev = receipt["components"]["jev"]["state"]
+    jev_part = f"Jev={jev}; " if jev in {"SUGGESTION", "NONE"} else ""
+    lines = [f"FAMES ROUTE — {receipt['state']} — {jev_part}Lean=APPLICABILITY_UNASSESSED."]
     if receipt["state"] == "UNKNOWN":
         lines.append("No verified unified candidates; preserve unresolved intake and authority boundaries.")
     else:
-        for item in receipt["candidates"]:
+        shown = [item for item in receipt["candidates"] if "jev" in item["sources"]]
+        for item in shown:
             lines.append(f"- {item['id']} [{'+'.join(item['sources'])}]: {item['path']} | sha256={item['body_sha256']}")
-        lines.append("Select by current intent and actual skill descriptions; recheck bodies before loading. Advice is not execution.")
+        if shown:
+            lines.append("Select by current intent and actual skill descriptions; recheck bodies before loading. Advice is not execution.")
     if receipt["mandatory_skill_ids"]:
         lines.append("Preserve explicit/mandatory skills: " + ", ".join(receipt["mandatory_skill_ids"]) + ".")
     if receipt["unresolved_capabilities"]:
         lines.append("Host catalog discovery: " + ", ".join(receipt["unresolved_capabilities"]) + ".")
-    if receipt["candidate_overflow"]:
-        lines.append(f"Additional local candidates omitted: {receipt['candidate_overflow']}; retain all requested stages.")
     if receipt["read_only_hint"]:
         lines.append("Read-only intent hint: preserve the user's actual authority and negation.")
     text = "\n".join(lines)
