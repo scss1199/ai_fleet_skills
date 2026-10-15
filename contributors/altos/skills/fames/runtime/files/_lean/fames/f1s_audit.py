@@ -9,6 +9,7 @@ the proofs to the texts and the running hook by hash.  Exit 0 only when every Le
 no element is left at CONTRADICTION, and the claim conformance receipt still matches the hook.
 
   python f1s_audit.py            # writes evidence/f1s-audit.json (machine receipt), prints the summary
+  python f1s_audit.py --force    # re-prove every module even when its .lean hash is unchanged
 """
 from __future__ import annotations
 
@@ -180,6 +181,21 @@ ELEMENTS = [
     {"id": "KB-skills-verify", "element": "④⑤⑥ evidence / no lying / no junk files as skill text", "verdict": "REFINE",
      "requires": None, "detail": "moved from hot_directive into ztm-verify-before-done; PROOF Stop hook still judges it",
      "check_text": ("skill_verify", "F1S ④⑤⑥")},
+    # operator 2026-10-15: absorb aiposthub mattpocock/skills guide into F1S, strict review of .md/.json necessity
+    {"id": "MP-file-necessity", "element": "mattpocock/skills: knowledge kept as repo .md files (GLOSSARY, ADR, docs/agents, tickets, research, specs)", "verdict": "REFINE",
+     "requires": None, "detail": "⑥ gains a three-part file-necessity test (named or read back mechanically / no existing store / not a summary); those files fail (b) here",
+     "check_text": ("skill_verify", "檔案必要性三條全成立")},
+    {"id": "MP-diagnosing-bugs", "element": "mattpocock diagnosing-bugs: red reproduction, one falsifiable hypothesis, tagged debug logs, regression test", "verdict": "REFINE",
+     "requires": None, "detail": "new 修 bug section in ztm-verify-before-done; PROOF fix_claim still judges the regression test",
+     "check_text": ("skill_verify", "## 修 bug")},
+    {"id": "MP-code-review-axes", "element": "mattpocock code-review: standards and spec as separate review axes", "verdict": "REFINE",
+     "requires": None, "detail": "independent-review procedure step: Standards pass and Spec pass (operator's words + f1s-intake acceptance) run separately",
+     "check_text": ("skill_review", "Review on two separate axes")},
+    {"id": "MP-unit-sizing", "element": "mattpocock to-tickets / wayfinder: one fresh-context-sized unit per session", "verdict": "REFINE",
+     "requires": None, "detail": "token-preflight PFKT step: size each independent unit to one fresh context window, one unit per session or subagent",
+     "check_text": ("skill_preflight", "fit one fresh context window")},
+    {"id": "MP-rejected", "element": "mattpocock/skills parts not adopted", "verdict": "INFO",
+     "requires": None, "detail": "rejected: GLOSSARY.md (the charter is the glossary); ADRs (commit trailers Why/Verified-By + _registry hold decisions); docs/agents/*.md; tickets as .md (session task list + side sessions hold them); research .md and specs (the reply + kyloren receipts hold them); handoff doc (the AGC compact is the handoff). grill-me / grill-with-docs already adopted as self-interrogation (TH-grill-me, TH-grill-with-docs)"},
     {"id": "KB-noise", "element": "kyloren_bot cards 31019056, e904d45b, f1047cdb, dbea9c8c, a199503d, 3776cbe2, c18d2b35, e7c5cba9, 44b1a930 (IG reels, ASR noise / promos)", "verdict": "DELETE",
      "requires": None, "detail": "no implementable content beyond what ③ already says (fewer lines, reuse); nothing fused"},
 ]
@@ -215,8 +231,22 @@ def text_has(key: str, needle: str) -> bool:
 def main() -> int:
     started = time.time()
     proofs = {}
+    # F1S wave 2 (accelerate): re-prove a module only when its .lean hash differs from the last audit's
+    # bound hash (or its receipt is gone / was not PROVED); the text checks below always run.
+    try:
+        previous = json.loads(OUT.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        previous = {}
+    force = "--force" in sys.argv[1:]
     for name, path in MODULES.items():
-        proofs[name] = lean(path, HERE / "evidence" / f"{name}.receipt.json")
+        receipt = HERE / "evidence" / f"{name}.receipt.json"
+        prior = (previous.get("proofs") or {}).get(name) or {}
+        bound = ((previous.get("bound") or {}).get(name) or {}).get("sha256")
+        if (not force and prior.get("verdict") == "PROVED" and bound and bound == sha(path)
+                and receipt.is_file() and prior.get("theorems")):
+            proofs[name] = {**prior, "reused": True}
+        else:
+            proofs[name] = {**lean(path, receipt), "reused": False}
     proved = {t for p in proofs.values() for t in p["theorems"]}
     rows = []
     unresolved = 0

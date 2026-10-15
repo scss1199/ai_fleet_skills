@@ -24,8 +24,9 @@ Missing lanes are capability facts, not blockers. Record the selected lane and u
 3. Verify bundle identity, hashes, command receipts, test output, and dirty-worktree isolation from source artifacts.
 4. Inspect every load-bearing implementation path and test for false positives, fail-open behavior, omitted inputs, and host-specific assumptions.
 5. Re-run safe checks independently. Never trigger live financial, deployment, credential, or destructive paths merely to review them.
-6. Emit findings before verdict. Any load-bearing UNKNOWN fails closed.
-7. Write a machine-readable receipt only when the governing contract authorizes the reviewer to do so.
+6. Review on two separate axes, as separate passes or separate subagents (mattpocock code-review): (a) Standards — code quality and the repo's own rules; (b) Spec — the diff against the operator's own words and the acceptance criteria bound by `f1s-intake`. A pass on one axis says nothing about the other.
+7. Emit findings before verdict. Any load-bearing UNKNOWN fails closed.
+8. Write a machine-readable receipt only when the governing contract authorizes the reviewer to do so.
 
 ## Verdict rules
 
