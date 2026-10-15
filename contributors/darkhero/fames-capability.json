@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "573dd1a29acec301ef50bdd7a80d3aeff5f500e402044bbc9f6199258edf5d4a",
   "runner_state": "armed",
-  "observed_at": "2026-10-15T16:43:35.233474+00:00",
+  "observed_at": "2026-10-15T18:06:57.320705+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,8 +353,57 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "UNKNOWN",
-    "native_events": [],
+    "native_state": "OBSERVED_PARTIAL_POPULATION",
+    "native_events": [
+      {
+        "agent": "ai_trader",
+        "surface": "claude",
+        "observed_at": "2026-10-16T02:01:49+08:00",
+        "receipt_sha256": "009bd996234abe72f6f10dd048f51af679354517729bbfbccb2d5ba0015ccbca"
+      },
+      {
+        "agent": "ai_zonghe",
+        "surface": "claude",
+        "observed_at": "2026-10-16T01:50:15+08:00",
+        "receipt_sha256": "5640d025bc8d2c4aa7fbf5fc04344ee734ceb1569d121975a542b3c425318ed8"
+      },
+      {
+        "agent": "ai_accountancy",
+        "surface": "claude",
+        "observed_at": "2026-10-16T02:06:52+08:00",
+        "receipt_sha256": "378a9ced9001c1a9fa909b9e508e9d18eecdacd97a28d698a1e16d958fc9965e"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-10-16T02:04:55+08:00",
+        "receipt_sha256": "6921a48be94287f1682ecbf0e3602a69bc7080aa10344f50b2961f6200b194de"
+      },
+      {
+        "agent": "ai_theater",
+        "surface": "claude",
+        "observed_at": "2026-10-16T02:07:16+08:00",
+        "receipt_sha256": "e1fd0c93b2f8877705e1af4a8fd644807be2023f7e36520ac3cb78e2c338f2b2"
+      },
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-10-16T02:01:29+08:00",
+        "receipt_sha256": "9ca6278d817173e0ca83ce6ce151058214c9822c4fb2db0ba3235b7a037cb30b"
+      },
+      {
+        "agent": "ai_nuwa",
+        "surface": "claude",
+        "observed_at": "2026-10-16T02:06:35+08:00",
+        "receipt_sha256": "a27dce3eaf57697cee9916a7f0489edfa51fdfd387c171b4a09d1d360682fece"
+      },
+      {
+        "agent": "ai_accountancy",
+        "surface": "claude",
+        "observed_at": "2026-10-16T01:43:59+08:00",
+        "receipt_sha256": "70ab8422fb69f0e216a7385aa5f02fb03d595e9b1c442ea130b4ff1f39b01e6d"
+      }
+    ],
     "runtime_release_sha256": "7a209fe001870b575127d8ceabc11b3eea7300cae44ac7e7e2bca27c0fdcb105"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
