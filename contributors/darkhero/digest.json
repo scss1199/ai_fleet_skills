@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-10-15T00:06:39",
+  "generated": "2026-10-15T10:03:12",
   "required": [
     "fames",
     "independent-review",
@@ -23,6 +23,7 @@
     "burn-captions",
     "chapter-compose",
     "deploy-nextjs-cloudflare",
+    "f1s-intake",
     "hubpulse-ops",
     "lean-math-prover",
     "library-bookmark-coverage",

@@ -42,6 +42,11 @@ python %AI_WORKSPACE%\_skill\engines\zat-verify-gate.py verify-done --stamp <STA
 python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <seat>
 ```
 
+## 程式審查（kyloren 15 Skills：Superpowers / Addy Osmani）
+
+非 trivial 的改碼在宣稱完成前，交給沒寫這段程式的 subagent 走技能 `independent-review`
+（生成者不得是自己產出的唯一裁判）；審查結果與 diff 一起引用。
+
 ## UI 驗證（token_budget: low）
 
 若 claim 含 UI/portal → 先 **ztm-webapp-verify**（MCP browser snapshot）再 verify-done。
