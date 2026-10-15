@@ -1,0 +1,108 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261015T090857Z-8b7145e5",
+  "host": "scar3",
+  "started_at": "2026-10-15T09:11:01+00:00",
+  "kind": "probe",
+  "ok": true,
+  "probe": {
+    "hostname": "scar3",
+    "hub": "C:\\ai_workspace",
+    "collected_at": "2026-10-15T09:11:01+00:00",
+    "hub_commit": "c6ab753",
+    "hub_branch": "codex/scar3-tray-consolidation-20260810",
+    "fames": {
+      "version": "1.45.29",
+      "package_sha": "8d9af0ca8b7a10615dfc3e51c270f51470ca0aff9e945356d900038fb5718975"
+    },
+    "runtime_release": {
+      "generation": 53,
+      "state": "INSTALLED"
+    },
+    "receipt": {
+      "expected": "8d9af0ca8b7a10615dfc3e51c270f51470ca0aff9e945356d900038fb5718975",
+      "nodes": {
+        "ai_darkhero": [
+          "PASS",
+          "8d9af0ca8b7a10615dfc3e51c270f51470ca0aff9e945356d900038fb5718975"
+        ],
+        "ai_scar3": [
+          "PASS",
+          "8d9af0ca8b7a10615dfc3e51c270f51470ca0aff9e945356d900038fb5718975"
+        ],
+        "ai_altos": [
+          "UNKNOWN",
+          "2487390c42774d5fa1bab79965fabe11b4589bb00e0bd07a6d3a4ef00d06ecfb"
+        ]
+      }
+    },
+    "riders": [
+      {
+        "id": "fleet-skill-github-sync",
+        "enabled": false,
+        "cmd": "C:\\Python311\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\mtm-fleet-skill-github.py sync"
+      },
+      {
+        "id": "claude-app-health",
+        "enabled": null,
+        "cmd": "C:\\Python311\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\claude-app-health-tick.py --workspace C:\\ai_workspace --host sca"
+      },
+      {
+        "id": "fames-converge",
+        "enabled": null,
+        "cmd": "C:\\Python311\\pythonw.exe C:\\ai_workspace\\ai_scar3\\scripts\\darkhero_architecture_sync.py"
+      },
+      {
+        "id": "fleet-job-dispatch",
+        "enabled": null,
+        "cmd": "C:\\Python311\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\fleet-job-dispatch.py tick"
+      }
+    ],
+    "claude_cli": {
+      "ready": false,
+      "blocker": "claude_auth_unverified",
+      "cli": "C:\\Users\\scss1\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Anthropic.ClaudeCode_Microsoft.Winget.Source_8wekyb3d8bbwe\\claude.EXE"
+    },
+    "nested_hub_folder_present": false,
+    "hardware": {
+      "cpu_count": 12,
+      "ram_total_mb": 16233,
+      "ram_avail_mb": 7345,
+      "os": "Windows 10.0.26300",
+      "disk_free_mb": 222959,
+      "node": "24.15.0",
+      "omniroute_fit": {
+        "fit": true,
+        "reasons": [],
+        "needs": {
+          "node_min": "22.22.2 (22.x) or 24-26",
+          "ram_avail_mb": 1500,
+          "disk_free_mb": 4096
+        }
+      }
+    },
+    "claude_hooks": {
+      "Stop": [
+        "claude-run-until-done-hook.py",
+        "claude-proof-hook.py",
+        "pythonw.exe"
+      ],
+      "SubagentStop": [
+        "claude-proof-hook.py",
+        "pythonw.exe"
+      ],
+      "SessionStart": [
+        "claude_session_hook.py",
+        "pythonw.exe",
+        "pythonw.exe"
+      ],
+      "UserPromptSubmit": [
+        "claude_session_hook.py",
+        "pythonw.exe"
+      ]
+    },
+    "has_claude_proof_hook": true,
+    "has_claude_run_until_done_hook": true
+  },
+  "finished_at": "2026-10-15T09:11:09+00:00"
+}
