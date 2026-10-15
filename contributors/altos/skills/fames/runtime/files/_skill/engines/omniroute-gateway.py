@@ -36,7 +36,16 @@ STATE = HUB / "_registry" / "omniroute-gateway.json"
 HOST, PORT = "127.0.0.1", 20128
 BASE = f"http://{HOST}:{PORT}"
 NW = 0x08000000 if os.name == "nt" else 0
-DETACHED = 0x00000008 | 0x00000200
+# scar3 2026-10-15: DETACHED_PROCESS (0x8) makes Windows ignore CREATE_NO_WINDOW, so the .cmd shim's node child
+# opened a visible terminal (zero-foreground red line). New process group only; never DETACHED_PROCESS.
+NEW_GROUP = 0x00000200
+
+
+def _launch_argv(cli: str) -> list[str]:
+    """node + omniroute.mjs directly (no cmd.exe shim) when the global install is where npm puts it."""
+    mjs = Path(cli).resolve().parent / "node_modules" / "omniroute" / "bin" / "omniroute.mjs"
+    node = shutil.which("node")
+    return [node, str(mjs)] if node and mjs.is_file() else [cli]
 VAULT_TOKEN_PATH = "omniroute.access_token"  # dotted vault path (_secrets.get)
 
 
@@ -138,10 +147,11 @@ def start() -> dict:
     env.setdefault("OMNIROUTE_SKIP_POSTINSTALL", "1")
     env["PORT"] = str(PORT)
     env["HOST"] = HOST
+    env["OMNIROUTE_SERVER_HOST"] = HOST   # 3.8.51 binds 0.0.0.0 without it (scar3 2026-10-15)
     try:
-        proc = subprocess.Popen([cli, "--no-open", "--port", str(PORT)], cwd=str(HUB), env=env,
+        proc = subprocess.Popen([*_launch_argv(cli), "--no-open", "--port", str(PORT)], cwd=str(HUB), env=env,
                                 stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
-                                creationflags=NW | DETACHED, close_fds=True)
+                                creationflags=NW | NEW_GROUP, close_fds=True)
     except OSError as exc:
         return {"ok": False, "reason": "spawn_failed:" + type(exc).__name__}
     deadline = time.time() + 90

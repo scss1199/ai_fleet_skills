@@ -49,6 +49,7 @@ TEXTS = {
     "skill_fleet_github": HUB / "_skill" / "fleet-skills" / "mtm-fleet-skill-github" / "SKILL.md",
     "omniroute_engine": HUB / "_skill" / "engines" / "omniroute-gateway.py",
     "session_hook": HUB / "_skill" / "fleet-skills" / "token-preflight" / "scripts" / "claude_session_hook.py",
+    "skill_pool": HUB / "_skill" / "fleet-skills" / "mtm-api-pool-offload" / "SKILL.md",
     "skill_preflight": HUB / "_skill" / "fleet-skills" / "token-preflight" / "SKILL.md",
     "git_smart": HUB / "_skill" / "engines" / "git_smart.py",
 }
@@ -177,6 +178,15 @@ ELEMENTS = [
     {"id": "OP-coevolve-up", "element": "operator 2026-10-15: a breakthrough in any cwd upgrades F1S back", "verdict": "REFINE",
      "requires": None, "detail": "inbox 'F1S:' proposals -> f1s-evolve-tick: one headless curator turn, then mechanical gates (T1 diff empty, f1s_audit ok, tests green) before ship-f1s (test_f1s_evolve_tick)",
      "check_text": ("hot_directive", "f1s-evolve")},
+    {"id": "OP-free-pool-research", "element": "operator 2026-10-15: free models do background search / ASR / OCR for every seat, skill-bound and automatic", "verdict": "REFINE",
+     "requires": None, "detail": "skill mtm-api-pool-offload rewritten around distill-url --search, distill-media --engine local, image_ocr.py CLI; hot_directive routes every cwd to it; live: search 7 s with sources, OCR read a screenshot",
+     "check_text": ("hot_directive", "mtm-api-pool-offload")},
+    {"id": "OP-free-model-labels", "element": "operator 2026-10-15: bind each free model to its strengths and label it in the F1S skills", "verdict": "REFINE",
+     "requires": None, "detail": "measured probe (2 rounds x summary/extract/reasoning): gemini default, omniroute auto/reasoning for reasoning, auto/coding fallback; auto/fast, auto/writing, nvidia-nim not routed; bound in _llm.Pool.chat_for (test_llm_task_routes)",
+     "check_text": ("skill_pool", "chat_for")},
+    {"id": "OP-omniroute-zero-foreground", "element": "scar3 2026-10-15: DETACHED_PROCESS voided CREATE_NO_WINDOW (visible terminal) and 3.8.51 bound 0.0.0.0", "verdict": "REFINE",
+     "requires": None, "detail": "omniroute-gateway start: CREATE_NO_WINDOW | new group only, node + omniroute.mjs directly, OMNIROUTE_SERVER_HOST=127.0.0.1 (listening 127.0.0.1:20128 verified)",
+     "check_text": ("omniroute_engine", "OMNIROUTE_SERVER_HOST")},
     {"id": "KB-jev-local-models", "element": "operator paste 2026-10-15: official Jev SDK/skill, autotrust JEV-9B/27B open weights, System One Adapter", "verdict": "INFO",
      "requires": None, "detail": "not adopted: SDK/skill need the paid key; autotrust needs >=18 GB NVIDIA (A770 16 GB is reserved for T2I/I2V and tied to power resets) and speaks /v1/decide; the adapter over a generic LLM loses calibration, so it adds nothing over model judgment"},
     {"id": "KB-line-cli", "element": "kyloren_bot cbaf7d43 (Threads 2026-10-14): a skill wrapping line-cli (LINE in the terminal via the Chrome LINE extension)", "verdict": "INFO",
@@ -221,6 +231,8 @@ ELEMENTS = [
      "requires": None, "detail": "rejected: GLOSSARY.md (the charter is the glossary); ADRs (commit trailers Why/Verified-By + _registry hold decisions); docs/agents/*.md; tickets as .md (session task list + side sessions hold them); research .md and specs (the reply + kyloren receipts hold them); handoff doc (the AGC compact is the handoff). grill-me / grill-with-docs already adopted as self-interrogation (TH-grill-me, TH-grill-with-docs)"},
     {"id": "KB-noise", "element": "kyloren_bot cards 31019056, e904d45b, f1047cdb, dbea9c8c, a199503d, 3776cbe2, c18d2b35, e7c5cba9, 44b1a930 (IG reels, ASR noise / promos)", "verdict": "DELETE",
      "requires": None, "detail": "no implementable content beyond what ③ already says (fewer lines, reuse); nothing fused"},
+    {"id": "EVO-en-translation-rejected", "element": "ai_darkhero f1s-evolve live test 2026-10-15: append an English translation to every report", "verdict": "INFO",
+     "requires": None, "detail": "rejected: conflicts with T1 語言 (回覆一律繁體中文; only code/filenames/technique_output in English) and would double every reply's tokens; T1 is not editable by f1s-evolve; no text changed, nothing shipped"},
 ]
 
 
