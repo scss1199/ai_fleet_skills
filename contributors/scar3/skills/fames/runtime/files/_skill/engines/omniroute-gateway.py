@@ -15,6 +15,7 @@ store; the hub only holds the gateway access token in the vault, path `omniroute
   python omniroute-gateway.py stop                # terminate the daemon we started (pid file only)
   python omniroute-gateway.py models [--json]     # GET /v1/models through the gateway (names only)
   python omniroute-gateway.py probe [--model M]   # one tiny /v1/messages call: proves a free model answers
+  python omniroute-gateway.py setup               # first-run on a new machine: admin pw, local keys, access token
 Persistence (autostart / HubClock rider) is proposed, never armed here (operator authority).
 """
 from __future__ import annotations
@@ -204,6 +205,98 @@ def probe(model: str = "auto/coding") -> dict:
             "text": text[:80], "elapsed_s": round(time.time() - t0, 1), "usage": body.get("usage")}
 
 
+PROVIDER_IDS = {"nvidia-nim": "nvidia"}
+SKIP_PROVIDERS = {"ollama", "cursor", "deepgram", "google-maps", "opencode-zen"}
+DEAD = {"dead", "revoked", "expired", "invalid", "disabled"}
+
+
+def _run_cli(cli: str, args: list[str], stdin: str | None = None) -> tuple[int, str]:
+    r = subprocess.run([cli, *args], input=stdin, capture_output=True, text=True, encoding="utf-8",
+                       errors="replace", creationflags=NW, timeout=180)
+    return r.returncode, (r.stdout or "") + (r.stderr or "")
+
+
+def _find_key(o):
+    if isinstance(o, dict):
+        for k, v in o.items():
+            if k.lower() in ("key", "apikey", "api_key", "token", "secret", "value") and isinstance(v, str) and len(v) >= 16:
+                return v
+            f = _find_key(v)
+            if f:
+                return f
+    if isinstance(o, list):
+        for x in o:
+            f = _find_key(x)
+            if f:
+                return f
+    return None
+
+
+def setup(matrix_path: Path | None = None, cli: str | None = None, secrets_mod=None) -> dict:
+    """Idempotent first-run setup on THIS machine (darkhero recipe of 2026-10-14, codified 2026-10-15 so a
+    follower runs one command): admin password in the vault, the machine's own api-matrix keys connected
+    (first live key per provider, then extra keys for groq/gemini/cerebras), a gateway access key minted into
+    the vault, then providers test-all. Keys only travel by stdin; nothing secret is returned or printed."""
+    cli = cli or _cli()
+    if not cli:
+        return {"ok": False, "reason": "omniroute_cli_not_found", "hint": "npm install -g omniroute@3.8.51"}
+    if secrets_mod is None:
+        sys.path.insert(0, str(HUB / "_skill" / "engines"))
+        import _secrets as secrets_mod  # type: ignore
+    import secrets as _rand
+    steps = {}
+    pw = secrets_mod.get("omniroute.admin_password")
+    if not pw:
+        pw = _rand.token_urlsafe(24)
+        secrets_mod.set("omniroute.admin_password", pw)
+        steps["admin_password"] = "minted"
+    else:
+        steps["admin_password"] = "present"
+    rc, _ = _run_cli(cli, ["setup", "--non-interactive", "--password", str(pw)])
+    steps["cli_setup_rc"] = rc
+    matrix = json.loads(Path(matrix_path or HUB / "_secrets" / "api-matrix.json").read_text(encoding="utf-8-sig"))
+    added, extra, skipped = [], [], []
+    count = {}
+    for k in matrix.get("keys") or []:
+        if not isinstance(k, dict) or not k.get("key"):
+            continue
+        prov = PROVIDER_IDS.get(k.get("provider"), k.get("provider"))
+        if not prov or prov in SKIP_PROVIDERS:
+            continue
+        if str(k.get("status") or "").lower() in DEAD or str(k.get("health") or "").lower() in DEAD:
+            skipped.append(prov)
+            continue
+        count[prov] = count.get(prov, 0) + 1
+        n = count[prov]
+        if n == 1:
+            rc, _ = _run_cli(cli, ["keys", "add", prov, "--stdin"], stdin=str(k["key"]) + "\n")
+            added.append((prov, rc))
+        elif prov in ("groq", "gemini", "cerebras"):
+            rc, _ = _run_cli(cli, ["providers", "add", prov, "--name", f"{prov}-{n}", "--credential-stdin",
+                                   "--priority", str(n), "--json"], stdin=str(k["key"]) + "\n")
+            extra.append((f"{prov}-{n}", rc))
+    steps.update(providers_added=added, extra_connections=extra, skipped_dead=sorted(set(skipped)))
+    if secrets_mod.get(VAULT_TOKEN_PATH):
+        steps["access_token"] = "present"
+    else:
+        rc, out = _run_cli(cli, ["--output", "json", "api", "api-keys", "post-api-keys", "--body",
+                                 json.dumps({"name": "claude-free-lane", "description": "hub claude-remote-exec gateway lane"})])
+        i = out.find("{")
+        try:
+            key = _find_key(json.loads(out[i:])) if i >= 0 else None
+        except ValueError:
+            key = None
+        if key:
+            secrets_mod.set(VAULT_TOKEN_PATH, key)
+            steps["access_token"] = "minted"
+        else:
+            steps["access_token"] = "mint_failed_rc%d" % rc
+    rc, _ = _run_cli(cli, ["providers", "test-all", "--output", "json"])
+    steps["test_all_rc"] = rc
+    ok = steps["access_token"] in ("present", "minted") and any(r == 0 for _, r in added)
+    return {"ok": ok, **steps}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -213,8 +306,9 @@ def main() -> int:
     p = sub.add_parser("probe")
     p.add_argument("--model", default="auto/coding")
     p.add_argument("--json", action="store_true")
+    sub.add_parser("setup").add_argument("--json", action="store_true")
     a = ap.parse_args()
-    out = {"status": status, "start": start, "stop": stop, "models": models}.get(a.cmd)
+    out = {"status": status, "start": start, "stop": stop, "models": models, "setup": setup}.get(a.cmd)
     doc = probe(a.model) if a.cmd == "probe" else out()
     print(json.dumps(doc, ensure_ascii=False, indent=None if getattr(a, "json", False) else 1))
     return 0 if doc.get("ok", doc.get("healthy", False)) else 1

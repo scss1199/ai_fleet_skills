@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.45.30",
+  "version": "1.45.32",
   "updated": "2026-09-23",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -2473,7 +2473,7 @@
       "completion_rule": "Scope completion/release does not clear unrelated parent obligations; task completion requires fresh accepted evidence and closed work",
       "unsupported": "Arbitrary recursive child delegation, transitive lineage and cumulative child budgets are not added or proven by this entrypoint"
     },
-    "hot_directive": "F1S（FAMES 一套系統）每次對話預設啟用，只提示、不阻擋；做法放技能、按需載入：①不准曲解→技能 f1s-intake（原話列要做、不做、限制、驗收，不擴不縮不替換，已決定不再問，繁中結論先行兩句，細節放回覆或既有收據，不新開 .md/.json）；③馬斯克五步、先重用再寫、改碼前先全域搜尋、只改要改的行→技能 mtm-mto-first；④⑤⑥主張要有本回合證據否則 UNKNOWN、改碼後跑綠測試才說修好、不准說謊推託、「需要你決定」只問一次且只問使用者專屬的事、只寫使用者點名的檔案→技能 ztm-verify-before-done，PROOF Stop hook 機械擋。需要使用者登入網站→技能 browser-login-handoff（先找免登入路徑、探測真實登入狀態、面板可見只交接一次）。②元件按需、不一次叫全部：FAMES 是契約不是 gate，FP、MTM 每任務做，SCF 要已驗證結果，AEX 要可比較量測差距，SEAL 在宣稱完成時；Skill 不給權限；Jev 只在挑選或排序時給建議；Lean 只驗形式化主張；HubClock 只放週期工作且需授權；GitHub 用 git_smart、不 force push、推完讀回遠端。紅線優先。額度用完改走 OmniRoute 免費池（claude-remote-exec auto lane）。使用者單說「FAMES」＝列各階段狀態。",
+    "hot_directive": "F1S（FAMES 一套系統）每次對話預設啟用，只提示、不阻擋；做法放技能、按需載入：①不准曲解→技能 f1s-intake（原話列要做、不做、限制、驗收，不擴不縮不替換，已決定不再問，繁中結論先行兩句，細節放回覆或既有收據，不新開 .md/.json）；③馬斯克五步、先重用再寫、改碼前先全域搜尋、只改要改的行→技能 mtm-mto-first；④⑤⑥主張要有本回合證據否則 UNKNOWN、改碼後跑綠測試才說修好、不准說謊推託、「需要你決定」只問一次且只問使用者專屬的事、只寫使用者點名的檔案→技能 ztm-verify-before-done，PROOF Stop hook 機械擋。需要使用者登入網站→技能 browser-login-handoff（先找免登入路徑、探測真實登入狀態、面板可見只交接一次）。長對話自動壓縮→技能 agc-auto-goal-compact（hook 超過上限即刷新 compact，讀 compact 不重讀對話，里程碑 park）。替其他座位開的 session 開完即 detach 成獨立頂層。從機升級→技能 mtm-fleet-skill-github（converge＋派工 rider，出貨後派 probe 自動回應才算同步）。雙向演化：F1S 升級會在下一則提示或任務中途下一個工具呼叫自動注入，照新版做、不等人要求；任何 cwd 的任務發現值得升級 F1S 的做法，就用 inbox.py send ai_darkhero <seat> --kind task \"F1S: 標題＋原因＋證據路徑\" 提案，由 f1s-evolve 自動整合（T1 不可改、Lean 稽核與測試全綠才出貨）。②元件按需、不一次叫全部：FAMES 是契約不是 gate，FP、MTM 每任務做，SCF 要已驗證結果，AEX 要可比較量測差距，SEAL 在宣稱完成時；Skill 不給權限；Jev 只在挑選或排序時給建議；Lean 只驗形式化主張；HubClock 只放週期工作且需授權；GitHub 用 git_smart、不 force push、推完讀回遠端。紅線優先。額度用完改走 OmniRoute 免費池（claude-remote-exec auto lane）。使用者單說「FAMES」＝列各階段狀態。",
     "phase_execution": {
       "schema": 1,
       "required": true,

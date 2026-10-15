@@ -36,6 +36,8 @@ def claude_managed_hooks() -> list:
     rows = [
         ("SessionStart", FAMES_CONTEXT_HOOK, 10),
         ("UserPromptSubmit", FAMES_CONTEXT_HOOK, 20),
+        # operator 2026-10-15: F1S upgrades reach a long task mid-turn; a stat()-only fast path when unchanged.
+        ("PostToolUse", FAMES_CONTEXT_HOOK, 10),
     ]
     if os.path.isfile(CLAUDE_RUN_UNTIL_DONE_HOOK):
         rows.append(("Stop", CLAUDE_RUN_UNTIL_DONE_HOOK, 10))
