@@ -55,6 +55,21 @@ FAMES `converge` 會先跑本機正／負控制並寫
 中央 `verify-fleet` 必須同時驗 package、capability set、validator set、runner、
 caller 與 receipt freshness；三份 contributor manifest 缺一即不是 full convergence。
 
+## 從機自動升級（2026-10-15 scar3 驗證過的做法）
+
+從機（scar3、altos）的 HubClock 上要有這幾個 rider（用 `register-rider.py add HubClock …`；arming 要 operator
+在那台的 session 親自授權，peer 轉述的授權不算）：
+- `fames-converge`（15m）：把 F1S／FAMES 套件收斂到 GitHub 上的最新版。
+- `fleet-job-dispatch`（5m）：`fleet-job-dispatch.py tick`，處理 `jobs/<host>/` 的探測。主機名與 host 不同時要加 `--host`。
+- `fleet-skill-github-sync`（30m）：技能同步。
+- `omniroute-ensure`（10m）：`omniroute-gateway.py start`。新機器第一次先跑 `omniroute-gateway.py setup`（只用本機金鑰，金鑰只走 stdin）。
+
+HubClock 本身要開機自啟（pythonw 或 wscript，禁止 -WindowStyle Hidden）。rider 命令裡的引號由 hubclock
+`_parse_rider_argv` 處理（1.45.30 起每個參數都會去引號）。
+
+**驗收**：darkhero 出貨新版後，用 `fleet-job-dispatch.py submit --target-host <host> --kind probe` 派一份探測；
+沒有人工介入就自動回應、且回報的 fames 版本等於新版，才算這台已同步。scar3 在 1.45.30 的實測是 251 秒。
+
 ## 本機 SSOT
 
 策展仍在本機 `_skill/fleet-skills/`；GitHub 只做同步與跨機學習。

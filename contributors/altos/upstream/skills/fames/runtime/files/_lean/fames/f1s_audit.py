@@ -9,6 +9,7 @@ the proofs to the texts and the running hook by hash.  Exit 0 only when every Le
 no element is left at CONTRADICTION, and the claim conformance receipt still matches the hook.
 
   python f1s_audit.py            # writes evidence/f1s-audit.json (machine receipt), prints the summary
+  python f1s_audit.py --force    # re-prove every module even when its .lean hash is unchanged
 """
 from __future__ import annotations
 
@@ -45,6 +46,9 @@ TEXTS = {
     "skill_verify": HUB / "_skill" / "fleet-skills" / "ztm-verify-before-done" / "SKILL.md",
     "skill_login": HUB / "_skill" / "fleet-skills" / "browser-login-handoff" / "SKILL.md",
     "skill_review": HUB / "_skill" / "fleet-skills" / "independent-review" / "SKILL.md",
+    "skill_fleet_github": HUB / "_skill" / "fleet-skills" / "mtm-fleet-skill-github" / "SKILL.md",
+    "omniroute_engine": HUB / "_skill" / "engines" / "omniroute-gateway.py",
+    "session_hook": HUB / "_skill" / "fleet-skills" / "token-preflight" / "scripts" / "claude_session_hook.py",
     "skill_preflight": HUB / "_skill" / "fleet-skills" / "token-preflight" / "SKILL.md",
     "git_smart": HUB / "_skill" / "engines" / "git_smart.py",
 }
@@ -155,6 +159,26 @@ ELEMENTS = [
      "requires": None, "detail": "env-var audit = global settings (operator); ELI5 is a content skill, not a harness rule; Astra's ask-back/stop-halfway fixes are already run-until-no-next-step + ask-once (slide text not captured)"},
     {"id": "LAB-noise", "element": "33 kyloren_bot notes: own LINE-to-Cursor cloud_rest failures (branch main missing, SCM access, 429, OOM guard), 2026-07-21..08-31", "verdict": "DELETE",
      "requires": None, "detail": "bridge fixed to each repo's real branch in hub 2b861cc8 (2026-09-27); no later failures in the archive"},
+    {"id": "OP-agc-pointer", "element": "operator 2026-10-15: is auto-compaction (AGC) part of F1S?", "verdict": "REFINE",
+     "requires": None, "detail": "AGC already ran as a hook lane; the per-turn hot_directive now names skill agc-auto-goal-compact",
+     "check_text": ("hot_directive", "agc-auto-goal-compact")},
+    {"id": "OP-seat-sessions-detached", "element": "operator 2026-10-15 screenshot: ai_trader sessions nested under the curator conversation", "verdict": "REFINE",
+     "requires": None, "detail": "sessions opened for another seat are detached to top level right after start_session",
+     "check_text": ("hot_directive", "detach")},
+    {"id": "OP-follower-sync", "element": "operator 2026-10-15: follower HubClock must sync with GitHub by itself", "verdict": "REFINE",
+     "requires": None, "detail": "skill mtm-fleet-skill-github: converge + dispatch + sync + omniroute-ensure riders; acceptance = an unattended probe answer at the new version (scar3 1.45.30 in 251 s)",
+     "check_text": ("skill_fleet_github", "自動回應")},
+    {"id": "OP-omniroute-setup", "element": "OmniRoute first-run on a follower was a hand-typed 2026-10-14 recipe", "verdict": "REFINE",
+     "requires": None, "detail": "omniroute-gateway.py setup: admin pw, machine-local keys via stdin, access token minted into the vault (test_omniroute_setup)",
+     "check_text": ("omniroute_engine", "def setup(")},
+    {"id": "OP-coevolve-down", "element": "operator 2026-10-15: F1S upgrades must reach long conversations in every cwd mid-task, without being asked", "verdict": "REFINE",
+     "requires": None, "detail": "claude_session_hook PostToolUse fast path: stat() of protocol/T1/package; on change, hot_refresh + T1/charter diffs injected mid-turn (test_midturn_refresh)",
+     "check_text": ("session_hook", "F1S MID-TURN UPDATE")},
+    {"id": "OP-coevolve-up", "element": "operator 2026-10-15: a breakthrough in any cwd upgrades F1S back", "verdict": "REFINE",
+     "requires": None, "detail": "inbox 'F1S:' proposals -> f1s-evolve-tick: one headless curator turn, then mechanical gates (T1 diff empty, f1s_audit ok, tests green) before ship-f1s (test_f1s_evolve_tick)",
+     "check_text": ("hot_directive", "f1s-evolve")},
+    {"id": "KB-jev-local-models", "element": "operator paste 2026-10-15: official Jev SDK/skill, autotrust JEV-9B/27B open weights, System One Adapter", "verdict": "INFO",
+     "requires": None, "detail": "not adopted: SDK/skill need the paid key; autotrust needs >=18 GB NVIDIA (A770 16 GB is reserved for T2I/I2V and tied to power resets) and speaks /v1/decide; the adapter over a generic LLM loses calibration, so it adds nothing over model judgment"},
     {"id": "KB-line-cli", "element": "kyloren_bot cbaf7d43 (Threads 2026-10-14): a skill wrapping line-cli (LINE in the terminal via the Chrome LINE extension)", "verdict": "INFO",
      "requires": None, "detail": "not adopted: it drives the operator's personal LINE login through a third-party tool (secret/login red line); line-oa-ingest stays the LINE route"},
     {"id": "TH-tdd", "element": "threads @nashlikeai 2026-10-14 (skills.sh top list): tdd — 先寫測試再寫程式，避免改 A 壞 B", "verdict": "FORMALIZED",
@@ -180,6 +204,21 @@ ELEMENTS = [
     {"id": "KB-skills-verify", "element": "④⑤⑥ evidence / no lying / no junk files as skill text", "verdict": "REFINE",
      "requires": None, "detail": "moved from hot_directive into ztm-verify-before-done; PROOF Stop hook still judges it",
      "check_text": ("skill_verify", "F1S ④⑤⑥")},
+    # operator 2026-10-15: absorb aiposthub mattpocock/skills guide into F1S, strict review of .md/.json necessity
+    {"id": "MP-file-necessity", "element": "mattpocock/skills: knowledge kept as repo .md files (GLOSSARY, ADR, docs/agents, tickets, research, specs)", "verdict": "REFINE",
+     "requires": None, "detail": "⑥ gains a three-part file-necessity test (named or read back mechanically / no existing store / not a summary); those files fail (b) here",
+     "check_text": ("skill_verify", "檔案必要性三條全成立")},
+    {"id": "MP-diagnosing-bugs", "element": "mattpocock diagnosing-bugs: red reproduction, one falsifiable hypothesis, tagged debug logs, regression test", "verdict": "REFINE",
+     "requires": None, "detail": "new 修 bug section in ztm-verify-before-done; PROOF fix_claim still judges the regression test",
+     "check_text": ("skill_verify", "## 修 bug")},
+    {"id": "MP-code-review-axes", "element": "mattpocock code-review: standards and spec as separate review axes", "verdict": "REFINE",
+     "requires": None, "detail": "independent-review procedure step: Standards pass and Spec pass (operator's words + f1s-intake acceptance) run separately",
+     "check_text": ("skill_review", "Review on two separate axes")},
+    {"id": "MP-unit-sizing", "element": "mattpocock to-tickets / wayfinder: one fresh-context-sized unit per session", "verdict": "REFINE",
+     "requires": None, "detail": "token-preflight PFKT step: size each independent unit to one fresh context window, one unit per session or subagent",
+     "check_text": ("skill_preflight", "fit one fresh context window")},
+    {"id": "MP-rejected", "element": "mattpocock/skills parts not adopted", "verdict": "INFO",
+     "requires": None, "detail": "rejected: GLOSSARY.md (the charter is the glossary); ADRs (commit trailers Why/Verified-By + _registry hold decisions); docs/agents/*.md; tickets as .md (session task list + side sessions hold them); research .md and specs (the reply + kyloren receipts hold them); handoff doc (the AGC compact is the handoff). grill-me / grill-with-docs already adopted as self-interrogation (TH-grill-me, TH-grill-with-docs)"},
     {"id": "KB-noise", "element": "kyloren_bot cards 31019056, e904d45b, f1047cdb, dbea9c8c, a199503d, 3776cbe2, c18d2b35, e7c5cba9, 44b1a930 (IG reels, ASR noise / promos)", "verdict": "DELETE",
      "requires": None, "detail": "no implementable content beyond what ③ already says (fewer lines, reuse); nothing fused"},
 ]
@@ -215,8 +254,22 @@ def text_has(key: str, needle: str) -> bool:
 def main() -> int:
     started = time.time()
     proofs = {}
+    # F1S wave 2 (accelerate): re-prove a module only when its .lean hash differs from the last audit's
+    # bound hash (or its receipt is gone / was not PROVED); the text checks below always run.
+    try:
+        previous = json.loads(OUT.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        previous = {}
+    force = "--force" in sys.argv[1:]
     for name, path in MODULES.items():
-        proofs[name] = lean(path, HERE / "evidence" / f"{name}.receipt.json")
+        receipt = HERE / "evidence" / f"{name}.receipt.json"
+        prior = (previous.get("proofs") or {}).get(name) or {}
+        bound = ((previous.get("bound") or {}).get(name) or {}).get("sha256")
+        if (not force and prior.get("verdict") == "PROVED" and bound and bound == sha(path)
+                and receipt.is_file() and prior.get("theorems")):
+            proofs[name] = {**prior, "reused": True}
+        else:
+            proofs[name] = {**lean(path, receipt), "reused": False}
     proved = {t for p in proofs.values() for t in p["theorems"]}
     rows = []
     unresolved = 0

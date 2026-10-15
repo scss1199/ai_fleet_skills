@@ -286,8 +286,65 @@ def _seat_for_cwd(cwd: str) -> str:
     return base
 
 
+MIDTURN_WATCH=("_registry/fames-protocol.json","_registry/rules-blueprint.json",
+               "_skill/fleet-skills/fames/runtime/manifest.json")
+
+
+def _midturn_changed(surface_id: str, session_id: str, *, record_only: bool=False) -> bool:
+    """operator 2026-10-15: an F1S upgrade must reach a long task mid-turn, not only at its next prompt.
+    Cheap: stat() of the files an upgrade rewrites, compared with what this session last saw. The first call
+    of a session only records (its prompt already carried the current contract). Never raises."""
+    try:
+        import hashlib
+        sig="|".join("%s:%s"%(p.stat().st_mtime_ns,p.stat().st_size) if p.is_file() else "-"
+                     for p in (HUB/rel for rel in MIDTURN_WATCH))
+        key=hashlib.sha256(f"{surface_id}\0{session_id}".encode("utf-8")).hexdigest()[:24]
+        path=HUB/"_registry"/"fames-hot"/f"midturn-{key}.json"
+        try:
+            seen=json.loads(path.read_text(encoding="utf-8")).get("sig")
+        except (OSError,ValueError):
+            seen=None
+        if seen==sig:
+            return False
+        path.parent.mkdir(parents=True,exist_ok=True)
+        path.write_text(json.dumps({"sig":sig,"at":datetime.now(timezone.utc).isoformat()}),encoding="utf-8")
+        return seen is not None and not record_only
+    except Exception:
+        return False
+
+
+def _midturn(doc) -> int:
+    """PostToolUse fast path: print {} unless F1S changed since this session last saw it."""
+    session_id=str(doc.get("session_id") or "")
+    surface_id="open-agent-standard" if str(doc.get("turn_id") or "").strip() else "claude"
+    if not session_id or not _midturn_changed(surface_id,session_id):
+        print("{}")
+        return 0
+    cwd=str(doc.get("cwd") or os.getcwd())
+    parts=[]
+    try:
+        hot=_harness().hot_refresh(_seat_for_cwd(cwd),Path(cwd),surface_id=surface_id,session_id=session_id,workspace=HUB)
+        parts.append(hot.get("plan_text",""))
+    except Exception as exc:
+        parts.append(f"FAMES HOT REFRESH — UNKNOWN — {type(exc).__name__}")
+    for update in (_t1_refresh(surface_id,session_id,at_start=False),
+                   _charter_refresh(surface_id,session_id,cwd,at_start=False,
+                                    transcript_path=str(doc.get("transcript_path") or ""))):
+        if update:
+            parts.append(update)
+    context="\n".join(p for p in parts if p).strip()
+    if context:
+        context="F1S MID-TURN UPDATE (an upgrade landed while this task was running; apply it from the next step)\n"+context
+        print(json.dumps({"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":context}},ensure_ascii=True))
+    else:
+        print("{}")
+    return 0
+
+
 def main():
     doc=_read_hook_input(sys.stdin)
+    if str(doc.get("hook_event_name") or "")=="PostToolUse":
+        return _midturn(doc)
     cwd=str(doc.get("cwd") or os.getcwd())
     agent=_seat_for_cwd(cwd)
     event=str(doc.get("hook_event_name") or "SessionStart")
@@ -365,6 +422,8 @@ def main():
         if session_source != "compact":
             # A fresh, resumed or cleared conversation loads its instruction files now; compaction may not.
             _charter_refresh(surface_id, session_id, cwd, at_start=True)
+    # The prompt or start just delivered the current contract: record it so the mid-turn check stays quiet.
+    _midturn_changed(surface_id, session_id, record_only=True)
     t1_state=None
     if event == "SessionStart":
         # The hard lines must not depend on the FAMES harness above having succeeded.
