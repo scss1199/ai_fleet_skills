@@ -28,6 +28,20 @@ parent_skill: aex-agent-evolution
 - 準備 `Task` / 多 agent 並行
 - 準備 browser / CDP
 
+## F1S ③ 做法（馬斯克五步，順序不可顛倒）
+
+1. 質疑需求：回到使用者原話（`f1s-intake`）。
+2. 刪除不必要的步驟。
+3. 簡化。
+4. 加速。
+5. 最後才自動化。
+
+- 動手前先問要不要寫新東西，依序：重用現有程式 → 標準函式庫 → 原生功能 → 已安裝套件 → 最後才自己寫。
+  精簡但不省驗證、安全與錯誤處理。
+- 改碼前先全域搜尋既有實作與用法（brownfield）；未搜尋即改碼 PROOF 擋（class `code_change`，
+  Lean `ClaimContract.code_change_needs_prior_search`）。scratchpad 腳本不算。
+- 精準修改：只動要改的行，旁邊的程式一行都不碰。
+
 ## MTO 四步（TR0，0 LLM token）
 
 ### 1 CONSUME — prework

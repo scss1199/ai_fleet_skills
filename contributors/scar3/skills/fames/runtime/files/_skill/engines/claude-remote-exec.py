@@ -288,6 +288,58 @@ def _child_env(cfg: dict) -> tuple[dict, str | None, str | None]:
     return env, src, None
 
 
+QUOTA_MARKERS = ("usage limit", "rate limit", "rate_limit", "429", "overloaded", "out of credits", "credit balance",
+                 "quota", "too many requests", "capacity")
+
+
+def gateway_cfg(cfg: dict) -> dict:
+    """The free-provider gateway lane (operator 2026-10-14, kyloren_bot 「無限量使用 Claude Code」 reels):
+    an Anthropic-compatible local gateway (OmniRoute) that routes to free providers when the Anthropic
+    credential is absent, unverified or out of quota. Off unless configured."""
+    gw = cfg.get("gateway") or {}
+    return {"enabled": bool(gw.get("enabled")), "base_url": str(gw.get("base_url") or "http://127.0.0.1:20128"),
+            "token_vault_path": str(gw.get("token_vault_path") or "omniroute.access_token"),
+            "model": str(gw.get("model") or "auto/coding"), "health_timeout": float(gw.get("health_timeout") or 4.0)}
+
+
+def gateway_health(cfg: dict) -> tuple[bool, str]:
+    gw = gateway_cfg(cfg)
+    if not gw["enabled"]:
+        return False, "gateway_disabled"
+    try:
+        import urllib.request
+
+        with urllib.request.urlopen(gw["base_url"] + "/api/health", timeout=gw["health_timeout"]) as r:
+            return r.status == 200, "http_%s" % r.status
+    except Exception as exc:  # noqa: BLE001
+        return False, "gateway_unreachable:" + type(exc).__name__
+
+
+def _gateway_env(cfg: dict) -> tuple[dict, str | None]:
+    """Child env for the gateway lane: Anthropic credentials stripped, gateway token from the vault only."""
+    gw = gateway_cfg(cfg)
+    try:
+        import _secrets
+
+        token = _secrets.get(gw["token_vault_path"])
+    except Exception as exc:  # noqa: BLE001
+        return {}, "gateway_vault_unreadable:%s" % type(exc).__name__
+    if not token:
+        return {}, "gateway_token_missing:" + gw["token_vault_path"]
+    env = dict(os.environ)
+    for var in OAUTH_VARS + API_KEY_VARS:
+        env.pop(var, None)
+    env["ANTHROPIC_BASE_URL"] = gw["base_url"]
+    env["ANTHROPIC_AUTH_TOKEN"] = str(token)
+    env["ANTHROPIC_MODEL"] = gw["model"]
+    env["CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"] = "1"
+    # Claude Code refuses an unknown model id's context window unless told; the gateway's combos / free
+    # models are unknown to it (observed 2026-10-14: "unrecognized_model auto/coding").
+    env["CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT"] = "1"
+    env.setdefault("CLAUDE_CODE_MAX_CONTEXT_TOKENS", str(gw.get("max_context_tokens") or 120000))
+    return env, None
+
+
 def _seat_cwd(seat: str, cfg: dict) -> tuple[str, str | None]:
     """Seat dir under cwd_root, or an error. Never resolves outside the hub."""
     root = os.path.abspath((cfg.get("exec") or {}).get("cwd_root") or HUB)
@@ -301,9 +353,33 @@ def _seat_cwd(seat: str, cfg: dict) -> tuple[str, str | None]:
     return (cand if os.path.isdir(cand) else root), None
 
 
-def run_local(prompt: str, seat: str = "ai_darkhero", cfg: dict | None = None) -> tuple[str, str | None]:
-    """Run the local Claude CLI headlessly. Returns (text, err) like the bridge's _run_agent."""
+def run_local(prompt: str, seat: str = "ai_darkhero", cfg: dict | None = None, lane: str = "auto") -> tuple[str, str | None]:
+    """Run the local Claude CLI headlessly. Returns (text, err) like the bridge's _run_agent.
+
+    lane: "anthropic" (subscription / API key only), "gateway" (free-provider gateway only), or "auto":
+    Anthropic first, then the gateway when the credential is absent / unverified or the run hit a quota
+    marker — the Anthropic quota running out is not a reason to stop (operator 2026-10-14)."""
     cfg = cfg or load_cfg()
+    if lane == "auto":
+        text, err = _run_lane(prompt, seat, cfg, "anthropic")
+        if err is None:
+            return text, err
+        low = (err or "").lower()
+        quota_hit = any(m in low for m in QUOTA_MARKERS) or err in (NOT_LOGGED_IN, AUTH_UNVERIFIED) \
+            or low.startswith("claude_local_rc")
+        healthy, why = gateway_health(cfg)
+        if quota_hit and healthy:
+            gtext, gerr = _run_lane(prompt, seat, cfg, "gateway")
+            if gerr is None:
+                return gtext, None
+            return gtext, "anthropic:%s | gateway:%s" % (err[:120], gerr[:120])
+        if gateway_cfg(cfg)["enabled"] and not healthy:
+            return text, "%s | gateway:%s" % (err[:160], why)
+        return text, err
+    return _run_lane(prompt, seat, cfg, lane)
+
+
+def _run_lane(prompt: str, seat: str, cfg: dict, lane: str) -> tuple[str, str | None]:
     if not cfg.get("enabled", True):
         return "", "claude_local_disabled"
     ex = cfg.get("exec") or {}
@@ -319,11 +395,20 @@ def run_local(prompt: str, seat: str = "ai_darkhero", cfg: dict | None = None) -
     cwd, cwd_err = _seat_cwd(seat, cfg)
     if cwd_err:
         return "", cwd_err
-    env, src, auth_err = _child_env(cfg)
+    if lane == "gateway":
+        healthy, why = gateway_health(cfg)
+        if not healthy:
+            return "", why
+        env, auth_err = _gateway_env(cfg)
+        src = "gateway:" + gateway_cfg(cfg)["base_url"]
+    else:
+        env, src, auth_err = _child_env(cfg)
     if auth_err:
         return "", auth_err
 
     argv = [cli, "-p", "--output-format", str(ex.get("output_format") or "text")]
+    if lane == "gateway":
+        argv += ["--model", gateway_cfg(cfg)["model"]]
     mode = ex.get("permission_mode")
     if mode:
         argv += ["--permission-mode", str(mode)]
@@ -356,8 +441,8 @@ def run_local(prompt: str, seat: str = "ai_darkhero", cfg: dict | None = None) -
     cap_r = int(ex.get("max_result_chars") or 20000)
     if len(out) > cap_r:
         out = out[:cap_r] + "\n[truncated at %d chars]" % cap_r
-    head = "[runtime=claude_local seat=%s cwd=%s auth=%s %.1fs]\n" % (
-        seat, os.path.basename(cwd), src, time.time() - t0)
+    head = "[runtime=claude_local lane=%s seat=%s cwd=%s auth=%s %.1fs]\n" % (
+        lane, seat, os.path.basename(cwd), src, time.time() - t0)
     return head + out, None
 
 
@@ -401,10 +486,13 @@ def check(cfg: dict, *, probe: bool = False) -> dict:
         out["blocker_detail"] = str(cfg["_load_error"])[:200]
         return out
 
+    gh, gwhy = gateway_health(cfg)
+    out["gateway"] = {"enabled": gateway_cfg(cfg)["enabled"], "healthy": gh, "detail": gwhy,
+                      "base_url": gateway_cfg(cfg)["base_url"]}
     if probe and out["cli_ok"] and src:
         # Costs real quota, so it is opt-in. This is the only check that proves the
         # credential works rather than merely existing.
-        text, err = run_local("Reply with exactly: REMOTE_OK", "ai_darkhero", cfg)
+        text, err = run_local("Reply with exactly: REMOTE_OK", "ai_darkhero", cfg, lane="anthropic")  # the probe verifies THIS credential, never the gateway
         ok = bool(not err and "REMOTE_OK" in text)
         out["probe"] = "ok" if ok else "fail"
         out["probe_err"] = (err or "")[:200] or None
@@ -443,6 +531,8 @@ def main() -> int:
     c.add_argument("--probe", action="store_true")
     r = sub.add_parser("run")
     r.add_argument("--seat", default="ai_darkhero")
+    r.add_argument("--lane", choices=["auto", "anthropic", "gateway"], default="auto",
+                   help="auto = Anthropic first, free-provider gateway when absent/unverified/out of quota")
     r.add_argument("--prompt-file")
     args = ap.parse_args()
 
@@ -464,7 +554,7 @@ def main() -> int:
             prompt = fh.read()
     else:
         prompt = sys.stdin.read()
-    text, err = run_local(prompt, args.seat, cfg)
+    text, err = run_local(prompt, args.seat, cfg, lane=getattr(args, "lane", "auto") or "auto")
     if err:
         print(err, file=sys.stderr)
         if text:

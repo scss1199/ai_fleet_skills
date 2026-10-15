@@ -1,6 +1,6 @@
 ---
 name: ztm-verify-before-done
-description: Mechanical verify-before-done gate before claiming SHIPPED. Use when about to report done, park, or result-field write. Runs claim-linter + zat-verify-gate path.
+description: Mechanical verify-before-done gate before claiming SHIPPED, plus F1S rules ④⑤⑥ (evidence or UNKNOWN, green test after the last edit before saying fixed, no lying or hand-back, no unrequested .md/.json). Use when about to report done, fixed, read, automated or blocked, before park or a result-field write. Runs claim-linter + zat-verify-gate path.
 metadata:
   fleet:
     lane: zero-token-mechanism
@@ -20,6 +20,19 @@ parent_skill: aex-agent-evolution
 - 準備寫 `result-field.py write` 或報「已完成」
 - `last_p_verified=0` 或 accountability **fake-delivery** 風險
 - PFKT fragment 要標 `verify-done`
+
+## F1S ④⑤⑥（PROOF Stop hook 機械擋；本文教怎麼過）
+
+- ④ 每個主張要有本回合跑過的驗證或能開的檔案，否則寫 UNKNOWN；寧可說不知道也不准自信亂答再翻供。
+  改碼後說「修好」必須在最後一次改碼之後跑過綠的測試（tdd，避免改 A 壞 B；
+  Lean `ClaimContract.fix_claim_needs_test_after_write`）。
+- ⑤ 不准說謊、不准推託：已讀、推進、已自動化、做不到、重問同一決定、要已給過的值、把自己能做的步驟
+  推給使用者，每一句都要有本回合工具結果，否則寫 UNKNOWN 或自己去做。只有登入/OAuth、永久刪除、
+  rider 授權、全域設定、金鑰、資金、硬體是使用者的步驟。Anthropic 額度用完不是停下的理由：
+  `claude-remote-exec` auto lane 改走本機 OmniRoute 免費池（`omniroute-gateway.py`）。
+- ⑥ 嚴禁隨意產出 .md/.json：只寫使用者點名的檔案、charter、`_registry` 狀態與 SEAL 收據；
+  報告、筆記、摘要寫在回覆裡（Lean `F1SCore.reports_are_junk`）。
+- 宣稱完成時跑 SEAL：`fames_phase_runtime.py --turn --result --closure`。
 
 ## 必跑（0-token engines 優先）
 

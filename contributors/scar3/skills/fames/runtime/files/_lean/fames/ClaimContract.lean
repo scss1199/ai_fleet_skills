@@ -19,6 +19,8 @@ Classes come from the 2026-10-13 audit of the ai_trader conversations
   askValue      「需要你的一個數字 / 請提供」           — asked for a fee already in the repo
   unrequestedFile a .md / .json written that no prompt asked for and no mechanism requires
   codeChange    code written or edited in a turn with no usage / existing-implementation search before it
+  fixClaim      「修好 / 已修復 / fixed」 after a code write with no green test run after the LAST write
+                — tdd skill (threads @nashlikeai 2026-10-14): 先寫測試再寫程式，避免改 A 壞 B
                 — F1S ③ 先重用再自己寫 + Brownfield 「先全域搜尋」 (kyloren_bot cards cea9bf31, 89f0cb75)
   handback      「請你去跑 / 由你來做 / 你自己執行」    — 推託: a step handed to the operator that
                                                           was neither tried nor on a red line
@@ -27,6 +29,7 @@ namespace Fames.ClaimContract
 
 inductive ClaimClass
   | read | progress | automated | blocker | decision | askValue | unrequestedFile | handback | codeChange
+  | fixClaim
   deriving DecidableEq, Repr
 
 /-- Facts the hook derives from the turn (tool results, tool inputs, disk, git, session history). -/
@@ -42,6 +45,7 @@ structure Evidence where
   redLineNamed : Bool        -- the line names an operator-reserved action (login/OAuth, permanent delete,
                              --   rider arming, global settings, secrets, funds)
   searchedBeforeWrite : Bool -- a grep / glob / find ran in this turn BEFORE the first code write
+  testAfterWrite : Bool      -- a green test run happened AFTER the last code write of the turn
   deriving DecidableEq, Repr
 
 /-- The admission rule. A line carrying an UNKNOWN / 未驗證 qualifier, or negating the claim, is not a
@@ -57,12 +61,13 @@ def admissible : ClaimClass → Evidence → Bool
   | .unrequestedFile, e => e.requestedDoc
   | .handback, e => e.redLineNamed || e.failureObserved
   | .codeChange, e => e.searchedBeforeWrite
+  | .fixClaim, e => e.testAfterWrite
 
 /-- The worst case: nothing observed, and the decision was already asked. -/
 def noEvidence : Evidence :=
   { readResult := false, namedTargetTouched := false, anchor := false, schedulerFact := false,
     failureObserved := false, askedBefore := true, searched := false, requestedDoc := false,
-    redLineNamed := false, searchedBeforeWrite := false }
+    redLineNamed := false, searchedBeforeWrite := false, testAfterWrite := false }
 
 /-- Evidence order: `b` knows at least what `a` knows (and `askedBefore` can only be cleared). -/
 def atLeast (a b : Evidence) : Bool :=
@@ -70,7 +75,8 @@ def atLeast (a b : Evidence) : Bool :=
   (!a.anchor || b.anchor) && (!a.schedulerFact || b.schedulerFact) &&
   (!a.failureObserved || b.failureObserved) && (!b.askedBefore || a.askedBefore) &&
   (!a.searched || b.searched) && (!a.requestedDoc || b.requestedDoc) &&
-  (!a.redLineNamed || b.redLineNamed) && (!a.searchedBeforeWrite || b.searchedBeforeWrite)
+  (!a.redLineNamed || b.redLineNamed) && (!a.searchedBeforeWrite || b.searchedBeforeWrite) &&
+  (!a.testAfterWrite || b.testAfterWrite)
 
 /-! ## Theorems (fail closed, one evidence kind per class, monotone in evidence) -/
 
@@ -124,13 +130,18 @@ theorem code_change_needs_prior_search (e : Evidence) (h : e.searchedBeforeWrite
     admissible .codeChange e = false := by
   simp [admissible, h]
 
+/-- tdd: 「修好」 after a code write is never admissible without a green test after the last write. -/
+theorem fix_claim_needs_test_after_write (e : Evidence) (h : e.testAfterWrite = false) :
+    admissible .fixClaim e = false := by
+  simp [admissible, h]
+
 /-- Every admissible claim rests on at least one evidence fact the hook derived (no class is
 admissible for free). -/
 theorem admissible_rests_on_evidence (c : ClaimClass) (e : Evidence)
     (h : admissible c e = true) :
     e.readResult = true ∨ e.anchor = true ∨ e.schedulerFact = true ∨ e.failureObserved = true ∨
     e.askedBefore = false ∨ e.searched = true ∨ e.requestedDoc = true ∨ e.redLineNamed = true ∨
-    e.searchedBeforeWrite = true := by
+    e.searchedBeforeWrite = true ∨ e.testAfterWrite = true := by
   cases c <;> simp [admissible] at h <;> first | simp [h] | (rcases h with h | h <;> simp [h])
 
 /-- More evidence never turns an admissible claim into an inadmissible one. -/
@@ -146,27 +157,28 @@ def bools : List Bool := [false, true]
 def allEvidence : List Evidence :=
   bools.flatMap fun r => bools.flatMap fun n => bools.flatMap fun a => bools.flatMap fun s =>
   bools.flatMap fun f => bools.flatMap fun d => bools.flatMap fun q => bools.flatMap fun m =>
-  bools.flatMap fun l => bools.map fun w =>
+  bools.flatMap fun l => bools.flatMap fun w => bools.map fun t =>
     { readResult := r, namedTargetTouched := n, anchor := a, schedulerFact := s,
       failureObserved := f, askedBefore := d, searched := q, requestedDoc := m, redLineNamed := l,
-      searchedBeforeWrite := w }
+      searchedBeforeWrite := w, testAfterWrite := t }
 
 def classes : List ClaimClass :=
-  [.read, .progress, .automated, .blocker, .decision, .askValue, .unrequestedFile, .handback, .codeChange]
+  [.read, .progress, .automated, .blocker, .decision, .askValue, .unrequestedFile, .handback, .codeChange,
+   .fixClaim]
 
 def bit (b : Bool) : String := if b then "1" else "0"
 
 def key (e : Evidence) : String :=
   bit e.readResult ++ bit e.namedTargetTouched ++ bit e.anchor ++ bit e.schedulerFact ++
   bit e.failureObserved ++ bit e.askedBefore ++ bit e.searched ++ bit e.requestedDoc ++
-  bit e.redLineNamed ++ bit e.searchedBeforeWrite
+  bit e.redLineNamed ++ bit e.searchedBeforeWrite ++ bit e.testAfterWrite
 
 def className : ClaimClass → String
   | .read => "read" | .progress => "progress" | .automated => "automated" | .blocker => "blocker"
   | .decision => "decision" | .askValue => "ask_value" | .unrequestedFile => "unrequested_file"
-  | .handback => "handback" | .codeChange => "code_change"
+  | .handback => "handback" | .codeChange => "code_change" | .fixClaim => "fix_claim"
 
-/-- `<class>:<10 evidence bits>=<0|1>;...` over all 9 × 1024 cells. -/
+/-- `<class>:<11 evidence bits>=<0|1>;...` over all 10 × 2048 cells. -/
 def table : String :=
   String.intercalate ";" (classes.flatMap fun c => allEvidence.map fun e =>
     className c ++ ":" ++ key e ++ "=" ++ bit (admissible c e))
