@@ -5,8 +5,8 @@
   "role": "downstream_curator",
   "machine": "scar3",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-10-16T11:34:32Z",
-  "manifest_sha": "34176f5c52f3ef00",
+  "generated_at": "2026-10-16T16:38:55Z",
+  "manifest_sha": "e5aa092d2c87978c",
   "required": [
     "fames",
     "independent-review",
@@ -22,7 +22,7 @@
     "ztm-fleet-intelligence",
     "token-preflight"
   ],
-  "skill_count": 57,
+  "skill_count": 58,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -364,6 +364,17 @@
         "scripts/fetch_public_social.mjs": "00181a1a3e0a2d2020990ff9fd6ae2a0a14e64b189aa75dd3b22d94323374e0a",
         "scripts/inspect_line_inbox.py": "460168215f3ecf231dbd202d87922dd1a234530deaf14937b7df23c0c6f10fa1",
         "scripts/test_inspect_line_inbox.py": "de695f9296a1d47af6721aa16b8aff95d6fb4642719db8a9ce771ec1d34f36e8"
+      }
+    },
+    {
+      "name": "line-oa-send",
+      "sha": "9dbe6b1da9e2ea98",
+      "required": false,
+      "lane": null,
+      "package_sha": "7d4e81831a12aa8bf4d6e649451666a2b5e4213dda499aee3703bb2a5882e56a",
+      "files": {
+        "SKILL.md": "9dbe6b1da9e2ea98422402cdde386f944dd59c03be91af58a3d318e84e1ca393",
+        "agents/openai.yaml": "8402f43d51910067020402ec779738a2977f61931a6e7b3136fdf1e747394737"
       }
     },
     {
