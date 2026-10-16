@@ -42,7 +42,10 @@ Playwright CLI = `microsoft/playwright-cli`（Apache-2.0）。F1S 只取做法�
    逐條人工檢查，用 `file:line` 回報。
 5. **截圖驗證（取代 Playwright CLI，不安裝）**：在 Claude 內建瀏覽器開頁面（本機檔案先用
    `python -m http.server <port> --bind 127.0.0.1` 起站），`resize_window` 375×812 與桌面各截一次；
-   `javascript_tool` 量 `document.documentElement.scrollWidth === innerWidth`（不可橫向捲動）。
+   `javascript_tool` 量 `document.documentElement.scrollWidth === innerWidth`（不可橫向捲動），並在頁面上查
+   執行時才產生的欄位（JS 字串組出來的，lint 看不到）：
+   `[...document.querySelectorAll('input,select,textarea')].filter(e=>e.type!=='hidden'&&!e.labels?.length&&!e.getAttribute('aria-label')&&!e.getAttribute('aria-labelledby')).length`
+   必須是 0（2026-10-16 ziyaoastro 的聊天輸入框就是這樣抓到的）。
    GAS 前端用專案自帶的 `local-gas-mock.js` 預覽；測試帳號只用專案 mock 檔裡的值。
 
 ## 紅線
