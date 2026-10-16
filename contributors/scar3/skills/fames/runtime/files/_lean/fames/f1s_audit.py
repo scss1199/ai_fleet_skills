@@ -177,6 +177,11 @@ ELEMENTS = [
     {"id": "RL-tools-catalog", "element": "seat tools integrated as a reuse-before-write catalog", "verdict": "REFINE",
      "requires": None, "detail": "f1s-harvest.py tools <query>; mtm-mto-first: search other seats before writing a new tool",
      "check_text": ("skill_mto", "f1s-harvest.py tools")},
+    {"id": "SEAT-ut-completion-order", "element": "ai_ut SUBMIT f1s-ut-intake (2026-10-15): completion order 原話 → 也=上一輪流程 → 使用者來源 → 可推出 → UNKNOWN; 全部=先列全集", "verdict": "REFINE",
+     "requires": None, "detail": "f1s-intake §1 補完順序; ai_ut Lean f1s_completion_iff / f1s_underdetermined PROVED in its seat",
+     "check_text": ("skill_intake", "補完順序")},
+    {"id": "SEAT-ut-submit-filekind", "element": "ai_ut: F1SCore FileKind lacked SUBMIT, so charter-required hand-offs modelled as junk under ⑥", "verdict": "FORMALIZED",
+     "requires": "F1SCore.submit_allowed", "detail": "FileKind.submit added and allowed; matches claude-proof-hook md_allowed_dirs _inbox"},
     {"id": "OP-run-here", "element": "operator 2026-10-16: 「以後f1s架構遇到 \"在這裡執行此任務\" 直接執行不要等」", "verdict": "REFINE",
      "requires": None, "detail": "hot_directive: a 「在這裡執行此任務：…」 prompt is an approval — start at once, no confirmation, no offer card",
      "check_text": ("hot_directive", "在這裡執行此任務")},
@@ -296,6 +301,15 @@ ELEMENTS = [
      "requires": None, "detail": "no implementable content beyond what ③ already says (fewer lines, reuse); nothing fused"},
     {"id": "EVO-en-translation-rejected", "element": "ai_darkhero f1s-evolve live test 2026-10-15: append an English translation to every report", "verdict": "INFO",
      "requires": None, "detail": "rejected: conflicts with T1 語言 (回覆一律繁體中文; only code/filenames/technique_output in English) and would double every reply's tokens; T1 is not editable by f1s-evolve; no text changed, nothing shipped"},
+    # f1s-evolve 2026-10-16: ai_nuwa proposal, commit-msg test-claim gate (evidence ai_nuwa 645cb0f)
+    {"id": "EVO-nuwa-test-claim-split", "element": "ai_nuwa: pytest chained with git commit wrote 'N passed' over a failure (f8fbd78, 283559b)", "verdict": "REFINE",
+     "requires": None, "detail": "④ in ztm-verify-before-done: test and commit are two steps, read the result before writing the claim; skill text, not hot_directive (how lives in skills, KB-skills-how)",
+     "check_text": ("skill_verify", "測試與 commit 分兩步")},
+    {"id": "EVO-nuwa-git-smart-test-claim", "element": "ai_nuwa: re-run tests when a commit message claims N passed, refuse on failure or count mismatch", "verdict": "REFINE",
+     "requires": None, "detail": "git_smart.py --test-cmd re-runs the seat's suite when the message/Verified-By claims N passed (quoted claims skipped), exit 3 and no commit on failure or mismatch; opt-in per call because the hub has no fleet-wide test command; test_test_claim_gate_refuses_false_claims_on_a_real_repo",
+     "check_text": ("git_smart", "def test_claim_problems")},
+    {"id": "EVO-nuwa-seat-template-hook", "element": "ai_nuwa: seat template ships .githooks/commit-msg", "verdict": "INFO",
+     "requires": None, "detail": "not adopted: no seat template carries .githooks today and core.hooksPath is per-clone config; git_smart commits already run a seat's own commit-msg hook (no --no-verify by default), and --test-cmd covers git_smart callers"},
 ]
 
 

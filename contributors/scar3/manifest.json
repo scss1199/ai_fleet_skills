@@ -5,8 +5,8 @@
   "role": "downstream_curator",
   "machine": "scar3",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-10-16T08:48:26Z",
-  "manifest_sha": "e2c3009a6d011d1c",
+  "generated_at": "2026-10-16T11:05:03Z",
+  "manifest_sha": "9558444a3a22eb03",
   "required": [
     "fames",
     "independent-review",
@@ -158,34 +158,34 @@
     },
     {
       "name": "f1s-intake",
-      "sha": "db34696878c55670",
+      "sha": "ac08b5ef8485b732",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "ddbcad484b8ba4f91abded180e918a678beaf712299939d0452d8f2161a70243",
+      "package_sha": "b53f2a4cc4ce3b3f26bce3e25afff05cf6c715945ee906d2060acb2537d1e963",
       "files": {
-        "SKILL.md": "db34696878c5567087a8bfbaa2fefcb9c045a8e67170a7cbaeac414d3fbeb525"
+        "SKILL.md": "f7598a0eed5840c12282880673eed7288150f34ffd5976e38718f841f84118b7"
       }
     },
     {
       "name": "f1s-reverse-learning",
-      "sha": "743bd290bdc11e82",
+      "sha": "995d6cca69f1b9f2",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "779a73669e397480f1fe4f20b0fb9884c3bbc5aac2beb3aec32127a471ffd355",
+      "package_sha": "1adfe92df56069e3f72efb85b0715fb3ee6c07f7c2fd94e023eaf9b60b65a157",
       "files": {
-        "SKILL.md": "ffdc7f212499c95d54e0e2f7aa5629d121f793ca50200135f1fb41d5a2fead30"
+        "SKILL.md": "800180096355857814997a2bd456cff424572779ea611ee27c6a322f3fc1031e"
       }
     },
     {
       "name": "fames",
-      "sha": "7d6187ab004ba26f",
+      "sha": "46dbf76df0885a3c",
       "required": true,
       "lane": null,
-      "package_sha": "22b19eb4d49785dc1719dd46f0ace151a878518d3d5083181dc1a74475592384",
+      "package_sha": "7dcf805b6c7eadff63e78f208347a1bdc5510bc295ab70419dc934dd9ed35bf3",
       "files": {
         ".gitattributes": "448f5307a4b4eaab3e5e0615e1b57e125c2e6419d590025c4ac3d2e2c004955e",
-        "SKILL.md": "7d6187ab004ba26f9052be70903ec372e6079305a94c5f5ef4c7c870dab3b6ab",
-        "bundle-manifest.json": "c32de4628b5120276be81597948de4e19943c5e2647f5dab9de7e62d6113cc7a",
+        "SKILL.md": "46dbf76df0885a3cb816bf14bd3101c2821af5cfa87ea9b41834a301aea2cd25",
+        "bundle-manifest.json": "0678b44236a699631c20d8c83aedd8ac07eaa4a0543f95e5ec6c0103332eb762",
         "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
         "references/autonomous-knowledge.md": "b34ca6beb034909aaade75be4707c772e90155c6c12b8278c7b3964ec8238df5",
         "references/cases.json": "2ebbb062b8e58241dfd2a70ec423678c4c16e40303d436ffa6de6e5560f67a40",
@@ -198,13 +198,13 @@
         "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
         "references/runtime-sources.json": "16e2c0efa1ccb5524477742f7d23de54903b38218d455ac18ac2c60283a90886",
         "references/scoped-skills.md": "b8d6178efa7c1700b13cab721a208900f0d088e3f416c9a906eb661c22362f85",
-        "references/protocols/fames-protocol.json": "fcce4d1482537e560362c3bcd508d7155f38d3d15ade7e8c2c85eab86ed5fbcd",
+        "references/protocols/fames-protocol.json": "30beedc5cb94fef3e00281e641d9cc9821f7884f2ad840e01204a295421cfd06",
         "references/protocols/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
         "references/protocols/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
         "references/protocols/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
         "references/protocols/scf-protocol.json": "6688d7370af1040b421dfcc715e7b730d4a74331b60bf316e3b527285be27906",
         "references/protocols/seal-protocol.json": "7de5562242692e0827a64bbc94f7a5a71fc418601558f51dc54371a11820b9a4",
-        "runtime/manifest.json": "e0582133e9e7d1eebd1fa91b28c926b0a00feda6256257214a6526831f8a59e3",
+        "runtime/manifest.json": "883094ce4b63bfd4cbed49e9e08dbbce050c6f92223f946998d35c40368f5c36",
         "runtime/files/_harness/runtime/document_preservation.py": "7af583a1d534c54332a2d9444afba1430f73a81f06627379965d5c137b6e5d48",
         "runtime/files/_harness/runtime/dsh_fames_hook.py": "35f126d239b2ae1d333dc21d14e3e05b51dfac380f324228b5fe7e92ac1c3f54",
         "runtime/files/_harness/runtime/dsh_fames_plugin.mjs": "cde86d6be7cfcb5729c17f7e46c65f30d7681e8fa6ede9a60e3c2c30b52f4ed7",
@@ -222,20 +222,20 @@
         "runtime/files/_lean/install_lean.py": "ae4119e20e8eea93ac367d5da4f2a1981127ac85c34d7604ec6f60f8e2a3bb86",
         "runtime/files/_lean/leanctl.py": "2cde11126976a17c88a927375b56c5c09a2115b7b0a6708ec8f563a068c7d7a3",
         "runtime/files/_lean/fames/ClaimContract.lean": "c9f66999a7e04958aa9969104c8fd679831f9bea9238e4960e8213659069a814",
-        "runtime/files/_lean/fames/F1SCore.lean": "63211e5be27c11149240cf5d68dc0a9381fecd94379d0cf10b902528bd7d9980",
+        "runtime/files/_lean/fames/F1SCore.lean": "4b8b8bbff79ee84bca2f9cab7de5f44b833d0365a3227d59bff860e922626144",
         "runtime/files/_lean/fames/FamesKernel.lean": "d1b4cef5faec73b47bef915df5e18d612bd52e021224212eed86929f81533cbc",
         "runtime/files/_lean/fames/FamesPhaseContract.lean": "74941a3d2731985692bd2c34dabb7209c50b1f1b95ae18b2d6ae8e567e68ef5c",
         "runtime/files/_lean/fames/FamesTurnRecovery.lean": "c7535908561b0d13ddf1533ec6e178785d46f933611bcc670a8728f075f8b6c3",
         "runtime/files/_lean/fames/claim_conformance.py": "47bb78d57a08d6f5aa9a185e4b383a017fdfc9c193686c69f5fc9ca2df555dec",
         "runtime/files/_lean/fames/conformance.py": "2cc97944eec22196b61d31b62cfe00b7788366c6610248d9c87418aba622ed42",
-        "runtime/files/_lean/fames/f1s_audit.py": "930411b957fd5086bf1396820ff5d1b7b26fefbf6e544446c83baaae9780be0a",
+        "runtime/files/_lean/fames/f1s_audit.py": "51bb5b95420cb2ea54016d0b4193b556ed49127d2756d89e415a5ce3b837de9d",
         "runtime/files/_lean/fames/lean_gate.py": "10aeb5e6e90f4e220a69616cb62e4db5dda675049eac103ea0921f730f705ecb",
         "runtime/files/_lean/fames/phase_conformance.py": "ba60fd7f4aa8f850968239279dfa354ba0ce4a53243c383aeec873af65e1f989",
         "runtime/files/_lean/fames/phase_contract.py": "6b03b9d4fe4569cf69bbb14b23ff7244710bae4181f08f9027887c448e6e5726",
         "runtime/files/_lean/fames/turn_recovery_contract.py": "b4e6861fef6e2b4d42fd0e7a4ec93f3d5fe24a647362d1383a24950df5615193",
         "runtime/files/_registry/agent-surfaces.json": "b36cebd6b0f912587f117bc7df19c352496bbb6bcf7c9d3293b0940e951e8f60",
         "runtime/files/_registry/claude-remote-control.json": "44f271d7e0700238d5351698be0638cb1f798669d9f30c8aa3ad1c7d2fc2cfa2",
-        "runtime/files/_registry/fames-protocol.json": "fcce4d1482537e560362c3bcd508d7155f38d3d15ade7e8c2c85eab86ed5fbcd",
+        "runtime/files/_registry/fames-protocol.json": "30beedc5cb94fef3e00281e641d9cc9821f7884f2ad840e01204a295421cfd06",
         "runtime/files/_registry/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
         "runtime/files/_registry/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
         "runtime/files/_registry/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -700,12 +700,12 @@
     },
     {
       "name": "ztm-verify-before-done",
-      "sha": "1acdc4abb2257566",
+      "sha": "58dc86fdd5a79285",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "85345989da355bbbc705e87b6bd7bf029b54db6810137f6e207ce94a60813e6b",
+      "package_sha": "334be9b744874fc8e84f57386ec95de6ed741db9408ac39c8435c34fe268ddbd",
       "files": {
-        "SKILL.md": "6e92cb830c1160bb5dfab2bcc3f00569e549d2d73b97c6cf088dff4e4caf2fb0"
+        "SKILL.md": "31deb2004fbcfe744dfe0ad98832413d27061e741c3fa063ede3b9833c1962ea"
       }
     },
     {

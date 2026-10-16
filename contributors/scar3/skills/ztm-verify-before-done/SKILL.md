@@ -26,6 +26,9 @@ parent_skill: aex-agent-evolution
 - ④ 每個主張要有本回合跑過的驗證或能開的檔案，否則寫 UNKNOWN；寧可說不知道也不准自信亂答再翻供。
   改碼後說「修好」必須在最後一次改碼之後跑過綠的測試（tdd，避免改 A 壞 B；
   Lean `ClaimContract.fix_claim_needs_test_after_write`）。
+  測試與 commit 分兩步：先讀測試結果，再寫宣稱；不得把 pytest 與 git commit 串在同一指令
+  （ai_nuwa f8fbd78/283559b：1 個失敗卻寫 N passed）。commit 訊息或 `--verified-by` 寫「N passed」時，
+  `git_smart.py commit ... --test-cmd "<seat 測試指令>"` 會當場重跑，失敗或數量不符即拒絕 commit（exit 3）。
 - ⑤ 不准說謊、不准推託：已讀、推進、已自動化、做不到、重問同一決定、要已給過的值、把自己能做的步驟
   推給使用者，每一句都要有本回合工具結果，否則寫 UNKNOWN 或自己去做。只有登入/OAuth、永久刪除、
   rider 授權、全域設定、金鑰、資金、硬體是使用者的步驟。Anthropic 額度用完不是停下的理由：

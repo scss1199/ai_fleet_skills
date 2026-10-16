@@ -173,11 +173,13 @@ theorem model_step_never_a_decision (askedBefore : Bool) (a : Action) (ha : a �
 
 /-! ## Files ⑥ -/
 
-inductive FileKind | stateRegistry | sealReceipt | charter | requestedByPrompt | report | note | summary | memoryProse
+-- submit: a seat's hand-off to the curator under _inbox/from_projects/<seat>/ (charter-required; ai_ut 2026-10-15
+-- found it missing, so every SUBMIT modelled as junk under ⑥ while claude-proof-hook already allowed _inbox).
+inductive FileKind | stateRegistry | sealReceipt | charter | requestedByPrompt | submit | report | note | summary | memoryProse
   deriving DecidableEq, Repr
 
 def allowedFile : FileKind → Bool
-  | .stateRegistry | .sealReceipt | .charter | .requestedByPrompt => true
+  | .stateRegistry | .sealReceipt | .charter | .requestedByPrompt | .submit => true
   | _ => false
 
 def sealRequires : List FileKind := [.sealReceipt]
@@ -186,6 +188,9 @@ theorem seal_receipts_allowed : ∀ k ∈ sealRequires, allowedFile k = true := 
 
 theorem reports_are_junk : allowedFile .report = false ∧ allowedFile .note = false ∧
     allowedFile .summary = false ∧ allowedFile .memoryProse = false := by decide
+
+/-- ai_ut 2026-10-15 (`aiut_prev_submit_ok`): a charter-required SUBMIT hand-off is not junk under ⑥. -/
+theorem submit_allowed : allowedFile .submit = true := by decide
 
 /-! ## Threads @nashlikeai 2026-10-14 (skills.sh top list) checked against F1S -/
 

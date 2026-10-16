@@ -57,7 +57,8 @@ operator 2026-10-16：「把他們各自用到的所有技能 經驗 系統 api 
 - 其他座位不用做事：它們寫的 memory、技能、工具，下次 `cycle` 就會被收到。
 - `propose --n 5` 會把最高分目標用 `inbox.py send ai_darkhero <seat> --kind task "F1S: …"` 送進上行路徑，
   由 f1s-evolve 自動整合（T1 不可改、Lean 稽核與測試全綠才出貨）。
-- 週期跑 `cycle` 要 HubClock rider，arming 是 operator 的；提案見 `_registry/f1s-harvest/` 的回報。
+- 週期：HubClock rider `f1s-harvest`（operator 2026-10-16 核准）每天 03:40 跑 `cycle --triage-limit 120 --propose 3`，
+  max_runtime 3600；新目標自動送進 f1s-evolve。
 
 ## 紅線
 
