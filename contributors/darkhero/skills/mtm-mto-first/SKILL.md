@@ -41,6 +41,9 @@ parent_skill: aex-agent-evolution
 - 改碼前先全域搜尋既有實作與用法（brownfield）；未搜尋即改碼 PROOF 擋（class `code_change`，
   Lean `ClaimContract.code_change_needs_prior_search`）。scratchpad 腳本不算。
 - 精準修改：只動要改的行，旁邊的程式一行都不碰。
+- 「最後才自動化」的門檻：同一件手工操作做到第三次才寫成腳本或技能；寫之前先查別的座位做過沒：
+  `python %AI_WORKSPACE%\_skill\engines\f1s-harvest.py tools "<關鍵字>"`（全艦工具與技能）、`api <service>`（外部 API）
+  （反向學習自 ai_metadata aex-mtm-loop-metadata）。
 
 ## 工具與 context 紀律（kyloren_bot b7b4e052、bac266b7、053de955）
 

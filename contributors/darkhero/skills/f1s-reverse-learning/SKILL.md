@@ -30,6 +30,7 @@ operator 2026-10-16：「把他們各自用到的所有技能 經驗 系統 api 
 | 分 | 免費池（`chat_for("extract")`）逐批判定：generalize（附一句繁中規則）／seat-specific／noise；seat-specific 自動結案 | `triage` |
 | 目標 | `_registry/f1s-harvest/goals.json`：coverage＝已結案／總數，`next`＝依分數排序的下一批目標（同服務、同名工具跨座位合併成一個目標） | `goals` |
 | API | 全艦外部服務目錄（服務→類別、用到的座位、變數名、程式出處、是否已在免費池） | `catalog`、`api <service>` |
+| 工具 | 全艦工具與技能查詢：寫新東西前查哪個座位已經做過（名稱＋docstring＋triage 規則排序） | `tools "<關鍵字>"` |
 
 `cycle` 一次跑完收→比→分→API 目錄→重算目標。
 
@@ -46,7 +47,7 @@ operator 2026-10-16：「把他們各自用到的所有技能 經驗 系統 api 
 |---|---|
 | memory（generalize） | 規則寫進最相關的 canonical 技能（同主題 ≥3 條才新開技能）；用 triage 的 `rule` 當草稿，對照原 memory 修正，不帶專案名 |
 | skill（local／drifted） | 通用的升為 `_skill/fleet-skills/` canonical；drifted 把座位的改進合回 canonical |
-| system（generalize） | 與座位無關的工具搬進 `_skill/engines/`（附測試）；只在某類 repo 有用的寫成技能裡的參考路徑 |
+| system | 預設整合成「工具目錄」（`tools` 查詢＋mtm-mto-first 規則：寫新工具前先查），`cycle` 自動結案並註明「未搬進 hub」；真正與座位無關、多座位會用的才搬進 `_skill/engines/`（附測試） |
 | api | 由 `catalog` 一次整合，`cycle` 自動結案；接新外部服務前先 `api <service>` 看誰接過、參考哪段程式 |
 
 出貨照 F1S：`f1s_audit.py` 加對應列（check_text 綁新文字）→ `ship-f1s.py`。
@@ -62,3 +63,14 @@ operator 2026-10-16：「把他們各自用到的所有技能 經驗 系統 api 
 
 - 只收名稱與文字，不讀 `.env`／金鑰值；fracdigi、quant 整個不掃；`ai_ut` 的 UT.xlsx 不是文字來源。
 - memory 內容含個資或帳戶資料的，整合時只取通用規則，不搬原文。
+
+## 2026-10-16 第一輪結果
+
+- 收：24 個 cwd，去重後 2103 項（技能 1087、工具 681、API 183、經驗 152）。coverage 0.80（第一次掃描）→ 1.00。
+- 免費池分類 189 項：89 項可通用、92 項屬單一座位。
+- 進 F1S：新 canonical 技能 `windows-runtime-pitfalls`（13 條各座位事故）、升為 canonical `web-page-atlas`（ai_trader，
+  改成全艦共用 `_registry/web-atlas/`）、`gas-google-sso-webapp`（ai_accountancy，補今天的 GAS 教訓）、
+  `mtm-subtitle-two-phase`（ai_metadata＋ai_theater 同一份）；規則併入 api-key-apply、mtm-api-pool-offload、
+  ztm-verify-before-done、web-ui-taste、mtm-mto-first；API 目錄 130 個服務；工具目錄 681 項。
+- 引擎自己的教訓：比對要用「單一文件最佳包含率」（聯集會讓什麼都像已覆蓋）、同一座位技能的多份部署副本要去重、
+  hot directive 上限 1400 字（f1s_audit 現在會先擋）。
