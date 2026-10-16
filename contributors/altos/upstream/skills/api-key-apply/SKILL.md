@@ -136,6 +136,17 @@ It never ingests onboard-inbox.txt, rewrites model rosters, discovers providers,
 unrelated side effect. NEEDS_KEY_ROTATION and NEEDS_FIRST_KEY remain explicit operator actions until
 a provider adapter and local policy are armed.
 
+## 接外部 API 前（f1s-reverse-learning，各座位實際踩過）
+
+- 先查全艦 API 目錄：`python %AI_WORKSPACE%\_skill\engines\f1s-harvest.py api <service>`（誰已經接過、用哪些變數名、
+  程式出處），重用既有 adapter，不重寫。
+- 先讀並實作供應商的流量與次數限制（含「超量回空值」「暫停 IP／帳號」條款）再上線；多個行程共用同一帳號時配額共用
+  （ai_trader shioaji-broker-limits）。
+- 有 token pool／共用 slot 的 SDK：接手的 slot 會帶著別人的到期時間；健康檢查要看實際資料新鮮度，不能只看服務有回應
+  （ai_trader shioaji-pooled-token-24h-expiry）。
+- 支援 `client_credentials` 的 API（例：LINE Messaging）用程式重發 access token，加身分讀回閘（新 token 查到的帳號
+  必須等於預期）再寫入，不進 console（jci_taipei line-token-reissue）。
+
 ## References
 
 - references/api-matrix-schema.md — matrix schema and evidence fields.

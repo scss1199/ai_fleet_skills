@@ -326,6 +326,20 @@ def load_policy():
         return {}
 
 
+def _open_handoff(inbox_root, owner, sender):
+    """Id of an unacked message from `sender` still in `owner`'s inbox, else None (acking deletes the file)."""
+    import glob as _glob
+    for path in sorted(_glob.glob(os.path.join(inbox_root, owner, "*.json")), reverse=True):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                msg = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        if msg.get("from") == sender:
+            return msg.get("id") or os.path.splitext(os.path.basename(path))[0]
+    return None
+
+
 def _owner_of(job):
     """The seat whose files a rider runs; hub engines and anything unmatched belong to the curator."""
     for m in re.finditer(r"[\\/](ai_[A-Za-z0-9_]+|fracdigi|jci_taipei|sdnext_a770)(?=[\\/])", job.get("command") or ""):
@@ -482,12 +496,19 @@ def dispatch(job):
         si.wShowWindow = 0  # SW_HIDE
     try:
         open(_lock_path(jid), "w").write(str(int(time.time())))
-        kw = dict(creationflags=flags, startupinfo=si,
-                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
-        if use_shell or argv is None:
-            proc = subprocess.Popen(cmd, shell=True, **kw)
-        else:
-            proc = subprocess.Popen(argv, shell=False, **kw)
+        # stdout+stderr go to a per-rider file, rewritten each run, so a failed run's last lines survive for
+        # _stderr_tail(); with DEVNULL the 2026-10-16 rider audit could not root-cause a single rc 1.
+        err = _open_stderr(jid)
+        kw = dict(creationflags=flags, startupinfo=si, stdout=err or subprocess.DEVNULL,
+                  stderr=subprocess.STDOUT if err else subprocess.DEVNULL, stdin=subprocess.DEVNULL)
+        try:
+            if use_shell or argv is None:
+                proc = subprocess.Popen(cmd, shell=True, **kw)
+            else:
+                proc = subprocess.Popen(argv, shell=False, **kw)
+        finally:
+            if err:
+                err.close()  # the child holds its own handle
         pid = getattr(proc, "pid", None)
         if isinstance(pid, int):  # record the owner, so a successor can tell a live rider from one a reset killed
             try:
@@ -498,6 +519,33 @@ def dispatch(job):
     except Exception as e:
         sys.stderr.write("hubclock dispatch error %s: %s\n" % (jid, e))
         return None
+
+
+STDERR_DIR = os.path.join(LOCKDIR, "hubclock-stderr")
+
+
+def _stderr_path(jid):
+    return os.path.join(STDERR_DIR, "%s.err" % re.sub(r"[^A-Za-z0-9_.-]", "_", str(jid)))
+
+
+def _open_stderr(jid):
+    try:
+        os.makedirs(STDERR_DIR, exist_ok=True)
+        return open(_stderr_path(jid), "wb")
+    except OSError:
+        return None
+
+
+def _stderr_tail(jid, limit=600):
+    """Last `limit` characters of the rider's latest stdout+stderr, '' when it wrote none."""
+    try:
+        with open(_stderr_path(jid), "rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            fh.seek(max(0, fh.tell() - limit * 4))
+            text = fh.read().decode("utf-8", "replace")
+    except OSError:
+        return ""
+    return " ".join(text.split())[-limit:]
 
 
 def _release(jid):
@@ -772,9 +820,21 @@ class HubClock:
                 "failed in the results file). Fix it or retire it. %s"
                 % (jid, row.get("consecutive_failures"), row.get("last_rc"), row.get("last_fired"),
                    row.get("failures"), row.get("runs"), tail))
+        stderr = (row.get("last_failure") or {}).get("output_tail")
+        if stderr:
+            text += " Last output: " + stderr
         try:
             sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
             import _bus
+            # 2026-10-16: 110 handoffs for 19 riders piled up in the curator inbox (one rider sent 16), each a
+            # repeat of an open one. While an unacked handoff from this rider is still in the owner's inbox,
+            # point at it instead of sending another.
+            inbox_root = getattr(_bus, "INBOX", None)
+            canon = getattr(_bus, "_canon_to", lambda name: name)
+            open_id = _open_handoff(inbox_root, canon(owner), "hubclock-" + jid) if inbox_root else None
+            if open_id:
+                row["last_handoff"] = {"to": owner, "id": open_id, "deduped": True, "at": row.get("last_fired")}
+                return
             row["last_handoff"] = {"to": owner, "id": _bus.send(owner, "hubclock-" + jid, text, kind="task"),
                                    "at": row.get("last_fired")}
         except Exception as e:  # noqa: BLE001 -- a bus fault must never stop the clock
@@ -816,6 +876,9 @@ class HubClock:
             row["failures"] = int(row.get("failures") or 0) + 1
             row["consecutive_failures"] = int(row.get("consecutive_failures") or 0) + 1
             row["last_failure"] = {"rc": rc, "fired": fired}
+            stderr = _stderr_tail(jid)
+            if stderr:
+                row["last_failure"]["output_tail"] = stderr
         recent = [r for r in (row.get("recent") or []) if isinstance(r, dict)]
         recent.append({"rc": rc, "fired": fired, **extra})
         row["recent"] = recent[-RESULTS_RING:]

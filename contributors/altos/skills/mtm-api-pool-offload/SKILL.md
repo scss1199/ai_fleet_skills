@@ -48,7 +48,7 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 | `translate` 翻譯（日→繁中等） | gemini | `auto/reasoning` → `ddgw/gpt-5.4-mini` → `cfp/zai-org/glm-5.2` → nvidia `glm-5.3-flash` | 全部譯對；1.1／1.8／1.8／11–49／42 秒 |
 | OCR 圖片讀字 | gemini 視覺（`image_ocr.py`） | — | 合成簽到圖逐字正確、2.7 秒 |
 | 語音轉文字 日／中 | 本機 faster-whisper（`distill-media.py --engine local --lang ja`） | Deepgram（`--engine deepgram`，音檔會外送）、`medium` 重試 | 日文合成音逐字正確、30 秒 |
-| 網路搜尋 | gemini Google 搜尋（`distill-url.py --search`） | DuckDuckGo／Bing | 期交所官網排第一 |
+| 網路搜尋 | gemini Google 搜尋（`distill-url.py --search`，每把 key 輪 `GEMINI_MODELS`） | Google News RSS（免 key，連結是 news.google.com 轉址）→ DuckDuckGo／Bing；全失敗看 `websearch.LAST_ERRORS`／stderr（429＝額度用完，不是查無結果） | 期交所官網排第一；2026-10-16 gemini 全 429 時 News RSS 仍回 96/96 |
 | embeddings 向量 | OmniRoute `gemini/gemini-embedding-001`（`/v1/embeddings`） | — | 3072 維、0.5 秒 |
 | 語音合成 TTS | 本機 edge-tts（技能 `zh-tts-narrate`） | Windows SAPI | — |
 | 文生圖／圖生影片 | 本機 SD.Next A770（`sdnext_a770`） | — | OmniRoute flux／aihorde 逾時或排隊 >1000 秒 |
@@ -88,6 +88,8 @@ Claude Code 本身的額度用完時，`claude-remote-exec` 的 auto lane 另外
 - 不送出去的東西：金鑰、帳戶與持倉資料、`ai_ut` 的 UT.xlsx 內容（專有資料）、任何 operator 標成私密的檔案。查詢字串可以送，資料本身不送。語音預設用本機（`--engine local`）。
 - 輸出留在指令的 JSON 或既有收據，只把摘要與來源網址帶進對話，不新開 .md/.json。
 - 免費池回空或全部 provider 失敗：照實回報，再改用本對話的工具，不要編。
+- 抓到的「內文」只是裸網址或登入牆殼（IG/Threads 登出頁的選單字）不算讀過：長度門檻擋不住它，要比對頁面是否含
+  真內容；讀不到就改用內建瀏覽器 `get_page_text` 或標 UNKNOWN（ai_trader owner-links 2026-10-12：73 項裡 63 項是殼）。
 
 ## 2026-10-15 修掉的搜尋問題（ai_ut、ai_trader 實用回報）
 

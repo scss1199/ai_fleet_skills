@@ -45,12 +45,23 @@ TEXTS = {
     "skill_method": HUB / "_skill" / "fleet-skills" / "mtm-mto-first" / "SKILL.md",
     "skill_verify": HUB / "_skill" / "fleet-skills" / "ztm-verify-before-done" / "SKILL.md",
     "skill_login": HUB / "_skill" / "fleet-skills" / "browser-login-handoff" / "SKILL.md",
+    "skill_rea": HUB / "_skill" / "fleet-skills" / "rea-reverse-engineering" / "SKILL.md",
+    "skill_ui": HUB / "_skill" / "fleet-skills" / "web-ui-taste" / "SKILL.md",
+    "skill_reverse": HUB / "_skill" / "fleet-skills" / "f1s-reverse-learning" / "SKILL.md",
+    "skill_atlas": HUB / "_skill" / "fleet-skills" / "web-page-atlas" / "SKILL.md",
+    "skill_gas": HUB / "_skill" / "fleet-skills" / "gas-google-sso-webapp" / "SKILL.md",
+    "skill_mto": HUB / "_skill" / "fleet-skills" / "mtm-mto-first" / "SKILL.md",
+    "skill_runtime": HUB / "_skill" / "fleet-skills" / "windows-runtime-pitfalls" / "SKILL.md",
+    "harvest_engine": HUB / "_skill" / "engines" / "f1s-harvest.py",
+    "skill_apikey": HUB / "_skill" / "fleet-skills" / "api-key-apply" / "SKILL.md",
+    "ui_lint": HUB / "_skill" / "engines" / "ui-guideline-lint.py",
     "skill_review": HUB / "_skill" / "fleet-skills" / "independent-review" / "SKILL.md",
     "skill_fleet_github": HUB / "_skill" / "fleet-skills" / "mtm-fleet-skill-github" / "SKILL.md",
     "omniroute_engine": HUB / "_skill" / "engines" / "omniroute-gateway.py",
     "session_hook": HUB / "_skill" / "fleet-skills" / "token-preflight" / "scripts" / "claude_session_hook.py",
     "skill_pool": HUB / "_skill" / "fleet-skills" / "mtm-api-pool-offload" / "SKILL.md",
     "distill_url": HUB / "_skill" / "engines" / "distill-url.py",
+    "websearch_engine": HUB / "_skill" / "engines" / "websearch.py",
     "skill_preflight": HUB / "_skill" / "fleet-skills" / "token-preflight" / "SKILL.md",
     "git_smart": HUB / "_skill" / "engines" / "git_smart.py",
 }
@@ -133,6 +144,50 @@ ELEMENTS = [
     {"id": "OP-login-pointer", "element": "hot_directive names the login skill", "verdict": "REFINE",
      "requires": None, "detail": "per-turn pointer so every conversation routes sign-ins through the skill",
      "check_text": ("hot_directive", "browser-login-handoff")},
+    {"id": "OP-login-in-pane", "element": "operator 2026-10-16: 「技能裡面的方法就是要你自己在claude內部的瀏覽器一次搞定並記住全部內容不需要跟我外部的windows chrome瀏覽器存資料」", "verdict": "REFINE",
+     "requires": None, "detail": "browser-login-handoff 4b: OAuth consent is completed by the agent in the built-in browser via the same-tab consent URL; only password/MFA goes to the user; clasp's client is blocked for sensitive scopes, use an owner Apps Script bridge",
+     "check_text": ("skill_login", "同一個分頁")},
+    {"id": "KB-rea", "element": "kyloren IG DefkUKkFA8D (2026-10-16): REA — one MCP that lets Claude Code / Codex / Cursor reverse engineer binaries, Electron/JS apps, APKs and sites (morluto/rea, MIT)", "verdict": "REFINE",
+     "requires": None, "detail": "on-demand skill rea-reverse-engineering: npx rea-agents@6.5.0 (provenance checked: repo morluto/rea), no `setup` (would write ~/.claude.json = operator authorization), own/authorised software only, output to scratchpad; live run on _skill/fleet-fly-hooks rc=0, global config untouched",
+     "check_text": ("hot_directive", "rea-reverse-engineering")},
+    {"id": "KB-web-ui-taste", "element": "kyloren IG DeicLoFhs5O (2026-10-16): five Claude Code web-design tools — Taste Skill, Vercel Web Design Guidelines, Awesome Design (DESIGN.md), Image to Code, Playwright CLI", "verdict": "REFINE",
+     "requires": None, "detail": "skill web-ui-taste chains design system -> taste -> image-to-code -> ui-guideline-lint -> phone+desktop screenshots in the built-in browser (no Playwright install); trial on the accountancy app: 53 -> 0 findings, plus a header collapse only the screenshot step caught",
+     "check_text": ("hot_directive", "web-ui-taste")},
+    {"id": "KB-web-ui-lint", "element": "Vercel Web Interface Guidelines rules decidable from source text", "verdict": "REFINE",
+     "requires": None, "detail": "mechanical check ui-guideline-lint.py (9 rules, tests in test_ui_guideline_lint.py); judgement rules stay in the skill",
+     "check_text": ("ui_lint", "no-reduced-motion")},
+    {"id": "OP-reverse-learning", "element": "operator 2026-10-16: 「把他們各自用到的所有技能 經驗 系統 api 整合會到f1s 使得f1s直接建立一個從各cwd反向學習的機制」", "verdict": "REFINE",
+     "requires": None, "detail": "skill f1s-reverse-learning + f1s-harvest.py: harvest skills/memory/tools/APIs from every cwd (never fracdigi/quant), best-single-document coverage, free-pool triage, self-updating goals.json",
+     "check_text": ("hot_directive", "f1s-reverse-learning")},
+    {"id": "OP-reverse-goals", "element": "operator 2026-10-16: 「讓這個對話的f1s能夠維持長任務自己找目標自己更新目標」", "verdict": "REFINE",
+     "requires": None, "detail": "f1s-harvest cycle recomputes goals.json every run; mark needs evidence and settles a whole cross-seat goal",
+     "check_text": ("harvest_engine", "def cycle")},
+    {"id": "RL-runtime-pitfalls", "element": "reverse-learned from ai_trader / hub-root memories: SO_REUSEADDR multibind, RST before body read, AccessDenied != dead, retry storms, stale index.lock, clock skew", "verdict": "REFINE",
+     "requires": None, "detail": "new skill windows-runtime-pitfalls, routed from the hot directive",
+     "check_text": ("skill_runtime", "allow_reuse_address = False")},
+    {"id": "RL-api-before-integrate", "element": "reverse-learned API lessons: provider limits, pooled token expiry, client_credentials reissue; fleet API catalog", "verdict": "REFINE",
+     "requires": None, "detail": "api-key-apply section 接外部 API 前 + f1s-harvest.py api <service>",
+     "check_text": ("skill_apikey", "f1s-harvest.py api")},
+    {"id": "RL-promote-atlas", "element": "reverse-learned from ai_trader: web-page-atlas (self-improving site map)", "verdict": "REFINE",
+     "requires": None, "detail": "promoted to canonical with a fleet-shared _registry/web-atlas store; never store credentials there",
+     "check_text": ("skill_atlas", "_registry/web-atlas")},
+    {"id": "RL-promote-gas", "element": "reverse-learned from ai_accountancy: gas-google-sso-webapp", "verdict": "REFINE",
+     "requires": None, "detail": "promoted to canonical with the 2026-10-16 GAS lessons (trash before rebuild, DEFAULT_SS_ID, same-tab consent, bridge)",
+     "check_text": ("skill_gas", "不要先重建")},
+    {"id": "RL-tools-catalog", "element": "seat tools integrated as a reuse-before-write catalog", "verdict": "REFINE",
+     "requires": None, "detail": "f1s-harvest.py tools <query>; mtm-mto-first: search other seats before writing a new tool",
+     "check_text": ("skill_mto", "f1s-harvest.py tools")},
+    {"id": "SEAT-ut-completion-order", "element": "ai_ut SUBMIT f1s-ut-intake (2026-10-15): completion order 原話 → 也=上一輪流程 → 使用者來源 → 可推出 → UNKNOWN; 全部=先列全集", "verdict": "REFINE",
+     "requires": None, "detail": "f1s-intake §1 補完順序; ai_ut Lean f1s_completion_iff / f1s_underdetermined PROVED in its seat",
+     "check_text": ("skill_intake", "補完順序")},
+    {"id": "SEAT-ut-submit-filekind", "element": "ai_ut: F1SCore FileKind lacked SUBMIT, so charter-required hand-offs modelled as junk under ⑥", "verdict": "FORMALIZED",
+     "requires": "F1SCore.submit_allowed", "detail": "FileKind.submit added and allowed; matches claude-proof-hook md_allowed_dirs _inbox"},
+    {"id": "OP-run-here", "element": "operator 2026-10-16: 「以後f1s架構遇到 \"在這裡執行此任務\" 直接執行不要等」", "verdict": "REFINE",
+     "requires": None, "detail": "hot_directive: a 「在這裡執行此任務：…」 prompt is an approval — start at once, no confirmation, no offer card",
+     "check_text": ("hot_directive", "在這裡執行此任務")},
+    {"id": "KB-rea-pin", "element": "REA skill pins the verified package version", "verdict": "REFINE",
+     "requires": None, "detail": "version pinned; upgrades re-check npm repository.url first",
+     "check_text": ("skill_rea", "rea-agents@6.5.0")},
     {"id": "LAB-review-triage", "element": "kyloren_bot bb489c62 (凱羅實驗室, OpenCoreReview): triage hunks by risk/category before review, ~1/9 tokens", "verdict": "REFINE",
      "requires": None, "detail": "independent-review step 2 now triages hunks and records what was triaged out",
      "check_text": ("skill_review", "triage before reviewing")},
@@ -187,7 +242,13 @@ ELEMENTS = [
      "check_text": ("skill_pool", "chat_for")},
     {"id": "SEAT-search-field-report", "element": "ai_ut + ai_trader 2026-10-15 field use: 9 free-pool searches, 1 usable (DDG 0 hits, Bing unrelated, ck/a links, cp950 crash, taifex skipped as x.com, header regex ate tables)", "verdict": "REFINE",
      "requires": None, "detail": "websearch: gemini grounding first backend, Bing ck/a decode, relevance filter, exact-domain wall check, \\b on the head strip; distill-url: utf-8 stdout, reader escalation under 800 chars; webops_auto logs to stderr (test_websearch_fixes)",
-     "check_text": ("skill_pool", "gemini 的 Google 搜尋")},
+     "check_text": ("skill_pool", "gemini Google 搜尋")},
+    {"id": "SEAT-search-chain-20261016", "element": "ai_trader 2026-10-16 audit: gemini keys 429/429/404 (2.5-flash closed to new users) swallowed as [], DDG 192/192 errors, Bing 0/96 valid, Google News RSS 96/96 answered", "verdict": "REFINE",
+     "requires": None, "detail": "websearch: each key walks GEMINI_MODELS (2.5-flash, flash-latest, flash-lite-latest); _b_gemini raises the HTTP codes and search() keeps them in LAST_ERRORS + stderr; keyless _b_gnews second backend (test_websearch_fixes; live 2026-10-16: gemini all 429 recorded, gnews answered)",
+     "check_text": ("skill_pool", "websearch.LAST_ERRORS")},
+    {"id": "SEAT-search-cjk-relevance", "element": "ai_zonghe 2026-10-16: gemini 2.5-flash 404 + flash-latest/3.8-flash 429 on all keys, DDG timeouts, Bing 10 unrelated hits for a Chinese TCM query passed the filter", "verdict": "REFINE",
+     "requires": None, "detail": "gemini/DDG parts already covered by SEAT-search-chain-20261016; new: websearch._tokens matches CJK as bigrams, so one shared common hanzi no longer passes _relevant (test_cjk_relevance_needs_a_shared_bigram_not_one_hanzi)",
+     "check_text": ("websearch_engine", "CJK as bigrams")},
     {"id": "SEAT-digest-scope", "element": "ai_trader 2026-10-15: free-pool digest generalised a 4-contract, nearest-2-month, regular-session day-trade margin rule into a universal one", "verdict": "REFINE",
      "requires": None, "detail": "distill-url DIGEST_SYSTEM: rules/fees/margins/discounts keep their scope (contracts, months, session, exceptions); unclear scope -> 適用範圍見原文",
      "check_text": ("distill_url", "不可把限定規則概括成通用規則")},
@@ -240,6 +301,15 @@ ELEMENTS = [
      "requires": None, "detail": "no implementable content beyond what ③ already says (fewer lines, reuse); nothing fused"},
     {"id": "EVO-en-translation-rejected", "element": "ai_darkhero f1s-evolve live test 2026-10-15: append an English translation to every report", "verdict": "INFO",
      "requires": None, "detail": "rejected: conflicts with T1 語言 (回覆一律繁體中文; only code/filenames/technique_output in English) and would double every reply's tokens; T1 is not editable by f1s-evolve; no text changed, nothing shipped"},
+    # f1s-evolve 2026-10-16: ai_nuwa proposal, commit-msg test-claim gate (evidence ai_nuwa 645cb0f)
+    {"id": "EVO-nuwa-test-claim-split", "element": "ai_nuwa: pytest chained with git commit wrote 'N passed' over a failure (f8fbd78, 283559b)", "verdict": "REFINE",
+     "requires": None, "detail": "④ in ztm-verify-before-done: test and commit are two steps, read the result before writing the claim; skill text, not hot_directive (how lives in skills, KB-skills-how)",
+     "check_text": ("skill_verify", "測試與 commit 分兩步")},
+    {"id": "EVO-nuwa-git-smart-test-claim", "element": "ai_nuwa: re-run tests when a commit message claims N passed, refuse on failure or count mismatch", "verdict": "REFINE",
+     "requires": None, "detail": "git_smart.py --test-cmd re-runs the seat's suite when the message/Verified-By claims N passed (quoted claims skipped), exit 3 and no commit on failure or mismatch; opt-in per call because the hub has no fleet-wide test command; test_test_claim_gate_refuses_false_claims_on_a_real_repo",
+     "check_text": ("git_smart", "def test_claim_problems")},
+    {"id": "EVO-nuwa-seat-template-hook", "element": "ai_nuwa: seat template ships .githooks/commit-msg", "verdict": "INFO",
+     "requires": None, "detail": "not adopted: no seat template carries .githooks today and core.hooksPath is per-clone config; git_smart commits already run a seat's own commit-msg hook (no --no-verify by default), and --test-cmd covers git_smart callers"},
 ]
 
 
@@ -316,7 +386,16 @@ def main() -> int:
             and conf["bound"]["lean_file"]["sha256"] == sha(MODULES["ClaimContract"])
     except (OSError, ValueError, KeyError):
         conf_ok = False
-    ok = all(p["verdict"] == "PROVED" for p in proofs.values()) and unresolved == 0 and conf_ok
+    # 2026-10-16: a 1609-char hot directive passed this audit, then failed at install (fames_capabilities caps it
+    # at 1400) and left the fleet on a half-shipped package. Check the same cap here, before any ship step.
+    try:
+        directive = json.loads(TEXTS["hot_directive"].read_text(encoding="utf-8-sig"))["unified_entrypoint"]["hot_directive"]
+        directive_ok = 100 <= len(directive) <= 1400
+    except (OSError, ValueError, KeyError, TypeError):
+        directive, directive_ok = "", False
+    if not directive_ok:
+        print(f"  FAIL hot_directive length {len(directive)} outside 100..1400 (fames_capabilities cap)")
+    ok = all(p["verdict"] == "PROVED" for p in proofs.values()) and unresolved == 0 and conf_ok and directive_ok
     doc = {
         "schema": "f1s-audit/1", "ok": ok, "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "elapsed_s": round(time.time() - started, 1), "pattern": "ai_ut/ut_theory/rederive",
