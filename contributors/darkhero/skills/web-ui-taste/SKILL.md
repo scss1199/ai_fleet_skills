@@ -60,3 +60,14 @@ Playwright CLI = `microsoft/playwright-cli`（Apache-2.0）。F1S 只取做法�
   3 個 alt、恢復縮放、加 reduced-motion）；無障礙樹裡欄位從無名稱變成「日期」「Email」「密碼」等。
 - 第 5 步在 375px 截圖抓到 lint 抓不到的問題：標題「雨田國際」被擠成一字一行（改版前就有）；修正後不換行、
   無橫向捲動。已部署 GAS @v5（commit ff8ef10）。
+
+## 2026-10-16 全艦清零（「Bring fleet frontends to zero UI-guideline findings」）
+
+- lint 範圍只算出貨的 UI 原始碼：`fixtures`（擷取的第三方頁）、`_temp`、`.profiles`/`chrome-data`、`runtime`、`output`
+  （產生的報告與圖庫）不算。產生器產出的頁面要改產生器（例：入口網頁改 `_skill/engines/hub-portal-gen.py`、
+  lilith 頁改 `ai_metadata/person_page.py`），不只改產出檔。
+- `ui-guideline-lint.py --fix` 只做安全修正（連結 label、placeholder→aria-label、alt=""、恢復縮放、reduced-motion），
+  其餘要人判斷；改完一定跑該 repo 的 tsc／build（2026-10-16 舊版 fixer 曾把 aria-label 寫進 JSX 的 `=>`，tsc 抓到，已修並加測試）。
+- 結果（前→後）：ai_metadata 32→0、ai_ziyaoastro 50→0、jci_taipei_website 31→0、ai_accountancy 68→0、
+  入口網頁 ai_darkhero.html／ai_master.html 68→0、ai_heartlink 10→0、ai_theater 10→0、ai_eatery 7→0、ai_demo 1→0。
+  驗證：ziyaoastro astro build 12 頁、jci／heartlink tsc 0、ai_metadata pytest 73 passed、各頁 inline JS `node --check` 通過。
