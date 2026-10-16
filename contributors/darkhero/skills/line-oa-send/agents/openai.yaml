@@ -1,0 +1,4 @@
+interface:
+  display_name: "LINE OA Send"
+  short_description: "Send text, files or images to the operator's LINE via kyloren_bot"
+  default_prompt: "Use $line-oa-send to send this result or file to my LINE through kyloren_bot."
