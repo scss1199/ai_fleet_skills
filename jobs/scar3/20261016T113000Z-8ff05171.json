@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261016T113000Z-8ff05171",
+  "target_host": "scar3",
+  "kind": "probe",
+  "seat": null,
+  "prompt": null,
+  "from": "ai_darkhero",
+  "created_at": "2026-10-16T11:30:00+00:00",
+  "expires_at": "2026-10-18T11:30:00+00:00"
+}
