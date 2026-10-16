@@ -47,6 +47,13 @@ TEXTS = {
     "skill_login": HUB / "_skill" / "fleet-skills" / "browser-login-handoff" / "SKILL.md",
     "skill_rea": HUB / "_skill" / "fleet-skills" / "rea-reverse-engineering" / "SKILL.md",
     "skill_ui": HUB / "_skill" / "fleet-skills" / "web-ui-taste" / "SKILL.md",
+    "skill_reverse": HUB / "_skill" / "fleet-skills" / "f1s-reverse-learning" / "SKILL.md",
+    "skill_atlas": HUB / "_skill" / "fleet-skills" / "web-page-atlas" / "SKILL.md",
+    "skill_gas": HUB / "_skill" / "fleet-skills" / "gas-google-sso-webapp" / "SKILL.md",
+    "skill_mto": HUB / "_skill" / "fleet-skills" / "mtm-mto-first" / "SKILL.md",
+    "skill_runtime": HUB / "_skill" / "fleet-skills" / "windows-runtime-pitfalls" / "SKILL.md",
+    "harvest_engine": HUB / "_skill" / "engines" / "f1s-harvest.py",
+    "skill_apikey": HUB / "_skill" / "fleet-skills" / "api-key-apply" / "SKILL.md",
     "ui_lint": HUB / "_skill" / "engines" / "ui-guideline-lint.py",
     "skill_review": HUB / "_skill" / "fleet-skills" / "independent-review" / "SKILL.md",
     "skill_fleet_github": HUB / "_skill" / "fleet-skills" / "mtm-fleet-skill-github" / "SKILL.md",
@@ -149,6 +156,27 @@ ELEMENTS = [
     {"id": "KB-web-ui-lint", "element": "Vercel Web Interface Guidelines rules decidable from source text", "verdict": "REFINE",
      "requires": None, "detail": "mechanical check ui-guideline-lint.py (9 rules, tests in test_ui_guideline_lint.py); judgement rules stay in the skill",
      "check_text": ("ui_lint", "no-reduced-motion")},
+    {"id": "OP-reverse-learning", "element": "operator 2026-10-16: 「把他們各自用到的所有技能 經驗 系統 api 整合會到f1s 使得f1s直接建立一個從各cwd反向學習的機制」", "verdict": "REFINE",
+     "requires": None, "detail": "skill f1s-reverse-learning + f1s-harvest.py: harvest skills/memory/tools/APIs from every cwd (never fracdigi/quant), best-single-document coverage, free-pool triage, self-updating goals.json",
+     "check_text": ("hot_directive", "f1s-reverse-learning")},
+    {"id": "OP-reverse-goals", "element": "operator 2026-10-16: 「讓這個對話的f1s能夠維持長任務自己找目標自己更新目標」", "verdict": "REFINE",
+     "requires": None, "detail": "f1s-harvest cycle recomputes goals.json every run; mark needs evidence and settles a whole cross-seat goal",
+     "check_text": ("harvest_engine", "def cycle")},
+    {"id": "RL-runtime-pitfalls", "element": "reverse-learned from ai_trader / hub-root memories: SO_REUSEADDR multibind, RST before body read, AccessDenied != dead, retry storms, stale index.lock, clock skew", "verdict": "REFINE",
+     "requires": None, "detail": "new skill windows-runtime-pitfalls, routed from the hot directive",
+     "check_text": ("skill_runtime", "allow_reuse_address = False")},
+    {"id": "RL-api-before-integrate", "element": "reverse-learned API lessons: provider limits, pooled token expiry, client_credentials reissue; fleet API catalog", "verdict": "REFINE",
+     "requires": None, "detail": "api-key-apply section 接外部 API 前 + f1s-harvest.py api <service>",
+     "check_text": ("skill_apikey", "f1s-harvest.py api")},
+    {"id": "RL-promote-atlas", "element": "reverse-learned from ai_trader: web-page-atlas (self-improving site map)", "verdict": "REFINE",
+     "requires": None, "detail": "promoted to canonical with a fleet-shared _registry/web-atlas store; never store credentials there",
+     "check_text": ("skill_atlas", "_registry/web-atlas")},
+    {"id": "RL-promote-gas", "element": "reverse-learned from ai_accountancy: gas-google-sso-webapp", "verdict": "REFINE",
+     "requires": None, "detail": "promoted to canonical with the 2026-10-16 GAS lessons (trash before rebuild, DEFAULT_SS_ID, same-tab consent, bridge)",
+     "check_text": ("skill_gas", "不要先重建")},
+    {"id": "RL-tools-catalog", "element": "seat tools integrated as a reuse-before-write catalog", "verdict": "REFINE",
+     "requires": None, "detail": "f1s-harvest.py tools <query>; mtm-mto-first: search other seats before writing a new tool",
+     "check_text": ("skill_mto", "f1s-harvest.py tools")},
     {"id": "OP-run-here", "element": "operator 2026-10-16: 「以後f1s架構遇到 \"在這裡執行此任務\" 直接執行不要等」", "verdict": "REFINE",
      "requires": None, "detail": "hot_directive: a 「在這裡執行此任務：…」 prompt is an approval — start at once, no confirmation, no offer card",
      "check_text": ("hot_directive", "在這裡執行此任務")},
@@ -344,7 +372,16 @@ def main() -> int:
             and conf["bound"]["lean_file"]["sha256"] == sha(MODULES["ClaimContract"])
     except (OSError, ValueError, KeyError):
         conf_ok = False
-    ok = all(p["verdict"] == "PROVED" for p in proofs.values()) and unresolved == 0 and conf_ok
+    # 2026-10-16: a 1609-char hot directive passed this audit, then failed at install (fames_capabilities caps it
+    # at 1400) and left the fleet on a half-shipped package. Check the same cap here, before any ship step.
+    try:
+        directive = json.loads(TEXTS["hot_directive"].read_text(encoding="utf-8-sig"))["unified_entrypoint"]["hot_directive"]
+        directive_ok = 100 <= len(directive) <= 1400
+    except (OSError, ValueError, KeyError, TypeError):
+        directive, directive_ok = "", False
+    if not directive_ok:
+        print(f"  FAIL hot_directive length {len(directive)} outside 100..1400 (fames_capabilities cap)")
+    ok = all(p["verdict"] == "PROVED" for p in proofs.values()) and unresolved == 0 and conf_ok and directive_ok
     doc = {
         "schema": "f1s-audit/1", "ok": ok, "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "elapsed_s": round(time.time() - started, 1), "pattern": "ai_ut/ut_theory/rederive",

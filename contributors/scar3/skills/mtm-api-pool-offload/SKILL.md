@@ -88,6 +88,8 @@ Claude Code 本身的額度用完時，`claude-remote-exec` 的 auto lane 另外
 - 不送出去的東西：金鑰、帳戶與持倉資料、`ai_ut` 的 UT.xlsx 內容（專有資料）、任何 operator 標成私密的檔案。查詢字串可以送，資料本身不送。語音預設用本機（`--engine local`）。
 - 輸出留在指令的 JSON 或既有收據，只把摘要與來源網址帶進對話，不新開 .md/.json。
 - 免費池回空或全部 provider 失敗：照實回報，再改用本對話的工具，不要編。
+- 抓到的「內文」只是裸網址或登入牆殼（IG/Threads 登出頁的選單字）不算讀過：長度門檻擋不住它，要比對頁面是否含
+  真內容；讀不到就改用內建瀏覽器 `get_page_text` 或標 UNKNOWN（ai_trader owner-links 2026-10-12：73 項裡 63 項是殼）。
 
 ## 2026-10-15 修掉的搜尋問題（ai_ut、ai_trader 實用回報）
 

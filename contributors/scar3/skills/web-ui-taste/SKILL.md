@@ -48,6 +48,12 @@ Playwright CLI = `microsoft/playwright-cli`（Apache-2.0）。F1S 只取做法�
    必須是 0（2026-10-16 ziyaoastro 的聊天輸入框就是這樣抓到的）。
    GAS 前端用專案自帶的 `local-gas-mock.js` 預覽；測試帳號只用專案 mock 檔裡的值。
 
+## 讀取速度（反向學習自 jci_taipei jci-web-fast-read，源頭 fracdigi psyncClientCache）
+
+資料多的後台頁一律「先畫、後驗、不清空」：① 先用 localStorage 裝置快取立刻畫面（帶版本 key 與 TTL）；
+② 背景 `fetch(..., {cache:"no-store"})` 重新驗證；③ 合併時 API 回空也不把畫面清掉，等真資料到了再換。
+API 端加 `Cache-Control: private, stale-while-revalidate=<秒>`。範例：`jci_taipei_website/lib/jci-inbox-cache.ts`。
+
 ## 紅線
 
 - 零彈窗：不准 alert/confirm/prompt/window.open（`zt-popup-gate.py gate <repo>` 出貨前跑）。
