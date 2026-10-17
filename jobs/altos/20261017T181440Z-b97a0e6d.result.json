@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261017T181440Z-b97a0e6d",
+  "host": "altos",
+  "started_at": "2026-10-17T18:16:01+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_altos cwd=ai_altos auth=cli_credentials_file 14.3s]\nALTOS-CLI-OK DESKTOP-RSNIAPR\n",
+  "stderr": "",
+  "finished_at": "2026-10-17T18:16:28+00:00"
+}
