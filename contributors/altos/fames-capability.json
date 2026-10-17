@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "altos",
-  "package_sha": "e474db5691dd26b043ed776de32e134bbcafda05945f96967a9687322daba868",
+  "package_sha": "198b63e2afd8257f26159e90663b247dc0aacc74920b5594d9c0366c7e4885e4",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "573dd1a29acec301ef50bdd7a80d3aeff5f500e402044bbc9f6199258edf5d4a",
   "runner_state": "armed",
-  "observed_at": "2026-10-17T17:49:13.824038+00:00",
+  "observed_at": "2026-10-17T18:15:12.431972+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -358,11 +358,11 @@
       {
         "agent": "ai_altos",
         "surface": "claude",
-        "observed_at": "2026-10-18T01:47:47+08:00",
-        "receipt_sha256": "7abdda28b43fd5e39fe1a7402deca3ac5eef2421946802fc1e09af09f3c56734"
+        "observed_at": "2026-10-18T02:13:48+08:00",
+        "receipt_sha256": "54e0f5d00697e7f54f9a1e7e93a69aeae11ad536218e4e92efaf5d253050af13"
       }
     ],
-    "runtime_release_sha256": "b2d2a028689b06f6f4c5a3574a5fa128d89a9da75ce143f6f903678946428262"
+    "runtime_release_sha256": "1c47482f5c697a2cfa72c497e6a2b2f6b52d4f7bb8b823e3edf289fc62bdbead"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
