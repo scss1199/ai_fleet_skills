@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261017T181440Z-b97a0e6d",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "只回一行：ALTOS-CLI-OK 加上你的 hostname。不要做其他事。\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-10-17T18:14:40+00:00",
+  "expires_at": "2026-10-19T18:14:40+00:00"
+}
