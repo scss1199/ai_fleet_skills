@@ -71,6 +71,8 @@ DEFAULTS = {
         "code_change": True,
         # 2026-10-14 (threads @nashlikeai, skills.sh tdd): 「修好」 after a code write needs a green test after it
         "fix_claim": True,
+        # 2026-10-18 operator: 「你說得對」 = the model skipped the thinking and is now placating
+        "placation": True,
     },
     # 2026-10-13 operator: 「嚴格禁止隨意產出 .md 和 .json」.  A .md / .json written this turn is allowed only
     # under machine-state directories (any depth), under a charter / receipt name the machinery requires,
@@ -94,6 +96,11 @@ QUALIFIER = re.compile(
 NEGATION_BEFORE = re.compile(
     r"(?i)(?:\bnot\b|\bno\b|\bnever\b|\bwithout\b|didn't|did\s+not|haven't|hasn't|wasn't|isn't|"
     r"沒有|沒|未|不會|不是|並未|并未|無|无|還沒|还没|尚未|拒絕|取消|停止|\bstopped\b)\s*$"
+)
+# Same family f1s-transcript-audit.py FLIPFLOP counts after the fact; here it blocks before the turn ends.
+PLACATION = re.compile(
+    r"(?i)你(?:說|講)(?:得|的)(?:對|沒錯|很對|有道理)|你是對的|你(?:說|講)的沒錯|確實如你所說|"
+    r"\byou(?:'re| are) (?:absolutely |totally |completely )?right\b|\bfair point\b|\bgood catch\b"
 )
 QUOTED = re.compile(r"「[^」\r\n]*」|『[^』\r\n]*』|“[^”\r\n]*”|\"[^\"\r\n]*\"")
 URL = re.compile(r"[a-z][a-z0-9+.-]*://\S+", re.I)
@@ -213,6 +220,7 @@ LIE_NEEDS = {
     "unrequested_file": "a .md / .json was written this turn that no prompt asked for and no mechanism requires (operator 2026-10-13 「嚴格禁止隨意產出 .md 和 .json」): move it to the scratchpad / _delete and say so, or cite the prompt that asked",
     "fix_claim": "tdd: this line claims a fix but no green test (pytest / unittest / selftest / npm test) ran AFTER the last code write of this turn — run the regression tests now, or write the line as 未驗證",
     "code_change": "F1S ③ 先重用再自己寫 / Brownfield: code was written or edited this turn with no grep / glob / find before the first write — search existing implementations and usages first (then write), or revert the write",
+    "placation": "operator 2026-10-18 「我他媽最討厭看到任何模型跟我說『你說得對』」: agreeing after a correction proves the work was skipped before. Delete the opener; state what was wrong, the evidence this turn found, and what you did about it",
     "handback": "推託: this step is handed to the operator although the line names no operator-reserved action (login/OAuth, permanent delete, rider arming, global settings, secrets, funds, hardware) and no tool failed this turn: do it yourself now, or try it and cite the failing tool result",
 }
 READ_CMD = re.compile(
@@ -1102,6 +1110,10 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
             if not admissible("decision", {"askedBefore": asked_before(asked, earlier_decisions),
                                            "redLineNamed": red_line_named(asked, cwd)}):
                 violations.append({"line": number, "class": "decision", "snippet": snippet, "need": LIE_NEEDS["decision"]})
+        # No evidence makes a placating opener admissible, so it is judged before the qualifier
+        # exemption; a quoted mention (「你說得對」) is removed from `line` and stays legal.
+        if classes.get("placation", True) and PLACATION.search(line):
+            violations.append({"line": number, "class": "placation", "snippet": snippet, "need": LIE_NEEDS["placation"]})
         if QUALIFIER.search(line):
             continue
         for name, pattern in LIE_PATTERNS.items():

@@ -64,6 +64,7 @@ TEXTS = {
     "websearch_engine": HUB / "_skill" / "engines" / "websearch.py",
     "skill_preflight": HUB / "_skill" / "fleet-skills" / "token-preflight" / "SKILL.md",
     "git_smart": HUB / "_skill" / "engines" / "git_smart.py",
+    "llm_engine": HUB / "_skill" / "engines" / "_llm.py",
 }
 
 # The architecture scan.  `requires` names the Lean theorem that must be PROVED for the verdict to stand;
@@ -310,6 +311,15 @@ ELEMENTS = [
      "check_text": ("git_smart", "def test_claim_problems")},
     {"id": "EVO-nuwa-seat-template-hook", "element": "ai_nuwa: seat template ships .githooks/commit-msg", "verdict": "INFO",
      "requires": None, "detail": "not adopted: no seat template carries .githooks today and core.hooksPath is per-clone config; git_smart commits already run a seat's own commit-msg hook (no --no-verify by default), and --test-cmd covers git_smart callers"},
+    {"id": "EVO-trader-three-tier", "element": "ai_trader 2026-10-16 (owner 原話): 確定哪些網站有效後固定撈資料用免費機制, 高智能模型只處理需思考的事", "verdict": "REFINE",
+     "requires": None, "detail": "mtm-api-pool-offload 三層分工 table: (1) confirmed site -> zero-model background script / existing rider (new periodic rider still needs operator authorization, T1), (2) bulk fixed-format labelling -> chat_for bulk/extract, (3) reasoning -> conversation model or claude-remote-exec auto lane; evidence ai_trader news_archive pull_log.jsonl (0 token) + _registry/claude-remote-probe.json",
+     "check_text": ("skill_pool", "三層分工")},
+    {"id": "EVO-trader-tier-pointer", "element": "hot_directive free-pool route names the three tiers", "verdict": "REFINE",
+     "requires": None, "detail": "route clause now reads 免費池三層：已確認網站固定撈→零模型背景腳本，量大固定格式→chat_for，推理判斷→本對話模型 (1249 chars, under the 1400 cap); the how stays in the skill",
+     "check_text": ("hot_directive", "免費池三層")},
+    {"id": "EVO-trader-rpd-ledger", "element": "ai_trader gap: free-pool RPD unmeasured (key-health only ok/quota0), proposed f1s-harvest per-provider daily usage so background labelling stops itself", "verdict": "REFINE",
+     "requires": None, "detail": "routed to the existing api_budget.py ledger instead of f1s-harvest: _llm.Pool.chat_for meters every routed call (provider level, key='pool', no values) and skips a provider whose headroom is parked (429 -> 15 min) or over the observed rpd; learn --write derives ceilings from 429s; tests test_chat_for_meters_every_routed_call / test_429_parks_the_provider / test_spent_daily_budget_stops_the_background_job (11 passed)",
+     "check_text": ("llm_engine", "def _budget_note")},
 ]
 
 

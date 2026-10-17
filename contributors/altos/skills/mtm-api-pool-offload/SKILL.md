@@ -82,6 +82,21 @@ _llm.Pool().chat_for("summary", [{"role": "user", "content": "..."}])
 Claude Code 本身的額度用完時，`claude-remote-exec` 的 auto lane 另外走本機 OmniRoute 閘道
 （`omniroute-gateway.py status` 檢查，127.0.0.1:20128）。
 
+## 三層分工：固定撈零模型、量大免費池、思考才用高智能
+
+operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是有效資料後固定撈資料的方式就用免費的機制；高智能的模型處理需要思考的事情」。
+先用第 2、3 層搜一次確定哪些網站真的有資料；之後同一個資料源就降到第 1 層固定撈，不再花任何模型 token。
+
+| 層 | 工作 | 怎麼跑 | ai_trader 實例（2026-10-16 回報） |
+|---|---|---|---|
+| 1 零模型 | 已確認有效的網站，固定格式定期撈 | 背景腳本（pythonw／CREATE_NO_WINDOW）或既有 rider；新的週期 rider 仍要 operator 授權（T1） | `scripts/news_archive_pull.py` 撈 cnyes 免金鑰新聞檔，13 category-day/分、0 token；收據 `sinopac-trading-system/runtime/data/news_archive/pull_log.jsonl` |
+| 2 免費池 | 量大、固定格式的標註／抽取／分類 | `_llm.Pool().chat_for("bulk" 或 "extract", ...)` | 40 則標題語氣標註 0.9 秒（gemini 路由），比字典法多標出 25/40 |
+| 3 高智能 | 推理、判斷、決定 | 本對話模型；本對話額度用完→`claude-remote-exec` auto lane（`_registry/claude-remote-probe.json` 10-16 probe ok） | 期望值題 48 秒答對 |
+
+第 2 層會自己停：每次 `chat_for` 都寫一列到 `_logs/api-usage/<seat>.jsonl`（`api_budget.py`；provider 層級、只有次數，沒有金鑰值），
+429 自動停用該 provider 15 分鐘，實測 rpd 用完就在呼叫前跳過。`python _skill\engines\api_budget.py show` 看今日用量，
+`learn --write` 從 429 回推每個 provider 的實測上限；背景標註不必等 key-health 的 ok／quota0 才知道額度沒了。
+
 ## 規則
 
 - 結果是草稿：數字、日期、費率、法規這類會被拿來做決定的事實，要回到抓下來的原文或官方網址核對，並在回覆附來源網址；核對不了就寫 UNKNOWN。

@@ -341,10 +341,20 @@ def probe(hub: Path) -> dict:
 def run_prompt(hub: Path, seat: str, prompt: str) -> dict:
     """Local Claude CLI through claude-remote-exec.py; a NAMED blocker when it is not ready."""
     exe = hub / "_skill/engines/claude-remote-exec.py"
-    chk = _run([sys.executable, str(exe), "check", "--json"], cwd=hub, timeout=90)
-    try:
-        ready = json.loads(chk["stdout"][chk["stdout"].index("{"):])
-    except (ValueError, KeyError, TypeError):
+    def _check(*extra: str, timeout: int = 90):
+        chk = _run([sys.executable, str(exe), "check", "--json", *extra], cwd=hub, timeout=timeout)
+        try:
+            return json.loads(chk["stdout"][chk["stdout"].index("{"):]), chk
+        except (ValueError, KeyError, TypeError):
+            return None, chk
+
+    ready, chk = _check()
+    if ready is not None and ready.get("blocker") == "claude_auth_unverified":
+        # The verdict is only refreshed at logon (12h TTL), so a follower that stays up
+        # rejects every prompt job afterwards. A job is waiting and will spend a call
+        # anyway: prove the credential once, then re-read readiness.
+        ready, chk = _check("--probe", timeout=300)
+    if ready is None:
         return {"ok": False, "blocker": "claude_remote_exec_check_unreadable", "stderr": chk["stderr"]}
     if not ready.get("ready"):
         return {"ok": False, "blocker": ready.get("blocker") or "claude_cli_not_ready", "check": ready}
