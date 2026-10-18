@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "9bb7c207d8289c6546a9b89df9922d714a6f07cb6cff637531c85607e99eef57",
+  "package_sha": "f4e9d2eb107cb738af6b105715b916aac5ee7de1489ec28e5846507ed90c90a0",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "573dd1a29acec301ef50bdd7a80d3aeff5f500e402044bbc9f6199258edf5d4a",
   "runner_state": "armed",
-  "observed_at": "2026-10-18T11:48:11.589069+00:00",
+  "observed_at": "2026-10-18T12:11:29.626531+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,34 +353,9 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "OBSERVED_PARTIAL_POPULATION",
-    "native_events": [
-      {
-        "agent": "ai_zonghe",
-        "surface": "claude",
-        "observed_at": "2026-10-18T17:36:01+08:00",
-        "receipt_sha256": "de81780b92cb545f8d5bea5cb9b9f03e2116b022db17858ec407eeef72341a06"
-      },
-      {
-        "agent": "ai_theater",
-        "surface": "claude",
-        "observed_at": "2026-10-18T19:37:02+08:00",
-        "receipt_sha256": "30212033cf7f167f1f1b0289abd13bfbb217b6ffcc1ae305b26e5987f75e8ab5"
-      },
-      {
-        "agent": "ai_trader",
-        "surface": "claude",
-        "observed_at": "2026-10-18T17:17:09+08:00",
-        "receipt_sha256": "cbed8d8219fabef74c1b38a2820ea4e1212e5d2aea91f893996afbb8f4ef91f8"
-      },
-      {
-        "agent": "engines",
-        "surface": "claude",
-        "observed_at": "2026-10-18T18:05:26+08:00",
-        "receipt_sha256": "b4cc9753b5d24fd2f9e018143ab3dbe725e91a75e681cb876c3cb87ab7a3c1ca"
-      }
-    ],
-    "runtime_release_sha256": "0635e8640dc3c0639d9779e2e657e93262ec581f4232a656921cd72eff7ae9dd"
+    "native_state": "UNKNOWN",
+    "native_events": [],
+    "runtime_release_sha256": "e77fa3f0728cca28428d7971f9372d3987c7cdd6fe34a1c6d7781ba85c33d720"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
