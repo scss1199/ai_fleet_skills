@@ -362,6 +362,17 @@ PUBLISH_REASON = (
 )
 
 
+NEGATION = re.compile(r"(?i)(?:不|別|勿|禁止|不要|不准|不可|不能|沒|未|non?|not|don'?t|never|without)\W{0,2}\S{0,6}$")
+
+
+def publish_consent(prompt_text: str) -> bool:
+    """An unnegated 公開/網站/部署/publish in the operator's prompt; 「不准公開」 or "don't publish" is no consent."""
+    for m in PUBLISH_CONSENT.finditer(prompt_text or ""):
+        if not NEGATION.search(prompt_text[max(0, m.start() - 10):m.start()]):
+            return True
+    return False
+
+
 def _publish_gate(doc: dict, tool: str, ti: dict) -> dict | None:
     if tool in ("Bash", "PowerShell"):
         text = str(ti.get("command") or "")
@@ -376,7 +387,7 @@ def _publish_gate(doc: dict, tool: str, ti: dict) -> dict | None:
     if path is not None:
         _, prompt, _, _, _ = current_turn_ex(path)
         prompt_text = _text_of(((prompt or {}).get("message") or {}).get("content"))
-    consent = bool(PUBLISH_CONSENT.search(prompt_text))
+    consent = publish_consent(prompt_text)
     what = (PRIVATE_DOC.search(text).group(0) + " -> " + PUBLIC_DEST.search(text).group(0)).strip()
     _log({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "session_id": str(doc.get("session_id") or ""),
           "event": "PreToolUse", "tool": tool, "matched": "publish_gate", "what": what[:120],
