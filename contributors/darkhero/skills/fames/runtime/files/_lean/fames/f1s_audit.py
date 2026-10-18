@@ -65,6 +65,7 @@ TEXTS = {
     "skill_preflight": HUB / "_skill" / "fleet-skills" / "token-preflight" / "SKILL.md",
     "git_smart": HUB / "_skill" / "engines" / "git_smart.py",
     "llm_engine": HUB / "_skill" / "engines" / "_llm.py",
+    "load_guard": HUB / "ai_darkhero" / "tray" / "scripts" / "load_guard.py",
 }
 
 # The architecture scan.  `requires` names the Lean theorem that must be PROVED for the verdict to stand;
@@ -342,6 +343,13 @@ ELEMENTS = [
     {"id": "EVO-theater-fansub-corpus", "element": "ai_theater 2026-10-18: fansub burn-in subtitles are free translations (117 pairs, 12 confirmed by lexical anchors)", "verdict": "REFINE",
      "requires": None, "detail": "mtm-api-pool-offload: aligned fansub corpus is a style/vocabulary reference for the prompt, never per-sentence ground truth; anchor-filter first and the result stays a draft (extends the existing results-are-drafts rule); evidence hub-root memory burnin-subtitle-ocr-learning",
      "check_text": ("skill_pool", "不能當逐句 ground truth")},
+    # f1s-evolve 2026-10-19: ai_theater inbox proposal "load_guard.py resume re-arms the subtitle run intent"
+    {"id": "EVO-theater-ladder-restore-generation", "element": "ai_theater 2026-10-19 ask: load_guard's background restore must be idempotent and honour an explicit stop/drain posted after the shed", "verdict": "REFINE",
+     "requires": None, "detail": "load_guard shed records the intent_generation its own background-off produced (off_generation, persisted in the ladder file); resume_all re-arms only when the schedule stamp AND the session generation are still its own, an unreadable session is UNKNOWN and leaves it off, a ladder file without the field keeps the schedule-only rule (tray/tests/test_load_guard_ladder_restore.py, 12 tests)",
+     "check_text": ("load_guard", "off_generation")},
+    {"id": "EVO-theater-ladder-misattribution", "element": "ai_theater 2026-10-19 claim: load_guard resume_all posted background enabled=true on every shed/resume cycle 01:56-05:05 (generations 1026..1038)", "verdict": "REFINE",
+     "requires": None, "detail": "refuted: ai_darkhero/tray/logs/load_guard.log holds 0 shed/resume/gate events in its whole history and tray/state/load_guard.json level=0 (pid 25200 since 10-15); the gate stamps every POST /api/subtitle/background as ai_theater_background and keeps no access log (logging.debug), so the real poster is UNKNOWN; windows-runtime-pitfalls now says: a shared source label cannot attribute a caller, read the suspect's own log before naming it, callers carry their own source, services persist access logs",
+     "check_text": ("skill_runtime", "共用的來源標籤不能歸因呼叫者")},
 ]
 
 

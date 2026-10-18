@@ -30,6 +30,12 @@ parent_skill: ztm-verify-before-done
 - **背景 python 會跳「應用程式錯誤」對話框**：CPython 3.12 的 `platform.*` 走 WMI COM thread，機器忙時崩潰 → csrss
   硬錯誤框（短暫、無 Event 1000）。背景程序避免在 import 期呼叫 `platform.machine()/uname()` 這類查詢；零彈窗紅線。
   （ai_trader zero-popup-python-crash-dialog；hub memory pythonw-platform-ver-flash）
+- **共用的來源標籤不能歸因呼叫者；指名之前先讀嫌疑方自己的 log。** ai_theater 的 gate 把每個 POST
+  /api/subtitle/background 都標成 `ai_theater_background`，2026-10-19 的提案據此指名 load_guard 重新 arm 字幕，
+  但 load_guard.log 全檔 0 筆 shed/resume/gate 事件、ladder level 一直是 0——真正的呼叫端至今 UNKNOWN，因為
+  gate 的 access log 只走 `logging.debug` 沒落地。做法：每個呼叫端自帶 source（或 User-Agent），服務端把 access
+  log 寫到檔案；而「還原」類動作要綁自己那一代的 intent generation，資料裡出現更新的 stop/start 就不再還原
+  （load_guard `off_generation`，test_load_guard_ladder_restore）。
 
 ## 重試、鎖、排程
 
