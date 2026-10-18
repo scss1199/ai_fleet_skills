@@ -1285,7 +1285,13 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
     per_turn = int(cfg.get("max_blocks_per_turn") or 0)
     per_session = int(cfg.get("max_blocks_per_session") or 0)
     if state.get("blocks", 0) >= per_turn or state.get("session_blocks", 0) >= per_session:
-        entry.update({"verdict": "allow", "matched": "budget_exhausted",
+        # F1S 當下閉環 item 6 (2026-10-18): over the cap the turn still ends (no endless loop), but the unresolved
+        # claims are carried, not dropped: claude_session_hook.py puts them in front of the next prompt once and
+        # the overflow stays in log.jsonl as a compliance record.
+        state["carried"] = {"turn": turn_key, "at": entry["ts"], "surfaced": False,
+                            "items": [f"{v['class']}: \"{v['snippet']}\" -> {v['need']}" for v in violations[:6]]}
+        _save_state(session_id, state)
+        entry.update({"verdict": "allow", "matched": "budget_exhausted", "carried": len(violations),
                       "blocks": state.get("blocks"), "session_blocks": state.get("session_blocks")})
         _log(entry)
         return None

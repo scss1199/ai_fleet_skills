@@ -341,6 +341,30 @@ def _midturn(doc) -> int:
     return 0
 
 
+def _proof_carry(session_id: str) -> str:
+    """Claims the PROOF Stop hook could not push back on because its per-turn/per-session cap was spent
+    (claude-proof-hook.py `carried`), shown once at the next prompt (F1S 當下閉環 item 6). Never raises."""
+    import re as _re
+    if not session_id.strip():
+        return ""
+    path = HUB / "_registry" / "proof" / (_re.sub(r"[^A-Za-z0-9_.-]", "_", session_id)[:80] + ".json")
+    try:
+        state = json.loads(path.read_text(encoding="utf-8-sig"))
+        carried = state.get("carried") if isinstance(state, dict) else None
+        if not isinstance(carried, dict) or carried.get("surfaced") or not carried.get("items"):
+            return ""
+        carried["surfaced"] = True
+        staged = path.with_name(path.name + f".{os.getpid()}.tmp")
+        staged.write_text(json.dumps(state, ensure_ascii=False, indent=1), encoding="utf-8")
+        os.replace(staged, path)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return ""
+    return ("PROOF CARRY-OVER — the previous turn ended with unproven claims after the PROOF cap was spent "
+            f"({carried.get('at')}); they are recorded as a compliance flag. Before anything else, correct them "
+            "in this reply (run the check and cite it, or restate them as UNKNOWN):\n"
+            + "\n".join("  - " + str(item) for item in carried["items"]))
+
+
 def main():
     doc=_read_hook_input(sys.stdin)
     if str(doc.get("hook_event_name") or "")=="PostToolUse":
@@ -414,7 +438,8 @@ def main():
     # Upgrades reach open conversations even when the FAMES harness above failed; both helpers never raise.
     if event == "UserPromptSubmit":
         for update in (_t1_refresh(surface_id, session_id, at_start=False),
-                       _charter_refresh(surface_id, session_id, cwd, at_start=False, transcript_path=transcript_path)):
+                       _charter_refresh(surface_id, session_id, cwd, at_start=False, transcript_path=transcript_path),
+                       _proof_carry(session_id)):
             if update:
                 context=(context+"\n"+update).strip()
     else:
