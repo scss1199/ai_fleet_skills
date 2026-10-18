@@ -317,9 +317,24 @@ ELEMENTS = [
     {"id": "EVO-trader-tier-pointer", "element": "hot_directive free-pool route names the three tiers", "verdict": "REFINE",
      "requires": None, "detail": "route clause now reads 免費池三層：已確認網站固定撈→零模型背景腳本，量大固定格式→chat_for，推理判斷→本對話模型 (1249 chars, under the 1400 cap); the how stays in the skill",
      "check_text": ("hot_directive", "免費池三層")},
+    {"id": "EVO-trader-structured-route", "element": "ai_trader 2026-10-18: bulk/extract routes add OmniRoute ddgw/gpt-5.4-mini (40-title pure-JSON labelling 2.0/1.6/2.3 s, parsed every time, 88/120 agree with gemini; gemini shared quota throttled to ~200 s/day)", "verdict": "REFINE",
+     "requires": None, "detail": "_llm.TASK_ROUTES bulk/extract = gemini, ddgw/gpt-5.4-mini, auto/coding; root cause fixed in the engine: chat_for(jsonmode=True) treats a non-JSON answer as that route's failure (not-json, metered error) and falls through (test_llm_task_routes: ddgw-before-auto-coding, prose-falls-through); evidence commit ai_trader 9a95bb69d, news_archive/labels/label_log.jsonl",
+     "check_text": ("llm_engine", "not-json")},
+    {"id": "EVO-trader-drop-auto-coding", "element": "ai_trader 2026-10-18: remove auto/coding from the structured-output routes (answered in prose on its probe)", "verdict": "INFO",
+     "requires": None, "detail": "not adopted: curator probe the same night (3-headline JSON) got valid JSON from auto/coding in 4.2 s on chat/completions while ddgw/gpt-5.4-mini answered 503 Failed to acquire VQD token (keyless upstream); auto/* is a router so its output varies per call; removing it would leave bulk/extract with a quota-throttled gemini and a volatile ddgw only. Kept as the last route; the jsonmode fall-through makes a prose answer harmless",
+     "check_text": ("skill_pool", "留作末位")},
     {"id": "EVO-trader-rpd-ledger", "element": "ai_trader gap: free-pool RPD unmeasured (key-health only ok/quota0), proposed f1s-harvest per-provider daily usage so background labelling stops itself", "verdict": "REFINE",
      "requires": None, "detail": "routed to the existing api_budget.py ledger instead of f1s-harvest: _llm.Pool.chat_for meters every routed call (provider level, key='pool', no values) and skips a provider whose headroom is parked (429 -> 15 min) or over the observed rpd; learn --write derives ceilings from 429s; tests test_chat_for_meters_every_routed_call / test_429_parks_the_provider / test_spent_daily_budget_stops_the_background_job (11 passed)",
      "check_text": ("llm_engine", "def _budget_note")},
+    # f1s-evolve 2026-10-18: ai_trader memories matrix-lane-v21-two-boards-20261018, cnyes-keyless-news-archive
+    {"id": "EVO-trader-narrow-output", "element": "ai_trader 2026-10-18 (owner 「上千個投資標的你只選兩個」): v14 held 2-3 names because of K=3 and the NT$5,000 order cap, not a small universe; v21 two-board panel (2,062 codes) raised WF but passed no pre-registered gate, K=10/20 lost", "verdict": "REFINE",
+     "requires": None, "detail": "mtm-mto-first ③: when the output looks narrow, find the parameter that produced the narrowness before adding data or names (step 1 质疑需求 done properly); evidence ai_trader memory matrix-lane-v21-two-boards-20261018 + runtime/research/matrix/research/report-20261018T033035.json",
+     "check_text": ("skill_method", "先找出產生窄度的參數")},
+    {"id": "EVO-trader-v21-seat-local", "element": "ai_trader v21 numbers (WF +61,361 t 1.07, family p 0.825, worst day -10,986, NOT_QUALIFIED) and TPEx endpoints", "verdict": "INFO",
+     "requires": None, "detail": "not copied into F1S: the research verdict is seat-local and already lives in the ai_trader memory; TPEx keyless endpoints enter _registry/f1s-harvest/api-catalog.json through the f1s-harvest cycle scan of matrix_data_pull.py, not by hand"},
+    {"id": "EVO-trader-source-card", "element": "ai_trader 2026-10-16: cnyes newslist keyless archive (headline 2012+, tw/us/wd 2015+, 0.7 s/page); GDELT 429 from this IP, FinMind news 400 without token, Google News RSS ~2 days", "verdict": "REFINE",
+     "requires": None, "detail": "mtm-api-pool-offload rule: a confirmed source is recorded with keyless-ness, history depth per category, daily volume + page latency, the failed alternatives with their error codes, raw JSON per day with sha256 in pull_log (tier 1 already named cnyes, EVO-trader-three-tier); evidence ai_trader memory cnyes-keyless-news-archive + news_archive/pull_log.jsonl",
+     "check_text": ("skill_pool", "同題試過失敗的來源和錯誤碼")},
 ]
 
 

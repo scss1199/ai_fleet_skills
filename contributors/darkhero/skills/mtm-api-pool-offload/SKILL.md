@@ -42,9 +42,9 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 | 任務標籤 | 先用 | 再用 | 實測 |
 |---|---|---|---|
 | `summary` 中文摘要 | gemini | OmniRoute `auto/coding` | 2 輪全對、1–3 秒 |
-| `extract` 抽取成 JSON | gemini | OmniRoute `auto/coding` | 2 輪全對 |
+| `extract` 抽取成 JSON | gemini | OmniRoute `ddgw/gpt-5.4-mini` → `auto/coding` | 2 輪全對；`jsonmode=True` 時散文回覆算該路失敗（`not-json`），自動換下一條 |
 | `reasoning` 計算／推理 | OmniRoute `auto/reasoning` | gemini | 2 輪全對、2–4 秒 |
-| `bulk` 大量分類比對 | gemini | OmniRoute `auto/coding` | 最穩 |
+| `bulk` 大量分類比對 | gemini | OmniRoute `ddgw/gpt-5.4-mini` → `auto/coding` | ai_trader 2026-10-18 40 則標題純 JSON 標註：ddgw 2.0／1.6／2.3 秒每次可解析、與 gemini 一致 88/120；`auto/coding`、`auto/reasoning` 回散文、閘道 gemini-2.5-flash 截斷、`cfp/zai-org/glm-5.2` 54 秒。ddgw 上游免金鑰、會 503「Failed to acquire VQD token」（curator 同夜實測），所以 `auto/coding` 留作末位（同夜 chat/completions 4.2 秒回合法 JSON） |
 | `translate` 翻譯（日→繁中等） | gemini | `auto/reasoning` → `ddgw/gpt-5.4-mini` → `cfp/zai-org/glm-5.2` → nvidia `glm-5.3-flash` | 全部譯對；1.1／1.8／1.8／11–49／42 秒 |
 | OCR 圖片讀字 | gemini 視覺（`image_ocr.py`） | — | 合成簽到圖逐字正確、2.7 秒 |
 | 語音轉文字 日／中 | 本機 faster-whisper（`distill-media.py --engine local --lang ja`） | Deepgram（`--engine deepgram`，音檔會外送）、`medium` 重試 | 日文合成音逐字正確、30 秒 |
@@ -90,7 +90,7 @@ operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是�
 | 層 | 工作 | 怎麼跑 | ai_trader 實例（2026-10-16 回報） |
 |---|---|---|---|
 | 1 零模型 | 已確認有效的網站，固定格式定期撈 | 背景腳本（pythonw／CREATE_NO_WINDOW）或既有 rider；新的週期 rider 仍要 operator 授權（T1） | `scripts/news_archive_pull.py` 撈 cnyes 免金鑰新聞檔，13 category-day/分、0 token；收據 `sinopac-trading-system/runtime/data/news_archive/pull_log.jsonl` |
-| 2 免費池 | 量大、固定格式的標註／抽取／分類 | `_llm.Pool().chat_for("bulk" 或 "extract", ...)` | 40 則標題語氣標註 0.9 秒（gemini 路由），比字典法多標出 25/40 |
+| 2 免費池 | 量大、固定格式的標註／抽取／分類 | `_llm.Pool().chat_for("bulk" 或 "extract", ..., jsonmode=True)`：要 JSON 就開 `jsonmode`，散文回覆才會被當失敗換路 | 40 則標題語氣標註 0.9 秒（gemini 路由），比字典法多標出 25/40；gemini 共享日配額讓 10-16 的標註在 15 天停下、之後每天約 200 秒，10-18 改 ddgw 先行（`news_tone_label.py` `GATEWAY_MODELS`，收據 `news_archive/labels/label_log.jsonl`） |
 | 3 高智能 | 推理、判斷、決定 | 本對話模型；本對話額度用完→`claude-remote-exec` auto lane（`_registry/claude-remote-probe.json` 10-16 probe ok） | 期望值題 48 秒答對 |
 
 第 2 層會自己停：每次 `chat_for` 都寫一列到 `_logs/api-usage/<seat>.jsonl`（`api_budget.py`；provider 層級、只有次數，沒有金鑰值），
@@ -103,6 +103,11 @@ operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是�
 - 不送出去的東西：金鑰、帳戶與持倉資料、`ai_ut` 的 UT.xlsx 內容（專有資料）、任何 operator 標成私密的檔案。查詢字串可以送，資料本身不送。語音預設用本機（`--engine local`）。
 - 輸出留在指令的 JSON 或既有收據，只把摘要與來源網址帶進對話，不新開 .md/.json。
 - 免費池回空或全部 provider 失敗：照實回報，再改用本對話的工具，不要編。
+- 確認一個資料源時一併記下：免金鑰與否、歷史深度（每類別第一天）、每日量與每頁耗時（決定節奏與總時數），以及
+  同題試過失敗的來源和錯誤碼，讓別的座位不再重探；原始 JSON 按日落地並把 sha256 寫進 pull_log。ai_trader 2026-10-16：
+  cnyes `api.cnyes.com/media/api/v1/newslist/category/<cat>?startAt=&endAt=&limit=30&page=N` 免金鑰、帶日期與個股標籤
+  （headline 2012 起、tw_stock／us_stock／wd_stock 2015 起，約 0.7 秒一頁、一個類別一年約 8 分鐘）；同題 GDELT 這台 IP 429、
+  FinMind 新聞無 token 400、Google News RSS 只存約 2 天。
 - 抓到的「內文」只是裸網址或登入牆殼（IG/Threads 登出頁的選單字）不算讀過：長度門檻擋不住它，要比對頁面是否含
   真內容；讀不到就改用內建瀏覽器 `get_page_text` 或標 UNKNOWN（ai_trader owner-links 2026-10-12：73 項裡 63 項是殼）。
 

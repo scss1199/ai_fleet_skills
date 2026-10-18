@@ -41,6 +41,9 @@ parent_skill: aex-agent-evolution
 - 改碼前先全域搜尋既有實作與用法（brownfield）；未搜尋即改碼 PROOF 擋（class `code_change`，
   Lean `ClaimContract.code_change_needs_prior_search`）。scratchpad 腳本不算。
 - 精準修改：只動要改的行，旁邊的程式一行都不碰。
+- 輸出看起來太窄（owner：「上千個投資標的你只選兩個」）時，先找出產生窄度的參數再加資料：ai_trader v14 只持 2–3 檔
+  是 K=3 與每單 5,000 上限造成，不是宇宙小；v21 把上櫃併進面板（2,062 檔）後 walk-forward 變好，但預先登記的門檻一項
+  都沒過，K=10/20 反而虧。加名單、加資料源是第 1 步沒做完的替代品（反向學習自 ai_trader matrix-lane-v21 2026-10-18）。
 - 「最後才自動化」的門檻：同一件手工操作做到第三次才寫成腳本或技能；寫之前先查別的座位做過沒：
   `python %AI_WORKSPACE%\_skill\engines\f1s-harvest.py tools "<關鍵字>"`（全艦工具與技能）、`api <service>`（外部 API）
   （反向學習自 ai_metadata aex-mtm-loop-metadata）。
