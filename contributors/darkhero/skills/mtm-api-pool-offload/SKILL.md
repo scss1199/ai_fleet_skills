@@ -53,6 +53,8 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 | 語音合成 TTS | 本機 edge-tts（技能 `zh-tts-narrate`） | Windows SAPI | — |
 | 文生圖／圖生影片 | 本機 SD.Next A770（`sdnext_a770`） | — | OmniRoute flux／aihorde 逾時或排隊 >1000 秒 |
 
+燒錄字幕（fansub）對照語料是意譯：時間對得上、句意常對不上（ai_theater 2026-10-18 實測 117 對只有 12 對經詞彙錨點確認同義），只能當語體／詞彙參考注入 prompt，不能當逐句 ground truth；要用就先經錨點篩選，篩選結果仍是草稿。
+
 不路由（2026-10-16 實測失敗）：OmniRoute 的 `/v1/ocr`、`/v1/web/fetch`、`/v1/audio/speech`、`/v1/audio/transcriptions`、
 `/v1/rerank`（缺 provider 憑證或 404）、OmniRoute 視覺（gemini／gemma 90 秒逾時，`zc/*` spawn zcode 失敗）、
 `auto/chat`（104 秒）、`auto/fast`、`auto/writing`（不存在）、`zc/*`、`oc/deepseek-v4-flash-free`（暫停 30 分）、

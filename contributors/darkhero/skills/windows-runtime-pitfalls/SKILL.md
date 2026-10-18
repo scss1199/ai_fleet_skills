@@ -47,6 +47,17 @@ parent_skill: ztm-verify-before-done
 - **外部資料源過期時，下游要明確進入保守模式並把原因寫出來**，同時記錄「上游修好後多久才會生效」（節流快取）。
   （ai_trader pcr-iv-stale-feed-blocks-longs）
 
+## CPU 配額與批次負載
+
+- **新加的 OCR／STT／影像批次工作先限執行緒，再量「每幀／每分鐘成本」，量完才放大。** onnxruntime 類引擎
+  （rapidocr_onnxruntime）預設 intra_op 執行緒＝全部核心：一個 OCR 行程吃掉 27 核，同機的 faster-whisper 與 4 條
+  STT lane 每 10 s 只拿到 5 CPU-s、25 分鐘音訊跑了 83 分鐘，看起來像「模型卡住」。一律 `RapidOCR(intra_op_num_threads=4)`
+  這類明確上限；懷疑模型慢之前先看 CPU 配額。（hub-root burnin-subtitle-ocr-learning；ai_theater
+  scripts/subtitle_burnin_learn.py）
+- **逐幀跑昂貴辨識前先用便宜的變化偵測，而且偵測要對準目標區域的特徵。** 整幀灰階差分擋不住動態畫面
+  （3061 幀仍要 1858 次 OCR）；改比對近白色字幕遮罩（HSV V≥200、S≤60，縮到 360×58，mean abs diff ≥4 才重辨識）
+  降到 277 次、274 s。（同上）
+
 ## 程式可達性
 
 - **判斷死碼要把子程序派工（`python -m pkg.mod`、`scripts/x.py` 字串）、排程 rider 命令、launcher、以及把原始碼當文字

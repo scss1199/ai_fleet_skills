@@ -335,6 +335,13 @@ ELEMENTS = [
     {"id": "EVO-trader-source-card", "element": "ai_trader 2026-10-16: cnyes newslist keyless archive (headline 2012+, tw/us/wd 2015+, 0.7 s/page); GDELT 429 from this IP, FinMind news 400 without token, Google News RSS ~2 days", "verdict": "REFINE",
      "requires": None, "detail": "mtm-api-pool-offload rule: a confirmed source is recorded with keyless-ness, history depth per category, daily volume + page latency, the failed alternatives with their error codes, raw JSON per day with sha256 in pull_log (tier 1 already named cnyes, EVO-trader-three-tier); evidence ai_trader memory cnyes-keyless-news-archive + news_archive/pull_log.jsonl",
      "check_text": ("skill_pool", "同題試過失敗的來源和錯誤碼")},
+    # f1s-evolve 2026-10-19: hub-root memory burnin-subtitle-ocr-learning (ledger 42161c5cf4fd)
+    {"id": "EVO-theater-cpu-thread-cap", "element": "ai_theater 2026-10-18: rapidocr_onnxruntime default intra_op threads = all cores (27 cores, 96k CPU-s) starved faster-whisper + 4 STT lanes (5 CPU-s per 10 s, 25 min audio in 83 min); whole-frame gray diff still OCR'd 1858/3061 frames, white-text HSV mask cut it to 277", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls new section CPU 配額與批次負載: cap threads before adding any OCR/STT/vision batch job, measure per-frame/per-minute cost before scaling, check CPU quota before blaming the model; cheap change detection aimed at the target region before expensive per-frame recognition; evidence hub-root memory burnin-subtitle-ocr-learning + ai_theater scripts/subtitle_burnin_learn.py (RapidOCR(intra_op_num_threads=...), HSV mask)",
+     "check_text": ("skill_runtime", "intra_op_num_threads")},
+    {"id": "EVO-theater-fansub-corpus", "element": "ai_theater 2026-10-18: fansub burn-in subtitles are free translations (117 pairs, 12 confirmed by lexical anchors)", "verdict": "REFINE",
+     "requires": None, "detail": "mtm-api-pool-offload: aligned fansub corpus is a style/vocabulary reference for the prompt, never per-sentence ground truth; anchor-filter first and the result stays a draft (extends the existing results-are-drafts rule); evidence hub-root memory burnin-subtitle-ocr-learning",
+     "check_text": ("skill_pool", "不能當逐句 ground truth")},
 ]
 
 
