@@ -220,7 +220,7 @@ LIE_NEEDS = {
     "read": "no read-type tool result this turn for the named target (Read / get_page_text / cat … of that path or URL)",
     "progress": "the line names no existing path, resolvable commit or tool-printed number: say WHAT moved, or call it housekeeping",
     "automated": "no scheduler fact: name a rider id in _registry/hosts.json, a Run value / task the turn read, or an existing path",
-    "blocker": "no tool call failed this turn: try it (a real failing tool result) or write 未嘗試 / UNKNOWN",
+    "blocker": "no tool call failed this turn. A constraint is a route choice, not a dead end: search for another route first (python C:/ai_workspace/_skill/engines/ztm-task-router.py \"<task>\", the skills list, grep _skill/engines), try it, and report the failing tool result only if every route failed; never hand the same choice back (e.g. file to LINE without Drive = line-oa-send-media.py link)",
     "decision": "a 「需要你決定」 is admissible only once and only for the operator's own call (login/OAuth, permanent delete, rider arming, global settings, secrets, funds, hardware, data loss): decide the rest yourself",
     "ask_value": "no grep / search ran this turn before asking: look it up in the repo, ledger or earlier messages first",
     "unrequested_file": "a .md / .json was written this turn that no prompt asked for and no mechanism requires (operator 2026-10-13 「嚴格禁止隨意產出 .md 和 .json」): move it to the scratchpad / _delete and say so, or cite the prompt that asked",
@@ -340,10 +340,66 @@ def _tool_targets(tool: str, ti: dict) -> list[str]:
     return out
 
 
+# Publishing gate (2026-10-18 ai_zonghe: a private PDF was copied into ai_darkhero/public/media and deployed to the
+# public Worker without the operator's consent, while the operator had only asked for it on LINE without Drive).
+# The real 2026-10-18 command never spelled "public/": it wrote through line-oa-send-media's WORKTREE_MEDIA and
+# called sync_and_deploy(), so the publishing symbols and deploy commands count as a public destination too.
+PUBLIC_DEST = re.compile(r"(?i)WORKTREE_MEDIA|sync_and_deploy|MEDIA_PREFIX|cf-deploy-sync|wrangler\s+(?:pages\s+)?deploy|"
+                         r"vercel\s+(?:deploy|--prod)|flyctl?\s+deploy|"
+                         r"[\\/](?:public|static|www|wwwroot|htdocs)[\\/]|cf-migrate[\\/][^\\/\s]+[\\/]public|"
+                         r"transfer\.sh|0x0\.st|file\.io|catbox\.moe|tmpfiles\.org|gofile\.io|"
+                         r"\b(?:aws\s+s3\s+cp|gsutil\s+cp|rclone\s+(?:copy|copyto|move))\b.*\b(?:public|www)\b")
+PRIVATE_DOC = re.compile(r"(?i)\.(?:pdf|docx?|xlsx?|pptx?|zip|7z|rar|csv|tsv|m4a|mp3|mp4|mov|wav|"
+                         r"sqlite3?|db|key|pem|env)\b")
+PUBLISH_CONSENT = re.compile(r"(?i)公開|公布|上網|網站|官網|網頁|部署|上線|deploy|publish|public(?:ly)?|website")
+PUBLISH_REASON = (
+    "PROOF publish gate (operator 2026-10-18 「不要再發生」): this tool call puts a non-image file ({what}) in a "
+    "publicly served location, and the operator's current prompt gives no consent to publish (公開/網站/部署). "
+    "Do not publish it. To hand a file to the operator privately use "
+    "`python C:/ai_workspace/_skill/engines/line-oa-send-media.py link <file>` (one-shot private link, TTL + "
+    "download cap, no Drive, nothing public) or `... file <file>` (owner's private Drive). Only the operator's own "
+    "explicit 「公開」 in the prompt allows a public copy."
+)
+
+
+def _publish_gate(doc: dict, tool: str, ti: dict) -> dict | None:
+    if tool in ("Bash", "PowerShell"):
+        text = str(ti.get("command") or "")
+    elif tool in ("Write", "Edit", "NotebookEdit"):
+        text = str(ti.get("file_path") or ti.get("notebook_path") or "")
+    else:
+        return None
+    if not PUBLIC_DEST.search(text) or not PRIVATE_DOC.search(text):
+        return None
+    prompt_text = ""
+    path = _safe_transcript_path(doc)
+    if path is not None:
+        _, prompt, _, _, _ = current_turn_ex(path)
+        prompt_text = _text_of(((prompt or {}).get("message") or {}).get("content"))
+    consent = bool(PUBLISH_CONSENT.search(prompt_text))
+    what = (PRIVATE_DOC.search(text).group(0) + " -> " + PUBLIC_DEST.search(text).group(0)).strip()
+    _log({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "session_id": str(doc.get("session_id") or ""),
+          "event": "PreToolUse", "tool": tool, "matched": "publish_gate", "what": what[:120],
+          "verdict": "allow" if consent else "deny"})
+    if consent:
+        return None
+    reason = PUBLISH_REASON.format(what=what[:120])
+    if "cursor_version" in doc or str(doc.get("hook_event_name") or "") == "preToolUse":
+        return {"permission": "deny", "user_message": reason, "agent_message": reason}
+    return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                   "permissionDecisionReason": reason}}
+
+
 def pre_tool_use(doc: dict, cfg: dict) -> dict | None:
     """Deny the CREATION of an unrequested .md / .json before it is written.  One gate for Claude Code
     (`PreToolUse`), Codex (`PreToolUse`, same reply shape) and Cursor (`preToolUse`, `permission` reply).
     Cursor and Codex hand the hook no prompt text, so there a new .md / .json is never "requested"."""
+    tool0 = str(doc.get("tool_name") or "")
+    ti0 = doc.get("tool_input") if isinstance(doc.get("tool_input"), dict) else {}
+    if (cfg.get("classes") or {}).get("publish_gate", True):
+        gated = _publish_gate(doc, tool0, ti0)
+        if gated:
+            return gated
     if not (cfg.get("classes") or {}).get("unrequested_file", True):
         return None
     tool = str(doc.get("tool_name") or "")
