@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "573dd1a29acec301ef50bdd7a80d3aeff5f500e402044bbc9f6199258edf5d4a",
   "runner_state": "armed",
-  "observed_at": "2026-10-19T06:19:28.042539+00:00",
+  "observed_at": "2026-10-19T06:59:37.825340+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -364,8 +364,8 @@
       {
         "agent": "ai_trader",
         "surface": "claude",
-        "observed_at": "2026-10-19T13:18:28+08:00",
-        "receipt_sha256": "9d52d829f5fc2eb763e7c9389629b127d8518f5114769a51ffbcee727542d41c"
+        "observed_at": "2026-10-19T14:46:00+08:00",
+        "receipt_sha256": "6419734c0537484003770a0591b2867762df74930df7bf0de550144982efcdeb"
       },
       {
         "agent": "ai_darkhero",
