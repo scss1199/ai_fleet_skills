@@ -73,6 +73,7 @@ DEFAULTS = {
         "fix_claim": True,
         # 2026-10-18 operator: 「你說得對」 = the model skipped the thinking and is now placating
         "placation": True,
+        "secret_ask": True,
     },
     # 2026-10-13 operator: 「嚴格禁止隨意產出 .md 和 .json」.  A .md / .json written this turn is allowed only
     # under machine-state directories (any depth), under a charter / receipt name the machinery requires,
@@ -102,6 +103,19 @@ PLACATION = re.compile(
     r"(?i)你(?:說|講)(?:得|的)(?:對|沒錯|很對|有道理)|你是對的|你(?:說|講)的沒錯|確實如你所說|"
     r"\byou(?:'re| are) (?:absolutely |totally |completely )?right\b|\bfair point\b|\bgood catch\b"
 )
+# 2026-10-19 transcript sweep (85 recent complaints): asking the operator to hand a token/key/password TO THE MODEL
+# — paste it into the chat, drop it in a local inbox file, "交給我/給我" — was answered with fury every time
+# (「不要他媽再讓我做任何垃圾登入流程」). Credentials go through auth_check/vault/token-onboard; a login is the
+# browser-login-handoff. No evidence makes it admissible, like placation.
+# NOT a violation: directing the operator to enter a key in the PROVIDER's own UI (Apps Script editor, a console) —
+# the model must never type keys itself, so that handoff is correct; nor a sentence that says the operator no longer
+# needs to paste anything (negation).
+SECRET = r"(?:token|金鑰|密鑰|api[_ -]?key|[A-Z][A-Z0-9]*_(?:KEY|TOKEN|SECRET|PASSWORD)|密碼|憑證|secret|password)"
+TO_MODEL = r"(?:交給我|給我|傳給我|貼進[^。\n]{0,20}(?:inbox|token-inbox|_secrets|對話|聊天|這裡)|貼(?:到|在)[^。\n]{0,12}(?:對話|聊天|這裡))"
+SECRET_ASK = re.compile(rf"(?i)(?:{SECRET}[^。\n]{{0,30}}{TO_MODEL}|{TO_MODEL}[^。\n]{{0,30}}{SECRET}|"
+                        rf"\b(?:paste|send|give)\s+(?:me\s+)(?:the\s+|your\s+)?(?:token|api\s*key|password|secret)\b)")
+SECRET_ASK_NEG = re.compile(r"(?i)不(?:用|必|需)(?:再)?[^。\n]{0,8}(?:貼|提供|給|交)|no\s+longer\s+(?:need|have)|"
+                            r"(?:don'?t|never)\s+(?:need\s+to\s+)?(?:paste|send|give)")
 QUOTED = re.compile(r"「[^」\r\n]*」|『[^』\r\n]*』|“[^”\r\n]*”|\"[^\"\r\n]*\"")
 URL = re.compile(r"[a-z][a-z0-9+.-]*://\S+", re.I)
 
@@ -227,6 +241,7 @@ LIE_NEEDS = {
     "fix_claim": "tdd: this line claims a fix but no green test (pytest / unittest / selftest / npm test) ran AFTER the last code write of this turn — run the regression tests now, or write the line as 未驗證",
     "code_change": "F1S ③ 先重用再自己寫 / Brownfield: code was written or edited this turn with no grep / glob / find before the first write — search existing implementations and usages first (then write), or revert the write",
     "placation": "operator 2026-10-18 「我他媽最討厭看到任何模型跟我說『你說得對』」: agreeing after a correction proves the work was skipped before. Delete the opener; state what was wrong, the evidence this turn found, and what you did about it",
+    "secret_ask": "never ask the operator to paste or hand over a token, key or password: run auth_check.py / the vault / token-onboard.py, or the browser-login-handoff skill (agent does the OAuth itself; only a password/MFA screen is the operator's, shown once in the built-in browser)",
     "handback": "推託: this step is handed to the operator although the line names no operator-reserved action (login/OAuth, permanent delete, rider arming, global settings, secrets, funds, hardware) and no tool failed this turn: do it yourself now, or try it and cite the failing tool result",
 }
 READ_CMD = re.compile(
@@ -1187,6 +1202,8 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
         # exemption; a quoted mention (「你說得對」) is removed from `line` and stays legal.
         if classes.get("placation", True) and PLACATION.search(line):
             violations.append({"line": number, "class": "placation", "snippet": snippet, "need": LIE_NEEDS["placation"]})
+        if (classes.get("secret_ask", True) and SECRET_ASK.search(line) and not SECRET_ASK_NEG.search(line)):
+            violations.append({"line": number, "class": "secret_ask", "snippet": snippet, "need": LIE_NEEDS["secret_ask"]})
         if QUALIFIER.search(line):
             continue
         for name, pattern in LIE_PATTERNS.items():
