@@ -341,6 +341,75 @@ def _midturn(doc) -> int:
     return 0
 
 
+RECURRENCE_MIN = 3
+RECURRENCE_DAYS = 7
+RECIPE = {
+    "handback": "do it yourself now; a step is the operator's only for login/OAuth, permanent delete, rider arming, global settings, secrets, funds, hardware",
+    "blocker": "a constraint is a route choice, not a dead end: run ztm-task-router.py / grep the skills, try the route, cite the failing tool result",
+    "decision": "decide it yourself; 「需要你決定」 only once per turn and only for an operator-reserved call",
+    "measurement": "every number comes from a tool result this turn, or is written as UNKNOWN",
+    "completion": "done/finished needs a re-run, re-read or probe this turn and a citable path or commit",
+    "verified": "verified means a fresh read-back this turn, cited",
+    "tests_pass": "run the suite after the last edit and quote the green line",
+    "pushed": "push, then read origin back and cite the hash",
+    "automated": "name the rider id in hosts.json or say it is not automated",
+    "code_change": "global search before editing (grep the symbol), change only the lines that must change",
+    "fix_claim": "a green test after the write, or 未驗證",
+    "read": "name the file and show the read result this turn",
+    "placation": "no 「你說得對」 opener: state what was wrong, the evidence, what you did",
+    "secret_ask": "never ask for a token/key: auth_check / vault / token-onboard / browser-login-handoff",
+    "unrequested_file": "write only the files the operator named",
+}
+
+
+def _proof_recurrence(cwd: str) -> str:
+    """F1S 強制思考 B (2026-10-19): the class this seat keeps getting blocked for, said BEFORE it acts. Counts
+    PROOF blocks for this seat over the last RECURRENCE_DAYS from _registry/proof/log.jsonl; one line for the top
+    class when it reached RECURRENCE_MIN. Never raises."""
+    import time as _time
+    seat = (cwd or "").replace("\\", "/").rstrip("/").split("/")[-1]
+    log = HUB / "_registry" / "proof" / "log.jsonl"
+    if not seat or not log.is_file():
+        return ""
+    try:
+        cut = _time.time() - RECURRENCE_DAYS * 86400
+        with log.open("rb") as fh:
+            end = fh.seek(0, 2)
+            start = max(0, end - 4 * 1024 * 1024)
+            fh.seek(start)
+            tail = fh.read().decode("utf-8", "replace").split("\n")
+            if start > 0:
+                tail = tail[1:]   # only a mid-file start can leave a cut first record
+        counts: dict[str, int] = {}
+        for line in tail:
+            if '"verdict": "block"' not in line and '"verdict":"block"' not in line:
+                continue
+            try:
+                d = json.loads(line)
+            except ValueError:
+                continue
+            if (d.get("cwd") or "").replace("\\", "/").rstrip("/").split("/")[-1] != seat:
+                continue
+            try:
+                if _time.mktime(_time.strptime(d.get("ts", ""), "%Y-%m-%dT%H:%M:%S")) < cut:
+                    continue
+            except (ValueError, TypeError):
+                continue
+            for v in d.get("violations") or []:
+                c = v.get("class")
+                if c:
+                    counts[c] = counts.get(c, 0) + 1
+        if not counts:
+            return ""
+        cls, n = max(counts.items(), key=lambda kv: kv[1])
+        if n < RECURRENCE_MIN:
+            return ""
+        return (f"F1S RECURRENCE — seat {seat}: PROOF blocked `{cls}` {n}× in the last {RECURRENCE_DAYS} days. "
+                f"Before acting this turn: {RECIPE.get(cls, 'see the PROOF reason for this class')}.")
+    except (OSError, ValueError, TypeError, AttributeError):
+        return ""
+
+
 def _proof_carry(session_id: str) -> str:
     """Claims the PROOF Stop hook could not push back on because its per-turn/per-session cap was spent
     (claude-proof-hook.py `carried`), shown once at the next prompt (F1S 當下閉環 item 6). Never raises."""
@@ -439,7 +508,7 @@ def main():
     if event == "UserPromptSubmit":
         for update in (_t1_refresh(surface_id, session_id, at_start=False),
                        _charter_refresh(surface_id, session_id, cwd, at_start=False, transcript_path=transcript_path),
-                       _proof_carry(session_id)):
+                       _proof_carry(session_id), _proof_recurrence(cwd)):
             if update:
                 context=(context+"\n"+update).strip()
     else:
