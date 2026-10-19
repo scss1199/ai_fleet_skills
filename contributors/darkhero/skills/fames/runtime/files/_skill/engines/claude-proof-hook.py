@@ -1396,7 +1396,22 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
     )
     if len(violations) > 8:
         items += f"\n  - … {len(violations) - 8} more"
-    return {"decision": "block", "reason": REASON.format(items=items, n=state["blocks"], cap=per_turn)}
+    reason = REASON.format(items=items, n=state["blocks"], cap=per_turn)
+    # F1S 強制思考 A (2026-10-19): a "no route" / hand-back / decision line is answered with the routes the request
+    # actually has (route_candidates.py), so the model must try one or disprove each — it can no longer stop at
+    # "cannot" without looking. Fail open: no candidates, no extra text.
+    if any(v["class"] in ("blocker", "handback", "decision") for v in violations):
+        try:
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            import route_candidates
+            prompt_text = _text_of(((prompt or {}).get("message") or {}).get("content"))
+            routes = route_candidates.render(route_candidates.candidates(prompt_text), f.get("tool_calls"))
+            if routes:
+                reason += "\n" + routes
+                entry["routes_offered"] = [r.strip()[:80] for r in routes.splitlines()[1:4]]
+        except Exception:  # noqa: BLE001
+            pass
+    return {"decision": "block", "reason": reason}
 
 
 def main() -> int:

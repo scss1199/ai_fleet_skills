@@ -65,6 +65,7 @@
     "_skill/engines/mtm-fleet-skill-github.py",
     "_skill/engines/omniroute-gateway.py",
     "_skill/engines/pinned_drift.py",
+    "_skill/engines/route_candidates.py",
     "_skill/engines/register-rider.py",
     "_skill/engines/rules_brief.py",
     "_skill/engines/sync-cursor-hooks.py",
