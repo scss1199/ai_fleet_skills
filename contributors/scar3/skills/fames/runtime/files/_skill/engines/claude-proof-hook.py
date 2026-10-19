@@ -1405,7 +1405,8 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
             sys.path.insert(0, str(Path(__file__).resolve().parent))
             import route_candidates
             prompt_text = _text_of(((prompt or {}).get("message") or {}).get("content"))
-            routes = route_candidates.render(route_candidates.candidates(prompt_text), f.get("tool_calls"))
+            seat = Path(str(doc.get("cwd") or "")).name
+            routes = route_candidates.render(route_candidates.candidates(prompt_text, seat=seat), f.get("tool_calls"))
             if routes:
                 reason += "\n" + routes
                 entry["routes_offered"] = [r.strip()[:80] for r in routes.splitlines()[1:4]]
