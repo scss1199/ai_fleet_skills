@@ -30,6 +30,12 @@ parent_skill: ztm-verify-before-done
 - **背景 python 會跳「應用程式錯誤」對話框**：CPython 3.12 的 `platform.*` 走 WMI COM thread，機器忙時崩潰 → csrss
   硬錯誤框（短暫、無 Event 1000）。背景程序避免在 import 期呼叫 `platform.machine()/uname()` 這類查詢；零彈窗紅線。
   （ai_trader zero-popup-python-crash-dialog；hub memory pythonw-platform-ver-flash）
+- **共用的來源標籤不能歸因呼叫者；指名之前先讀嫌疑方自己的 log。** ai_theater 的 gate 把每個 POST
+  /api/subtitle/background 都標成 `ai_theater_background`，2026-10-19 的提案據此指名 load_guard 重新 arm 字幕，
+  但 load_guard.log 全檔 0 筆 shed/resume/gate 事件、ladder level 一直是 0——真正的呼叫端至今 UNKNOWN，因為
+  gate 的 access log 只走 `logging.debug` 沒落地。做法：每個呼叫端自帶 source（或 User-Agent），服務端把 access
+  log 寫到檔案；而「還原」類動作要綁自己那一代的 intent generation，資料裡出現更新的 stop/start 就不再還原
+  （load_guard `off_generation`，test_load_guard_ladder_restore）。
 
 ## 重試、鎖、排程
 
@@ -46,6 +52,17 @@ parent_skill: ztm-verify-before-done
   靜默拒絕所有訊號，而且被去重的記錄把痕跡吃掉。（ai_trader orb-missed-signal-clock-skew）
 - **外部資料源過期時，下游要明確進入保守模式並把原因寫出來**，同時記錄「上游修好後多久才會生效」（節流快取）。
   （ai_trader pcr-iv-stale-feed-blocks-longs）
+
+## CPU 配額與批次負載
+
+- **新加的 OCR／STT／影像批次工作先限執行緒，再量「每幀／每分鐘成本」，量完才放大。** onnxruntime 類引擎
+  （rapidocr_onnxruntime）預設 intra_op 執行緒＝全部核心：一個 OCR 行程吃掉 27 核，同機的 faster-whisper 與 4 條
+  STT lane 每 10 s 只拿到 5 CPU-s、25 分鐘音訊跑了 83 分鐘，看起來像「模型卡住」。一律 `RapidOCR(intra_op_num_threads=4)`
+  這類明確上限；懷疑模型慢之前先看 CPU 配額。（hub-root burnin-subtitle-ocr-learning；ai_theater
+  scripts/subtitle_burnin_learn.py）
+- **逐幀跑昂貴辨識前先用便宜的變化偵測，而且偵測要對準目標區域的特徵。** 整幀灰階差分擋不住動態畫面
+  （3061 幀仍要 1858 次 OCR）；改比對近白色字幕遮罩（HSV V≥200、S≤60，縮到 360×58，mean abs diff ≥4 才重辨識）
+  降到 277 次、274 s。（同上）
 
 ## 程式可達性
 

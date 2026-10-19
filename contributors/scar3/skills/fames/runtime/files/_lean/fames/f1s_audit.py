@@ -64,6 +64,8 @@ TEXTS = {
     "websearch_engine": HUB / "_skill" / "engines" / "websearch.py",
     "skill_preflight": HUB / "_skill" / "fleet-skills" / "token-preflight" / "SKILL.md",
     "git_smart": HUB / "_skill" / "engines" / "git_smart.py",
+    "llm_engine": HUB / "_skill" / "engines" / "_llm.py",
+    "load_guard": HUB / "ai_darkhero" / "tray" / "scripts" / "load_guard.py",
 }
 
 # The architecture scan.  `requires` names the Lean theorem that must be PROVED for the verdict to stand;
@@ -310,6 +312,44 @@ ELEMENTS = [
      "check_text": ("git_smart", "def test_claim_problems")},
     {"id": "EVO-nuwa-seat-template-hook", "element": "ai_nuwa: seat template ships .githooks/commit-msg", "verdict": "INFO",
      "requires": None, "detail": "not adopted: no seat template carries .githooks today and core.hooksPath is per-clone config; git_smart commits already run a seat's own commit-msg hook (no --no-verify by default), and --test-cmd covers git_smart callers"},
+    {"id": "EVO-trader-three-tier", "element": "ai_trader 2026-10-16 (owner 原話): 確定哪些網站有效後固定撈資料用免費機制, 高智能模型只處理需思考的事", "verdict": "REFINE",
+     "requires": None, "detail": "mtm-api-pool-offload 三層分工 table: (1) confirmed site -> zero-model background script / existing rider (new periodic rider still needs operator authorization, T1), (2) bulk fixed-format labelling -> chat_for bulk/extract, (3) reasoning -> conversation model or claude-remote-exec auto lane; evidence ai_trader news_archive pull_log.jsonl (0 token) + _registry/claude-remote-probe.json",
+     "check_text": ("skill_pool", "三層分工")},
+    {"id": "EVO-trader-tier-pointer", "element": "hot_directive free-pool route names the three tiers", "verdict": "REFINE",
+     "requires": None, "detail": "route clause now reads 免費池三層：已確認網站固定撈→零模型背景腳本，量大固定格式→chat_for，推理判斷→本對話模型 (1249 chars, under the 1400 cap); the how stays in the skill",
+     "check_text": ("hot_directive", "免費池三層")},
+    {"id": "EVO-trader-structured-route", "element": "ai_trader 2026-10-18: bulk/extract routes add OmniRoute ddgw/gpt-5.4-mini (40-title pure-JSON labelling 2.0/1.6/2.3 s, parsed every time, 88/120 agree with gemini; gemini shared quota throttled to ~200 s/day)", "verdict": "REFINE",
+     "requires": None, "detail": "_llm.TASK_ROUTES bulk/extract = gemini, ddgw/gpt-5.4-mini, auto/coding; root cause fixed in the engine: chat_for(jsonmode=True) treats a non-JSON answer as that route's failure (not-json, metered error) and falls through (test_llm_task_routes: ddgw-before-auto-coding, prose-falls-through); evidence commit ai_trader 9a95bb69d, news_archive/labels/label_log.jsonl",
+     "check_text": ("llm_engine", "not-json")},
+    {"id": "EVO-trader-drop-auto-coding", "element": "ai_trader 2026-10-18: remove auto/coding from the structured-output routes (answered in prose on its probe)", "verdict": "INFO",
+     "requires": None, "detail": "not adopted: curator probe the same night (3-headline JSON) got valid JSON from auto/coding in 4.2 s on chat/completions while ddgw/gpt-5.4-mini answered 503 Failed to acquire VQD token (keyless upstream); auto/* is a router so its output varies per call; removing it would leave bulk/extract with a quota-throttled gemini and a volatile ddgw only. Kept as the last route; the jsonmode fall-through makes a prose answer harmless",
+     "check_text": ("skill_pool", "留作末位")},
+    {"id": "EVO-trader-rpd-ledger", "element": "ai_trader gap: free-pool RPD unmeasured (key-health only ok/quota0), proposed f1s-harvest per-provider daily usage so background labelling stops itself", "verdict": "REFINE",
+     "requires": None, "detail": "routed to the existing api_budget.py ledger instead of f1s-harvest: _llm.Pool.chat_for meters every routed call (provider level, key='pool', no values) and skips a provider whose headroom is parked (429 -> 15 min) or over the observed rpd; learn --write derives ceilings from 429s; tests test_chat_for_meters_every_routed_call / test_429_parks_the_provider / test_spent_daily_budget_stops_the_background_job (11 passed)",
+     "check_text": ("llm_engine", "def _budget_note")},
+    # f1s-evolve 2026-10-18: ai_trader memories matrix-lane-v21-two-boards-20261018, cnyes-keyless-news-archive
+    {"id": "EVO-trader-narrow-output", "element": "ai_trader 2026-10-18 (owner 「上千個投資標的你只選兩個」): v14 held 2-3 names because of K=3 and the NT$5,000 order cap, not a small universe; v21 two-board panel (2,062 codes) raised WF but passed no pre-registered gate, K=10/20 lost", "verdict": "REFINE",
+     "requires": None, "detail": "mtm-mto-first ③: when the output looks narrow, find the parameter that produced the narrowness before adding data or names (step 1 质疑需求 done properly); evidence ai_trader memory matrix-lane-v21-two-boards-20261018 + runtime/research/matrix/research/report-20261018T033035.json",
+     "check_text": ("skill_method", "先找出產生窄度的參數")},
+    {"id": "EVO-trader-v21-seat-local", "element": "ai_trader v21 numbers (WF +61,361 t 1.07, family p 0.825, worst day -10,986, NOT_QUALIFIED) and TPEx endpoints", "verdict": "INFO",
+     "requires": None, "detail": "not copied into F1S: the research verdict is seat-local and already lives in the ai_trader memory; TPEx keyless endpoints enter _registry/f1s-harvest/api-catalog.json through the f1s-harvest cycle scan of matrix_data_pull.py, not by hand"},
+    {"id": "EVO-trader-source-card", "element": "ai_trader 2026-10-16: cnyes newslist keyless archive (headline 2012+, tw/us/wd 2015+, 0.7 s/page); GDELT 429 from this IP, FinMind news 400 without token, Google News RSS ~2 days", "verdict": "REFINE",
+     "requires": None, "detail": "mtm-api-pool-offload rule: a confirmed source is recorded with keyless-ness, history depth per category, daily volume + page latency, the failed alternatives with their error codes, raw JSON per day with sha256 in pull_log (tier 1 already named cnyes, EVO-trader-three-tier); evidence ai_trader memory cnyes-keyless-news-archive + news_archive/pull_log.jsonl",
+     "check_text": ("skill_pool", "同題試過失敗的來源和錯誤碼")},
+    # f1s-evolve 2026-10-19: hub-root memory burnin-subtitle-ocr-learning (ledger 42161c5cf4fd)
+    {"id": "EVO-theater-cpu-thread-cap", "element": "ai_theater 2026-10-18: rapidocr_onnxruntime default intra_op threads = all cores (27 cores, 96k CPU-s) starved faster-whisper + 4 STT lanes (5 CPU-s per 10 s, 25 min audio in 83 min); whole-frame gray diff still OCR'd 1858/3061 frames, white-text HSV mask cut it to 277", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls new section CPU 配額與批次負載: cap threads before adding any OCR/STT/vision batch job, measure per-frame/per-minute cost before scaling, check CPU quota before blaming the model; cheap change detection aimed at the target region before expensive per-frame recognition; evidence hub-root memory burnin-subtitle-ocr-learning + ai_theater scripts/subtitle_burnin_learn.py (RapidOCR(intra_op_num_threads=...), HSV mask)",
+     "check_text": ("skill_runtime", "intra_op_num_threads")},
+    {"id": "EVO-theater-fansub-corpus", "element": "ai_theater 2026-10-18: fansub burn-in subtitles are free translations (117 pairs, 12 confirmed by lexical anchors)", "verdict": "REFINE",
+     "requires": None, "detail": "mtm-api-pool-offload: aligned fansub corpus is a style/vocabulary reference for the prompt, never per-sentence ground truth; anchor-filter first and the result stays a draft (extends the existing results-are-drafts rule); evidence hub-root memory burnin-subtitle-ocr-learning",
+     "check_text": ("skill_pool", "不能當逐句 ground truth")},
+    # f1s-evolve 2026-10-19: ai_theater inbox proposal "load_guard.py resume re-arms the subtitle run intent"
+    {"id": "EVO-theater-ladder-restore-generation", "element": "ai_theater 2026-10-19 ask: load_guard's background restore must be idempotent and honour an explicit stop/drain posted after the shed", "verdict": "REFINE",
+     "requires": None, "detail": "load_guard shed records the intent_generation its own background-off produced (off_generation, persisted in the ladder file); resume_all re-arms only when the schedule stamp AND the session generation are still its own, an unreadable session is UNKNOWN and leaves it off, a ladder file without the field keeps the schedule-only rule (tray/tests/test_load_guard_ladder_restore.py, 12 tests)",
+     "check_text": ("load_guard", "off_generation")},
+    {"id": "EVO-theater-ladder-misattribution", "element": "ai_theater 2026-10-19 claim: load_guard resume_all posted background enabled=true on every shed/resume cycle 01:56-05:05 (generations 1026..1038)", "verdict": "REFINE",
+     "requires": None, "detail": "refuted: ai_darkhero/tray/logs/load_guard.log holds 0 shed/resume/gate events in its whole history and tray/state/load_guard.json level=0 (pid 25200 since 10-15); the gate stamps every POST /api/subtitle/background as ai_theater_background and keeps no access log (logging.debug), so the real poster is UNKNOWN; windows-runtime-pitfalls now says: a shared source label cannot attribute a caller, read the suspect's own log before naming it, callers carry their own source, services persist access logs",
+     "check_text": ("skill_runtime", "共用的來源標籤不能歸因呼叫者")},
 ]
 
 

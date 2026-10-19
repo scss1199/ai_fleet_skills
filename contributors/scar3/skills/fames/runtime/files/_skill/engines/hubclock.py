@@ -521,6 +521,12 @@ def dispatch(job):
         return None
 
 
+# Failure classification before a DRIVE handoff (HubClock._classify, F1S 當下閉環 item 3).
+STALL_RIDERS = 3
+STALL_WINDOW_S = 1800
+PINNED_RIDERS = {"fames-converge", "fleet-skill-pulse"}
+CURATOR_OWNER = "ai_darkhero"
+
 STDERR_DIR = os.path.join(LOCKDIR, "hubclock-stderr")
 
 
@@ -823,6 +829,11 @@ class HubClock:
         stderr = (row.get("last_failure") or {}).get("output_tail")
         if stderr:
             text += " Last output: " + stderr
+        kind, sender, extra = self._classify(jid, row)
+        if kind == "signal":
+            return  # rc 75 = EX_TEMPFAIL, "not executed, prior work still active": by design, not a fault
+        if extra:
+            text = extra + " " + text
         try:
             sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
             import _bus
@@ -831,14 +842,74 @@ class HubClock:
             # point at it instead of sending another.
             inbox_root = getattr(_bus, "INBOX", None)
             canon = getattr(_bus, "_canon_to", lambda name: name)
-            open_id = _open_handoff(inbox_root, canon(owner), "hubclock-" + jid) if inbox_root else None
+            if kind != "rider":
+                owner = CURATOR_OWNER  # a machine-wide incident has no single rider owner
+            open_id = _open_handoff(inbox_root, canon(owner), sender) if inbox_root else None
             if open_id:
-                row["last_handoff"] = {"to": owner, "id": open_id, "deduped": True, "at": row.get("last_fired")}
+                row["last_handoff"] = {"to": owner, "id": open_id, "deduped": True, "kind": kind,
+                                       "at": row.get("last_fired")}
                 return
-            row["last_handoff"] = {"to": owner, "id": _bus.send(owner, "hubclock-" + jid, text, kind="task"),
+            row["last_handoff"] = {"to": owner, "id": _bus.send(owner, sender, text, kind="task"), "kind": kind,
                                    "at": row.get("last_fired")}
         except Exception as e:  # noqa: BLE001 -- a bus fault must never stop the clock
             row["last_handoff"] = {"to": owner, "error": repr(e)[:160], "at": row.get("last_fired")}
+
+    def _classify(self, jid, row):
+        """Classify a failure streak at the source (F1S 當下閉環 item 3, 2026-10-18) -> (kind, sender, extra text).
+
+        signal       rc 75 (EX_TEMPFAIL): the rider declined to run because prior work is still active.
+        stall        rc 124 while >= STALL_RIDERS other riders also timed out within STALL_WINDOW_S: the machine
+                     stalled (2026-10-16 02:00-05:45, load_guard other_cpu 87.6%), one incident for all of them.
+        pinned-drift fames-converge / fleet-skill-pulse red while a FAMES-release-pinned file differs from the
+                     shipped runtime: one handoff naming the file and the ship command, shared by both riders.
+        rider        anything else: the rider's own handoff, as before.
+        """
+        rc = row.get("last_rc")
+        if rc == 75:
+            return "signal", None, ""
+        if rc == 124:
+            peers = self._recent_timeouts(jid, row.get("last_fired_epoch"))
+            if len(peers) >= STALL_RIDERS:
+                return "stall", "hubclock-stall", (
+                    "HubClock STALL incident: %d other riders also hit their runtime cap within %d min (%s). "
+                    "Treat it as one machine-wide stall (check load_guard.log other_cpu_pct and the riders that "
+                    "started together), not per-rider bugs." % (len(peers), STALL_WINDOW_S // 60, ", ".join(peers[:8])))
+        if jid in PINNED_RIDERS:
+            try:
+                sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                import pinned_drift
+                rows = pinned_drift.drifted()
+            except Exception:  # noqa: BLE001 -- the classifier must never stop the clock
+                rows = []
+            if rows:
+                paths = [r["path"] for r in rows]
+                return "pinned-drift", "hubclock-pinned-drift", (
+                    "HubClock PINNED-DRIFT: FAMES-release-pinned file(s) %s differ from the shipped runtime, which is "
+                    "why %s fail. Ship the edit from the session that made it, or here: %s"
+                    % (", ".join(paths), " and ".join(sorted(PINNED_RIDERS)), pinned_drift.ship_command(paths)))
+        return "rider", "hubclock-" + jid, ""
+
+    def _recent_timeouts(self, jid, epoch):
+        """Other riders whose recent results hold an rc 124 finished within STALL_WINDOW_S of `epoch`."""
+        try:
+            ref = float(epoch)
+        except (TypeError, ValueError):
+            return []
+        out = []
+        for other, row in self.results.items():
+            if other == jid or not isinstance(row, dict):
+                continue
+            for item in row.get("recent") or []:
+                if not isinstance(item, dict) or item.get("rc") != 124:
+                    continue
+                try:
+                    when = datetime.datetime.fromisoformat(str(item.get("fired"))).timestamp()
+                except ValueError:
+                    continue
+                if abs(ref - when) <= STALL_WINDOW_S:
+                    out.append(other)
+                    break
+        return sorted(out)
 
     def _backed_off(self, job, now):
         """A non-protected interval rider in a failure streak fires on every BACKOFF_EVERY-th boundary only."""

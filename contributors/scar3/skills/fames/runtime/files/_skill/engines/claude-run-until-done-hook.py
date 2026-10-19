@@ -100,6 +100,28 @@ REASON = (
 )
 
 
+REASON_PINNED = (
+    "run-until-done / F1S 當下閉環: this session edited FAMES-release-pinned file(s) {paths} and they still differ "
+    "from the shipped runtime, so fames-converge and fleet-skill-pulse go red for the whole fleet until they ship "
+    "(2026-10-18: one unshipped f1s_audit.py edit kept them red 8 h). Before ending the turn, run the tests that "
+    "cover the change and ship it now: {command} -- or, if the edit was wrong, restore the file to the shipped "
+    "bytes. Only an operator-only decision (one line 「需要你決定：」) may end the turn first. (push {n}/{cap})"
+)
+OPERATOR_DECISION = re.compile(r"需要你(?:決定|授權)|需要 ?operator ?(?:決定|授權)|\b(?:needs|requires) (?:your|the operator'?s?) "
+                               r"(?:decision|authorit|approval)", re.IGNORECASE)
+
+
+def _pinned_unshipped(transcript: Path) -> list[str]:
+    """Pinned files this transcript edited that still differ from the shipped runtime; [] on any error."""
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import pinned_drift
+        rows = pinned_drift.drifted()
+        return pinned_drift.edited_by(transcript, [r["path"] for r in rows]) if rows else []
+    except Exception:  # noqa: BLE001 - fail open: a broken checker never blocks a turn
+        return []
+
+
 # ---------------------------------------------------------------- input / config
 
 
@@ -308,6 +330,9 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
         return None
     text, turn_uuid = closing_text(path)
     verdict, matched = judge(text, cfg)
+    pinned = [] if OPERATOR_DECISION.search(text[-TAIL_CHARS:]) else _pinned_unshipped(path)
+    if pinned:
+        verdict, matched = "block", "pinned_unshipped:" + ",".join(pinned)
     entry = {
         "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "session_id": session_id,
@@ -338,7 +363,12 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
     _save_state(session_id, state)
     entry.update({"blocks": state["blocks"], "session_blocks": state["session_blocks"]})
     _log(entry)
-    reason = REASON.format(matched=f" (matched: {matched!r})", n=state["blocks"], cap=per_turn)
+    if pinned:
+        import pinned_drift
+        reason = REASON_PINNED.format(paths=", ".join(pinned), command=pinned_drift.ship_command(pinned),
+                                      n=state["blocks"], cap=per_turn)
+    else:
+        reason = REASON.format(matched=f" (matched: {matched!r})", n=state["blocks"], cap=per_turn)
     return {"decision": "block", "reason": reason}
 
 

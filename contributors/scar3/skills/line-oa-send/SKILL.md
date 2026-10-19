@@ -14,6 +14,7 @@ verifies it belongs to kyloren_bot, and revokes it after the push.
 E=C:/ai_workspace/_skill/engines/line-oa-send-media.py
 python $E text "訊息內容"                                   # text
 python $E file "C:/path/report.pdf" --text "說明一行"       # any file -> private Drive link
+python $E link "C:/path/report.pdf" --text "說明一行"       # any file -> one-shot private link (no Drive, nothing public)
 python $E send "C:/path/chart.png" --text "說明一行"        # image shown inline in chat
 python $E verify                                            # token + media gate probes
 ```
@@ -27,14 +28,18 @@ group id to send elsewhere.
 |---|---|---|
 | Text, status, short result | `text` | LINE only (≤4900 chars; put long results in a file) |
 | Personal or non-image file (CV, PDF, docx, xlsx, zip) | `file` | Owner's own Google Drive, folder `kyloren_outbox`, **not shared**; the link opens only for the signed-in owner |
+| Same, but **no Drive** (the operator said so) | `link` | Nowhere: served from the local file through a cloudflared quick tunnel at `/<random token>/<name>`; closes after `--ttl` (1800 s) or `--max-get` (5) downloads; wrong token = 404 |
 | Image meant to be seen in the chat | `send` | Public `ai-darkhero.kyloren.workers.dev/media/` (anyone with the URL can fetch it) |
 
-LINE has no outbound document message type, so a file always travels as a link.
-Never put a personal document through `send`: that lane is public.
+LINE has no outbound document message type, so a file always travels as a link — that is a route choice, never a
+reason to refuse. "No Drive" means `link`; it is not a dead end and not a reason to ask again.
+Never put a personal document through `send` or any public folder: that lane is public, and since 2026-10-18 the
+PROOF publish gate denies a non-image file headed for a public location unless the operator's own prompt says 公開.
 
 ## Done means
 
 - Exit 0 and `"ok": true` with `push.status` 200.
+- `link`: `link.verified.ok` true (token URL 200, wrong token 404 measured before the push).
 - `file`: `drive.md5_match` true and `drive.mime` is the file's real type
   (a PDF shows `application/pdf`, so Drive opens it as a PDF, not as a Word doc).
 - Report the receipt path printed as `receipt_path`
