@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "573dd1a29acec301ef50bdd7a80d3aeff5f500e402044bbc9f6199258edf5d4a",
   "runner_state": "armed",
-  "observed_at": "2026-10-20T02:32:19.296965+00:00",
+  "observed_at": "2026-10-20T03:15:31.170574+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -362,16 +362,22 @@
         "receipt_sha256": "0a05af9963c376ecb4f8e406e4009e53795c370a9901cfbfb4ce588b2936451b"
       },
       {
-        "agent": "sinopac-trading-system",
+        "agent": "ai_trader",
         "surface": "claude",
-        "observed_at": "2026-10-20T10:31:53+08:00",
-        "receipt_sha256": "b28c509a72a554ef962b2e2fc8183949c54fb048d563d156fa6bbe872ab18848"
+        "observed_at": "2026-10-20T10:52:48+08:00",
+        "receipt_sha256": "1c95cfd2ea337be5f76444ac4a65b95179011dbd70c7c6485708c502b57f8fd3"
       },
       {
         "agent": "jci_taipei",
         "surface": "claude",
         "observed_at": "2026-10-19T22:42:50+08:00",
         "receipt_sha256": "6b00b87c1ff32a3500df5e34180c388ac23060cc6c06e0fb84cb6faa330dbdbb"
+      },
+      {
+        "agent": "ai_metadata",
+        "surface": "claude",
+        "observed_at": "2026-10-20T11:14:14+08:00",
+        "receipt_sha256": "5ca282966ae1ea55ee295a7232ba15daa4e1a4ae1a3fda3c8c5f80642b9eda61"
       },
       {
         "agent": "ai_darkhero",
@@ -382,8 +388,8 @@
       {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-20T10:30:03+08:00",
-        "receipt_sha256": "69933ea6618e8f95b1077d912b5810b052c2660ade0e0ef995cf9e247193cb86"
+        "observed_at": "2026-10-20T11:03:15+08:00",
+        "receipt_sha256": "d8ca43883ccccad97ca2f3e163f3e1d1feb649c1cce9a9dc42c2f5a1dbf95e27"
       },
       {
         "agent": "_lean",
