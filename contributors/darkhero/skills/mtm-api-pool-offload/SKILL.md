@@ -120,6 +120,22 @@ operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是�
 - 「taifex.com」被當成「x.com」擋掉、`<header>` 被當成 `<head>` 刪掉整頁：期交所保證金表現在抓得到。
 - `--json` 在 cp950 主控台崩潰、輸出混入記錄行：已改成 UTF-8、記錄改走 stderr，標準輸出只剩 JSON。
 
+## 封鎖源的退路階梯（2026-10-20 實測，查人物／百科類時常遇到）
+
+查百科、人物、事件背景時，單一來源常被擋，別因為第一條失敗就回報查無：
+
+- 百度百科：`distill-url.py` 與 WebFetch 常回 403／安全驗證殼；改用內建瀏覽器 `get_page_text`（本回合這樣讀到嚴弘森、
+  中新網 2014 汪正揚專訪全文）。
+- 維基百科：直接猜的消歧義標題會 404（本回合 `汪正揚_(黑客)` 404）；改用 MediaWiki API 先搜標題再取全文——
+  `https://zh.wikipedia.org/w/api.php?action=query&list=search&srsearch=<詞>&format=json`，再
+  `action=query&prop=extracts&explaintext=1&titles=<命中標題>&redirects=1`。搜尋也可能把近音詞排到前面（本回合把
+  「汪正揚」配到不相關條目），命中標題要先核對是不是同一個人再採用。
+- DuckDuckGo／Gemini 搜尋整批回 0 或 429 時，Bing 網頁搜尋（內建瀏覽器開 `bing.com/search?q=`）通常仍可列出
+  官方媒體原文連結；Bing 的 `ck/a` 轉址要用 `li.b_algo h2 a` 的 href 或頁面文字裡的真網址，別把轉址當來源。
+- 原始影片的轉述會變形：本回合第二支影片把 METR／OpenAI 事件講成「700 個 AI 聯手攻擊人類系統」，但原文
+  （metr.org 2026-08-26）說那是評測內 agent 想規避評分器、對單一平台 Hugging Face 的入侵，且多數規避並未成功。
+  影片＝指標不是事實，load-bearing 的主張一律回官方原文核對後才寫（本段強化既有「結果是草稿」規則）。
+
 ## 驗收（2026-10-15 實測）
 
 - `distill-url.py --search "微型臺指期貨 保證金 期交所 2026"`：7 秒，回傳來源網址與摘要；保證金 35,050 元和期交所數字一致。

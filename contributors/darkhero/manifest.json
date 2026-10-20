@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-10-19T03:13:40Z",
-  "manifest_sha": "d719232feddd5bcd",
+  "generated_at": "2026-10-20T05:02:29Z",
+  "manifest_sha": "57504b63eb9be08b",
   "required": [
     "fames",
     "independent-review",
@@ -168,14 +168,14 @@
     },
     {
       "name": "fames",
-      "sha": "a9076ebce1b19325",
+      "sha": "7db209d868ae3c7b",
       "required": true,
       "lane": null,
-      "package_sha": "f151dc81469a5b6bee318e652a98c5385c4e31073960f2afb5391beca7b0d2ca",
+      "package_sha": "cb1b8a8c6ce35dc15e14ee17bcc27bc08e38d1f959ee961934375483ca8551c9",
       "files": {
         ".gitattributes": "448f5307a4b4eaab3e5e0615e1b57e125c2e6419d590025c4ac3d2e2c004955e",
-        "SKILL.md": "a9076ebce1b1932549c0883b27fbd2d8c08982e3806615c0ef5071cdbd4a422f",
-        "bundle-manifest.json": "9741e0b8003cc5f0d6acbc52ac403910c0d929ce84d5aadc9a5fbf1fd611194e",
+        "SKILL.md": "7db209d868ae3c7b32fe36832f39e6dd5856f9e5731b2220970a73e945e41055",
+        "bundle-manifest.json": "0b269e2c7eb42a2d7866da417dbafcdf337161320760ff938716f1ccf2473d63",
         "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
         "references/autonomous-knowledge.md": "b34ca6beb034909aaade75be4707c772e90155c6c12b8278c7b3964ec8238df5",
         "references/cases.json": "2ebbb062b8e58241dfd2a70ec423678c4c16e40303d436ffa6de6e5560f67a40",
@@ -188,13 +188,13 @@
         "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
         "references/runtime-sources.json": "a9142f95f0b80cdbf1647666ab702a87e48d1f13ce6ec99e3cf3a30585077563",
         "references/scoped-skills.md": "b8d6178efa7c1700b13cab721a208900f0d088e3f416c9a906eb661c22362f85",
-        "references/protocols/fames-protocol.json": "83d1fd2334d8b0c6846e73f0d4a31bf5f04e1334f321ed72485b84fec9525501",
+        "references/protocols/fames-protocol.json": "a45847f01e92fc31c3e3c9cdb6dcf246beed9c7a5df497ec23558b13e4a595c2",
         "references/protocols/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
         "references/protocols/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
         "references/protocols/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
         "references/protocols/scf-protocol.json": "6688d7370af1040b421dfcc715e7b730d4a74331b60bf316e3b527285be27906",
         "references/protocols/seal-protocol.json": "7de5562242692e0827a64bbc94f7a5a71fc418601558f51dc54371a11820b9a4",
-        "runtime/manifest.json": "2f19da7fd8547f1593e92531093f120037d6dbce6e58b05b134ad4105596147f",
+        "runtime/manifest.json": "8f5a59a47404d724278e8e7c679c0360c69b82f370cc316591e6b7c6dfb964bd",
         "runtime/files/_harness/runtime/document_preservation.py": "7af583a1d534c54332a2d9444afba1430f73a81f06627379965d5c137b6e5d48",
         "runtime/files/_harness/runtime/dsh_fames_hook.py": "35f126d239b2ae1d333dc21d14e3e05b51dfac380f324228b5fe7e92ac1c3f54",
         "runtime/files/_harness/runtime/dsh_fames_plugin.mjs": "cde86d6be7cfcb5729c17f7e46c65f30d7681e8fa6ede9a60e3c2c30b52f4ed7",
@@ -225,7 +225,7 @@
         "runtime/files/_lean/fames/turn_recovery_contract.py": "b4e6861fef6e2b4d42fd0e7a4ec93f3d5fe24a647362d1383a24950df5615193",
         "runtime/files/_registry/agent-surfaces.json": "b36cebd6b0f912587f117bc7df19c352496bbb6bcf7c9d3293b0940e951e8f60",
         "runtime/files/_registry/claude-remote-control.json": "44f271d7e0700238d5351698be0638cb1f798669d9f30c8aa3ad1c7d2fc2cfa2",
-        "runtime/files/_registry/fames-protocol.json": "83d1fd2334d8b0c6846e73f0d4a31bf5f04e1334f321ed72485b84fec9525501",
+        "runtime/files/_registry/fames-protocol.json": "a45847f01e92fc31c3e3c9cdb6dcf246beed9c7a5df497ec23558b13e4a595c2",
         "runtime/files/_registry/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
         "runtime/files/_registry/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
         "runtime/files/_registry/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -325,12 +325,12 @@
     },
     {
       "name": "lean-math-prover",
-      "sha": "1e27090f88c91241",
+      "sha": "503bcd77a5fe9463",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "72f5feb21e0a0f65823d4fa51f51a83382c73d26845f0ad86168cb4fff8d40af",
+      "package_sha": "4a6f9b2832e5e8cdec972057b6c387b83d5bc3c2e5654e72e7b6c5fe6714e900",
       "files": {
-        "SKILL.md": "1e27090f88c912415e01f09795b9ed6825611e013d77d68e2e280c01b1dfe6b4"
+        "SKILL.md": "1502dc2450b2dd30ce1b0aacda2c483b8d1a190af5e9508eb9d8d4949da98fd3"
       }
     },
     {
@@ -381,12 +381,12 @@
     },
     {
       "name": "mtm-api-pool-offload",
-      "sha": "0b343083227bad55",
+      "sha": "8e8b524e24a2ca10",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "db7dd39cb0af2ad55b022acdb4aadbf3ccf0d88b9e882fb59e63edea565bd985",
+      "package_sha": "a6f3929a9ed6524e03c9d9fc98b4420412d45d1cc5f02ee653652d3d731f98ea",
       "files": {
-        "SKILL.md": "8eed867d36dafaa4b7b6f62fa5ed8fe7774f5d1947eafe790539d7c1426a2ae5"
+        "SKILL.md": "1904e0b5eba3744a495e748d37a4cb874150d3ec0ed0263e8229db40efec127d"
       }
     },
     {
@@ -681,12 +681,12 @@
     },
     {
       "name": "ztm-verify-before-done",
-      "sha": "58dc86fdd5a79285",
+      "sha": "ec4594e3c8520d77",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "334be9b744874fc8e84f57386ec95de6ed741db9408ac39c8435c34fe268ddbd",
+      "package_sha": "93cecefbfa09abd6699e04cefc092c752511d654ba2fff36628159ec8da4d2a7",
       "files": {
-        "SKILL.md": "31deb2004fbcfe744dfe0ad98832413d27061e741c3fa063ede3b9833c1962ea"
+        "SKILL.md": "de928856efd719be99f12e41ef070aca64e8f92d5895a060561bcfb65b9f66bb"
       }
     },
     {
