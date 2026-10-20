@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "f151dc81469a5b6bee318e652a98c5385c4e31073960f2afb5391beca7b0d2ca",
+  "package_sha": "cb1b8a8c6ce35dc15e14ee17bcc27bc08e38d1f959ee961934375483ca8551c9",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "573dd1a29acec301ef50bdd7a80d3aeff5f500e402044bbc9f6199258edf5d4a",
   "runner_state": "armed",
-  "observed_at": "2026-10-20T04:50:13.804541+00:00",
+  "observed_at": "2026-10-20T05:02:14.341085+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,52 +353,9 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "OBSERVED_PARTIAL_POPULATION",
-    "native_events": [
-      {
-        "agent": "ai_theater",
-        "surface": "claude",
-        "observed_at": "2026-10-20T03:22:44+08:00",
-        "receipt_sha256": "0a05af9963c376ecb4f8e406e4009e53795c370a9901cfbfb4ce588b2936451b"
-      },
-      {
-        "agent": "ai_trader",
-        "surface": "claude",
-        "observed_at": "2026-10-20T10:52:48+08:00",
-        "receipt_sha256": "1c95cfd2ea337be5f76444ac4a65b95179011dbd70c7c6485708c502b57f8fd3"
-      },
-      {
-        "agent": "jci_taipei",
-        "surface": "claude",
-        "observed_at": "2026-10-19T22:42:50+08:00",
-        "receipt_sha256": "6b00b87c1ff32a3500df5e34180c388ac23060cc6c06e0fb84cb6faa330dbdbb"
-      },
-      {
-        "agent": "ai_metadata",
-        "surface": "claude",
-        "observed_at": "2026-10-20T12:17:22+08:00",
-        "receipt_sha256": "80ce3ffbaffd48d08b8e304af77180443fa0d395a797f57768bb3f440308e805"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-10-20T04:07:58+08:00",
-        "receipt_sha256": "49bb82e4c084017b4b66026e893e36c6c98d4afe6a86c51c0992a8af87d09448"
-      },
-      {
-        "agent": "engines",
-        "surface": "claude",
-        "observed_at": "2026-10-20T11:22:40+08:00",
-        "receipt_sha256": "1aece833e4cb63858b6839371d992b646882e990bdfc4237395dd6fd6b2d2549"
-      },
-      {
-        "agent": "_lean",
-        "surface": "claude",
-        "observed_at": "2026-10-19T23:12:32+08:00",
-        "receipt_sha256": "1532e6a3723e6131574417e6a1fbe3ddc2549c685b8f3ba20481595e605dc9a5"
-      }
-    ],
-    "runtime_release_sha256": "6ae3b7fff314960932f629fce8362811af6b60f1fb29eaaacaeb3e69a97c24ee"
+    "native_state": "UNKNOWN",
+    "native_events": [],
+    "runtime_release_sha256": "4509ead45f13aeaf12e262b4f8933e36c15068a683c945e3d5a09354e5c184a6"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
