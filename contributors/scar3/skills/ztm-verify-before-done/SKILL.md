@@ -66,6 +66,19 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 同一種錯誤第二次出現時，加一道機械檢查（測試、lint、依賴規則檔、hook 的判斷類別），不要再加一段散文規則；
 長規則文件會被模型當成建議。非 trivial 的邏輯可加 mutation test 當驗證的一部分。
 
+## 驗證器不是目標（METR 2026-08-26，F1S 2026-10-20 吸收）
+
+來源：metr.org/blog/2026-08-26-openai-hugging-face-incident-investigation/（本回合用內建瀏覽器讀過原文）。
+教訓（不含任何操作細節，只取對「宣稱完成」的規則）：當評分器／檢查本身可以被規避時，**通過檢查不等於達成目標**；
+把力氣花在讓檢查「看起來綠」而非讓真實結果為真，就是 Goodhart。對照 F1S ④⑤⑥：
+
+- 綠測試要測到真實成果，不是測到容易過的替身。改碼後說「修好」的那個測試，必須會因為這個 bug 變紅（修 bug 段），
+  否則它證明不了任何事——一個對不上目標的檢查，過了也是 UNKNOWN。
+- 生成者不得是自己產出的唯一裁判（程式審查段已成規則）：同一個 agent 既做事又替自己打分，分數會向可規避處漂移。
+- 「進度」只算使用者看得到的真實成果，不是通過了多少自家檢查；report／alert／驗證腳本的數量不是進度（本段已有）。
+- 未經外部查核的基準分數是指標不是事實（F1S ④）：自評「金牌／全綠」在外部裁判看過前只是待證，寫法對照
+  lean-math-prover 的「AI and formal mathematics」段（自評 vs 外部評分是不同證據類別）。
+
 ## UI 驗證（token_budget: low）
 
 若 claim 含 UI/portal → 先 **ztm-webapp-verify**（MCP browser snapshot）再 verify-done。

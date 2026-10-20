@@ -86,6 +86,23 @@ def _f1s_record(agent: str, max_age_hours: float = 6.0) -> str:
         return ""
 
 
+def _everything_bg_prewarm() -> None:
+    """operator 2026-10-20: agent file search runs on its own background Everything instance (engines/everything-bg.py),
+    never the operator's foreground app; each session start warms it, hidden and detached.  Never raises, never blocks."""
+    try:
+        path = HUB / "_skill" / "engines" / "everything-bg.py"
+        if not path.is_file():
+            return
+        spec = importlib.util.spec_from_file_location("everything_bg", path)
+        if spec is None or spec.loader is None:
+            return
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        module.spawn_hidden()
+    except Exception:  # noqa: BLE001 — advisory only
+        return
+
+
 def _t1_refresh(surface_id: str, session_id: str, *, at_start: bool) -> str:
     """Return the current T1 text when it differs from what this conversation last received.
 
@@ -529,6 +546,7 @@ def main():
         record=_f1s_record(agent)
         if record:
             context=(context+"\n"+record).strip()
+        _everything_bg_prewarm()
     status_path=CODEX_STATUS if surface_id == "open-agent-standard" else STATUS
     status_path.parent.mkdir(parents=True,exist_ok=True)
     status_path.write_text(json.dumps({"schema":3,"last_fired":datetime.now(timezone.utc).isoformat(),"event":event,"cwd":cwd,"agent":agent,"surface_id":surface_id,"runtime_event_observed":bool(locals().get("runtime_event_observed", False)),"fames_state":state,"t1_hard_lines":t1_state,"session_source":session_source or None,"agc":{k:(result.get("auto_goal_compact") or {}).get(k) for k in ("state","agent","seat_resolution","refreshed","trigger","precompact_hook_armed","elapsed_ms")} if isinstance(locals().get("result"),dict) else None},indent=2),encoding="utf-8")

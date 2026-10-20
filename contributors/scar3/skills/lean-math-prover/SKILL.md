@@ -117,6 +117,33 @@ still shows what the file declares — none of it is proved. At most 40 theorems
 - `_lean/` is shared by the whole fleet: do not edit the toolchain, `hubmath/` or `state/` from
   a task. Upgrades go through `install_lean.py` + `setup_mathlib.py` (curator lane).
 
+## AI and formal mathematics — what the public record says (read 2026-10-20)
+
+Facts read on 2026-10-20 from the pages named; quote them, do not improve them.
+
+- IMO 2024: AlphaProof / AlphaGeometry reached silver standard (28 points, 4 of 6) only after experts
+  translated the problems into Lean, and the run took two to three days
+  (deepmind.google/discover/blog/advanced-version-of-gemini-with-deep-think-officially-achieves-gold-medal-standard-at-the-international-mathematical-olympiad/).
+- IMO 2025: Gemini Deep Think scored 35 of 42 in natural language within the 4.5-hour limit, graded by IMO
+  coordinators; the same post states the limit: "their review does not extend to validating our system,
+  processes, or underlying model". The Wikipedia IMO article (oldid 1380234070) records that OpenAI's
+  parallel gold claim had not been evaluated when announced and one of its solutions was later graded zero,
+  and that Terence Tao and Kevin Buzzard cautioned the claims were not reproducible experimental conditions.
+- Lean itself can be wrong: in 2026 a purported Collatz disproof was announced as Lean-verified and became
+  invalid once kernel soundness bug #14576 was fixed (en.wikipedia.org/wiki/Lean_(proof_assistant), oldid
+  1374563227). The same page: Mathlib held over 210,000 theorems as of May 2025; AlphaProof (2024) and
+  DeepSeek-Prover-V2 (2025) prove in Lean.
+
+Rules this adds to the skill:
+
+- A `PROVED` receipt is a statement about one kernel build: always report the toolchain line from
+  `leanctl.py info` next to the verdict, and re-run the file after any Lean upgrade before repeating the
+  claim. "Kernel accepted" is not "sound under every kernel".
+- A natural-language proof graded by humans (the 2025 route) and a kernel-checked proof (this skill) are
+  different evidence classes; name which one you have. Never upgrade a model's prose proof to "verified".
+- An unreviewed benchmark claim is a pointer, not a fact (F1S ④): the OpenAI 2025 episode is the template
+  for what a self-graded "gold" is worth before an external grader has looked.
+
 ## Tactics worth trying first
 
 `decide` (small decidable facts) · `omega` (linear ℕ/ℤ arithmetic) · `norm_num` (numerals) ·

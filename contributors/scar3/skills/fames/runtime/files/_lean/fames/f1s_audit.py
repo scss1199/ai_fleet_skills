@@ -60,6 +60,7 @@ TEXTS = {
     "omniroute_engine": HUB / "_skill" / "engines" / "omniroute-gateway.py",
     "session_hook": HUB / "_skill" / "fleet-skills" / "token-preflight" / "scripts" / "claude_session_hook.py",
     "skill_pool": HUB / "_skill" / "fleet-skills" / "mtm-api-pool-offload" / "SKILL.md",
+    "skill_lean": HUB / "_skill" / "fleet-skills" / "lean-math-prover" / "SKILL.md",
     "distill_url": HUB / "_skill" / "engines" / "distill-url.py",
     "websearch_engine": HUB / "_skill" / "engines" / "websearch.py",
     "skill_preflight": HUB / "_skill" / "fleet-skills" / "token-preflight" / "SKILL.md",
@@ -350,6 +351,17 @@ ELEMENTS = [
     {"id": "EVO-theater-ladder-misattribution", "element": "ai_theater 2026-10-19 claim: load_guard resume_all posted background enabled=true on every shed/resume cycle 01:56-05:05 (generations 1026..1038)", "verdict": "REFINE",
      "requires": None, "detail": "refuted: ai_darkhero/tray/logs/load_guard.log holds 0 shed/resume/gate events in its whole history and tray/state/load_guard.json level=0 (pid 25200 since 10-15); the gate stamps every POST /api/subtitle/background as ai_theater_background and keeps no access log (logging.debug), so the real poster is UNKNOWN; windows-runtime-pitfalls now says: a shared source label cannot attribute a caller, read the suspect's own log before naming it, callers carry their own source, services persist access logs",
      "check_text": ("skill_runtime", "共用的來源標籤不能歸因呼叫者")},
+    # 2026-10-20 (two YouTube videos reverse-learned; shipped 1.45.61 without audit rows — bound here so the
+    # three passages are mechanically guarded like every other F1S text)
+    {"id": "EVO-lean-public-record", "element": "lean-math-prover: what the public record says about AI + formal mathematics (IMO 2024 AlphaProof silver only after human Lean translation, days of compute)", "verdict": "REFINE",
+     "requires": None, "detail": "facts quoted from named pages with read date; Lean stays the kernel that accepts or rejects, never a claim of autonomous mathematics",
+     "check_text": ("skill_lean", "AI and formal mathematics")},
+    {"id": "EVO-metr-verifier-not-goal", "element": "ztm-verify-before-done: 驗證器不是目標 (METR 2026-08-26) — passing a check that can be gamed is not reaching the goal", "verdict": "REFINE",
+     "requires": None, "detail": "F1S ④⑤⑥ restated through Goodhart: the green test after a fix must be one that this bug would turn red; no effort on making checks look green",
+     "check_text": ("skill_verify", "驗證器不是目標")},
+    {"id": "EVO-pool-blocked-source-ladder", "element": "mtm-api-pool-offload: 封鎖源的退路階梯 — when one source blocks (百度 403 shell, wiki disambiguation 404) step down the ladder before reporting not found", "verdict": "REFINE",
+     "requires": None, "detail": "built-in browser get_page_text for walled pages, MediaWiki search API before guessing titles; a first failure is never 查無",
+     "check_text": ("skill_pool", "封鎖源的退路階梯")},
 ]
 
 

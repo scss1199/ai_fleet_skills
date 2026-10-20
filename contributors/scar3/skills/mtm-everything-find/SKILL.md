@@ -44,6 +44,14 @@ python %AI_WORKSPACE%\_skill\engines\mtm-everything-find.py doctor
 
 `doctor` 綠燈 = `Everything.exe` + `es.exe` + tray process 都在。紅燈就別掃，先修索引。
 
+## 前景 / 背景分離（operator 2026-10-20）
+
+- **前景** = operator 自己用的 Everything（原廠設計：設定 `%APPDATA%\Everything`、資料庫 `%LOCALAPPDATA%\Everything`）。agent **不查、不關、不改**它。
+- **背景** = F1S 專用具名實例 `claude`：`es.exe -instance claude`，設定與資料庫在 `%LOCALAPPDATA%\Everything-claude`，無托盤、低優先權，經 `service_pipe_name=\\.\PIPE\Everything Service` 共用已安裝的服務（不需提權）。
+- 所有 agent 搜尋都經 `local-find.py::_everything_paths`，自動走背景實例；F1S SessionStart 鉤子會隱藏預熱它。
+- 管理：`python %AI_WORKSPACE%\_skill\engines\everything-bg.py status|ensure|stop`（status 的 `cpus` 必須是全核，被綁單核會餓死）。
+- 自己寫腳本直接叫 es.exe 時一律帶 `-instance claude`，不准打前景實例。
+
 ## 一鍵管線（優選）
 
 ```powershell
