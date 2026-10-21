@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "573dd1a29acec301ef50bdd7a80d3aeff5f500e402044bbc9f6199258edf5d4a",
   "runner_state": "armed",
-  "observed_at": "2026-10-21T08:44:56.037459+00:00",
+  "observed_at": "2026-10-21T09:15:17.273335+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,8 +353,27 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "UNKNOWN",
-    "native_events": [],
+    "native_state": "OBSERVED_PARTIAL_POPULATION",
+    "native_events": [
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-10-21T17:02:06+08:00",
+        "receipt_sha256": "0fb2773881e78d32e995982f359bc1262336d1ea2863342567e3ff8b13492a8a"
+      },
+      {
+        "agent": "ai_ziyaoastro",
+        "surface": "claude",
+        "observed_at": "2026-10-21T17:11:39+08:00",
+        "receipt_sha256": "8bc399687ffb7aaba7456e914dd92ac7769781d70400798c3e8a06ba8eb0591e"
+      },
+      {
+        "agent": "ai_career",
+        "surface": "claude",
+        "observed_at": "2026-10-21T17:11:41+08:00",
+        "receipt_sha256": "5defa2ef92f91ef17dde3dde99ed22634e05c0e98dfd8d48cd5f593d6985bb1f"
+      }
+    ],
     "runtime_release_sha256": "29df4e6ff6cb11585834742a34a1cf11c738c32f36789ee6ed342abcce5d7ca6"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
