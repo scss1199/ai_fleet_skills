@@ -55,9 +55,13 @@ parent_skill: browser-login-handoff
 | clasp 權杖（scss1199） | `~/.clasprc.json` | `drive.file` + `drive.metadata.readonly` + `script.*`：讀任何檔案的資料、寫自己建立的檔、推 GAS、部署 | 改／移／還原別人建立的檔（403） |
 | GAS 網頁版 jci_taipei_70 | `jci_taipei_70/gas_project.json` 的 `webapp_url` | 以擁有者身分完整讀寫 Drive（上表 `drive_*`） | 沒帶 secret 的寫入一律 `invalid_secret` |
 | GAS 寫入 secret | vault `_secrets/jci_taipei/gas.env` 的 `HELPER_APPEND_SECRET`（`gas_client.vault_secret()` 讀，不印） | 呼叫端放進 body 的 `secret` | 輪替看 `_line/RUNBOOK-gas-secret-rotation.md` |
-| LINE channel token | `line/.env`（只看 key 名） | Messaging API 取檔、推播 | 列歷史訊息 |
+| LINE channel token | `line/.env`（只看 key 名） | Messaging API 取檔、推播 | 列歷史訊息；群組成員 ID（403，只拿得到人數與發過言的人） |
+| 會員名冊 sheet（GAS，2026-10-22 實測） | `_line/sync_members_to_sheet.py` 的 `push_via_gas(rows)`：op `merge_member_roster` + `overwrite_roles: True`；讀回 op `read_roster_tab` | 非空值覆寫 姓名／綽號／LINE／IG／Google SSO／職務（`RosterSheetMerge.gs` 的 `ROSTER_OVERWRITE_COLS`）；結束職務＝寫一段已結束的生效時段（例 `20260101-20260722`） | 空值不會清欄（只有 備註 可清）；Sheets API 不可用（Drive OAuth client 在 scss1199 看不到的專案），不要去開，也不准用瀏覽器直接改正式 sheet |
+| 網站的 Drive OAuth refresh token | `jci_taipei_website/.env.local` 的 `GOOGLE_DRIVE_*`（只看 key 名） | Drive API PATCH registry 夾（`access_bindings.json`、`sso_allowlist.json`）並讀回 | 其他資料夾 |
 
 clasp 權杖做不到的寫入 → 改走 GAS `drive_*`；兩者都不行才是登入問題（第 4 步）。
+宣稱某條寫入路徑「做不到」之前，先 grep 那個 handler 有沒有這個欄位／op（2026-10-22 沒讀
+`RosterSheetMerge.gs` 就以為 GAS 不能改 姓名，改走瀏覽器編輯正式 sheet，差點整張選取覆寫）。
 
 ## 3 讀回才算完成
 

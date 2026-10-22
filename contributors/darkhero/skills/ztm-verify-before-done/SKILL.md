@@ -79,6 +79,14 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 - 未經外部查核的基準分數是指標不是事實（F1S ④）：自評「金牌／全綠」在外部裁判看過前只是待證，寫法對照
   lean-math-prover 的「AI and formal mathematics」段（自評 vs 外部評分是不同證據類別）。
 
+## 延遲數字的證據（jci_taipei 7a3f7c5 + ai_ziyaoastro，F1S 2026-10-22 吸收）
+
+延遲數字（TTFB、TTFT、頁面／模型速度）三條全成立才算數，否則寫 UNKNOWN：
+(1) 每個目標有「回應是對的」證明——HTTP 200 只是傳輸證據（同 FAMES transport_rule）：頁面要驗 HTML 或預期的
+redirect 去向，模型要驗回覆引用了 prompt 裡的暗號；(2) 多輪重複，看 ok-rate 再看中位數，一次冷啟動不能定案，
+不穩或慢的目標加輪；遇 429/503 降並發；(3) 每次存一份 run 檔，與上一份比，超過門檻才標 regressed。
+重用範本：`ai_ziyaoastro/scripts/llm_provider_probe.py`（模型）、`jci_taipei/jci_taipei_website/scripts/page_latency_probe.py`（頁面）。
+
 ## UI 驗證（token_budget: low）
 
 若 claim 含 UI/portal → 先 **ztm-webapp-verify**（MCP browser snapshot）再 verify-done。

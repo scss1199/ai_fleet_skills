@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.45.65",
-  "skill_gen": "2026-10-21.2",
+  "version": "1.45.66",
+  "skill_gen": "2026-10-22.1",
   "execution_order": [
     "FP",
     "MTM",
@@ -24,7 +24,7 @@
   "source_git_commit": null,
   "files": {
     ".gitattributes": "448f5307a4b4eaab3e5e0615e1b57e125c2e6419d590025c4ac3d2e2c004955e",
-    "SKILL.md": "4d24973dcf4a35d1acf860b6724b79060f2c72f12bceba0caba268f82799550a",
+    "SKILL.md": "6bd518f342f86bc9477d1a09991207a36e9b94bc9b7db22bf8380d0b8a7157b1",
     "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
     "references/autonomous-knowledge.md": "b34ca6beb034909aaade75be4707c772e90155c6c12b8278c7b3964ec8238df5",
     "references/cases.json": "2ebbb062b8e58241dfd2a70ec423678c4c16e40303d436ffa6de6e5560f67a40",
@@ -35,7 +35,7 @@
     "references/minimal-context.md": "f5c24bd6cc37901d7e71187ef9d273a88676be4c1393faaedf1664ff794478da",
     "references/operator-manual.md": "ddfdafdb484c5233b59bf91d80f44a0060b161f822342db9669e7bcf63b0903c",
     "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
-    "references/protocols/fames-protocol.json": "247777cd1e82ca6ab0abbe671db1b1601d27ef9bfc59dc6165ece170c892a74e",
+    "references/protocols/fames-protocol.json": "adcc373ca2c65bab4fe49b7e32b04f419eb0b57f0243bca5e740879f4d88f1a6",
     "references/protocols/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
     "references/protocols/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
     "references/protocols/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -64,7 +64,7 @@
     "runtime/files/_lean/fames/FamesTurnRecovery.lean": "c7535908561b0d13ddf1533ec6e178785d46f933611bcc670a8728f075f8b6c3",
     "runtime/files/_lean/fames/claim_conformance.py": "47bb78d57a08d6f5aa9a185e4b383a017fdfc9c193686c69f5fc9ca2df555dec",
     "runtime/files/_lean/fames/conformance.py": "2cc97944eec22196b61d31b62cfe00b7788366c6610248d9c87418aba622ed42",
-    "runtime/files/_lean/fames/f1s_audit.py": "341a77d2318fa275ab1b87615223662792298e3b9aef65f722fceeea718d58d2",
+    "runtime/files/_lean/fames/f1s_audit.py": "88ef24363b1dfe6bf1a0d698c6d8a3bb6e914782cdf67a4f9a7fca5c4bd8a316",
     "runtime/files/_lean/fames/lean_gate.py": "10aeb5e6e90f4e220a69616cb62e4db5dda675049eac103ea0921f730f705ecb",
     "runtime/files/_lean/fames/phase_conformance.py": "ba60fd7f4aa8f850968239279dfa354ba0ce4a53243c383aeec873af65e1f989",
     "runtime/files/_lean/fames/phase_contract.py": "6b03b9d4fe4569cf69bbb14b23ff7244710bae4181f08f9027887c448e6e5726",
@@ -73,7 +73,7 @@
     "runtime/files/_lean/leanctl.py": "2cde11126976a17c88a927375b56c5c09a2115b7b0a6708ec8f563a068c7d7a3",
     "runtime/files/_registry/agent-surfaces.json": "b36cebd6b0f912587f117bc7df19c352496bbb6bcf7c9d3293b0940e951e8f60",
     "runtime/files/_registry/claude-remote-control.json": "44f271d7e0700238d5351698be0638cb1f798669d9f30c8aa3ad1c7d2fc2cfa2",
-    "runtime/files/_registry/fames-protocol.json": "247777cd1e82ca6ab0abbe671db1b1601d27ef9bfc59dc6165ece170c892a74e",
+    "runtime/files/_registry/fames-protocol.json": "adcc373ca2c65bab4fe49b7e32b04f419eb0b57f0243bca5e740879f4d88f1a6",
     "runtime/files/_registry/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
     "runtime/files/_registry/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
     "runtime/files/_registry/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -91,7 +91,7 @@
     "runtime/files/_skill/engines/_secrets.py": "0918c1b3a8f2a314567127312cd2b1f9f61a2f8c12124196815a4a347bc9a073",
     "runtime/files/_skill/engines/claim-linter.py": "b81bace525467206964a96751ca38043266fd9143e9d2e5085c57b8f2cd503f2",
     "runtime/files/_skill/engines/claude-claim-integrity-hook.py": "a13bfb56f0523caa27cbe6cf08fb69adbd2f1b4e962d617a3bfeb6ea09352c5f",
-    "runtime/files/_skill/engines/claude-proof-hook.py": "8dd0c8b180ddd199c552ee8c5bb555ab18418e099d544acacf480f81c4c827ae",
+    "runtime/files/_skill/engines/claude-proof-hook.py": "23807f1cc5d42043f20e15776f0df77b99ee8eb6f6e084f1fa39c3d6551a560d",
     "runtime/files/_skill/engines/claude-remote-exec.py": "75ae863890f75862669fe9f910d3a89ab8bdba03d34e4ce758c49849625ffbae",
     "runtime/files/_skill/engines/claude-run-until-done-hook.py": "3460527e45c1d8046ed92828e04f0bc4fbf0e9035435a2b2507c4f25e00c8d77",
     "runtime/files/_skill/engines/cursor-fames-hot-refresh.py": "fe8b65f32894e5dc5661039f0502a0ae3abd09ff38b9f8795e47142223e78f97",
@@ -113,7 +113,7 @@
     "runtime/files/_skill/engines/sync-cursor-hooks.py": "f1b9b0c3861bbe14b66f896313221c3287c2d8548073e817d2226987f68371d6",
     "runtime/files/_skill/engines/token-onboard.py": "b36201e60c667dadc26f06f211b8b9fc7275a778035d980143f19f4721dbfb39",
     "runtime/files/_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py": "b91ebb0a8226bb72756c7cef7b9b10a6dbc60665bf3cc4a0f28199b6a5aa8617",
-    "runtime/manifest.json": "091a265e92cc0f72ac1b5a79c262442436401072b4d2f60ebd206b3e42615ce4",
+    "runtime/manifest.json": "fab6fa2af6b022f06658bee0f00372789901ba696527b3f931d6aec21c340461",
     "scripts/adaptive_response_controller.py": "07a19c6e0bda90f25800617a274d5f641709676d0d71cdfae8e17dec91e0d911",
     "scripts/claude_live_ab.py": "3aaa4276c505e1eceea33207c6c4baeb190b6319b737f081fd53fbc055834261",
     "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
@@ -128,5 +128,5 @@
     "scripts/test_work_efficiency.py": "e4250ba4c05f616c79cf97182507d1ff3585487c788546151a97b2dad74f0536",
     "scripts/work_efficiency.py": "42d41b64b8075280b1212625b46a25ab32bba35d27f5c019cf79dde02552022e"
   },
-  "package_sha": "86f33f38a6611f95ddd7ef60b0117d08ba9e116dfd3ae4efb626c4dc3b36abbb"
+  "package_sha": "6bd95ecd9aee46b86186006a3f1f909426603e9a22da0ba03e281aa4c88140e1"
 }

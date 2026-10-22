@@ -36,6 +36,9 @@ parent_skill: ztm-verify-before-done
   gate 的 access log 只走 `logging.debug` 沒落地。做法：每個呼叫端自帶 source（或 User-Agent），服務端把 access
   log 寫到檔案；而「還原」類動作要綁自己那一代的 intent generation，資料裡出現更新的 stop/start 就不再還原
   （load_guard `off_generation`，test_load_guard_ladder_restore）。
+- **`python -I`（隔離模式，含 -E）會忽略 PYTHONIOENCODING，stdout 退回 cp950**：印中日文或符號直接
+  UnicodeEncodeError。要輸出非 ASCII 的腳本在程式內 `sys.stdout.reconfigure(encoding="utf-8")`，不要靠環境變數。
+  （ai_career 1c9ea56；2026-10-21 實測 `-I` 下 `sys.flags.ignore_environment=1`、encoding=cp950）
 
 ## 重試、鎖、排程
 

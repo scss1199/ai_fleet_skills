@@ -364,6 +364,15 @@ PUBLIC_DEST = re.compile(r"(?i)WORKTREE_MEDIA|sync_and_deploy|MEDIA_PREFIX|cf-de
                          r"[\\/](?:public|static|www|wwwroot|htdocs)[\\/]|cf-migrate[\\/][^\\/\s]+[\\/]public|"
                          r"transfer\.sh|0x0\.st|file\.io|catbox\.moe|tmpfiles\.org|gofile\.io|"
                          r"\b(?:aws\s+s3\s+cp|gsutil\s+cp|rclone\s+(?:copy|copyto|move))\b.*\b(?:public|www)\b")
+# 2026-10-22 jci_taipei: a pure read (grep a key name in .env.local, then ls a content/public path) was denied.
+# A served-directory PATH alone only counts when the shell command also writes, copies or moves something; the
+# deploy symbols, deploy commands and file hosts above publish by themselves and stay gated without a write verb.
+PUBLIC_PATH_ONLY = re.compile(r"(?i)[\\/](?:public|static|www|wwwroot|htdocs)[\\/]|cf-migrate[\\/][^\\/\s]+[\\/]public")
+WRITE_VERB = re.compile(r"(?i)\b(?:cp|mv|install|ln|rsync|robocopy|xcopy|copy|move|tee|dd|unzip|tar|7z|curl|wget|"
+                        r"Copy-Item|Move-Item|Rename-Item|New-Item|Set-Content|Add-Content|Out-File|Expand-Archive|"
+                        r"Invoke-WebRequest|iwr|shutil|copyfile|copy2|copytree|write_bytes|write_text|writeFile\w*|"
+                        r"copyFile\w*|rename|replace|open|sed\s+-i|git\s+mv)\b|"
+                        r"(?:^|[^0-9&<>=\-])>{1,2}(?!\s*(?:&|/dev/null|\$null|nul\b))")
 PRIVATE_DOC = re.compile(r"(?i)\.(?:pdf|docx?|xlsx?|pptx?|zip|7z|rar|csv|tsv|m4a|mp3|mp4|mov|wav|"
                          r"sqlite3?|db|key|pem|env)\b")
 PUBLISH_CONSENT = re.compile(r"(?i)公開|公布|上網|網站|官網|網頁|部署|上線|deploy|publish|public(?:ly)?|website")
@@ -396,6 +405,9 @@ def _publish_gate(doc: dict, tool: str, ti: dict) -> dict | None:
     else:
         return None
     if not PUBLIC_DEST.search(text) or not PRIVATE_DOC.search(text):
+        return None
+    if tool in ("Bash", "PowerShell") and not PUBLIC_DEST.search(PUBLIC_PATH_ONLY.sub(" ", text)) \
+            and not WRITE_VERB.search(text):
         return None
     prompt_text = ""
     path = _safe_transcript_path(doc)
