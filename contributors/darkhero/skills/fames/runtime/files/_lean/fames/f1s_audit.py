@@ -476,6 +476,9 @@ ELEMENTS = [
     {"id": "EVO-absorb-idempotent", "element": "fleet-skill-pulse re-stamped ~60 unchanged incubator files every 15 min, so every f1s-evolve run saw concurrent hub edits and held its ship", "verdict": "REFINE",
      "requires": None, "detail": "absorb keeps an unchanged submission's SKILL.md and meta.json (original absorbed_at); a changed body is still rewritten; _harness/tests/test_fleet_skill_sync_dotdirs.py fails on the old engine",
      "check_text": ("skill_sync_engine", "re-stamping it every 15 min")},
+    {"id": "EVO-hub-subdir-seat", "element": "session hook: a curator shell in the hub's _registry folder was labelled seat `_registry` (TOKEN CORE _registry)", "verdict": "REFINE",
+     "requires": None, "detail": "a cwd inside the hub but in no ai_* seat resolves to the hub-root seat (local curator); outside the hub stays basename; tests/test_proof_recurrence.py fails on the shipped 1.45.69 hook",
+     "check_text": ("session_hook", "Hub infrastructure (_registry, _skill, _lean...) belongs to the hub-root seat")},
 ]
 
 

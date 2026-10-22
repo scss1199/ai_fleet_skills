@@ -289,6 +289,7 @@ def _seat_for_cwd(cwd: str) -> str:
 
 def _resolve_seat(cwd: str) -> str:
     base = Path(cwd).name
+    module = None
     try:
         projects_path = HUB / "_skill" / "engines" / "_projects.py"
         spec = importlib.util.spec_from_file_location("fames_hook_projects", projects_path)
@@ -306,7 +307,14 @@ def _resolve_seat(cwd: str) -> str:
         while True:
             if node.name.startswith("ai_") and node.parent == hub:
                 return node.name
-            if node == hub or node.parent == node:
+            if node == hub:
+                # Hub infrastructure (_registry, _skill, _lean...) belongs to the hub-root seat, the local curator: by
+                # basename a curator shell that cd'd into C:\ai_workspace\_registry became seat `_registry` (2026-10-23).
+                name = module.whoami(str(hub))[0] if module is not None else ""
+                if name and name != "unknown":
+                    return str(name)
+                break
+            if node.parent == node:
                 break
             node = node.parent
     except Exception:
