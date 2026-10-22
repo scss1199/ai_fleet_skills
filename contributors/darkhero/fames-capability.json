@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "86f33f38a6611f95ddd7ef60b0117d08ba9e116dfd3ae4efb626c4dc3b36abbb",
+  "package_sha": "6bd95ecd9aee46b86186006a3f1f909426603e9a22da0ba03e281aa4c88140e1",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "573dd1a29acec301ef50bdd7a80d3aeff5f500e402044bbc9f6199258edf5d4a",
   "runner_state": "armed",
-  "observed_at": "2026-10-21T09:59:16.336729+00:00",
+  "observed_at": "2026-10-22T06:49:36.890447+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,46 +353,9 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "OBSERVED_PARTIAL_POPULATION",
-    "native_events": [
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-10-21T17:19:39+08:00",
-        "receipt_sha256": "ebce65efe6efbe888b5655c9a05d2c0b89ad71575aefaa7f275d16cd217cf61f"
-      },
-      {
-        "agent": "ai_ziyaoastro",
-        "surface": "claude",
-        "observed_at": "2026-10-21T17:55:37+08:00",
-        "receipt_sha256": "92210ac00a64a4c90662231460bd13f39543bb4e8dd10cb087017f355ff84ade"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-10-21T17:56:20+08:00",
-        "receipt_sha256": "88e60a139771da363e75d749fe4d00351770737124e63febfc3792b18758f28f"
-      },
-      {
-        "agent": "ai_career",
-        "surface": "claude",
-        "observed_at": "2026-10-21T17:15:26+08:00",
-        "receipt_sha256": "7ad0f7ecf3df8c26f38c01651ee3124c7d4ed770651cae178a73360741d413cf"
-      },
-      {
-        "agent": "ai_trader",
-        "surface": "claude",
-        "observed_at": "2026-10-21T17:59:11+08:00",
-        "receipt_sha256": "1a41531b95017d23b9dec2c9384e9c32127defc63a0db1aba167fd2e1d5c264a"
-      },
-      {
-        "agent": "ai_ziyaoastro",
-        "surface": "claude",
-        "observed_at": "2026-10-21T17:37:30+08:00",
-        "receipt_sha256": "feb12fb528d110e3c856f7bdb2a1c76b378d9a426b395d4841487a1d97eb8c53"
-      }
-    ],
-    "runtime_release_sha256": "29df4e6ff6cb11585834742a34a1cf11c738c32f36789ee6ed342abcce5d7ca6"
+    "native_state": "UNKNOWN",
+    "native_events": [],
+    "runtime_release_sha256": "e4c2c69676ebc5e3379312ee6fac5ea019c9645f311aae75671a2932b91f05d9"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
