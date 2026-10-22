@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "573dd1a29acec301ef50bdd7a80d3aeff5f500e402044bbc9f6199258edf5d4a",
   "runner_state": "armed",
-  "observed_at": "2026-10-22T18:32:48.817386+00:00",
+  "observed_at": "2026-10-22T19:26:37.179891+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -358,38 +358,38 @@
       {
         "agent": "jci_taipei",
         "surface": "claude",
-        "observed_at": "2026-10-23T02:20:37+08:00",
-        "receipt_sha256": "e383e1e99c8f652117ef9e03799f5240d3bbdd9c8f42ad1b79bc3d6a4ed4b9fc"
+        "observed_at": "2026-10-23T03:19:38+08:00",
+        "receipt_sha256": "dc93c60e76a5fd90433e5c1f4f73fac81101a67ad0bdce3ec7f4a23f7e408721"
       },
       {
         "agent": "ai_ziyaoastro",
         "surface": "claude",
-        "observed_at": "2026-10-23T02:24:36+08:00",
-        "receipt_sha256": "a2829dcab664589dbdc1ddf09dae0447ae066e1e8aa2f8633d0810731cd31244"
-      },
-      {
-        "agent": "ai_theater",
-        "surface": "claude",
-        "observed_at": "2026-10-23T02:27:55+08:00",
-        "receipt_sha256": "0e8c136af7375b392c4d43205f5752659f623a6c0ce5f027d374bc2af73fdb09"
+        "observed_at": "2026-10-23T03:18:05+08:00",
+        "receipt_sha256": "7815f39a5dc26f1caf463f55d1ce92bf6d6a5fc0ddceebe0782fb9d3d40390a8"
       },
       {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-23T02:27:07+08:00",
-        "receipt_sha256": "af0ac94d6ac4e2e9087fa22c4680023be04bd711de169a3499a6bab86853ad9e"
+        "observed_at": "2026-10-23T03:10:16+08:00",
+        "receipt_sha256": "3bf296038cb8c4f74764b6c1df66aa9eb2a43f06d977bccc1a88adcb85a0f106"
       },
       {
-        "agent": "ai_trader",
+        "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-23T02:20:11+08:00",
-        "receipt_sha256": "f15232da4b72181dc5360f1ef74d068af3165809072f8171a2051dd1010b137f"
+        "observed_at": "2026-10-23T03:12:25+08:00",
+        "receipt_sha256": "a9f184276c3f0e780d05caa329e223110519055017276b4eeae9925b9322d7b7"
+      },
+      {
+        "agent": "sinopac-trading-system",
+        "surface": "claude",
+        "observed_at": "2026-10-23T03:18:32+08:00",
+        "receipt_sha256": "a680a1297cb6ed952be2f2da1f01ed698a26f44e9c6141fb37628b4acced2cfb"
       },
       {
         "agent": "ai_metadata",
         "surface": "claude",
-        "observed_at": "2026-10-22T22:49:27+08:00",
-        "receipt_sha256": "7c61acec2ca30c5ab1b5fe7678c69d2f0147afa404f9ed9691f156a5e05c38c0"
+        "observed_at": "2026-10-23T03:13:17+08:00",
+        "receipt_sha256": "c5eeb951096eb435c1d4e6ce0c4b560c6ff5aeb6e20cdab294005acd171d53da"
       },
       {
         "agent": "ai_darkhero",
