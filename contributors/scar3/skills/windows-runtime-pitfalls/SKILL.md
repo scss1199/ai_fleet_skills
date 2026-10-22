@@ -36,11 +36,18 @@ parent_skill: ztm-verify-before-done
   gate 的 access log 只走 `logging.debug` 沒落地。做法：每個呼叫端自帶 source（或 User-Agent），服務端把 access
   log 寫到檔案；而「還原」類動作要綁自己那一代的 intent generation，資料裡出現更新的 stop/start 就不再還原
   （load_guard `off_generation`，test_load_guard_ladder_restore）。
+- **`python -I`（隔離模式，含 -E）會忽略 PYTHONIOENCODING，stdout 退回 cp950**：印中日文或符號直接
+  UnicodeEncodeError。要輸出非 ASCII 的腳本在程式內 `sys.stdout.reconfigure(encoding="utf-8")`，不要靠環境變數。
+  （ai_career 1c9ea56；2026-10-21 實測 `-I` 下 `sys.flags.ignore_environment=1`、encoding=cp950）
 
 ## 重試、鎖、排程
 
 - **重試一定要有上限與冷卻**，而且要讀回執行證據：一條永遠到不了 DONE 的鏈被 watchdog 每 5 分鐘重跑，一天 50–65 次、
   每次都登入外部服務。改了「判定」也要檢查它對重試迴圈的副作用。（ai_trader preopen-chain-retry-storm）
+- **會被逾時殺掉的週期步驟，開工前先寫 STARTED 狀態並對同一輸入指紋設冷卻**：否則子程序每次被 kill、狀態從沒寫入，
+  下一輪又從頭重跑（ai_trader strategy_lineage 300 s 逾時、一小時被殺 3 次）；預算快用完時不要再開新的一天／新的一批
+  （news_tone 保留 DAY_RESERVE_S）；前置條件已知不成立（owner 停用的 cockpit）就跳過，不要讓它每輪 rc=1。
+  （ai_trader workflow-audit-20261020）
 - **git 128 先查殘留 `.git/index.lock`**：確認沒有長命 git 行程後改名成 `index.lock.stale-<時間>.MIGRATED-bak`（不刪）。
   殘鎖會讓排程備份「靜默不 commit」好幾天。（ai_trader git-index-lock-stale）
 - **把 runtime 資料移出 git 追蹤後，checkout／reset 到舊 commit 會用舊版覆寫正在用的檔案**（資料庫、kill flag）；

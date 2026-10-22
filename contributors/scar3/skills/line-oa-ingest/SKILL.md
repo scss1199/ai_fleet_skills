@@ -45,6 +45,10 @@ before making access or completeness claims.
   It does not prove that the conversation never existed.
 - Do not call the saved inbox a complete two-way transcript unless outbound OA
   messages are independently persisted and verified.
+- Group member user IDs are 403 at this OA account level (jci_taipei probe
+  2026-10-22): only the member count and the profiles of people who spoke in a
+  saved event are obtainable. When a task says "add everyone in group X", say
+  this at intake, before any work, and offer speakers + count.
 
 ## Acquire linked social content
 

@@ -67,6 +67,8 @@ TEXTS = {
     "git_smart": HUB / "_skill" / "engines" / "git_smart.py",
     "llm_engine": HUB / "_skill" / "engines" / "_llm.py",
     "load_guard": HUB / "ai_darkhero" / "tray" / "scripts" / "load_guard.py",
+    "skill_jci_transfer": HUB / "_skill" / "fleet-skills" / "jci-drive-line-web-transfer" / "SKILL.md",
+    "skill_line_ingest": HUB / "_skill" / "fleet-skills" / "line-oa-ingest" / "SKILL.md",
 }
 
 # The architecture scan.  `requires` names the Lean theorem that must be PROVED for the verdict to stand;
@@ -351,6 +353,18 @@ ELEMENTS = [
     {"id": "EVO-theater-ladder-misattribution", "element": "ai_theater 2026-10-19 claim: load_guard resume_all posted background enabled=true on every shed/resume cycle 01:56-05:05 (generations 1026..1038)", "verdict": "REFINE",
      "requires": None, "detail": "refuted: ai_darkhero/tray/logs/load_guard.log holds 0 shed/resume/gate events in its whole history and tray/state/load_guard.json level=0 (pid 25200 since 10-15); the gate stamps every POST /api/subtitle/background as ai_theater_background and keeps no access log (logging.debug), so the real poster is UNKNOWN; windows-runtime-pitfalls now says: a shared source label cannot attribute a caller, read the suspect's own log before naming it, callers carry their own source, services persist access logs",
      "check_text": ("skill_runtime", "共用的來源標籤不能歸因呼叫者")},
+    # f1s-evolve 2026-10-21: ai_trader memory workflow-audit-20261020 (ledger bceda5503e7f)
+    {"id": "EVO-trader-consumer-or-delete", "element": "ai_trader 2026-10-20 owner 「沒成交沒學習就不要發 LINE」 + workflow audit: 10-19 digest said 「當日增減 UNKNOWN / 0 筆」, 36 dead files removed, ORB-family in-session machinery runs 163x/day with every strategy NOT_QUALIFIED, hub efficiency tools gave no seat-level signal", "verdict": "REFINE",
+     "requires": None, "detail": "mtm-mto-first ③ step 2 applied to periodic work and notifications: name the consumer before adding a scheduled step, remove a lane's scripts in the same change that records its verdict, push notifications only on a new fact (fill or verdict) and suppress 0/UNKNOWN digests with a reason, measure seat waste from the seat's own logs, list structural idle work for the owner instead of retiring it; evidence ai_trader memory workflow-audit-20261020",
+     "check_text": ("skill_method", "講出誰讀它的輸出")},
+    {"id": "EVO-trader-timeout-started-state", "element": "ai_trader 2026-10-20: strategy_lineage TimeoutExpired x9 (300 s kill, state never written, retried every tick), news_tone TimeoutExpired x41, autonomy_acceptance rc=1 x286 while the owner had stopped the cockpit", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls 重試: write STARTED state before the work and back off on the same input fingerprint, keep a budget reserve before starting a new unit, skip a step whose known precondition is off; extends the existing retry-cap rule; evidence ai_trader memory workflow-audit-20261020",
+     "check_text": ("skill_runtime", "開工前先寫 STARTED 狀態")},
+    {"id": "EVO-burnin-duplicate-20261021", "element": "hub-root burnin-subtitle-ocr-learning proposal re-sent 2026-10-21 and 2026-10-22 (ledger 42161c5cf4fd)", "verdict": "INFO",
+     "requires": None, "detail": "already integrated 2026-10-19 as EVO-theater-cpu-thread-cap and EVO-theater-fansub-corpus (thread cap, HSV mask, fansub-as-style); nothing new in the memory, no text added"},
+    # f1s-evolve 2026-10-22: ai_trader memory matrix-lane-v21-two-boards-20261018 re-sent (ledger 6ce432243457)
+    {"id": "EVO-matrix-v21-duplicate-20261022", "element": "ai_trader matrix-lane-v21-two-boards-20261018 proposal re-sent (ledger 6ce432243457)", "verdict": "INFO",
+     "requires": None, "detail": "already integrated 2026-10-18 as EVO-trader-narrow-output (mtm-mto-first: find the parameter that produced the narrowness first) and EVO-trader-v21-seat-local (verdict numbers stay seat-local); memory unchanged since (modified 2026-10-17T19:33Z), no text added"},
     # 2026-10-20 (two YouTube videos reverse-learned; shipped 1.45.61 without audit rows — bound here so the
     # three passages are mechanically guarded like every other F1S text)
     {"id": "EVO-lean-public-record", "element": "lean-math-prover: what the public record says about AI + formal mathematics (IMO 2024 AlphaProof silver only after human Lean translation, days of compute)", "verdict": "REFINE",
@@ -362,6 +376,32 @@ ELEMENTS = [
     {"id": "EVO-pool-blocked-source-ladder", "element": "mtm-api-pool-offload: 封鎖源的退路階梯 — when one source blocks (百度 403 shell, wiki disambiguation 404) step down the ladder before reporting not found", "verdict": "REFINE",
      "requires": None, "detail": "built-in browser get_page_text for walled pages, MediaWiki search API before guessing titles; a first failure is never 查無",
      "check_text": ("skill_pool", "封鎖源的退路階梯")},
+    # 2026-10-21 ai_career proposals
+    {"id": "EVO-career-linkedin-jobs-pointer", "element": "ai_career: linkedin-jobs skill (built-in browser LinkedIn sign-in, voyager API, guest fallback, 104 via built-in browser)", "verdict": "REFINE",
+     "requires": None, "detail": "skill already exists seat-local at ai_darkhero/.claude/skills/linkedin-jobs (no new .md per ⑥); browser-login-handoff step 2 now points every seat to it so a signed-in site is probed before any login handoff",
+     "check_text": ("skill_login", "LinkedIn 職缺讀法")},
+    {"id": "EVO-career-python-I-encoding", "element": "ai_career: python -I ignores PYTHONIOENCODING -> cp950 UnicodeEncodeError on CJK output", "verdict": "REFINE",
+     "requires": None, "detail": "verified 2026-10-21 (-I: ignore_environment=1, stdout cp950); windows-runtime-pitfalls: reconfigure stdout inside the script; the CV variant flow part is ai_career-only and stays in that seat",
+     "check_text": ("skill_runtime", "會忽略 PYTHONIOENCODING")},
+    # 2026-10-22 jci_taipei proposal
+    {"id": "EVO-latency-number-needs-proof", "element": "jci_taipei: generic latency-probe pattern (per-target correctness proof, repeated rounds, saved run compared with previous)", "verdict": "REFINE",
+     "requires": None, "detail": "verified 2026-10-22: both probes exist (page_latency_probe.py 7a3f7c5: adaptive rounds, 429/503 backoff, vs_prev regressed; llm_provider_probe.py: code word, ok-rate then median); run 20261022T035229Z 26/26 pages with proof, /events p50 1541.8 ms; ztm-verify-before-done gains the latency-evidence rule, no new skill or file",
+     "check_text": ("skill_verify", "延遲數字的證據")},
+    # 2026-10-22 jci_taipei permission/skill gaps (memory jci-write-paths, commits 356aa86/756a78f)
+    {"id": "EVO-jci-roster-write-path", "element": "jci_taipei: member-sheet + website Drive-registry rows missing from the credential table; GAS overwrite of 姓名 assumed impossible", "verdict": "REFINE",
+     "requires": None, "detail": "verified 2026-10-22 in RosterSheetMerge.gs (_isOverwriteCol_ needs overwrite_roles; empty value returns early, only 備註 clears) and sync_members_to_sheet.push_via_gas; credential table gains both rows and the grep-the-handler-before-impossible rule",
+     "check_text": ("skill_jci_transfer", "先 grep 那個 handler 有沒有這個欄位")},
+    {"id": "EVO-login-stale-realm", "element": "jci_taipei: sso_browser.py check google.cloud.console ok:false (stale profile), re-seed needs a headful window", "verdict": "REFINE",
+     "requires": None, "detail": "browser-login-handoff §2: a stale Edge realm is not login evidence; the built-in browser probe is the single route and re-seeding is not attempted (no-popup red line kept)",
+     "check_text": ("skill_login", "舊的 Edge profile 檢查不算登入證據")},
+    {"id": "EVO-proof-publish-read-only", "element": "jci_taipei: PROOF publish gate denied a pure read naming a dot-env file and a public path", "verdict": "REFINE",
+     "requires": None, "detail": "claude-proof-hook: a served-directory path alone now needs a write/copy/move verb in the shell command; deploy symbols, deploy commands, file hosts and Write/Edit into public stay gated; tests/test_proof_publish_gate.py 17 passed incl. the read and write controls",
+     "check_text": ("proof_hook", "PUBLIC_PATH_ONLY")},
+    {"id": "EVO-line-group-member-403", "element": "jci_taipei: LINE OA group member IDs 403 at this account level", "verdict": "REFINE",
+     "requires": None, "detail": "line-oa-ingest boundary list + jci credential table: only member count and speakers' profiles; said at intake before work",
+     "check_text": ("skill_line_ingest", "Group member user IDs are 403")},
+    {"id": "EVO-automode-classifier-rejected", "element": "jci_taipei: let one in-chat go-ahead cover the auto-mode classifier for a whole verify step", "verdict": "INFO",
+     "requires": None, "detail": "rejected: the classifier is Claude Code harness permission policy (settings.json, out of F1S scope); widening a go-ahead across tool calls would loosen an authorization boundary; no text added"},
 ]
 
 
