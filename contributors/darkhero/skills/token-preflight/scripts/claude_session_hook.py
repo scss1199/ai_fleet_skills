@@ -11,6 +11,7 @@ STATUS=HUB/"_registry"/"token-preflight"/"claude-hook-status.json"
 T1_DELIVERY=HUB/"_registry"/"token-preflight"/"t1-delivery"
 CHARTER_DELIVERY=HUB/"_registry"/"token-preflight"/"charter-delivery"
 CODEX_STATUS=HUB/"_registry"/"token-preflight"/"codex-hook-status.json"
+MACHINE_EVENT_TAGS=("<task-notification>","<side-sessions-event>","<ci-monitor-event>")
 
 
 def _read_hook_input(stream) -> dict:
@@ -270,6 +271,9 @@ def _charter_refresh(surface_id: str, session_id: str, cwd: str, *, at_start: bo
         return ""
 
 
+_SEAT_CACHE: dict[tuple[str, str], str] = {}
+
+
 def _seat_for_cwd(cwd: str) -> str:
     """Seat name for a hook cwd: registered seat (project-matrix, longest path prefix, hub root ->
     local curator) -> nearest `ai_*` ancestor inside the hub -> basename.
@@ -277,6 +281,13 @@ def _seat_for_cwd(cwd: str) -> str:
     The old rule was basename(cwd), so a shell that had drifted into
     ai_darkhero/evidence/<topic> stamped the intake with agent="<topic>" (phantom seat,
     2026-10-12). Every step fails open to the next one; this never raises."""
+    key = (str(HUB), str(cwd))
+    if key not in _SEAT_CACHE:
+        _SEAT_CACHE[key] = _resolve_seat(cwd)
+    return _SEAT_CACHE[key]
+
+
+def _resolve_seat(cwd: str) -> str:
     base = Path(cwd).name
     try:
         projects_path = HUB / "_skill" / "engines" / "_projects.py"
@@ -382,9 +393,10 @@ RECIPE = {
 def _proof_recurrence(cwd: str) -> str:
     """F1S 強制思考 B (2026-10-19): the class this seat keeps getting blocked for, said BEFORE it acts. Counts
     PROOF blocks for this seat over the last RECURRENCE_DAYS from _registry/proof/log.jsonl; one line for the top
-    class when it reached RECURRENCE_MIN. Never raises."""
+    class when it reached RECURRENCE_MIN. Both sides go through _seat_for_cwd: by basename a hub-root shell read
+    as seat `ai_workspace` and a tray/ subdir as `tray`, so the line named a phantom seat (2026-10-23). Never raises."""
     import time as _time
-    seat = (cwd or "").replace("\\", "/").rstrip("/").split("/")[-1]
+    seat = _seat_for_cwd(cwd) if (cwd or "").strip() else ""
     log = HUB / "_registry" / "proof" / "log.jsonl"
     if not seat or not log.is_file():
         return ""
@@ -405,12 +417,13 @@ def _proof_recurrence(cwd: str) -> str:
                 d = json.loads(line)
             except ValueError:
                 continue
-            if (d.get("cwd") or "").replace("\\", "/").rstrip("/").split("/")[-1] != seat:
-                continue
             try:
                 if _time.mktime(_time.strptime(d.get("ts", ""), "%Y-%m-%dT%H:%M:%S")) < cut:
                     continue
             except (ValueError, TypeError):
+                continue
+            row_cwd = str(d.get("cwd") or "")
+            if not row_cwd.strip() or _seat_for_cwd(row_cwd) != seat:
                 continue
             for v in d.get("violations") or []:
                 c = v.get("class")
@@ -473,10 +486,19 @@ def main():
     token_core=(f"TOKEN CORE {agent}: outcome | verification | state | next action | blocker. "
                 "Preflight before broad reads; PFKT only independent units; "
                 "AEX only measured residual; UNKNOWN fails closed.")
+    prompt=str(doc.get("prompt") or doc.get("user_message") or doc.get("message") or "")
+    # A background-task / side-session / CI notification opens a turn through UserPromptSubmit too. It is not an
+    # operator prompt: binding it as one made every notification turn "FAMES TURN — UNKNOWN … do not claim
+    # completion" plus ~2 KB of repeated contract text (2026-10-23, 6 notifications in one task). The operator's
+    # own prompt stays the bound intake; upgrades still arrive through the refreshes below and mid-turn.
+    machine_event=event == "UserPromptSubmit" and prompt.lstrip().startswith(MACHINE_EVENT_TAGS)
     try:
-        harness=_harness()
-        if event == "UserPromptSubmit":
-            prompt=str(doc.get("prompt") or doc.get("user_message") or doc.get("message") or "")
+        harness=None if machine_event else _harness()
+        if machine_event:
+            result={}
+            context=""
+            state="MACHINE_EVENT"
+        elif event == "UserPromptSubmit":
             if surface_id == "open-agent-standard":
                 runtime_event_observed=bool(
                     session_id.strip() and prompt.strip() and str(doc.get("turn_id") or "").strip()
@@ -525,7 +547,7 @@ def main():
     if event == "UserPromptSubmit":
         for update in (_t1_refresh(surface_id, session_id, at_start=False),
                        _charter_refresh(surface_id, session_id, cwd, at_start=False, transcript_path=transcript_path),
-                       _proof_carry(session_id), _proof_recurrence(cwd)):
+                       _proof_carry(session_id), "" if machine_event else _proof_recurrence(cwd)):
             if update:
                 context=(context+"\n"+update).strip()
     else:
@@ -533,8 +555,10 @@ def main():
         if session_source != "compact":
             # A fresh, resumed or cleared conversation loads its instruction files now; compaction may not.
             _charter_refresh(surface_id, session_id, cwd, at_start=True)
-    # The prompt or start just delivered the current contract: record it so the mid-turn check stays quiet.
-    _midturn_changed(surface_id, session_id, record_only=True)
+    # The prompt or start just delivered the current contract: record it so the mid-turn check stays quiet. A machine
+    # event delivered no contract, so an upgrade that landed before it must still reach the next tool call.
+    if not machine_event:
+        _midturn_changed(surface_id, session_id, record_only=True)
     t1_state=None
     if event == "SessionStart":
         # The hard lines must not depend on the FAMES harness above having succeeded.

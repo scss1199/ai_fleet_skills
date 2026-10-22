@@ -69,6 +69,10 @@ TEXTS = {
     "load_guard": HUB / "ai_darkhero" / "tray" / "scripts" / "load_guard.py",
     "skill_jci_transfer": HUB / "_skill" / "fleet-skills" / "jci-drive-line-web-transfer" / "SKILL.md",
     "skill_line_ingest": HUB / "_skill" / "fleet-skills" / "line-oa-ingest" / "SKILL.md",
+    "zat_verify_gate": HUB / "_skill" / "engines" / "zat-verify-gate.py",
+    "fames_fleet": HUB / "_skill" / "fleet-skills" / "fames" / "scripts" / "fames_fleet.py",
+    "pickup_verify": HUB / "_skill" / "engines" / "fleet-session-pickup-verify.py",
+    "skill_agc": HUB / "_skill" / "fleet-skills" / "agc-auto-goal-compact" / "SKILL.md",
 }
 
 # The architecture scan.  `requires` names the Lean theorem that must be PROVED for the verdict to stand;
@@ -402,6 +406,39 @@ ELEMENTS = [
      "check_text": ("skill_line_ingest", "Group member user IDs are 403")},
     {"id": "EVO-automode-classifier-rejected", "element": "jci_taipei: let one in-chat go-ahead cover the auto-mode classifier for a whole verify step", "verdict": "INFO",
      "requires": None, "detail": "rejected: the classifier is Claude Code harness permission policy (settings.json, out of F1S scope); widening a go-ahead across tool calls would loosen an authorization boundary; no text added"},
+    # 2026-10-23 f1s-evolve tick (ledger 8fcbf62f78bb, 338e25dad27d, f4c2b92671df)
+    {"id": "EVO-pfkt-hub-wide-template-verify", "element": "ai_trader: pfkt-fragment split template `pytest -q` run by zat-verify-gate at the hub root = workspace-wide pytest (2026-09-17)", "verdict": "REFINE",
+     "requires": None, "detail": "is_cmd_allowed refuses a bare pytest / py_compile . (no seat path) for mint, split and done; split reuses the caller's seat-scoped pytest verify; tests/test_pfkt_atomic_writes.py covers both",
+     "check_text": ("zat_verify_gate", "def _hub_wide_verify")},
+    {"id": "EVO-llm-probe-prod-key", "element": "ai_ziyaoastro: llm_provider_probe.py (8k system prompt + code word, Render prod key, rounds, ranking)", "verdict": "REFINE",
+     "requires": None, "detail": "probe already absorbed 2026-10-22 (EVO-latency-number-needs-proof); only the new part added: measure with the exact prod key and a real-size prompt, never api-matrix status or a one-word ping",
+     "check_text": ("skill_verify", "正式環境實際用的那把 key")},
+    {"id": "EVO-trader-credit-options-v23", "element": "ai_trader: v23 credit balance + option institutional OI research lane and FinMind keyless dataset list", "verdict": "INFO",
+     "requires": None, "detail": "rejected: seat-local research result (NOT_QUALIFIED verdict, dataset inventory); nothing generalizes beyond ai_trader's own memory; no text added"},
+    # 2026-10-23 curator feedback sweep (operator 「撈取所有對f1s和ai_darkhero整套系統的反饋開始進行升級…確保自動套用」):
+    # 1615 operator messages from every Claude + Codex transcript, 571 about agent/system behaviour, 100 themes.
+    {"id": "EVO-run-until-done-meta-rows", "element": "run-until-done: per-prompt cap never engaged (93 of 93 logged blocks read 1/2)", "verdict": "REFINE",
+     "requires": "F1SCore.blocks_bounded", "detail": "the hook's own isMeta reason row counted as a new operator prompt; the human-prompt test now skips isMeta/compact rows like PROOF does; tests/test_run_until_done_turn_cap.py fails on the old hook",
+     "check_text": ("run_until_done_hook", "Same filter as claude-proof-hook.py")},
+    {"id": "EVO-notification-turn-not-a-prompt", "element": "session hook: every background-task notification bound as an UNKNOWN operator turn and re-sent ~2 KB of contract", "verdict": "REFINE",
+     "requires": None, "detail": "task / side-session / CI notifications skip the turn binding and recurrence line; T1/charter refresh and PROOF carry-over still run, and the mid-turn signature is not recorded so an upgrade still reaches the next tool call",
+     "check_text": ("session_hook", "MACHINE_EVENT_TAGS")},
+    {"id": "EVO-recurrence-phantom-seat", "element": "session hook: PROOF recurrence keyed seats by cwd basename (hub root read as `ai_workspace`, tray/ as `tray`)", "verdict": "REFINE",
+     "requires": None, "detail": "both the session cwd and each logged block's cwd resolve through _seat_for_cwd (project-matrix, hub root -> curator), cached per cwd",
+     "check_text": ("session_hook", "Both sides go through _seat_for_cwd")},
+    {"id": "EVO-attest-clone-behind", "element": "fleet-skill-pulse red 11 runs: a published capability receipt stayed in the shared clone's working tree while its branch was behind", "verdict": "REFINE",
+     "requires": None, "detail": "attest-capabilities puts the receipt path back to HEAD when the clone could not follow the push, so the publisher's fast-forward is no longer refused; _harness/tests/test_capability_receipt_clone.py fails on the old engine",
+     "check_text": ("fames_fleet", "clone_behind")},
+    {"id": "EVO-pickup-verify-rolling", "element": "fleet-contract-sync verify demanded all 26 seats in one 360 s run; HubClock riders share 2 logical CPUs (~50 s/seat), so 758 of 1485 runs failed UNKNOWN", "verdict": "REFINE",
+     "requires": None, "detail": "each seat is judged on its newest real probe within ROLLING_SECONDS (this run or the rotation); a FAIL stays a FAIL, a seat no run reached stays UNKNOWN",
+     "check_text": ("pickup_verify", "ROLLING_SECONDS")},
+    {"id": "EVO-sibling-session-merge", "element": "operator asked five times (10-15..10-21) to merge a seat's other conversations and close them", "verdict": "REFINE",
+     "requires": None, "detail": "agc-auto-goal-compact gets the procedure: find, read the last report, re-verify claims as UNKNOWN, park the merged goal, archive (reversible) only idle sessions",
+     "check_text": ("skill_agc", "同座位多對話收斂")},
+    {"id": "EVO-feedback-stream-not-automated", "element": "automatic operator-feedback -> f1s-evolve stream (f1s-harvest kind `feedback`)", "verdict": "INFO",
+     "requires": None, "detail": "rejected for now: lexical coverage cannot tell an integrated directive from a new one (「禁止寫垃圾 .md」 scored 0.14); 65 of 73 directive messages fell under 0.3, so the stream would flood evolve with covered items; sweeps stay curator-run like this one"},
+    {"id": "EVO-codex-hook-silent", "element": "Codex surface: hooks configured with trusted-hash entries, yet no October Codex session carries F1S context; last Codex hook fire 2026-09-29", "verdict": "INFO",
+     "requires": None, "detail": "recorded, not fixed: the October Codex runs were scripted exec calls; re-trusting hooks inside Codex is the operator's step; Claude Code (every cwd) is the live surface"},
 ]
 
 

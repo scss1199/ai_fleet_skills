@@ -117,6 +117,16 @@ python %AI_WORKSPACE%\_skill\engines\goal_compact.py park <agent> "<milestone>"
 # 3) 若主題切換 → 新 chat + @HANDOFF / park 檔
 ```
 
+## 同座位多對話收斂（「統一其他對話的待辦…關掉其他對話」）
+
+operator 2026-10-15～10-21 在 ai_trader、ai_career、ai_darkhero、jci_taipei 五次手動下這個指令。照下面做，不再問：
+
+1. 找：桌面版 `list_sessions`（同一 cwd／座位，含閒置與已封存）；其他 surface 看 `~/.claude/projects/<cwd-slug>/*.jsonl` 的修改時間。
+2. 讀：每個對話只讀最後一則 wrap-up／回覆和它最後一個 operator 指令（`export_transcript` 或 transcript 尾端）。抽出未完成待辦、未驗證主張（當 UNKNOWN 重驗，不抄成「已完成」）、分支或未推的 commit、還在跑的背景工作。
+3. 併：寫進本對話計畫，再 `goal_compact.py park <seat> "merged <n> sessions"`，讓 AGC compact 帶著合併後的目標。
+4. 關：還有背景工作、或在等 operator 回答的對話留著；其餘 `archive_session`（可 unarchive，不是刪除）。
+5. 回報：一行列出併了哪些、關了哪些、留下哪些和原因。
+
 ## 命令（TR0）
 
 ```powershell

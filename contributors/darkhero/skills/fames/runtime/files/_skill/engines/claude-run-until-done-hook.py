@@ -218,6 +218,10 @@ def _blocks(row: dict) -> list:
 def _is_human_prompt(row: dict) -> bool:
     if row.get("type") != "user":
         return False
+    # A block's own reason comes back as an isMeta user row; counting it as a new prompt reset the per-prompt
+    # cap on every push (93 of 93 logged blocks read 1/2, 2026-10-11..23). Same filter as claude-proof-hook.py.
+    if any(row.get(flag) for flag in ("isMeta", "isCompactSummary", "isVisibleInTranscriptOnly")):
+        return False
     blocks = _blocks(row)
     if not blocks:
         return False
