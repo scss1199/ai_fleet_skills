@@ -326,15 +326,18 @@ MIDTURN_WATCH=("_registry/fames-protocol.json","_registry/rules-blueprint.json",
                "_skill/fleet-skills/fames/runtime/manifest.json")
 
 
-def _midturn_changed(surface_id: str, session_id: str, *, record_only: bool=False) -> bool:
+def _midturn_changed(surface_id: str, session_id: str, *, record_only: bool=False, agent_id: str="") -> bool:
     """operator 2026-10-15: an F1S upgrade must reach a long task mid-turn, not only at its next prompt.
     Cheap: stat() of the files an upgrade rewrites, compared with what this session last saw. The first call
-    of a session only records (its prompt already carried the current contract). Never raises."""
+    of a session only records (its prompt already carried the current contract). A subagent shares the session
+    id, so it is counted on its own (`agent_id` from the hook input): on 2026-10-23 an ai_nuwa subagent took the
+    one-shot update and the main conversation never got it. Never raises."""
     try:
         import hashlib
         sig="|".join("%s:%s"%(p.stat().st_mtime_ns,p.stat().st_size) if p.is_file() else "-"
                      for p in (HUB/rel for rel in MIDTURN_WATCH))
-        key=hashlib.sha256(f"{surface_id}\0{session_id}".encode("utf-8")).hexdigest()[:24]
+        scope=f"{surface_id}\0{session_id}"+(f"\0{agent_id}" if agent_id else "")
+        key=hashlib.sha256(scope.encode("utf-8")).hexdigest()[:24]
         path=HUB/"_registry"/"fames-hot"/f"midturn-{key}.json"
         try:
             seen=json.loads(path.read_text(encoding="utf-8")).get("sig")
@@ -353,7 +356,7 @@ def _midturn(doc) -> int:
     """PostToolUse fast path: print {} unless F1S changed since this session last saw it."""
     session_id=str(doc.get("session_id") or "")
     surface_id="open-agent-standard" if str(doc.get("turn_id") or "").strip() else "claude"
-    if not session_id or not _midturn_changed(surface_id,session_id):
+    if not session_id or not _midturn_changed(surface_id,session_id,agent_id=str(doc.get("agent_id") or "")):
         print("{}")
         return 0
     cwd=str(doc.get("cwd") or os.getcwd())
