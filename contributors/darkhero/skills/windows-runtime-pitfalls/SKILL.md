@@ -39,6 +39,12 @@ parent_skill: ztm-verify-before-done
 - **`python -I`（隔離模式，含 -E）會忽略 PYTHONIOENCODING，stdout 退回 cp950**：印中日文或符號直接
   UnicodeEncodeError。要輸出非 ASCII 的腳本在程式內 `sys.stdout.reconfigure(encoding="utf-8")`，不要靠環境變數。
   （ai_career 1c9ea56；2026-10-21 實測 `-I` 下 `sys.flags.ignore_environment=1`、encoding=cp950）
+- **`ctypes.windll.<dll>` 的函式指標全行程共用一份，`.argtypes` 誰最後設誰算。** 兩個模組各自把
+  `user32.BeginPaint.argtypes` 設成 `POINTER(自己的 PAINTSTRUCT)`，另一個模組的呼叫就 ArgumentError（同名 Structure
+  仍是不同型別）；在 WNDPROC 裡例外被吞（pythonw 沒 stderr），WM_PAINT 永不 validate、訊息迴圈空轉（tray 睡眠
+  overlay 執行緒 139.6→2.2 CPU-s／600 s）。共用 argtypes 的結構指標一律 `ctypes.c_void_p`（`byref()` 照用），或用私有
+  `ctypes.WinDLL("user32")`。診斷：`py-spy dump --native` 頂端是 NtUserPeekMessage／DispatchMessage，再從別的行程對其
+  視窗呼叫 GetUpdateRect（更新區永遠不空）。（ai_darkhero 21550c71 sleep_mode/hub_tray）
 
 ## 重試、鎖、排程
 
@@ -72,6 +78,12 @@ parent_skill: ztm-verify-before-done
   索引 23.1 s、cmdline 全掃 19.8 s）。每 tick 只呼叫一次 `psutil._psplatform.ppid_map()`；執行緒數與「拒絕」的 cmdline
   按行程生命週期快取（拒絕不會變可讀）；`cpu_percent` 只 prime 要讀的列；先用快取的名稱過濾。（hub memory
   tray-process-scan-cost；ai_darkhero 27be6919、e6ed3b33）
+  `create_time()` 對受保護行程同樣退回整機快照（每次 0.069 s）：放進 `process_iter([... "create_time"])` 讓冷掃
+  15.1 s 裡 10.9 s 花在它身上。只對通過 cmdline 過濾的列才讀；行程存活期間 process_iter 回傳同一個 Process 物件，
+  可直接當快取鍵（冷掃降到 4.4–5.0 CPU-s；ai_darkhero 739740e7）。
+- **就地退役檔案的佇列目錄（改名 `*.MIGRATED-bak`）會無限長大**：`_registry/ship-queue` 累積 26,138 筆，每次 glob
+  找有效檔都是 O(目錄)（每次探測 0.17 CPU-s）。只在目錄 mtime 變動時重列，且變動未滿 2 s 時下次仍重列（檔案時間
+  的刻度比連續寫入粗）；退役檔要清掉仍是 operator 的事（不刪紅線）。（ai_darkhero 21550c71 hub_tray）
 - **互動／UI 行程（tray）繼承父行程的優先權與 affinity**：在 100% 負載下以 BelowNormal、2 CPU 起來，8 分鐘以上才出
   圖示、選單打不開。啟動時重設成 Normal／全部 CPU，並在任何 CPU allocator 中豁免它；豁免清單放永遠 union 的常數——
   設定檔的清單若「取代」預設清單，會靜默丟掉預設豁免。

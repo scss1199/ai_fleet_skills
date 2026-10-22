@@ -425,7 +425,7 @@ ELEMENTS = [
      "requires": "F1SCore.blocks_bounded", "detail": "the hook's own isMeta reason row counted as a new operator prompt; the human-prompt test now skips isMeta/compact rows like PROOF does; tests/test_run_until_done_turn_cap.py fails on the old hook",
      "check_text": ("run_until_done_hook", "Same filter as claude-proof-hook.py")},
     {"id": "EVO-notification-turn-not-a-prompt", "element": "session hook: every background-task notification bound as an UNKNOWN operator turn and re-sent ~2 KB of contract", "verdict": "REFINE",
-     "requires": None, "detail": "task / side-session / CI notifications skip the turn binding and recurrence line; T1/charter refresh and PROOF carry-over still run, and the mid-turn signature is not recorded so an upgrade still reaches the next tool call",
+     "requires": None, "detail": "task / side-session / CI notifications and cross-session peer messages skip the turn binding and recurrence line; T1/charter refresh and PROOF carry-over still run, and the mid-turn signature is not recorded so an upgrade still reaches the next tool call",
      "check_text": ("session_hook", "MACHINE_EVENT_TAGS")},
     {"id": "EVO-recurrence-phantom-seat", "element": "session hook: PROOF recurrence keyed seats by cwd basename (hub root read as `ai_workspace`, tray/ as `tray`)", "verdict": "REFINE",
      "requires": None, "detail": "both the session cwd and each logged block's cwd resolve through _seat_for_cwd (project-matrix, hub root -> curator), cached per cwd",
@@ -479,6 +479,12 @@ ELEMENTS = [
     {"id": "EVO-hub-subdir-seat", "element": "session hook: a curator shell in the hub's _registry folder was labelled seat `_registry` (TOKEN CORE _registry)", "verdict": "REFINE",
      "requires": None, "detail": "a cwd inside the hub but in no ai_* seat resolves to the hub-root seat (local curator); outside the hub stays basename; tests/test_proof_recurrence.py fails on the shipped 1.45.69 hook",
      "check_text": ("session_hook", "Hub infrastructure (_registry, _skill, _lean...) belongs to the hub-root seat")},
+    {"id": "EVO-ctypes-shared-argtypes", "element": "ai_darkhero: two modules set user32.BeginPaint.argtypes to their own POINTER(PAINTSTRUCT); swallowed ArgumentError in a WNDPROC spun the message pump", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls: shared windll argtypes take c_void_p for struct pointers (or a private WinDLL), diagnose with py-spy --native + GetUpdateRect; evidence ai_darkhero 21550c71, sleep-mode thread 139.6 -> 2.2 CPU-s/600 s",
+     "check_text": ("skill_runtime", "函式指標全行程共用一份")},
+    {"id": "EVO-psutil-create-time-queue-dir", "element": "ai_darkhero: psutil create_time snapshot fallback (10.9 of 15 s cold scan); ship-queue dir with 26,138 retired files globbed per probe", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls: read create_time only after the cmdline filter (Process object as cache key); re-list a retire-in-place queue dir only on mtime change with a 2 s settle window; evidence ai_darkhero 739740e7, 21550c71, tests tray/tests/test_tray_process_scan_cost.py",
+     "check_text": ("skill_runtime", "就地退役檔案的佇列目錄")},
 ]
 
 
