@@ -75,6 +75,8 @@ TEXTS = {
     "skill_agc": HUB / "_skill" / "fleet-skills" / "agc-auto-goal-compact" / "SKILL.md",
     "evolve_engine": HUB / "_skill" / "engines" / "f1s-evolve-tick.py",
     "skill_deploy_cf": HUB / "_skill" / "fleet-skills" / "deploy-nextjs-cloudflare" / "SKILL.md",
+    "skill_sync_engine": HUB / "_skill" / "engines" / "fleet-skill-sync.py",
+    "bus_engine": HUB / "_skill" / "engines" / "_bus.py",
 }
 
 # The architecture scan.  `requires` names the Lean theorem that must be PROVED for the verdict to stand;
@@ -450,6 +452,30 @@ ELEMENTS = [
     {"id": "EVO-worker-ab-staged-version", "element": "jci_taipei addendum (b): an A/B against an unstaged uploaded Worker version measures the old version", "verdict": "REFINE",
      "requires": None, "detail": "deploy-nextjs-cloudflare VERIFY: the B side counts only when the version-scoped tail shows scriptVersion.id = candidate (staged at 0%)",
      "check_text": ("skill_deploy_cf", "an unstaged \"B\" silently measures A")},
+    # 2026-10-23 f1s-evolve tick (ai_darkhero proposals: tray retirement, hook FPs, psutil, audio, _bus id collision)
+    {"id": "EVO-retire-on-evidence", "element": "ai_darkhero: tray cleanup 42 -> 25 actions by per-feature log signatures over full history", "verdict": "REFINE",
+     "requires": None, "detail": "mtm-mto-first step 2 gets the five-part retirement procedure (own log signature, full rotated history, parked != retired, safety couplings, _delete + sha256 MANIFEST)",
+     "check_text": ("skill_mto", "憑證據退役，不憑沉默")},
+    {"id": "EVO-run-until-done-noun-phrase", "element": "run-until-done matched 才跑 inside the noun phrase 只在通話時才跑的程式", "verdict": "REFINE",
+     "requires": None, "detail": "the 再/才 + verb pending pattern refuses a following 的; tests/test_bus_send_unique_id.py keeps 我才跑驗證 blocked",
+     "check_text": ("run_until_done_hook", "(?:再|才)(?:檢查|確認|驗證|回報|繼續|看|跑)(?!的)")},
+    {"id": "EVO-proof-capability-blocker-fp", "element": "ai_darkhero: PROOF tagged the tray capability reply as blocker", "verdict": "INFO",
+     "requires": None, "detail": "rejected: the current hook judges that reply as `decision` only (its last line asks 需要你決定：要不要我現在…做出來, a model step), which is a true positive; no blocker hit reproduces, so nothing is loosened"},
+    {"id": "EVO-operator-physical-step", "element": "ai_darkhero: 需要你決定 rejected twice for USB debugging / LINE mic steps only the operator can physically do", "verdict": "REFINE",
+     "requires": None, "detail": "f1s-intake §3: an operator-only physical / third-party-app step is one plain line plus a background waiter that verifies when it happens, never a decision; PROOF passes the plain line (no decision/handback hit)",
+     "check_text": ("skill_intake", "只有使用者能親手做的實體／第三方 App 步驟")},
+    {"id": "EVO-psutil-n2-ui-priority", "element": "ai_darkhero: psutil O(N^2) per-tick scans, tray inheriting BelowNormal/2-CPU affinity, py-spy wall samples", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls: ppid_map once per tick + caches, reset UI process priority with an always-unioned exemption, per-thread CPU via threads() deltas",
+     "check_text": ("skill_runtime", "psutil 在 Windows 的 O(N²) 陷阱")},
+    {"id": "EVO-audio-capture-call-detect", "element": "ai_darkhero: app-chosen devices, WASAPI session call detection, EXCLUDE loopback decay, synthetic e2e scope", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls gets an audio section; the whisper echo/pinyin and credit-phantom items stay seat-local (linecall memory)",
+     "check_text": ("skill_runtime", "INCLUDE（單一 App 樹）可靠")},
+    {"id": "EVO-bus-same-second-id", "element": "_bus.send id = int(time.time())-frm-k: same-second sends overwrote each other (2 of 4 F1S proposals lost)", "verdict": "REFINE",
+     "requires": None, "detail": "send claims the file with os.link and suffixes -2, -3...; inbox.py send reads the file back before printing sent and warns on control characters; tests/test_bus_send_unique_id.py",
+     "check_text": ("bus_engine", "Claim the name with os.link")},
+    {"id": "EVO-absorb-idempotent", "element": "fleet-skill-pulse re-stamped ~60 unchanged incubator files every 15 min, so every f1s-evolve run saw concurrent hub edits and held its ship", "verdict": "REFINE",
+     "requires": None, "detail": "absorb keeps an unchanged submission's SKILL.md and meta.json (original absorbed_at); a changed body is still rewritten; _harness/tests/test_fleet_skill_sync_dotdirs.py fails on the old engine",
+     "check_text": ("skill_sync_engine", "re-stamping it every 15 min")},
 ]
 
 

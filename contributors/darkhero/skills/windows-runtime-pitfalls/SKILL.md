@@ -67,9 +67,33 @@ parent_skill: ztm-verify-before-done
   STT lane 每 10 s 只拿到 5 CPU-s、25 分鐘音訊跑了 83 分鐘，看起來像「模型卡住」。一律 `RapidOCR(intra_op_num_threads=4)`
   這類明確上限；懷疑模型慢之前先看 CPU 配額。（hub-root burnin-subtitle-ocr-learning；ai_theater
   scripts/subtitle_burnin_learn.py）
+- **psutil 在 Windows 的 O(N²) 陷阱**：`Process.ppid()`、`num_threads()` 每次呼叫都重建整機快照；對拒絕存取的行程
+  讀 `cmdline()/cwd()/cpu_percent()` 走慢速拒絕路徑（每次 0.1–0.25 s）。每 tick 掃 ~470 個行程＝O(N²)（allocator 建
+  索引 23.1 s、cmdline 全掃 19.8 s）。每 tick 只呼叫一次 `psutil._psplatform.ppid_map()`；執行緒數與「拒絕」的 cmdline
+  按行程生命週期快取（拒絕不會變可讀）；`cpu_percent` 只 prime 要讀的列；先用快取的名稱過濾。（hub memory
+  tray-process-scan-cost；ai_darkhero 27be6919、e6ed3b33）
+- **互動／UI 行程（tray）繼承父行程的優先權與 affinity**：在 100% 負載下以 BelowNormal、2 CPU 起來，8 分鐘以上才出
+  圖示、選單打不開。啟動時重設成 Normal／全部 CPU，並在任何 CPU allocator 中豁免它；豁免清單放永遠 union 的常數——
+  設定檔的清單若「取代」預設清單，會靜默丟掉預設豁免。
+- **量每個執行緒的 CPU 用 `Process.threads()` 的 user+system 差值，再對應 `py-spy dump` 的執行緒名稱**；py-spy 的
+  wall 取樣含 GIL 等待，會指錯執行緒。
 - **逐幀跑昂貴辨識前先用便宜的變化偵測，而且偵測要對準目標區域的特徵。** 整幀灰階差分擋不住動態畫面
   （3061 幀仍要 1858 次 OCR）；改比對近白色字幕遮罩（HSV V≥200、S≤60，縮到 360×58，mean abs diff ≥4 才重辨識）
   降到 277 次、274 s。（同上）
+
+## 音訊擷取與通話偵測
+
+- **App 自己挑裝置**（LINE.ini 的 voip_mike_id 指向已拔掉的藍牙耳機，整通電話沒開麥克風）：錄全部麥克風加全部喇叭
+  loopback 混音，不要錄「預設裝置」。
+- **用 WASAPI session（pycaw）偵測通話**，不要信 ConsentStore LastUsedTime（本機 09-22 起凍結）。只認通話專用 App
+  （LineCall.exe、Zoom、Teams）的 render session 且音量表在動，10 s 內 3 次有聲才算開始（一次 blip 錄出 49 s 空檔），
+  再用 hold 撐過停頓；App 可能永遠掛著一個無聲的 ACTIVE session。手動開的錄音要能被自動模式接手（忘了關的手動錄音
+  擋掉所有自動開始 17 分鐘）。
+- **WASAPI process loopback：INCLUDE（單一 App 樹）可靠，EXCLUDE（除了某 App 以外）錄到一半退化成 2 ms 嗡聲**（重現 3 次）
+  → 「整台電腦的聲音」用裝置 loopback，App 的部分在下游扣掉。時鐘節拍的 mixer 底下，來源 reader 絕不能自己補靜音。
+  逐段定位故障：原始封包 → reader 單獨 → mixer 單獨 → 加併行麥克風 → 分開行程。
+- **合成端到端（ffmpeg／PowerShell 佔住麥克風）證明的是機制不是整合**：真實通話觀察到之前，回報要寫清楚驗證的是哪一個。
+  （hub memory linecall-asr-findings-20261019；ai_darkhero 7a07eca3、7d5f3f2e、f1d4e1b5、0948c6e8、082c860d）
 
 ## 程式可達性
 
