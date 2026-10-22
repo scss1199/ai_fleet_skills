@@ -73,6 +73,8 @@ TEXTS = {
     "fames_fleet": HUB / "_skill" / "fleet-skills" / "fames" / "scripts" / "fames_fleet.py",
     "pickup_verify": HUB / "_skill" / "engines" / "fleet-session-pickup-verify.py",
     "skill_agc": HUB / "_skill" / "fleet-skills" / "agc-auto-goal-compact" / "SKILL.md",
+    "evolve_engine": HUB / "_skill" / "engines" / "f1s-evolve-tick.py",
+    "skill_deploy_cf": HUB / "_skill" / "fleet-skills" / "deploy-nextjs-cloudflare" / "SKILL.md",
 }
 
 # The architecture scan.  `requires` names the Lean theorem that must be PROVED for the verdict to stand;
@@ -439,6 +441,15 @@ ELEMENTS = [
      "requires": None, "detail": "rejected for now: lexical coverage cannot tell an integrated directive from a new one (「禁止寫垃圾 .md」 scored 0.14); 65 of 73 directive messages fell under 0.3, so the stream would flood evolve with covered items; sweeps stay curator-run like this one"},
     {"id": "EVO-codex-hook-silent", "element": "Codex surface: hooks configured with trusted-hash entries, yet no October Codex session carries F1S context; last Codex hook fire 2026-09-29", "verdict": "INFO",
      "requires": None, "detail": "recorded, not fixed: the October Codex runs were scripted exec calls; re-trusting hooks inside Codex is the operator's step; Claude Code (every cwd) is the live surface"},
+    {"id": "EVO-evolve-prefix-word", "element": "f1s-evolve read only messages starting with 'F1S:'; jci_taipei's 'F1S addendum to …' sat unread", "verdict": "REFINE",
+     "requires": None, "detail": "pending() matches F1S as a leading word, case-insensitive; HubClock handoffs and other prefixes stay out; tests/test_f1s_evolve_tick.py",
+     "check_text": ("evolve_engine", "sat unread a day")},
+    {"id": "EVO-latency-content-freshness", "element": "jci_taipei addendum (a): a fast 200 served 2.5-month-old fallback data from a dead GAS source", "verdict": "REFINE",
+     "requires": None, "detail": "ztm-verify-before-done latency proof (1): a data page also needs fresh date/source, not just HTML",
+     "check_text": ("skill_verify", "快又 200 的過期備援不算對")},
+    {"id": "EVO-worker-ab-staged-version", "element": "jci_taipei addendum (b): an A/B against an unstaged uploaded Worker version measures the old version", "verdict": "REFINE",
+     "requires": None, "detail": "deploy-nextjs-cloudflare VERIFY: the B side counts only when the version-scoped tail shows scriptVersion.id = candidate (staged at 0%)",
+     "check_text": ("skill_deploy_cf", "an unstaged \"B\" silently measures A")},
 ]
 
 
