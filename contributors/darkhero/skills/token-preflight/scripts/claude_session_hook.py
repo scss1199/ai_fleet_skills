@@ -11,7 +11,7 @@ STATUS=HUB/"_registry"/"token-preflight"/"claude-hook-status.json"
 T1_DELIVERY=HUB/"_registry"/"token-preflight"/"t1-delivery"
 CHARTER_DELIVERY=HUB/"_registry"/"token-preflight"/"charter-delivery"
 CODEX_STATUS=HUB/"_registry"/"token-preflight"/"codex-hook-status.json"
-MACHINE_EVENT_TAGS=("<task-notification>","<side-sessions-event>","<ci-monitor-event>")
+MACHINE_EVENT_TAGS=("<task-notification>","<side-sessions-event>","<ci-monitor-event>","<cross-session-message")
 
 
 def _read_hook_input(stream) -> dict:
