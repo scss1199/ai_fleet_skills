@@ -1,0 +1,10 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261019T145102Z-04aeb4b3",
+  "host": "altos",
+  "started_at": "2026-10-22T11:11:02+00:00",
+  "kind": "probe",
+  "ok": false,
+  "blocker": "expired",
+  "finished_at": "2026-10-22T11:11:02+00:00"
+}
