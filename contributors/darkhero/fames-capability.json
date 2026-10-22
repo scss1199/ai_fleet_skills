@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "573dd1a29acec301ef50bdd7a80d3aeff5f500e402044bbc9f6199258edf5d4a",
   "runner_state": "armed",
-  "observed_at": "2026-10-22T15:15:34.554747+00:00",
+  "observed_at": "2026-10-22T15:45:39.569322+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -371,7 +371,7 @@
         "agent": "ai_career",
         "surface": "claude",
         "observed_at": "2026-10-22T15:33:48+08:00",
-        "receipt_sha256": "7161412b22257e746f0ff5f949bbc6f3c2de507f0c2117481aa3c69f7b121413"
+        "receipt_sha256": "8ab63a9f882937aec7963f8d9ae6719e3d922cddd8f95a1ed1a8858abed731c0"
       }
     ],
     "runtime_release_sha256": "e4c2c69676ebc5e3379312ee6fac5ea019c9645f311aae75671a2932b91f05d9"
