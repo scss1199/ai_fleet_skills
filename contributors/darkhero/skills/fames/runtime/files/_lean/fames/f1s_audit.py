@@ -485,6 +485,9 @@ ELEMENTS = [
     {"id": "EVO-psutil-create-time-queue-dir", "element": "ai_darkhero: psutil create_time snapshot fallback (10.9 of 15 s cold scan); ship-queue dir with 26,138 retired files globbed per probe", "verdict": "REFINE",
      "requires": None, "detail": "windows-runtime-pitfalls: read create_time only after the cmdline filter (Process object as cache key); re-list a retire-in-place queue dir only on mtime change with a 2 s settle window; evidence ai_darkhero 739740e7, 21550c71, tests tray/tests/test_tray_process_scan_cost.py",
      "check_text": ("skill_runtime", "就地退役檔案的佇列目錄")},
+    {"id": "EVO-midturn-subagent-scope", "element": "mid-turn F1S update was one-shot per session id; a subagent (same session id) consumed it and the main conversation never received it (ai_nuwa, 1.45.71)", "verdict": "REFINE",
+     "requires": None, "detail": "the delivery record is keyed by session id plus the hook input's agent_id (documented common input field, present inside a subagent), so the main thread and each subagent get the update once each; main-thread keys are unchanged",
+     "check_text": ("session_hook", "A subagent shares the session")},
 ]
 
 
