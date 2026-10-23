@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261023T183732Z-03b2a116",
+  "host": "scar3",
+  "started_at": "2026-10-23T18:41:01+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_scar3 cwd=ai_scar3 auth=cli_credentials_file 79.2s]\nVERIFIED 43a873b9e95cf2ed87982fe7aa5cf72e0a0e26bacd511b5ed28ef0a7fe8fc197 48425642 C:\\Users\\scss1\\darkhero-backup\\ai_career-20261024-021550.zip\n",
+  "stderr": "",
+  "finished_at": "2026-10-23T18:42:43+00:00"
+}
