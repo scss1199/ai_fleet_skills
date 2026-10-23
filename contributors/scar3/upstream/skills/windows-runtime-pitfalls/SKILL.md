@@ -1,0 +1,123 @@
+---
+name: windows-runtime-pitfalls
+description: >-
+  Fleet-wide runtime lessons reverse-learned from the seats (f1s-reverse-learning, 2026-10-16): Windows
+  socket/process/COM traps, stale locks, retry storms, time and data freshness guards, and code-reachability
+  traps that each cost a seat real incidents. Use when writing or debugging a local service, daemon, rider,
+  watchdog, HTTP handler, singleton helper, git automation, or anything that trusts a clock or a data feed.
+metadata:
+  fleet:
+    lane: zero-token-mechanism
+    secrets: none
+    scheduler: session
+    token_budget: zero
+parent_skill: ztm-verify-before-done
+---
+
+# windows-runtime-pitfalls — 各座位踩過的執行期坑（F1S 反向學習）
+
+每條都有一個座位真的出過事；括號是來源 memory，細節去那裡讀。
+
+## 行程、socket、COM
+
+- **單例本機服務一律 `allow_reuse_address = False`，啟動前先 health-probe 舊實例。** Windows 的 SO_REUSEADDR 讓多個
+  行程同時 bind 同一埠、輪流分流請求：症狀是同一 URL 間歇 404／舊行為、同秒互斥事件；用 `Get-CimInstance Win32_Process`
+  按命令列查同名行程。（hub-root windows-so-reuseaddr-multibind）
+- **HTTP handler 拒絕請求前先讀掉宣告的 body**（設上限與短 timeout，讀到的不使用）。沒讀完就關閉，Windows 會送 RST，
+  呼叫端拿到 10053/10054 而不是 403，看起來像「偶發環境問題」。（ai_trader http-refusal-before-body-read-rst）
+- **判斷行程死活時，AccessDenied ≠ 已死。** 權限不足（例：S4U／session 0 起的行程）要當 UNKNOWN，不能據此再起一份，
+  否則兩個 daemon 搶同一個 pid 檔一起跑。（ai_trader hubclock-duplicate-daemons）
+- **背景 python 會跳「應用程式錯誤」對話框**：CPython 3.12 的 `platform.*` 走 WMI COM thread，機器忙時崩潰 → csrss
+  硬錯誤框（短暫、無 Event 1000）。背景程序避免在 import 期呼叫 `platform.machine()/uname()` 這類查詢；零彈窗紅線。
+  （ai_trader zero-popup-python-crash-dialog；hub memory pythonw-platform-ver-flash）
+- **共用的來源標籤不能歸因呼叫者；指名之前先讀嫌疑方自己的 log。** ai_theater 的 gate 把每個 POST
+  /api/subtitle/background 都標成 `ai_theater_background`，2026-10-19 的提案據此指名 load_guard 重新 arm 字幕，
+  但 load_guard.log 全檔 0 筆 shed/resume/gate 事件、ladder level 一直是 0——真正的呼叫端至今 UNKNOWN，因為
+  gate 的 access log 只走 `logging.debug` 沒落地。做法：每個呼叫端自帶 source（或 User-Agent），服務端把 access
+  log 寫到檔案；而「還原」類動作要綁自己那一代的 intent generation，資料裡出現更新的 stop/start 就不再還原
+  （load_guard `off_generation`，test_load_guard_ladder_restore）。
+- **`python -I`（隔離模式，含 -E）會忽略 PYTHONIOENCODING，stdout 退回 cp950**：印中日文或符號直接
+  UnicodeEncodeError。要輸出非 ASCII 的腳本在程式內 `sys.stdout.reconfigure(encoding="utf-8")`，不要靠環境變數。
+  （ai_career 1c9ea56；2026-10-21 實測 `-I` 下 `sys.flags.ignore_environment=1`、encoding=cp950）
+- **`ctypes.windll.<dll>` 的函式指標全行程共用一份，`.argtypes` 誰最後設誰算。** 兩個模組各自把
+  `user32.BeginPaint.argtypes` 設成 `POINTER(自己的 PAINTSTRUCT)`，另一個模組的呼叫就 ArgumentError（同名 Structure
+  仍是不同型別）；在 WNDPROC 裡例外被吞（pythonw 沒 stderr），WM_PAINT 永不 validate、訊息迴圈空轉（tray 睡眠
+  overlay 執行緒 139.6→2.2 CPU-s／600 s）。共用 argtypes 的結構指標一律 `ctypes.c_void_p`（`byref()` 照用），或用私有
+  `ctypes.WinDLL("user32")`。診斷：`py-spy dump --native` 頂端是 NtUserPeekMessage／DispatchMessage，再從別的行程對其
+  視窗呼叫 GetUpdateRect（更新區永遠不空）。（ai_darkhero 21550c71 sleep_mode/hub_tray）
+
+## 重試、鎖、排程
+
+- **重試一定要有上限與冷卻**，而且要讀回執行證據：一條永遠到不了 DONE 的鏈被 watchdog 每 5 分鐘重跑，一天 50–65 次、
+  每次都登入外部服務。改了「判定」也要檢查它對重試迴圈的副作用。（ai_trader preopen-chain-retry-storm）
+- **會被逾時殺掉的週期步驟，開工前先寫 STARTED 狀態並對同一輸入指紋設冷卻**：否則子程序每次被 kill、狀態從沒寫入，
+  下一輪又從頭重跑（ai_trader strategy_lineage 300 s 逾時、一小時被殺 3 次）；預算快用完時不要再開新的一天／新的一批
+  （news_tone 保留 DAY_RESERVE_S）；前置條件已知不成立（owner 停用的 cockpit）就跳過，不要讓它每輪 rc=1。
+  （ai_trader workflow-audit-20261020）
+- **git 128 先查殘留 `.git/index.lock`**：確認沒有長命 git 行程後改名成 `index.lock.stale-<時間>.MIGRATED-bak`（不刪）。
+  殘鎖會讓排程備份「靜默不 commit」好幾天。（ai_trader git-index-lock-stale）
+- **把 runtime 資料移出 git 追蹤後，checkout／reset 到舊 commit 會用舊版覆寫正在用的檔案**（資料庫、kill flag）；
+  移出時列出所有還追蹤它的分支並警告。（ai_trader runtime-untracked-checkout-hazard）
+
+## 時間與資料新鮮度
+
+- **事件時間與收到時間比對前先確認本機時鐘已同步**（W32Time 可能幾週沒同步）；時鐘慢會讓「收到早於事件」這種檢查
+  靜默拒絕所有訊號，而且被去重的記錄把痕跡吃掉。（ai_trader orb-missed-signal-clock-skew）
+- **外部資料源過期時，下游要明確進入保守模式並把原因寫出來**，同時記錄「上游修好後多久才會生效」（節流快取）。
+  （ai_trader pcr-iv-stale-feed-blocks-longs）
+
+## CPU 配額與批次負載
+
+- **新加的 OCR／STT／影像批次工作先限執行緒，再量「每幀／每分鐘成本」，量完才放大。** onnxruntime 類引擎
+  （rapidocr_onnxruntime）預設 intra_op 執行緒＝全部核心：一個 OCR 行程吃掉 27 核，同機的 faster-whisper 與 4 條
+  STT lane 每 10 s 只拿到 5 CPU-s、25 分鐘音訊跑了 83 分鐘，看起來像「模型卡住」。一律 `RapidOCR(intra_op_num_threads=4)`
+  這類明確上限；懷疑模型慢之前先看 CPU 配額。（hub-root burnin-subtitle-ocr-learning；ai_theater
+  scripts/subtitle_burnin_learn.py）
+- **psutil 在 Windows 的 O(N²) 陷阱**：`Process.ppid()`、`num_threads()` 每次呼叫都重建整機快照；對拒絕存取的行程
+  讀 `cmdline()/cwd()/cpu_percent()` 走慢速拒絕路徑（每次 0.1–0.25 s）。每 tick 掃 ~470 個行程＝O(N²)（allocator 建
+  索引 23.1 s、cmdline 全掃 19.8 s）。每 tick 只呼叫一次 `psutil._psplatform.ppid_map()`；執行緒數與「拒絕」的 cmdline
+  按行程生命週期快取（拒絕不會變可讀）；`cpu_percent` 只 prime 要讀的列；先用快取的名稱過濾。（hub memory
+  tray-process-scan-cost；ai_darkhero 27be6919、e6ed3b33）
+  `create_time()` 對受保護行程同樣退回整機快照（每次 0.069 s）：放進 `process_iter([... "create_time"])` 讓冷掃
+  15.1 s 裡 10.9 s 花在它身上。只對通過 cmdline 過濾的列才讀；行程存活期間 process_iter 回傳同一個 Process 物件，
+  可直接當快取鍵（冷掃降到 4.4–5.0 CPU-s；ai_darkhero 739740e7）。
+- **就地退役檔案的佇列目錄（改名 `*.MIGRATED-bak`）會無限長大**：`_registry/ship-queue` 累積 26,138 筆，每次 glob
+  找有效檔都是 O(目錄)（每次探測 0.17 CPU-s）。只在目錄 mtime 變動時重列，且變動未滿 2 s 時下次仍重列（檔案時間
+  的刻度比連續寫入粗）；退役檔要清掉仍是 operator 的事（不刪紅線）。（ai_darkhero 21550c71 hub_tray）
+- **互動／UI 行程（tray）繼承父行程的優先權與 affinity**：在 100% 負載下以 BelowNormal、2 CPU 起來，8 分鐘以上才出
+  圖示、選單打不開。啟動時重設成 Normal／全部 CPU，並在任何 CPU allocator 中豁免它；豁免清單放永遠 union 的常數——
+  設定檔的清單若「取代」預設清單，會靜默丟掉預設豁免。
+- **量每個執行緒的 CPU 用 `Process.threads()` 的 user+system 差值，再對應 `py-spy dump` 的執行緒名稱**；py-spy 的
+  wall 取樣含 GIL 等待，會指錯執行緒。
+- **逐幀跑昂貴辨識前先用便宜的變化偵測，而且偵測要對準目標區域的特徵。** 整幀灰階差分擋不住動態畫面
+  （3061 幀仍要 1858 次 OCR）；改比對近白色字幕遮罩（HSV V≥200、S≤60，縮到 360×58，mean abs diff ≥4 才重辨識）
+  降到 277 次、274 s。（同上）
+
+- **加負載先拿 load grant（darkhero，operator 2026-10-24 兩次斷電）**：觸發斷電的是「負載突然加上去」，不是負載高
+  （01:12:54 A770 1 秒內 49→150 W，疊在約 165 W 的 CPU 上；比這台機器以前扛過的總負載還低）。所以整套測試、build、
+  模型載入、批次轉檔、字幕 lane 這類會加負載的工作，開始前先跑
+  `python C:/ai_workspace/ai_darkhero/tray/scripts/load_grant.py wait --owner <seat>/<task> --step <W>`（exit 0 才做；
+  或 `load_grant.py run --owner … --step … -- <cmd>`）。放行條件：近 60 s CPU+A770 功率 p90−p10 ≤ 30 W、這一步 ≤ 40 W、
+  加上去 ≤ 250 W、距上一次放行 ≥ 20 s、感測紀錄是新的。超過 40 W 的工作要自己分段加，每段再申請；被拒就等，不要硬跑。
+  托盤狀態列顯示目前功率與最新一次放行。
+
+## 音訊擷取與通話偵測
+
+- **App 自己挑裝置**（LINE.ini 的 voip_mike_id 指向已拔掉的藍牙耳機，整通電話沒開麥克風）：錄全部麥克風加全部喇叭
+  loopback 混音，不要錄「預設裝置」。
+- **用 WASAPI session（pycaw）偵測通話**，不要信 ConsentStore LastUsedTime（本機 09-22 起凍結）。只認通話專用 App
+  （LineCall.exe、Zoom、Teams）的 render session 且音量表在動，10 s 內 3 次有聲才算開始（一次 blip 錄出 49 s 空檔），
+  再用 hold 撐過停頓；App 可能永遠掛著一個無聲的 ACTIVE session。手動開的錄音要能被自動模式接手（忘了關的手動錄音
+  擋掉所有自動開始 17 分鐘）。
+- **WASAPI process loopback：INCLUDE（單一 App 樹）可靠，EXCLUDE（除了某 App 以外）錄到一半退化成 2 ms 嗡聲**（重現 3 次）
+  → 「整台電腦的聲音」用裝置 loopback，App 的部分在下游扣掉。時鐘節拍的 mixer 底下，來源 reader 絕不能自己補靜音。
+  逐段定位故障：原始封包 → reader 單獨 → mixer 單獨 → 加併行麥克風 → 分開行程。
+- **合成端到端（ffmpeg／PowerShell 佔住麥克風）證明的是機制不是整合**：真實通話觀察到之前，回報要寫清楚驗證的是哪一個。
+  （hub memory linecall-asr-findings-20261019；ai_darkhero 7a07eca3、7d5f3f2e、f1d4e1b5、0948c6e8、082c860d）
+
+## 程式可達性
+
+- **判斷死碼要把子程序派工（`python -m pkg.mod`、`scripts/x.py` 字串）、排程 rider 命令、launcher、以及把原始碼當文字
+  讀的測試都算進根節點**，只看 import 圖會把正在跑的東西列進清理名單。（ai_trader subprocess-dispatch-breaks-import-graph）
+- **控制第三方軟體先找它的設定語意（登錄檔／設定檔），不要先做 UI 模擬**；例：PotPlayer 切檔變大小是
+  `ScreenFitBySize`。（hub-root potplayer-fixed-window-registry）
