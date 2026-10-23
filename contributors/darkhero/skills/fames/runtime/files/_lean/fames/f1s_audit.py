@@ -488,6 +488,9 @@ ELEMENTS = [
     {"id": "EVO-midturn-subagent-scope", "element": "mid-turn F1S update was one-shot per session id; a subagent (same session id) consumed it and the main conversation never received it (ai_nuwa, 1.45.71)", "verdict": "REFINE",
      "requires": None, "detail": "the delivery record is keyed by session id plus the hook input's agent_id (documented common input field, present inside a subagent), so the main thread and each subagent get the update once each; main-thread keys are unchanged",
      "check_text": ("session_hook", "A subagent shares the session")},
+    {"id": "EVO-agc-should-compact-actor", "element": "ai_metadata: ctx_meter should_compact=true (n_now=245 vs n*=19.5) with no actor; proposal = UserPromptSubmit systemMessage telling the operator to run /compact", "verdict": "INFO",
+     "requires": None, "detail": "nag rejected (AGC rule 3 forbids hand /compact; mechanical work is never handed to the operator); skill names the three actors (cold-page refresh, PARK, autoCompactWindow from W*)",
+     "check_text": ("skill_agc", "的執行者只有三個")},
 ]
 
 
