@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261023T183732Z-03b2a116",
+  "target_host": "scar3",
+  "kind": "prompt",
+  "seat": "ai_scar3",
+  "prompt": "Backup pull for the operator (operator 2026-10-24: back up darkhero's interview data to scar3 now, because darkhero lost power twice tonight).\n\nRun exactly this in PowerShell on scar3 and nothing else:\n\n$d = \"$env:USERPROFILE\\darkhero-backup\"\nNew-Item -ItemType Directory -Force $d | Out-Null\nforeach ($f in 'ai_career-20261024-021550.zip', 'ai_career-20261024-021550.zip.sha256') { Invoke-WebRequest -UseBasicParsing -TimeoutSec 600 -Uri \"http://192.168.0.180:47851/$f\" -OutFile (Join-Path $d $f) }\n$z = Join-Path $d 'ai_career-20261024-021550.zip'\n\"{0} {1}\" -f (Get-FileHash -Algorithm SHA256 $z).Hash.ToLower(), (Get-Item $z).Length\n\nExpected SHA-256: 43a873b9e95cf2ed87982fe7aa5cf72e0a0e26bacd511b5ed28ef0a7fe8fc197 and 48425642 bytes.\nReply with exactly one line: \"VERIFIED <hash> <bytes> <full path>\" when both match, otherwise \"FAILED <reason>\".\nDo not open, extract, list, copy or upload the zip anywhere else; it holds private interview material.\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-10-23T18:37:32+00:00",
+  "expires_at": "2026-10-23T21:37:32+00:00"
+}
