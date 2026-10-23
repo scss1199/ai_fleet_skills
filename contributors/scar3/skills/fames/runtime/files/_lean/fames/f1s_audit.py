@@ -511,6 +511,12 @@ ELEMENTS = [
     {"id": "EVO-split-merge-skill", "element": "merge rule in the skill that the hot directive routes to", "verdict": "REFINE",
      "requires": None, "detail": "token-preflight: a report is a lead, not evidence; fold the verified part into the parent's result",
      "check_text": ("skill_preflight", "a report is a lead, not evidence")},
+    # 2026-10-23 operator: 「確認f1s能力自動同步且能夠自我疊代驗證程式碼的使用率與乾淨程度」. Audit (two subagents):
+    # 16 tracked .pyc forced in by ship-f1s `git add -f`, two live engines untracked, 4 engines with no reference at all,
+    # 48,663 never-pruned per-session hot states.
+    {"id": "EVO-ship-hygiene", "element": "F1S package hygiene checked on every ship", "verdict": "REFINE",
+     "requires": None, "detail": "ship-f1s step 0: no tracked caches, every hook/rider engine tracked, week-old session states moved to _delete/; caches excluded from the forced add",
+     "check_text": ("ship_engine", "Every ship checks the package it is about to commit")},
 ]
 
 
