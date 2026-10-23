@@ -501,6 +501,16 @@ ELEMENTS = [
      "check_text": ("skill_preflight", "it shares the prompt cache")},
     {"id": "SRC-claw-ponytail-covered", "element": "kyloren 04171cf7 (Claw.md four rules) and cea9bf31 (Ponytail, over-engineering)", "verdict": "INFO",
      "requires": None, "detail": "already in F1S: mtm-mto-first reuse order (標準函式庫) and only-the-lines-needed; no change"},
+    # 2026-10-23 operator: 「發現可平行時主動開子任務、完畢自動帶回主任務…都是我要求主對話去收編」. 7 days of transcripts:
+    # 28,208 tool calls, 200 subagent calls (0.7 %, 19 of 58 sessions); 32 of 44 session starts were proposal cards
+    # the operator had to click; the hot directive never mentioned splitting, and pfkt-parallel-wave loads only when the
+    # prompt already says "parallel".
+    {"id": "EVO-split-and-merge", "element": "parallel split and child-result merge left to the operator", "verdict": "REFINE",
+     "requires": None, "detail": "hot directive: independent units -> subagents started in the same turn, results read back and merged by the parent; token-preflight step 3 carries the merge rule",
+     "check_text": ("hot_directive", "子對話的回報只是線索，主對話自己收編")},
+    {"id": "EVO-split-merge-skill", "element": "merge rule in the skill that the hot directive routes to", "verdict": "REFINE",
+     "requires": None, "detail": "token-preflight: a report is a lead, not evidence; fold the verified part into the parent's result",
+     "check_text": ("skill_preflight", "a report is a lead, not evidence")},
 ]
 
 
