@@ -9,6 +9,8 @@ when its closing part still names a pending next step or offers to do more, answ
 
 It is the ONE operator-authorized exception to T1 `f1s` (F1S = FAMES 一套系統; "no hook blocks
 Stop"); see rule `run-until-no-next-step` in _registry/rules-blueprint.json.
+Since 2026-10-24 (T1 `f1s-governs`) it also keeps a seat's turn going while the curator's correction order for
+that seat is open (_skill/engines/curator_orders.py), 「沒有下一步」 included; only 「需要你決定」 ends it first.
 
 Guard rails (all fail open — any error, missing file or unreadable transcript = exit 0,
 no output, the turn ends normally):
@@ -108,6 +110,12 @@ REASON_PINNED = (
     "cover the change and ship it now: {command} -- or, if the edit was wrong, restore the file to the shipped "
     "bytes. Only an operator-only decision (one line 「需要你決定：」) may end the turn first. (push {n}/{cap})"
 )
+REASON_ORDERS = (
+    "run-until-done / F1S governs this cwd (T1 f1s-governs): the curator's correction order(s) {orders} for seat "
+    "{seat} are still open. They outrank this seat's own plan; red lines and the operator's own words here stay "
+    "above them. Before ending the turn, do the order and answer it: {command} <n> --evidence <path>, or "
+    "--cannot \"<reason>\" when a red line or the operator's instruction here forbids it. (push {n}/{cap})"
+)
 OPERATOR_DECISION = re.compile(r"需要你(?:決定|授權)|需要 ?operator ?(?:決定|授權)|\b(?:needs|requires) (?:your|the operator'?s?) "
                                r"(?:decision|authorit|approval)", re.IGNORECASE)
 
@@ -121,6 +129,40 @@ def _pinned_unshipped(transcript: Path) -> list[str]:
         return pinned_drift.edited_by(transcript, [r["path"] for r in rows]) if rows else []
     except Exception:  # noqa: BLE001 - fail open: a broken checker never blocks a turn
         return []
+
+
+def _origin_cwd(transcript: Path) -> str:
+    """The cwd the session was opened in (its first transcript row that records one): the seat it serves. The Stop
+    event's own cwd follows every `cd` of the turn, so a seat shell that ended in the hub root read as the curator."""
+    try:
+        with transcript.open("rb") as fh:
+            for _ in range(200):
+                raw = fh.readline()
+                if not raw:
+                    break
+                try:
+                    row = json.loads(raw.decode("utf-8-sig"))
+                except (ValueError, UnicodeDecodeError):
+                    continue
+                if isinstance(row, dict) and str(row.get("cwd") or "").strip():
+                    return str(row["cwd"])
+    except OSError:
+        pass
+    return ""
+
+
+def _open_orders(doc: dict, transcript: Path) -> tuple[str, list[dict]]:
+    """(seat, the curator's open orders for it) — curator_orders.py; ("", []) on any error (fail open)."""
+    try:
+        cwd = _origin_cwd(transcript) or str(doc.get("cwd") or "")
+        if not cwd.strip():
+            return "", []
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import curator_orders
+        seat = curator_orders.seat_of(cwd)
+        return seat, curator_orders.open_orders(seat)
+    except Exception:  # noqa: BLE001 - fail open: a broken order store never blocks a turn
+        return "", []
 
 
 # ---------------------------------------------------------------- input / config
@@ -335,9 +377,13 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
         return None
     text, turn_uuid = closing_text(path)
     verdict, matched = judge(text, cfg)
-    pinned = [] if OPERATOR_DECISION.search(text[-TAIL_CHARS:]) else _pinned_unshipped(path)
+    decided = bool(OPERATOR_DECISION.search(text[-TAIL_CHARS:]))
+    pinned = [] if decided else _pinned_unshipped(path)
+    seat, orders = ("", []) if decided or pinned else _open_orders(doc, path)
     if pinned:
         verdict, matched = "block", "pinned_unshipped:" + ",".join(pinned)
+    elif orders:
+        verdict, matched = "block", f"curator_orders:{seat}#" + ",".join(str(o.get("n")) for o in orders)
     entry = {
         "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "session_id": session_id,
@@ -371,6 +417,11 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
     if pinned:
         import pinned_drift
         reason = REASON_PINNED.format(paths=", ".join(pinned), command=pinned_drift.ship_command(pinned),
+                                      n=state["blocks"], cap=per_turn)
+    elif orders:
+        import curator_orders
+        reason = REASON_ORDERS.format(orders=", ".join(f"#{o.get('n')} {o.get('title')}" for o in orders), seat=seat,
+                                      command=f"python {curator_orders.__file__} answer {seat}",
                                       n=state["blocks"], cap=per_turn)
     else:
         reason = REASON.format(matched=f" (matched: {matched!r})", n=state["blocks"], cap=per_turn)

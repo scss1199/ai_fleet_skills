@@ -451,6 +451,21 @@ def _proof_recurrence(cwd: str) -> str:
         return ""
 
 
+def _curator_orders(agent: str) -> str:
+    """T1 f1s-governs (operator 2026-10-24): this seat's open correction orders from the curator, or for the curator
+    the answered orders waiting for review (_skill/engines/curator_orders.py). "" when none. Never raises."""
+    path = HUB / "_skill" / "engines" / "curator_orders.py"
+    try:
+        spec = importlib.util.spec_from_file_location("fames_hook_curator_orders", path)
+        if not path.is_file() or spec is None or spec.loader is None:
+            return ""
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return str(module.injection(agent) or "")
+    except Exception:
+        return ""
+
+
 def _proof_carry(session_id: str) -> str:
     """Claims the PROOF Stop hook could not push back on because its per-turn/per-session cap was spent
     (claude-proof-hook.py `carried`), shown once at the next prompt (F1S 當下閉環 item 6). Never raises."""
@@ -582,6 +597,10 @@ def main():
         if record:
             context=(context+"\n"+record).strip()
         _everything_bg_prewarm()
+    # The curator's orders go first, above this seat's own plan: they outrank its decisions (T1 f1s-governs).
+    orders=_curator_orders(agent)
+    if orders:
+        context=(orders+"\n"+context).strip()
     status_path=CODEX_STATUS if surface_id == "open-agent-standard" else STATUS
     status_path.parent.mkdir(parents=True,exist_ok=True)
     status_path.write_text(json.dumps({"schema":3,"last_fired":datetime.now(timezone.utc).isoformat(),"event":event,"cwd":cwd,"agent":agent,"surface_id":surface_id,"runtime_event_observed":bool(locals().get("runtime_event_observed", False)),"fames_state":state,"t1_hard_lines":t1_state,"session_source":session_source or None,"agc":{k:(result.get("auto_goal_compact") or {}).get(k) for k in ("state","agent","seat_resolution","refreshed","trigger","precompact_hook_armed","elapsed_ms")} if isinstance(locals().get("result"),dict) else None},indent=2),encoding="utf-8")

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-11",
+  "updated": "2026-10-24",
   "purpose": "The standing ruleset EVERY agent loads and obeys EVERY turn. Single machine-readable source; claude.html 'rules' tab renders this for humans.",
   "load_hint": "Agents: this file is small - read whole at session start / after compaction. Each rule carries its authority source; a curated source overrides your default behavior.",
   "authored_by": "ai_wallpaper compliance audit 2026-06-12, operator-directed; content = master/hub standing directives + global CLAUDE.md; 2026-06-13 master +automation(HubClock/auto-ship)+portal-authority",
@@ -159,6 +159,15 @@
           "rule": "【operator 2026-10-11】對話任務完成就自己關閉：全部收尾且沒有下一步時，最後寫「沒有下一步」並 archive_session(\"self\")；還有背景工作或待決就不關；下次由派送方取消封存續用。",
           "source": [
             "operator 2026-10-11 「對話任務完成就自己關閉」"
+          ]
+        },
+        {
+          "id": "f1s-governs",
+          "rule": "【operator 2026-10-24】F1S 統御各 cwd：ai_darkhero 的校正令（_registry/curator-orders/<seat>.json，每回合注入）優先於該 cwd 自己的決定；紅線與 operator 本人指令仍在其上。收到先做完附證據，或答「不能做＋原因」；令凍結的檔不得 commit、令禁跑的程序會被停。",
+          "source": [
+            "operator 2026-10-24 「你來想一個好辦法解決 ai_darkhero 的對話擁有最高權限來校正除了你以外的cwd內容」",
+            "operator 2026-10-24 「優先於 然後馬上實作疊代f1s (f1s就是會優先於其他cwd的意思 你構造f1s 用f1s統御其他cwd)」",
+            "_skill/engines/curator_orders.py"
           ]
         }
       ]
