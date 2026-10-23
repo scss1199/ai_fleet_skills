@@ -77,6 +77,7 @@ TEXTS = {
     "skill_deploy_cf": HUB / "_skill" / "fleet-skills" / "deploy-nextjs-cloudflare" / "SKILL.md",
     "skill_sync_engine": HUB / "_skill" / "engines" / "fleet-skill-sync.py",
     "bus_engine": HUB / "_skill" / "engines" / "_bus.py",
+    "ship_engine": HUB / "_skill" / "engines" / "ship-f1s.py",
 }
 
 # The architecture scan.  `requires` names the Lean theorem that must be PROVED for the verdict to stand;
@@ -491,6 +492,15 @@ ELEMENTS = [
     {"id": "EVO-agc-should-compact-actor", "element": "ai_metadata: ctx_meter should_compact=true (n_now=245 vs n*=19.5) with no actor; proposal = UserPromptSubmit systemMessage telling the operator to run /compact", "verdict": "INFO",
      "requires": None, "detail": "nag rejected (AGC rule 3 forbids hand /compact; mechanical work is never handed to the operator); skill names the three actors (cold-page refresh, PARK, autoCompactWindow from W*)",
      "check_text": ("skill_agc", "的執行者只有三個")},
+    # 2026-10-23 operator: absorb AI techniques from LINE OA + subscribed sources; F1S verifies itself on every ship
+    {"id": "SRC-sphinx-old-code-reviewer", "element": "f1s-sources 0e1c32a5 (Sphinx): a reviewer that never saw the chat reads the diff before ship", "verdict": "REFINE",
+     "requires": None, "detail": "ship-f1s step 0 runs the shipped tests with the shipped .py files at HEAD bytes; tests that pass there stop the ship (test_ship_f1s_and_seal)",
+     "check_text": ("ship_engine", "they pass whatever the change does")},
+    {"id": "SRC-helper-mode-choice", "element": "kyloren 4122208e: consultant / subagent / fork, chosen by need and cost", "verdict": "REFINE",
+     "requires": None, "detail": "token-preflight step 3: subagent when only the result matters, fork when the context matters (shared prompt cache), independent reviewer when direction is in doubt",
+     "check_text": ("skill_preflight", "it shares the prompt cache")},
+    {"id": "SRC-claw-ponytail-covered", "element": "kyloren 04171cf7 (Claw.md four rules) and cea9bf31 (Ponytail, over-engineering)", "verdict": "INFO",
+     "requires": None, "detail": "already in F1S: mtm-mto-first reuse order (標準函式庫) and only-the-lines-needed; no change"},
 ]
 
 
