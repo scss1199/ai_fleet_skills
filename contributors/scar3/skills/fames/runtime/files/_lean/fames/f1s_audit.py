@@ -74,6 +74,7 @@ TEXTS = {
     "pickup_verify": HUB / "_skill" / "engines" / "fleet-session-pickup-verify.py",
     "skill_agc": HUB / "_skill" / "fleet-skills" / "agc-auto-goal-compact" / "SKILL.md",
     "evolve_engine": HUB / "_skill" / "engines" / "f1s-evolve-tick.py",
+    "curator_orders": HUB / "_skill" / "engines" / "curator_orders.py",
     "skill_deploy_cf": HUB / "_skill" / "fleet-skills" / "deploy-nextjs-cloudflare" / "SKILL.md",
     "skill_sync_engine": HUB / "_skill" / "engines" / "fleet-skill-sync.py",
     "bus_engine": HUB / "_skill" / "engines" / "_bus.py",
@@ -521,6 +522,13 @@ ELEMENTS = [
     {"id": "EVO-load-grant", "element": "every planned load increase asks ai_darkhero's load grant (steady power, <= 40 W step, <= 250 W)", "verdict": "REFINE",
      "requires": None, "detail": "windows-runtime-pitfalls rule for agents; ship-f1s and f1s-evolve wait for a grant before their gate tests; ai_theater ramp + CPU fleet ask before each step",
      "check_text": ("skill_runtime", "加負載先拿 load grant")},
+    # 2026-10-24 operator: 「優先於 然後馬上實作疊代f1s (f1s就是會優先於其他cwd的意思 你構造f1s 用f1s統御其他cwd)」.
+    {"id": "OP-f1s-governs", "element": "T1 f1s-governs: ai_darkhero correction orders outrank a seat's own decisions; red lines and the operator's own words stay above", "verdict": "REFINE",
+     "requires": None, "detail": "curator_orders.py store + CLI; claude_session_hook puts open orders first, run-until-done holds the turn, git_smart refuses frozen paths, fleet-process-guard stops forbidden processes (test_curator_orders)",
+     "check_text": ("rules_blueprint", "F1S 統御各 cwd")},
+    {"id": "OP-f1s-governs-enforced", "element": "the four enforcement points read one order store", "verdict": "REFINE",
+     "requires": None, "detail": "freeze / forbid hold until the curator closes the order; the curator's own commits are never refused; Logi Options+ is never a forbid target",
+     "check_text": ("curator_orders", "def frozen_hits")},
 ]
 
 
