@@ -56,6 +56,8 @@ _registry/agc-compact/<agent>.orthogonal.md      # 被投影走的正交區塊�
 | 4 | **懶載入** | grep INDEX；CLI/engine 先於 browser |
 | 5 | **下放** | 探索/機械 → subagent / Groq / engines |
 
+`should_compact=true`（ctx_meter n_now≥n*）的執行者只有三個：hook 靜默刷新冷頁、里程碑 PARK、平台 autoCompactWindow（`apply_window_policy.py` 依 W* 寫入）；不會叫 operator 手打 /compact（規則 3＋禁止把機械活丟給 operator）。meter 一直超過 n* 時，該調的是 W*，不是送提醒給人。
+
 ## 三層
 
 | 層 | 工具 | 時機 / trigger |
