@@ -49,6 +49,13 @@ parent_skill: aex-agent-evolution
   verdict），「0 筆／UNKNOWN」這種日報是噪音、要壓掉並記原因。座位的低效要從它自己的日誌與 rider 結果量出來，hub
   的通用效率工具給不出座位層級的缺陷；結構性閒置（沒人用的盤中機器）列出來交使用者決定，不自行退場
   （反向學習自 ai_trader workflow-audit-20261020）。
+- 「移除沒在用的功能」憑證據退役，不憑沉默：①從 handler 的 AST 找出每個動作實際寫的 log 行，不寫 log 的動作沒有
+  證據，改數該功能自己的 log 簽名；②數完整歷史（含輪替封存檔），並讀命中的行——啟動橫幅、tick 名稱會灌水；③查持久
+  狀態（armed/enabled）與使用者決定：停放不等於退役，還被腳本或 hub 引擎 import 的模組留著，只拿掉入口；④切之前查
+  安全耦合（例：A770 功率上限由開機腳本套用，不在 GPU 選單模組）；⑤檔案移到 `_delete/<日期>-<主題>/` 附 sha256
+  MANIFEST（不刪），同一個 commit 拿掉它們的測試、保持「每個動作都有呼叫端」稽核綠燈，殘留檔先加 .gitignore 免得被
+  idle sweeper commit。（ai_darkhero tray 2026-10-23：動作 42→25、-3924 行、PowerShell 子程序 13→0／120 s；
+  `_delete/2026-10-23-tray-retired/MANIFEST.jsonl`）
 - 「最後才自動化」的門檻：同一件手工操作做到第三次才寫成腳本或技能；寫之前先查別的座位做過沒：
   `python %AI_WORKSPACE%\_skill\engines\f1s-harvest.py tools "<關鍵字>"`（全艦工具與技能）、`api <service>`（外部 API）
   （反向學習自 ai_metadata aex-mtm-loop-metadata）。

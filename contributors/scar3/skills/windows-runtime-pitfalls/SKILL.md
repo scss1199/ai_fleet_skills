@@ -39,6 +39,12 @@ parent_skill: ztm-verify-before-done
 - **`python -I`（隔離模式，含 -E）會忽略 PYTHONIOENCODING，stdout 退回 cp950**：印中日文或符號直接
   UnicodeEncodeError。要輸出非 ASCII 的腳本在程式內 `sys.stdout.reconfigure(encoding="utf-8")`，不要靠環境變數。
   （ai_career 1c9ea56；2026-10-21 實測 `-I` 下 `sys.flags.ignore_environment=1`、encoding=cp950）
+- **`ctypes.windll.<dll>` 的函式指標全行程共用一份，`.argtypes` 誰最後設誰算。** 兩個模組各自把
+  `user32.BeginPaint.argtypes` 設成 `POINTER(自己的 PAINTSTRUCT)`，另一個模組的呼叫就 ArgumentError（同名 Structure
+  仍是不同型別）；在 WNDPROC 裡例外被吞（pythonw 沒 stderr），WM_PAINT 永不 validate、訊息迴圈空轉（tray 睡眠
+  overlay 執行緒 139.6→2.2 CPU-s／600 s）。共用 argtypes 的結構指標一律 `ctypes.c_void_p`（`byref()` 照用），或用私有
+  `ctypes.WinDLL("user32")`。診斷：`py-spy dump --native` 頂端是 NtUserPeekMessage／DispatchMessage，再從別的行程對其
+  視窗呼叫 GetUpdateRect（更新區永遠不空）。（ai_darkhero 21550c71 sleep_mode/hub_tray）
 
 ## 重試、鎖、排程
 
@@ -67,9 +73,39 @@ parent_skill: ztm-verify-before-done
   STT lane 每 10 s 只拿到 5 CPU-s、25 分鐘音訊跑了 83 分鐘，看起來像「模型卡住」。一律 `RapidOCR(intra_op_num_threads=4)`
   這類明確上限；懷疑模型慢之前先看 CPU 配額。（hub-root burnin-subtitle-ocr-learning；ai_theater
   scripts/subtitle_burnin_learn.py）
+- **psutil 在 Windows 的 O(N²) 陷阱**：`Process.ppid()`、`num_threads()` 每次呼叫都重建整機快照；對拒絕存取的行程
+  讀 `cmdline()/cwd()/cpu_percent()` 走慢速拒絕路徑（每次 0.1–0.25 s）。每 tick 掃 ~470 個行程＝O(N²)（allocator 建
+  索引 23.1 s、cmdline 全掃 19.8 s）。每 tick 只呼叫一次 `psutil._psplatform.ppid_map()`；執行緒數與「拒絕」的 cmdline
+  按行程生命週期快取（拒絕不會變可讀）；`cpu_percent` 只 prime 要讀的列；先用快取的名稱過濾。（hub memory
+  tray-process-scan-cost；ai_darkhero 27be6919、e6ed3b33）
+  `create_time()` 對受保護行程同樣退回整機快照（每次 0.069 s）：放進 `process_iter([... "create_time"])` 讓冷掃
+  15.1 s 裡 10.9 s 花在它身上。只對通過 cmdline 過濾的列才讀；行程存活期間 process_iter 回傳同一個 Process 物件，
+  可直接當快取鍵（冷掃降到 4.4–5.0 CPU-s；ai_darkhero 739740e7）。
+- **就地退役檔案的佇列目錄（改名 `*.MIGRATED-bak`）會無限長大**：`_registry/ship-queue` 累積 26,138 筆，每次 glob
+  找有效檔都是 O(目錄)（每次探測 0.17 CPU-s）。只在目錄 mtime 變動時重列，且變動未滿 2 s 時下次仍重列（檔案時間
+  的刻度比連續寫入粗）；退役檔要清掉仍是 operator 的事（不刪紅線）。（ai_darkhero 21550c71 hub_tray）
+- **互動／UI 行程（tray）繼承父行程的優先權與 affinity**：在 100% 負載下以 BelowNormal、2 CPU 起來，8 分鐘以上才出
+  圖示、選單打不開。啟動時重設成 Normal／全部 CPU，並在任何 CPU allocator 中豁免它；豁免清單放永遠 union 的常數——
+  設定檔的清單若「取代」預設清單，會靜默丟掉預設豁免。
+- **量每個執行緒的 CPU 用 `Process.threads()` 的 user+system 差值，再對應 `py-spy dump` 的執行緒名稱**；py-spy 的
+  wall 取樣含 GIL 等待，會指錯執行緒。
 - **逐幀跑昂貴辨識前先用便宜的變化偵測，而且偵測要對準目標區域的特徵。** 整幀灰階差分擋不住動態畫面
   （3061 幀仍要 1858 次 OCR）；改比對近白色字幕遮罩（HSV V≥200、S≤60，縮到 360×58，mean abs diff ≥4 才重辨識）
   降到 277 次、274 s。（同上）
+
+## 音訊擷取與通話偵測
+
+- **App 自己挑裝置**（LINE.ini 的 voip_mike_id 指向已拔掉的藍牙耳機，整通電話沒開麥克風）：錄全部麥克風加全部喇叭
+  loopback 混音，不要錄「預設裝置」。
+- **用 WASAPI session（pycaw）偵測通話**，不要信 ConsentStore LastUsedTime（本機 09-22 起凍結）。只認通話專用 App
+  （LineCall.exe、Zoom、Teams）的 render session 且音量表在動，10 s 內 3 次有聲才算開始（一次 blip 錄出 49 s 空檔），
+  再用 hold 撐過停頓；App 可能永遠掛著一個無聲的 ACTIVE session。手動開的錄音要能被自動模式接手（忘了關的手動錄音
+  擋掉所有自動開始 17 分鐘）。
+- **WASAPI process loopback：INCLUDE（單一 App 樹）可靠，EXCLUDE（除了某 App 以外）錄到一半退化成 2 ms 嗡聲**（重現 3 次）
+  → 「整台電腦的聲音」用裝置 loopback，App 的部分在下游扣掉。時鐘節拍的 mixer 底下，來源 reader 絕不能自己補靜音。
+  逐段定位故障：原始封包 → reader 單獨 → mixer 單獨 → 加併行麥克風 → 分開行程。
+- **合成端到端（ffmpeg／PowerShell 佔住麥克風）證明的是機制不是整合**：真實通話觀察到之前，回報要寫清楚驗證的是哪一個。
+  （hub memory linecall-asr-findings-20261019；ai_darkhero 7a07eca3、7d5f3f2e、f1d4e1b5、0948c6e8、082c860d）
 
 ## 程式可達性
 

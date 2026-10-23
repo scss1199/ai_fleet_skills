@@ -11,6 +11,7 @@ STATUS=HUB/"_registry"/"token-preflight"/"claude-hook-status.json"
 T1_DELIVERY=HUB/"_registry"/"token-preflight"/"t1-delivery"
 CHARTER_DELIVERY=HUB/"_registry"/"token-preflight"/"charter-delivery"
 CODEX_STATUS=HUB/"_registry"/"token-preflight"/"codex-hook-status.json"
+MACHINE_EVENT_TAGS=("<task-notification>","<side-sessions-event>","<ci-monitor-event>","<cross-session-message")
 
 
 def _read_hook_input(stream) -> dict:
@@ -270,6 +271,9 @@ def _charter_refresh(surface_id: str, session_id: str, cwd: str, *, at_start: bo
         return ""
 
 
+_SEAT_CACHE: dict[tuple[str, str], str] = {}
+
+
 def _seat_for_cwd(cwd: str) -> str:
     """Seat name for a hook cwd: registered seat (project-matrix, longest path prefix, hub root ->
     local curator) -> nearest `ai_*` ancestor inside the hub -> basename.
@@ -277,7 +281,15 @@ def _seat_for_cwd(cwd: str) -> str:
     The old rule was basename(cwd), so a shell that had drifted into
     ai_darkhero/evidence/<topic> stamped the intake with agent="<topic>" (phantom seat,
     2026-10-12). Every step fails open to the next one; this never raises."""
+    key = (str(HUB), str(cwd))
+    if key not in _SEAT_CACHE:
+        _SEAT_CACHE[key] = _resolve_seat(cwd)
+    return _SEAT_CACHE[key]
+
+
+def _resolve_seat(cwd: str) -> str:
     base = Path(cwd).name
+    module = None
     try:
         projects_path = HUB / "_skill" / "engines" / "_projects.py"
         spec = importlib.util.spec_from_file_location("fames_hook_projects", projects_path)
@@ -295,7 +307,14 @@ def _seat_for_cwd(cwd: str) -> str:
         while True:
             if node.name.startswith("ai_") and node.parent == hub:
                 return node.name
-            if node == hub or node.parent == node:
+            if node == hub:
+                # Hub infrastructure (_registry, _skill, _lean...) belongs to the hub-root seat, the local curator: by
+                # basename a curator shell that cd'd into C:\ai_workspace\_registry became seat `_registry` (2026-10-23).
+                name = module.whoami(str(hub))[0] if module is not None else ""
+                if name and name != "unknown":
+                    return str(name)
+                break
+            if node.parent == node:
                 break
             node = node.parent
     except Exception:
@@ -307,15 +326,18 @@ MIDTURN_WATCH=("_registry/fames-protocol.json","_registry/rules-blueprint.json",
                "_skill/fleet-skills/fames/runtime/manifest.json")
 
 
-def _midturn_changed(surface_id: str, session_id: str, *, record_only: bool=False) -> bool:
+def _midturn_changed(surface_id: str, session_id: str, *, record_only: bool=False, agent_id: str="") -> bool:
     """operator 2026-10-15: an F1S upgrade must reach a long task mid-turn, not only at its next prompt.
     Cheap: stat() of the files an upgrade rewrites, compared with what this session last saw. The first call
-    of a session only records (its prompt already carried the current contract). Never raises."""
+    of a session only records (its prompt already carried the current contract). A subagent shares the session
+    id, so it is counted on its own (`agent_id` from the hook input): on 2026-10-23 an ai_nuwa subagent took the
+    one-shot update and the main conversation never got it. Never raises."""
     try:
         import hashlib
         sig="|".join("%s:%s"%(p.stat().st_mtime_ns,p.stat().st_size) if p.is_file() else "-"
                      for p in (HUB/rel for rel in MIDTURN_WATCH))
-        key=hashlib.sha256(f"{surface_id}\0{session_id}".encode("utf-8")).hexdigest()[:24]
+        scope=f"{surface_id}\0{session_id}"+(f"\0{agent_id}" if agent_id else "")
+        key=hashlib.sha256(scope.encode("utf-8")).hexdigest()[:24]
         path=HUB/"_registry"/"fames-hot"/f"midturn-{key}.json"
         try:
             seen=json.loads(path.read_text(encoding="utf-8")).get("sig")
@@ -334,7 +356,7 @@ def _midturn(doc) -> int:
     """PostToolUse fast path: print {} unless F1S changed since this session last saw it."""
     session_id=str(doc.get("session_id") or "")
     surface_id="open-agent-standard" if str(doc.get("turn_id") or "").strip() else "claude"
-    if not session_id or not _midturn_changed(surface_id,session_id):
+    if not session_id or not _midturn_changed(surface_id,session_id,agent_id=str(doc.get("agent_id") or "")):
         print("{}")
         return 0
     cwd=str(doc.get("cwd") or os.getcwd())
@@ -382,9 +404,10 @@ RECIPE = {
 def _proof_recurrence(cwd: str) -> str:
     """F1S 強制思考 B (2026-10-19): the class this seat keeps getting blocked for, said BEFORE it acts. Counts
     PROOF blocks for this seat over the last RECURRENCE_DAYS from _registry/proof/log.jsonl; one line for the top
-    class when it reached RECURRENCE_MIN. Never raises."""
+    class when it reached RECURRENCE_MIN. Both sides go through _seat_for_cwd: by basename a hub-root shell read
+    as seat `ai_workspace` and a tray/ subdir as `tray`, so the line named a phantom seat (2026-10-23). Never raises."""
     import time as _time
-    seat = (cwd or "").replace("\\", "/").rstrip("/").split("/")[-1]
+    seat = _seat_for_cwd(cwd) if (cwd or "").strip() else ""
     log = HUB / "_registry" / "proof" / "log.jsonl"
     if not seat or not log.is_file():
         return ""
@@ -405,12 +428,13 @@ def _proof_recurrence(cwd: str) -> str:
                 d = json.loads(line)
             except ValueError:
                 continue
-            if (d.get("cwd") or "").replace("\\", "/").rstrip("/").split("/")[-1] != seat:
-                continue
             try:
                 if _time.mktime(_time.strptime(d.get("ts", ""), "%Y-%m-%dT%H:%M:%S")) < cut:
                     continue
             except (ValueError, TypeError):
+                continue
+            row_cwd = str(d.get("cwd") or "")
+            if not row_cwd.strip() or _seat_for_cwd(row_cwd) != seat:
                 continue
             for v in d.get("violations") or []:
                 c = v.get("class")
@@ -473,10 +497,19 @@ def main():
     token_core=(f"TOKEN CORE {agent}: outcome | verification | state | next action | blocker. "
                 "Preflight before broad reads; PFKT only independent units; "
                 "AEX only measured residual; UNKNOWN fails closed.")
+    prompt=str(doc.get("prompt") or doc.get("user_message") or doc.get("message") or "")
+    # A background-task / side-session / CI notification opens a turn through UserPromptSubmit too. It is not an
+    # operator prompt: binding it as one made every notification turn "FAMES TURN — UNKNOWN … do not claim
+    # completion" plus ~2 KB of repeated contract text (2026-10-23, 6 notifications in one task). The operator's
+    # own prompt stays the bound intake; upgrades still arrive through the refreshes below and mid-turn.
+    machine_event=event == "UserPromptSubmit" and prompt.lstrip().startswith(MACHINE_EVENT_TAGS)
     try:
-        harness=_harness()
-        if event == "UserPromptSubmit":
-            prompt=str(doc.get("prompt") or doc.get("user_message") or doc.get("message") or "")
+        harness=None if machine_event else _harness()
+        if machine_event:
+            result={}
+            context=""
+            state="MACHINE_EVENT"
+        elif event == "UserPromptSubmit":
             if surface_id == "open-agent-standard":
                 runtime_event_observed=bool(
                     session_id.strip() and prompt.strip() and str(doc.get("turn_id") or "").strip()
@@ -525,7 +558,7 @@ def main():
     if event == "UserPromptSubmit":
         for update in (_t1_refresh(surface_id, session_id, at_start=False),
                        _charter_refresh(surface_id, session_id, cwd, at_start=False, transcript_path=transcript_path),
-                       _proof_carry(session_id), _proof_recurrence(cwd)):
+                       _proof_carry(session_id), "" if machine_event else _proof_recurrence(cwd)):
             if update:
                 context=(context+"\n"+update).strip()
     else:
@@ -533,8 +566,10 @@ def main():
         if session_source != "compact":
             # A fresh, resumed or cleared conversation loads its instruction files now; compaction may not.
             _charter_refresh(surface_id, session_id, cwd, at_start=True)
-    # The prompt or start just delivered the current contract: record it so the mid-turn check stays quiet.
-    _midturn_changed(surface_id, session_id, record_only=True)
+    # The prompt or start just delivered the current contract: record it so the mid-turn check stays quiet. A machine
+    # event delivered no contract, so an upgrade that landed before it must still reach the next tool call.
+    if not machine_event:
+        _midturn_changed(surface_id, session_id, record_only=True)
     t1_state=None
     if event == "SessionStart":
         # The hard lines must not depend on the FAMES harness above having succeeded.
