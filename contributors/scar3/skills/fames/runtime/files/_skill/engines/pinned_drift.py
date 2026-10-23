@@ -20,6 +20,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -97,8 +98,15 @@ def edited_by(transcript: Path, paths) -> list[str]:
             hit.update(p for p, n in wanted.items() if target.endswith("/" + n) or target == n)
         elif name in SHELL_TOOLS:
             command = _norm(args.get("command") or "")
-            if any(marker in command for marker in WRITE_MARKERS):   # a read (cat/grep/sha256sum) is not an edit
-                hit.update(p for p, n in wanted.items() if n in command)
+            # Per command segment: a read (cat/grep/sha256sum) is not an edit, and neither is running the file with
+            # its output redirected elsewhere (`python f1s_audit.py > out.txt` blamed a session twice, 2026-10-23).
+            for seg in re.split(r"&&|\|\||[;|\n]", command):
+                marks = [m for m in WRITE_MARKERS if m in seg]
+                if not marks:
+                    continue
+                redirect_only = all(m in ("> ", ">>") for m in marks)
+                hit.update(p for p, n in wanted.items()
+                           if n in seg and not (redirect_only and seg.find(n) < seg.rfind(">")))
     return sorted(hit)
 
 
