@@ -15,7 +15,7 @@ Use this phase order:
 
 1. FP defines Outcome and Verification.
 2. MTM selects a bounded route and read budget.
-3. PFKT activates only for multiple independently verifiable deliverables or explicit parallel work. Size each independent unit to fit one fresh context window, and resolve one unit per session or subagent (mattpocock to-tickets/wayfinder).
+3. PFKT activates only for multiple independently verifiable deliverables or explicit parallel work. Size each independent unit to fit one fresh context window, and resolve one unit per session or subagent (mattpocock to-tickets/wayfinder). Pick the helper by what it needs: a fresh subagent when only the result matters (run every test, report the broken ones); a fork when it needs this conversation's context or two approaches are tried side by side (it shares the prompt cache, so it costs less than re-briefing a subagent); an independent reviewer when direction or a repeated fix is in doubt.
 4. SCF computes residual only after a verified result exists.
 5. AEX activates only when a verified cross-cycle residual remains.
 6. SEAL checks evidence, identity, and graph closure after any active AEX adaptation.
