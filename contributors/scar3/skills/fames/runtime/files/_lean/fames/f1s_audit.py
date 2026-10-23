@@ -517,6 +517,10 @@ ELEMENTS = [
     {"id": "EVO-ship-hygiene", "element": "F1S package hygiene checked on every ship", "verdict": "REFINE",
      "requires": None, "detail": "ship-f1s step 0: no tracked caches, every hook/rider engine tracked, week-old session states moved to _delete/; caches excluded from the forced add",
      "check_text": ("ship_engine", "Every ship checks the package it is about to commit")},
+    # 2026-10-24 operator after two power losses 14 min apart: ai_darkhero is the one load scheduler; F1S asks it too.
+    {"id": "EVO-load-grant", "element": "every planned load increase asks ai_darkhero's load grant (steady power, <= 40 W step, <= 250 W)", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls rule for agents; ship-f1s and f1s-evolve wait for a grant before their gate tests; ai_theater ramp + CPU fleet ask before each step",
+     "check_text": ("skill_runtime", "加負載先拿 load grant")},
 ]
 
 

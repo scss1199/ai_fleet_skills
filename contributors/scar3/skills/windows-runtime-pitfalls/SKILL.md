@@ -93,6 +93,14 @@ parent_skill: ztm-verify-before-done
   （3061 幀仍要 1858 次 OCR）；改比對近白色字幕遮罩（HSV V≥200、S≤60，縮到 360×58，mean abs diff ≥4 才重辨識）
   降到 277 次、274 s。（同上）
 
+- **加負載先拿 load grant（darkhero，operator 2026-10-24 兩次斷電）**：觸發斷電的是「負載突然加上去」，不是負載高
+  （01:12:54 A770 1 秒內 49→150 W，疊在約 165 W 的 CPU 上；比這台機器以前扛過的總負載還低）。所以整套測試、build、
+  模型載入、批次轉檔、字幕 lane 這類會加負載的工作，開始前先跑
+  `python C:/ai_workspace/ai_darkhero/tray/scripts/load_grant.py wait --owner <seat>/<task> --step <W>`（exit 0 才做；
+  或 `load_grant.py run --owner … --step … -- <cmd>`）。放行條件：近 60 s CPU+A770 功率 p90−p10 ≤ 30 W、這一步 ≤ 40 W、
+  加上去 ≤ 250 W、距上一次放行 ≥ 20 s、感測紀錄是新的。超過 40 W 的工作要自己分段加，每段再申請；被拒就等，不要硬跑。
+  托盤狀態列顯示目前功率與最新一次放行。
+
 ## 音訊擷取與通話偵測
 
 - **App 自己挑裝置**（LINE.ini 的 voip_mike_id 指向已拔掉的藍牙耳機，整通電話沒開麥克風）：錄全部麥克風加全部喇叭
