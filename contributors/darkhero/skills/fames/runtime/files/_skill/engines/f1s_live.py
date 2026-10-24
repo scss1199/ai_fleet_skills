@@ -55,6 +55,13 @@ LIFETIME_S = 70 * 3600  # wired with timeout 259200 s (72 h); exit cleanly befor
 MAX_WAKES_PER_DAY = 24
 SHIP_STATE = HUB / "_registry" / "fames-hot" / "ship-state.json"  # written by ship-f1s.py around its steps
 SHIP_MAX_S = 3600.0
+# Hardware watch for the curator seat (operator standing mandate 2026-10-24: darkhero's hardware stability is the
+# curator's job). The sensor log was empty 2026-10-21 04:03 .. 10-24 01:00 and nobody noticed: the 00:58 power loss
+# has no record, and load_grant refuses every grant while the log is stale.
+HW_RING = Path(r"D:\__hwlog")
+HW_STATE = HUB / "_registry" / "fames-hot" / "hw-watch.json"
+HW_STALE_S = 300.0
+HW_ALERT_EVERY_S = 1800.0
 ACTIVE_TYPES = ("user", "assistant")
 # Real Claude / Codex conversations carry a UUID; the FAMES run-cases probes write ids like "claude-session".
 SESSION_ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
@@ -253,6 +260,55 @@ def capture_due(session_id: str, now: float | None = None) -> str:
     return "\n".join(alerts)
 
 
+def contract_sig(hook, seat: str) -> str:
+    """What an idle conversation must act on: the hot directive, the standing rules and this seat's orders. A release
+    that changes none of them (engine code, a version bump) is recorded quietly instead of waking every idle
+    conversation; four releases on 2026-10-24 woke each one four times for nothing it had to do."""
+    import hashlib
+    digest = hashlib.sha256()
+    try:
+        protocol = json.loads((HUB / "_registry" / "fames-protocol.json").read_text(encoding="utf-8-sig"))
+        digest.update(str((protocol.get("unified_entrypoint") or {}).get("hot_directive") or "").encode("utf-8"))
+    except (OSError, ValueError, AttributeError):
+        digest.update(b"-")
+    try:
+        orders = list(hook._orders_files(seat))
+    except Exception:  # noqa: BLE001 - a hook without the orders store still has a directive and rules
+        orders = []
+    for path in [HUB / "_registry" / "rules-blueprint.json", *orders]:
+        try:
+            digest.update(path.read_bytes())
+        except OSError:
+            digest.update(b"-")
+    return digest.hexdigest()[:16]
+
+
+def hardware_due(seat: str, curator: str, now: float | None = None) -> str:
+    """For the curator seat only: the alert text when the newest sensor-log segment is older than HW_STALE_S
+    (at most once per HW_ALERT_EVERY_S across curator conversations); "" otherwise."""
+    if not seat or seat != curator:
+        return ""
+    now = now if now is not None else _now()
+    try:
+        newest = max((p for p in HW_RING.glob("hwlog-*.csv")), key=lambda p: p.stat().st_mtime)
+        age, name = now - newest.stat().st_mtime, newest.name
+    except (ValueError, OSError):
+        age, name = float("inf"), "none"
+    if age <= HW_STALE_S:
+        return ""
+    state = _read(HW_STATE)
+    if now - float(state.get("last_alert") or 0) < HW_ALERT_EVERY_S:
+        return ""
+    _write(HW_STATE, {"last_alert": now, "at": _iso(now), "age_s": None if age == float("inf") else round(age),
+                      "newest": name})
+    shown = "no segment at all" if age == float("inf") else f"{age / 60:.0f} min (newest {name})"
+    return ("F1S HARDWARE WATCH — the sensor log D:\\__hwlog has not been written for " + shown + ". Without it "
+            "load_grant refuses every grant and a power loss leaves no record (2026-10-21..24: 3 days unrecorded). "
+            "Restore it now: read ai_darkhero/tray/state/hw_csv_logger.json and tray/logs/hw_csv_logger.log for the "
+            "lifecycle and reason, heal it (tray heal, or python C:\\ai_workspace\\ai_darkhero\\tray\\scripts\\"
+            "hwlog_autostart.py --request-restart), read back a segment younger than 10 s, and tell the operator.")
+
+
 def _recent_wakes(state: dict, now: float) -> list[float]:
     return [float(w) for w in state.get("wakes") or [] if now - float(w) < 86400]
 
@@ -268,6 +324,10 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
     transcript = Path(str(doc.get("transcript_path") or ""))
     record = hook._midturn_record(surface_id, session_id)
     seat, cwd = hook._session_seat(doc, record)
+    try:
+        curator = hook._seat_for_cwd(str(HUB))
+    except Exception:  # noqa: BLE001 - no curator known: no hardware watch, nothing else changes
+        curator = ""
     sig_seat = str(record.get("seat") or "") if record else seat
     if record and not sig_seat and seat and not hook._midturn_pending(surface_id, session_id):
         # A record without the seat (made before the ledger fields, or kept through machine-event turns, which record
@@ -281,7 +341,11 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
     start = _now()
     state = {"token": token, "pid": os.getpid(), "session_id": session_id, "seat": seat, "surface": surface_id,
              "started": _iso(start), "state": "waiting", "wakes": _recent_wakes(prior, start),
-             "claude_pid": _claude_ancestor(), "transcript": str(transcript)}
+             "claude_pid": _claude_ancestor(), "transcript": str(transcript),
+             # What it last received: with nothing pending its turn just carried the current contract; with something
+             # already pending (it landed after the last tool call) the previous waiter's record, or nothing known.
+             "contract": (prior.get("contract") or None) if hook._midturn_pending(surface_id, session_id, seat=sig_seat)
+             else contract_sig(hook, sig_seat)}
     _write(path, state)
 
     def finish(code: int, why: str, text: str = "") -> tuple[int, str]:
@@ -311,6 +375,9 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
         alert = capture_due(session_id)
         if alert:
             return finish(2, "capture", alert)
+        alert = hardware_due(seat, curator)
+        if alert:
+            return finish(2, "hardware", alert)
         if hook._midturn_pending(surface_id, session_id, seat=sig_seat) and not shipping():
             settled, last, ready = _now(), hook._midturn_sig(sig_seat), True
             while True:
@@ -325,11 +392,16 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
             if ready:
                 if transcript.is_file() and _size(transcript) > offset and turned_active(transcript, offset):
                     return finish(0, "active")
-                text = hook.live_update(doc, event="IdleWake", watch_seat=sig_seat)
+                contract = contract_sig(hook, sig_seat)
+                text = "" if contract == state["contract"] else hook.live_update(doc, event="IdleWake", watch_seat=sig_seat)
+                state["contract"] = contract
                 if text:
                     return finish(2, "woke", HEAD + "\n" + text)
-                # Nothing to say about the change: record it, or the same change re-enters the settle loop forever.
+                # Nothing it must act on (or nothing to say): record it, or the same change re-enters the settle loop
+                # forever; the next prompt still carries the new version line.
                 hook._midturn_changed(surface_id, session_id, record_only=True, seat=sig_seat, cwd=cwd, event="IdleQuiet")
+                if _read(path).get("token") == token:
+                    _write(path, state)
         sleep(poll_s)
 
 
