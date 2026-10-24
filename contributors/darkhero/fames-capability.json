@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "936cc7b716e4fe3b6572229771a0c3419cc69ee82aa16669f61d9a08eb706870",
+  "package_sha": "94aa5bd5ac553e5151882ac6595517696c53c175faaf520b49b6d80a52db0ccd",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "4cd6c4f2f40dde1d72c95b0136e576b587d2cca78832b1db6d04db8b5013a513",
   "runner_state": "armed",
-  "observed_at": "2026-10-24T07:08:08.933815+00:00",
+  "observed_at": "2026-10-24T08:34:29.749799+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,34 +353,9 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "OBSERVED_PARTIAL_POPULATION",
-    "native_events": [
-      {
-        "agent": "ai_theater",
-        "surface": "claude",
-        "observed_at": "2026-10-24T14:37:25+08:00",
-        "receipt_sha256": "de5b99e255163e15dfd63b06ee7bd8fb6a534630e59d99cdd8b8c6a8507aaaac"
-      },
-      {
-        "agent": "jci_taipei",
-        "surface": "claude",
-        "observed_at": "2026-10-24T14:37:10+08:00",
-        "receipt_sha256": "ff593f9fd8bd993e596dd54d1316bc5dff60d05287602e94a38429cc80939617"
-      },
-      {
-        "agent": "ai_nuwa",
-        "surface": "claude",
-        "observed_at": "2026-10-24T14:48:40+08:00",
-        "receipt_sha256": "f81f2eb681538f38fa0c594fce3d27bea480d2f549f5746707058adb25dfefd6"
-      },
-      {
-        "agent": "ai_nuwa",
-        "surface": "claude",
-        "observed_at": "2026-10-24T14:38:07+08:00",
-        "receipt_sha256": "b5a13986ae1b0cc7cdf073950ddd874aeb1d8298e60be60ade645fadb89b958d"
-      }
-    ],
-    "runtime_release_sha256": "57b9ccadab575aaa1cf7b932ed53ef72ec07a34fb33dfb9ad81d73d1133a9ebb"
+    "native_state": "UNKNOWN",
+    "native_events": [],
+    "runtime_release_sha256": "1bd17c11e8f1475c4c01dffc5dc37b8b9693b5b791c1ac7dfc3bbdc8f9f021a9"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
