@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "4cd6c4f2f40dde1d72c95b0136e576b587d2cca78832b1db6d04db8b5013a513",
   "runner_state": "armed",
-  "observed_at": "2026-10-24T03:30:43.511595+00:00",
+  "observed_at": "2026-10-24T04:08:11.325819+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,8 +353,51 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "UNKNOWN",
-    "native_events": [],
+    "native_state": "OBSERVED_PARTIAL_POPULATION",
+    "native_events": [
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-10-24T11:49:29+08:00",
+        "receipt_sha256": "64ecb8e1b3efae53ff23d0dd48ed8703b20e39cd7abe6ffb7df5abf7acd76ad0"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-10-24T11:53:37+08:00",
+        "receipt_sha256": "430914d7c6057bb83800026fbf9bb3c80c7c2d6095a3aa92c28e9b0feb95df2a"
+      },
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-10-24T12:02:16+08:00",
+        "receipt_sha256": "cf7704d918672ea11faeabfe8b0a844677e5b4c379d3dc89489352727ae65867"
+      },
+      {
+        "agent": "ai_nuwa",
+        "surface": "claude",
+        "observed_at": "2026-10-24T11:59:38+08:00",
+        "receipt_sha256": "c285dce609ed925479b9d0073b01a1b206f4e7f8945b01ee97c4efa2374e97af"
+      },
+      {
+        "agent": "ai_nuwa",
+        "surface": "claude",
+        "observed_at": "2026-10-24T11:47:17+08:00",
+        "receipt_sha256": "51ab3ef42bf30e2492b397a7e10aadb25ac3aea4923b7f5dcbbbc08711ef7cc1"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-10-24T11:51:14+08:00",
+        "receipt_sha256": "e028897d4936153928e4ebe30b120d5df598229603e4be9485285b36dc4d7a5e"
+      },
+      {
+        "agent": "ai_nuwa",
+        "surface": "claude",
+        "observed_at": "2026-10-24T12:00:41+08:00",
+        "receipt_sha256": "fd25e306ca71d1050f2e206c49272d1aa7cc292cb5ad8e85fb2e83d71cc36256"
+      }
+    ],
     "runtime_release_sha256": "8d7d25f598a5ac5707e9c35d7767f4da86c8093f5d6e3576629410f40de22709"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
