@@ -142,11 +142,18 @@ def _t1_refresh(surface_id: str, session_id: str, *, at_start: bool) -> str:
         return ""
 
 
-def _instruction_files(surface_id: str, cwd: str) -> list[Path]:
+def _memory_index(transcript_path: str) -> Path | None:
+    """The auto-memory index Claude Code loaded for this conversation: <project dir of the transcript>/memory/MEMORY.md."""
+    return Path(transcript_path).parent / "memory" / "MEMORY.md" if (transcript_path or "").strip() else None
+
+
+def _instruction_files(surface_id: str, cwd: str, transcript_path: str = "") -> list[Path]:
     """The instruction files the host loaded when this conversation started, with their @imports.
 
     Claude Code: ~/.claude/CLAUDE.md plus CLAUDE.md, CLAUDE.local.md and .claude/CLAUDE.md in cwd and every
-    ancestor. The open-agent surface (Codex): ~/.codex/AGENTS.md plus AGENTS.md in cwd and every ancestor.
+    ancestor, and the project's auto-memory index (a lesson one conversation saves reached the other open ones
+    only after a restart, 2026-10-24). The open-agent surface (Codex): ~/.codex/AGENTS.md plus AGENTS.md in cwd
+    and every ancestor.
     """
     import re
     base = Path(cwd).resolve()
@@ -157,6 +164,9 @@ def _instruction_files(surface_id: str, cwd: str) -> list[Path]:
     else:
         roots = [Path.home() / ".claude" / "CLAUDE.md"]
         roots += [d / name for d in dirs for name in ("CLAUDE.md", "CLAUDE.local.md", ".claude/CLAUDE.md")]
+        memory = _memory_index(transcript_path)
+        if memory is not None:
+            roots.append(memory)
     found: list[Path] = []
     pending = [(p, 0) for p in roots]
     while pending:
@@ -218,7 +228,7 @@ def _charter_refresh(surface_id: str, session_id: str, cwd: str, *, at_start: bo
         # record yet, to the first cwd its transcript names).
         anchor = cwd if at_start else str(last_doc.get("cwd") or _transcript_cwd(transcript_path) or cwd)
         last = last_doc.get("files") if not at_start else None
-        files = _instruction_files(surface_id, anchor)
+        files = _instruction_files(surface_id, anchor, transcript_path)
         texts = {str(p): p.read_text(encoding="utf-8", errors="replace") for p in files}
         current = {k: hashlib.sha256(v.encode("utf-8")).hexdigest() for k, v in texts.items()}
         root = CHARTER_DELIVERY
@@ -246,7 +256,10 @@ def _charter_refresh(surface_id: str, session_id: str, cwd: str, *, at_start: bo
             changed = [p for p in current if Path(p).stat().st_mtime > opened]
             last = {}
         else:
-            changed = [p for p in current if last.get(p) != current[p]]
+            # The memory index joined the tracked set on 2026-10-24: a conversation whose record predates that
+            # starts tracking it silently instead of receiving the whole index as "changed".
+            memory = str(_memory_index(transcript_path) or "")
+            changed = [p for p in current if last.get(p) != current[p] and not (p == memory and p not in last)]
         removed = [p for p in last if p not in current]
         if not changed and not removed:
             return ""
@@ -326,19 +339,53 @@ MIDTURN_WATCH=("_registry/fames-protocol.json","_registry/rules-blueprint.json",
                "_skill/fleet-skills/fames/runtime/manifest.json")
 
 
-def _midturn_changed(surface_id: str, session_id: str, *, record_only: bool=False, agent_id: str="") -> bool:
+MIDTURN_HEAD="F1S MID-TURN UPDATE (an upgrade landed while this task was running; apply it from the next step)"
+
+
+def _orders_files(seat: str) -> list[Path]:
+    """The curator-order files whose change must reach this seat now: its own, or every seat's for the curator
+    (it reviews their answers). Same store as curator_orders.py."""
+    root=HUB/"_registry"/"curator-orders"
+    if not seat:
+        return []
+    if seat == _seat_for_cwd(str(HUB)):
+        return sorted(root.glob("*.json"))
+    return [root/f"{seat}.json"]
+
+
+def _midturn_sig(seat: str="") -> str:
+    """stat() of the files an upgrade rewrites plus this seat's curator orders (T1 f1s-governs: an order must not
+    wait for the next prompt either)."""
+    paths=[HUB/rel for rel in MIDTURN_WATCH]+_orders_files(seat)
+    return "|".join("%s:%s"%(p.stat().st_mtime_ns,p.stat().st_size) if p.is_file() else "-" for p in paths)
+
+
+def _midturn_path(surface_id: str, session_id: str, agent_id: str="") -> Path:
+    import hashlib
+    scope=f"{surface_id}\0{session_id}"+(f"\0{agent_id}" if agent_id else "")
+    return HUB/"_registry"/"fames-hot"/f"midturn-{hashlib.sha256(scope.encode('utf-8')).hexdigest()[:24]}.json"
+
+
+def _midturn_pending(surface_id: str, session_id: str, *, seat: str="", agent_id: str="") -> bool:
+    """Read-only: did anything this conversation must receive change since it last received it? Never raises."""
+    try:
+        seen=json.loads(_midturn_path(surface_id,session_id,agent_id).read_text(encoding="utf-8")).get("sig")
+        return bool(seen) and seen != _midturn_sig(seat)
+    except Exception:
+        return False
+
+
+def _midturn_changed(surface_id: str, session_id: str, *, record_only: bool=False, agent_id: str="",
+                     seat: str="", cwd: str="", event: str="") -> bool:
     """operator 2026-10-15: an F1S upgrade must reach a long task mid-turn, not only at its next prompt.
     Cheap: stat() of the files an upgrade rewrites, compared with what this session last saw. The first call
     of a session only records (its prompt already carried the current contract). A subagent shares the session
     id, so it is counted on its own (`agent_id` from the hook input): on 2026-10-23 an ai_nuwa subagent took the
-    one-shot update and the main conversation never got it. Never raises."""
+    one-shot update and the main conversation never got it. The record is also the delivery ledger that
+    f1s_live.py status reads (which open conversation holds which signature). Never raises."""
     try:
-        import hashlib
-        sig="|".join("%s:%s"%(p.stat().st_mtime_ns,p.stat().st_size) if p.is_file() else "-"
-                     for p in (HUB/rel for rel in MIDTURN_WATCH))
-        scope=f"{surface_id}\0{session_id}"+(f"\0{agent_id}" if agent_id else "")
-        key=hashlib.sha256(scope.encode("utf-8")).hexdigest()[:24]
-        path=HUB/"_registry"/"fames-hot"/f"midturn-{key}.json"
+        sig=_midturn_sig(seat)
+        path=_midturn_path(surface_id,session_id,agent_id)
         try:
             seen=json.loads(path.read_text(encoding="utf-8")).get("sig")
         except (OSError,ValueError):
@@ -346,23 +393,53 @@ def _midturn_changed(surface_id: str, session_id: str, *, record_only: bool=Fals
         if seen==sig:
             return False
         path.parent.mkdir(parents=True,exist_ok=True)
-        path.write_text(json.dumps({"sig":sig,"at":datetime.now(timezone.utc).isoformat()}),encoding="utf-8")
+        path.write_text(json.dumps({"sig":sig,"at":datetime.now(timezone.utc).isoformat(),"session_id":session_id,
+                                    "surface":surface_id,"agent_id":agent_id or None,"seat":seat or None,
+                                    "cwd":cwd or None,"event":event or None}),encoding="utf-8")
         return seen is not None and not record_only
     except Exception:
         return False
 
 
-def _midturn(doc) -> int:
-    """PostToolUse fast path: print {} unless F1S changed since this session last saw it."""
+def _session_seat(doc, record: dict | None=None) -> tuple[str, str]:
+    """(seat, cwd) of the conversation, from the cwd it opened in: a tool's `cd` moves the hook cwd, not the seat.
+    The delivery record keeps it, so a tool call does not re-read the transcript."""
+    if record and record.get("seat") and record.get("cwd"):
+        return str(record["seat"]), str(record["cwd"])
+    cwd=_transcript_cwd(str(doc.get("transcript_path") or "")) or str(doc.get("cwd") or os.getcwd())
+    return _seat_for_cwd(cwd), cwd
+
+
+def _midturn_record(surface_id: str, session_id: str, agent_id: str="") -> dict:
+    try:
+        rec=json.loads(_midturn_path(surface_id,session_id,agent_id).read_text(encoding="utf-8"))
+        return rec if isinstance(rec,dict) else {}
+    except (OSError,ValueError):
+        return {}
+
+
+def live_update(doc, *, event: str="PostToolUse") -> str:
+    """The update text for a conversation whose watched files changed since it last received them, recorded as
+    delivered; "" when nothing changed. Shared by the PostToolUse hook (mid-turn) and f1s_live.py (an idle
+    conversation, woken). Never raises."""
     session_id=str(doc.get("session_id") or "")
     surface_id="open-agent-standard" if str(doc.get("turn_id") or "").strip() else "claude"
-    if not session_id or not _midturn_changed(surface_id,session_id,agent_id=str(doc.get("agent_id") or "")):
-        print("{}")
-        return 0
-    cwd=str(doc.get("cwd") or os.getcwd())
+    agent_id=str(doc.get("agent_id") or "")
+    if not session_id:
+        return ""
+    record=_midturn_record(surface_id,session_id,agent_id)
+    seat,cwd=_session_seat(doc,record)
+    # Compare on the seat the record was made with: a record from before the ledger fields existed (no seat) keeps
+    # comparing the F1S files only until the next prompt records the seat, so the new orders term alone is no upgrade.
+    sig_seat=str(record.get("seat") or "") if record else seat
+    if not _midturn_changed(surface_id,session_id,agent_id=agent_id,seat=sig_seat,cwd=cwd,event=event):
+        return ""
     parts=[]
+    orders="" if agent_id else _curator_orders(seat)
+    if orders:
+        parts.append(orders)
     try:
-        hot=_harness().hot_refresh(_seat_for_cwd(cwd),Path(cwd),surface_id=surface_id,session_id=session_id,workspace=HUB)
+        hot=_harness().hot_refresh(seat,Path(cwd),surface_id=surface_id,session_id=session_id,workspace=HUB)
         parts.append(hot.get("plan_text",""))
     except Exception as exc:
         parts.append(f"FAMES HOT REFRESH — UNKNOWN — {type(exc).__name__}")
@@ -371,10 +448,14 @@ def _midturn(doc) -> int:
                                     transcript_path=str(doc.get("transcript_path") or ""))):
         if update:
             parts.append(update)
-    context="\n".join(p for p in parts if p).strip()
+    return "\n".join(p for p in parts if p).strip()
+
+
+def _midturn(doc) -> int:
+    """PostToolUse fast path: print {} unless F1S or this seat's curator orders changed since this session last saw them."""
+    context=live_update(doc)
     if context:
-        context="F1S MID-TURN UPDATE (an upgrade landed while this task was running; apply it from the next step)\n"+context
-        print(json.dumps({"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":context}},ensure_ascii=True))
+        print(json.dumps({"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":MIDTURN_HEAD+"\n"+context}},ensure_ascii=True))
     else:
         print("{}")
     return 0
@@ -580,11 +661,12 @@ def main():
         _t1_refresh(surface_id, session_id, at_start=True)
         if session_source != "compact":
             # A fresh, resumed or cleared conversation loads its instruction files now; compaction may not.
-            _charter_refresh(surface_id, session_id, cwd, at_start=True)
+            _charter_refresh(surface_id, session_id, cwd, at_start=True, transcript_path=transcript_path)
     # The prompt or start just delivered the current contract: record it so the mid-turn check stays quiet. A machine
     # event delivered no contract, so an upgrade that landed before it must still reach the next tool call.
     if not machine_event:
-        _midturn_changed(surface_id, session_id, record_only=True)
+        live_seat, live_cwd = _session_seat(doc, None if event == "SessionStart" else _midturn_record(surface_id, session_id))
+        _midturn_changed(surface_id, session_id, record_only=True, seat=live_seat, cwd=live_cwd, event=event)
     t1_state=None
     if event == "SessionStart":
         # The hard lines must not depend on the FAMES harness above having succeeded.

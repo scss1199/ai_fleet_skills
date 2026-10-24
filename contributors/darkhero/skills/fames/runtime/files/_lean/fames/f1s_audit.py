@@ -75,6 +75,8 @@ TEXTS = {
     "skill_agc": HUB / "_skill" / "fleet-skills" / "agc-auto-goal-compact" / "SKILL.md",
     "evolve_engine": HUB / "_skill" / "engines" / "f1s-evolve-tick.py",
     "curator_orders": HUB / "_skill" / "engines" / "curator_orders.py",
+    "f1s_live": HUB / "_skill" / "engines" / "f1s_live.py",
+    "pinned_drift": HUB / "_skill" / "engines" / "pinned_drift.py",
     "skill_deploy_cf": HUB / "_skill" / "fleet-skills" / "deploy-nextjs-cloudflare" / "SKILL.md",
     "skill_sync_engine": HUB / "_skill" / "engines" / "fleet-skill-sync.py",
     "bus_engine": HUB / "_skill" / "engines" / "_bus.py",
@@ -529,6 +531,16 @@ ELEMENTS = [
     {"id": "OP-f1s-governs-enforced", "element": "the four enforcement points read one order store", "verdict": "REFINE",
      "requires": None, "detail": "freeze / forbid hold until the curator closes the order; the curator's own commits are never refused; Logi Options+ is never a forbid target",
      "check_text": ("curator_orders", "def frozen_hits")},
+    # 2026-10-24 operator: 「一樣改 目的就是當任何對話一閒置後立刻套用」.
+    {"id": "OP-f1s-live-idle-wake", "element": "an idle conversation applies an F1S upgrade or its seat's curator order the moment it lands", "verdict": "REFINE",
+     "requires": None, "detail": "f1s_live.py wait runs as an asyncRewake Stop hook and exits 2 with the update text; quiet exit when the conversation turns active, a newer waiter takes over, the kill switch is off or the daily cap is hit (test_f1s_live)",
+     "check_text": ("f1s_live", "def wait(")},
+    {"id": "OP-f1s-live-midturn-orders", "element": "a curator order reaches a running task at its next tool call; the delivery record is a ledger of who holds which contract", "verdict": "REFINE",
+     "requires": None, "detail": "claude_session_hook._midturn_sig adds this seat's order file; live_update is shared by the mid-turn hook and the idle waiter; f1s_live.py status lists conversations behind the contract",
+     "check_text": ("f1s_live", "def status(")},
+    {"id": "OP-pinned-blame-by-content", "element": "an unshipped pinned edit is blamed on the session whose edit text is in the drift", "verdict": "REFINE",
+     "requires": None, "detail": "2026-10-24: a session that had shipped its f1s_audit.py edit was blocked twice for another session's open edit; shell writes and unknown text stay blamed",
+     "check_text": ("pinned_drift", "def _wrote_the_drift")},
 ]
 
 
