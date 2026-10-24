@@ -387,16 +387,17 @@ def _midturn_changed(surface_id: str, session_id: str, *, record_only: bool=Fals
         sig=_midturn_sig(seat)
         path=_midturn_path(surface_id,session_id,agent_id)
         try:
-            seen=json.loads(path.read_text(encoding="utf-8")).get("sig")
+            previous=json.loads(path.read_text(encoding="utf-8"))
+            seen=previous.get("sig") if isinstance(previous,dict) else None
         except (OSError,ValueError):
-            seen=None
-        if seen==sig:
+            previous,seen={},None
+        if seen==sig and (not seat or previous.get("seat")==seat):
             return False
         path.parent.mkdir(parents=True,exist_ok=True)
         path.write_text(json.dumps({"sig":sig,"at":datetime.now(timezone.utc).isoformat(),"session_id":session_id,
                                     "surface":surface_id,"agent_id":agent_id or None,"seat":seat or None,
                                     "cwd":cwd or None,"event":event or None}),encoding="utf-8")
-        return seen is not None and not record_only
+        return seen is not None and seen != sig and not record_only
     except Exception:
         return False
 
@@ -418,10 +419,11 @@ def _midturn_record(surface_id: str, session_id: str, agent_id: str="") -> dict:
         return {}
 
 
-def live_update(doc, *, event: str="PostToolUse") -> str:
+def live_update(doc, *, event: str="PostToolUse", watch_seat: str | None=None) -> str:
     """The update text for a conversation whose watched files changed since it last received them, recorded as
     delivered; "" when nothing changed. Shared by the PostToolUse hook (mid-turn) and f1s_live.py (an idle
-    conversation, woken). Never raises."""
+    conversation, woken), which passes the seat basis it watched (`watch_seat`): on 2026-10-24 the two bases differed,
+    the waiter saw an order land and this function saw no change, so the conversation was never woken. Never raises."""
     session_id=str(doc.get("session_id") or "")
     surface_id="open-agent-standard" if str(doc.get("turn_id") or "").strip() else "claude"
     agent_id=str(doc.get("agent_id") or "")
@@ -431,7 +433,7 @@ def live_update(doc, *, event: str="PostToolUse") -> str:
     seat,cwd=_session_seat(doc,record)
     # Compare on the seat the record was made with: a record from before the ledger fields existed (no seat) keeps
     # comparing the F1S files only until the next prompt records the seat, so the new orders term alone is no upgrade.
-    sig_seat=str(record.get("seat") or "") if record else seat
+    sig_seat=watch_seat if watch_seat is not None else (str(record.get("seat") or "") if record else seat)
     if not _midturn_changed(surface_id,session_id,agent_id=agent_id,seat=sig_seat,cwd=cwd,event=event):
         return ""
     parts=[]
