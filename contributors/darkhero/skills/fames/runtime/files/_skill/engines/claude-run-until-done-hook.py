@@ -116,6 +116,42 @@ REASON_ORDERS = (
     "above them. Before ending the turn, do the order and answer it: {command} <n> --evidence <path>, or "
     "--cannot \"<reason>\" when a red line or the operator's instruction here forbids it. (push {n}/{cap})"
 )
+REASON_CAPTURE = (
+    "run-until-done / live capture (operator 2026-10-24: a Google Meet caption scraper in a background tab stalled at "
+    "12:03 and nobody saw it until the meeting ended 55 min later): this reply leaves a capture running unattended "
+    "(matched: {matched!r}) and nothing watches it. Before ending the turn: 1) for anything that cannot be redone, run "
+    "a second, independent capture (e.g. the local audio recorder) and read back that its file grows; 2) register the "
+    "watch so the idle waiter wakes you the moment it stalls: python C:\\ai_workspace\\_skill\\engines\\f1s_live.py "
+    "capture add --name <name> --file <file that grows> --stale-s 90 --check-every-s 300 --hours <h>; 3) tell the "
+    "operator what is watched and how. When it ends: f1s_live.py capture done --name <name>. (push {n}/{cap})"
+)
+# A capture noun and a still-running phrase on one line of the closing reply: 「字幕側錄會一直跑到結束，你們不用做任何事」.
+CAPTURE_NOUN = re.compile(r"(?i)錄音|錄影|側錄|字幕|擷取|錄製|會議|直播|串流|record|captur|stream|transcri|meeting")
+CAPTURE_ONGOING = re.compile(
+    r"(?i)會一直|一直(?:跑|錄|記|在)|持續(?:中|在|側錄|錄|擷取|記錄|跑)|繼續(?:跑|錄|記|側錄)|(?:跑|錄|記)到(?:會議)?結束|"
+    r"不用做任何事|放著(?:跑|錄)|還在(?:跑|錄|進行)|進行中|"
+    r"\bkeeps?\s+(?:recording|capturing|running)|\bwill\s+keep\s+(?:recording|capturing|running)|"
+    r"\buntil\s+(?:it|the\s+meeting|the\s+stream)\s+ends\b|\bis\s+(?:still\s+)?(?:recording|capturing)\b"
+)
+
+
+def _unattended_capture(text: str, session_id: str) -> str | None:
+    """The phrase that leaves a capture running, when this conversation registered no capture watch; None otherwise."""
+    for line in text[-TAIL_CHARS:].splitlines():
+        hit = CAPTURE_ONGOING.search(line)
+        if not hit or not CAPTURE_NOUN.search(line):
+            continue
+        try:
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            import f1s_live
+            if f1s_live.active_captures(session_id):
+                return None
+        except Exception:  # noqa: BLE001 - fail open: a broken watch store never blocks a turn
+            return None
+        return hit.group(0)
+    return None
+
+
 OPERATOR_DECISION = re.compile(r"需要你(?:決定|授權)|需要 ?operator ?(?:決定|授權)|\b(?:needs|requires) (?:your|the operator'?s?) "
                                r"(?:decision|authorit|approval)", re.IGNORECASE)
 
@@ -380,10 +416,14 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
     decided = bool(OPERATOR_DECISION.search(text[-TAIL_CHARS:]))
     pinned = [] if decided else _pinned_unshipped(path)
     seat, orders = ("", []) if decided or pinned else _open_orders(doc, path)
+    # An unwatched capture is checked even after 「需要你決定」: a decision line does not watch a recording.
+    capture = None if pinned or orders else _unattended_capture(text, session_id)
     if pinned:
         verdict, matched = "block", "pinned_unshipped:" + ",".join(pinned)
     elif orders:
         verdict, matched = "block", f"curator_orders:{seat}#" + ",".join(str(o.get("n")) for o in orders)
+    elif capture:
+        verdict, matched = "block", f"unattended_capture:{capture}"
     entry = {
         "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "session_id": session_id,
@@ -423,6 +463,8 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
         reason = REASON_ORDERS.format(orders=", ".join(f"#{o.get('n')} {o.get('title')}" for o in orders), seat=seat,
                                       command=f"python {curator_orders.__file__} answer {seat}",
                                       n=state["blocks"], cap=per_turn)
+    elif capture:
+        reason = REASON_CAPTURE.format(matched=capture, n=state["blocks"], cap=per_turn)
     else:
         reason = REASON.format(matched=f" (matched: {matched!r})", n=state["blocks"], cap=per_turn)
     return {"decision": "block", "reason": reason}

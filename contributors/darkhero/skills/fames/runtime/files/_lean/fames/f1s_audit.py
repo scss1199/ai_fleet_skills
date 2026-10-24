@@ -538,6 +538,10 @@ ELEMENTS = [
     {"id": "OP-f1s-live-midturn-orders", "element": "a curator order reaches a running task at its next tool call; the delivery record is a ledger of who holds which contract", "verdict": "REFINE",
      "requires": None, "detail": "claude_session_hook._midturn_sig adds this seat's order file; live_update is shared by the mid-turn hook and the idle waiter; f1s_live.py status lists conversations behind the contract",
      "check_text": ("f1s_live", "def status(")},
+    # 2026-10-24 operator: 「那種不負責任快一個小時的會議記錄沒錄到這種廢物事件為什麼可以發生? … 嚴格修正並立刻套用到所有正在執行或是未來開啟的任何對話內」.
+    {"id": "OP-live-capture-watch", "element": "a capture that cannot be redone is never left running unwatched", "verdict": "REFINE",
+     "requires": None, "detail": "f1s_live.py capture add/done: the idle waiter wakes the conversation when the capture file stops growing (STALLED) or on its check beat (CHECK), exempt from the wake cap; claude-run-until-done-hook refuses 「會一直跑到結束」 without a registration (test_live_capture)",
+     "check_text": ("f1s_live", "def capture_due(")},
     {"id": "OP-pinned-blame-by-content", "element": "an unshipped pinned edit is blamed on the session whose edit text is in the drift", "verdict": "REFINE",
      "requires": None, "detail": "2026-10-24: a session that had shipped its f1s_audit.py edit was blocked twice for another session's open edit; shell writes and unknown text stay blamed",
      "check_text": ("pinned_drift", "def _wrote_the_drift")},

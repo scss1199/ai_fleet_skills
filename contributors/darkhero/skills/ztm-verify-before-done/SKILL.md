@@ -66,6 +66,19 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 同一種錯誤第二次出現時，加一道機械檢查（測試、lint、依賴規則檔、hook 的判斷類別），不要再加一段散文規則；
 長規則文件會被模型當成建議。非 trivial 的邏輯可加 mutation test 當驗證的一部分。
 
+## 即時擷取不能無人看管（operator 2026-10-24，jci_taipei 數位第八次會議漏錄 55 分鐘）
+
+錄會議、字幕側錄、直播／串流下載這類**錯過就無法重來**的擷取，「開了」不等於「錄到了」，「會一直跑到結束」更不是完成：
+
+1. **兩個獨立來源**：主線用本機錄音（讀回檔案在長大才算開了），網頁字幕側錄只當第二來源；背景分頁可能被節流、
+   掉出會議或字幕停更（2026-10-24 12:03 字幕停了，側錄程式還在跑，記到 0 句）。
+2. **登記看門狗再結束回合**：`python C:\ai_workspace\_skill\engines\f1s_live.py capture add --name <名稱> --file <會長大的檔>
+   --stale-s 90 --check-every-s 300 --hours <時數>`。閒置時檔案停止長大就立刻叫醒你（CAPTURE STALLED），
+   每 check-every 秒叫醒你複查（CAPTURE CHECK）；結束時 `capture done --name <名稱>`。
+3. **停滯就救、而且馬上說**：恢復（重開字幕、重新加入、重啟錄音、換來源），讀回又在長大，同時在對話裡告訴 operator。
+4. 機械強制：`claude-run-until-done-hook.py` 看到結尾寫「會一直錄／跑到結束、不用做任何事、進行中」卻沒登記看門狗，
+   就擋下回合結束並給出上面的指令。
+
 ## 驗證器不是目標（METR 2026-08-26，F1S 2026-10-20 吸收）
 
 來源：metr.org/blog/2026-08-26-openai-hugging-face-incident-investigation/（本回合用內建瀏覽器讀過原文）。
