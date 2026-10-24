@@ -102,6 +102,19 @@ redirect 去向，模型要驗回覆引用了 prompt 裡的暗號；資料頁還
 api-matrix／key 健康狀態或一字 ping 都不算；(3) 每次存一份 run 檔，與上一份比，超過門檻才標 regressed。
 重用範本：`ai_ziyaoastro/scripts/llm_provider_probe.py`（模型）、`jci_taipei/jci_taipei_website/scripts/page_latency_probe.py`（頁面）。
 
+## 「X 有效／X 預測 Y」要先登記再算（ai_trader c874f3bc7，F1S 2026-10-24 吸收）
+
+凡是擬合、調參、挑選後說「X 有效」的量化主張（交易規則、模型挑選、文章／排序 A/B、F1S 自家紀錄量測），
+引用一個**早於結論收據**的登記 commit，否則寫 UNKNOWN。ai_trader 30 條手工研究線在設計先固定後 24 條 NOT_QUALIFIED，
+matrix engine 333 個假設 2026-10-23 全數 SCREEN_FAIL——樣本內通過的都沒撐過。步驟：
+(1) 釘資料：原始檔寫一次不覆寫，sha256 manifest＋請求日誌；(2) 登記 commit：設計文字、整個參數族、manifest hash 在第一個數字前 commit，
+腳本或其函式庫自上次 commit 後有改、或 manifest 不同，run 就拒跑；(3) 整個族做多重檢定校正（Reality Check／Romano-Wolf）、
+預先命名的 walk-forward、成本壓力，收斂成一個結論字；(4) 自動迴圈用 append-only 帳本：id = sha(spec + 登記截止日)，篩選只讀截止日前、
+前測只讀之後，晉級對所有前測中假設做 Bonferroni，登記過的永不編輯；(5) 累計揭露試了幾個（v29：登記 287／總 1,103）。
+重用範本（ai_trader/sinopac-trading-system/scripts）：`pull_twse_intraday5s.py`（寫一次＋日誌）、
+`research_cash_intraday_leadlag.py` 的 `registration()`/`run()`（登記守門）、`matrix_engine.py` 的 `register()`/`screen()`/`forward()`/`decide()`（帳本＋前測 Bonferroni）。
+這是證據規則不是新 gate：PROOF 不加片語比對，照 ④ 由寫的人引用登記 commit 與收據。
+
 ## UI 驗證（token_budget: low）
 
 若 claim 含 UI/portal → 先 **ztm-webapp-verify**（MCP browser snapshot）再 verify-done。

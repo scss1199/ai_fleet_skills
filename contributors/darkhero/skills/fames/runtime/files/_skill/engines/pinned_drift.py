@@ -70,6 +70,28 @@ def _norm(text: str) -> str:
 
 
 def _tool_uses(transcript: Path):
+    for name, args, _at in _tool_uses_at(transcript):
+        yield name, args
+
+
+def _epoch(stamp) -> float | None:
+    try:
+        from datetime import datetime
+        return datetime.fromisoformat(str(stamp).replace("Z", "+00:00")).timestamp()
+    except (TypeError, ValueError):
+        return None
+
+
+def _shipped_at(rel: str, hub: Path | None = None) -> float | None:
+    """When the shipped runtime copy of `rel` was last written (its release), or None without one."""
+    try:
+        return ((hub or HUB) / SHIPPED_REL / rel).stat().st_mtime
+    except OSError:
+        return None
+
+
+def _tool_uses_at(transcript: Path):
+    """(tool name, input, epoch of the row or None) for every tool call in the transcript's tail."""
     try:
         with transcript.open("rb") as fh:
             end = fh.seek(0, os.SEEK_END)
@@ -84,9 +106,10 @@ def _tool_uses(transcript: Path):
             continue
         msg = row.get("message") if isinstance(row, dict) else None
         content = msg.get("content") if isinstance(msg, dict) else None
+        at = _epoch(row.get("timestamp")) if isinstance(row, dict) else None
         for block in content if isinstance(content, list) else []:
             if isinstance(block, dict) and block.get("type") == "tool_use":
-                yield str(block.get("name") or ""), block.get("input") or {}
+                yield str(block.get("name") or ""), block.get("input") or {}, at
 
 
 def _drift_lines(rel: str, hub: Path | None = None) -> tuple[set[str], set[str]] | None:
@@ -123,7 +146,9 @@ def edited_by(transcript: Path, paths) -> list[str]:
     wanted = {p: _norm(p) for p in paths}
     hit = set()
     edited: dict[str, dict] = {}
-    for name, args in _tool_uses(transcript):
+    shipped_at = {p: _shipped_at(p) for p in wanted}
+    shell_writes: dict[tuple[str, str], list] = {}
+    for name, args, at in _tool_uses_at(transcript):
         if name in EDIT_TOOLS:
             target = _norm(args.get("file_path") or args.get("notebook_path") or "")
             for p, n in wanted.items():
@@ -142,8 +167,17 @@ def edited_by(transcript: Path, paths) -> list[str]:
                 if not marks:
                     continue
                 redirect_only = all(m in ("> ", ">>") for m in marks)
-                hit.update(p for p, n in wanted.items()
-                           if n in seg and not (redirect_only and seg.find(n) < seg.rfind(">")))
+                for p, n in wanted.items():
+                    if n in seg and not (redirect_only and seg.find(n) < seg.rfind(">")):
+                        shell_writes.setdefault((p, seg.strip()), []).append(at)
+    # A shell write carries no text to compare, but one made before the file's last release was shipped with it
+    # (2026-10-24: a long-shipped `sed -i` blamed this session for f1s-evolve's open edit). The same command can recur
+    # without a timestamp (a summary row repeats it); it counts at the latest time any copy of it is known.
+    for (p, _seg), stamps in shell_writes.items():
+        known = [s for s in stamps if s is not None]
+        latest = max(known) if known else None
+        if latest is None or shipped_at.get(p) is None or latest >= shipped_at[p]:
+            hit.add(p)
     hit.update(p for p, texts in edited.items() if _wrote_the_drift(p, texts))
     return sorted(hit)
 

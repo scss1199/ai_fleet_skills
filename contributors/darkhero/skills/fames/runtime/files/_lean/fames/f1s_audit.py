@@ -553,9 +553,29 @@ ELEMENTS = [
     {"id": "OP-pytest-live-guard", "element": "no hub test may start a detached live process", "verdict": "REFINE",
      "requires": None, "detail": "f1s_pytest_guard (pytest11 entry point on C:/Python312): subprocess.Popen raises for DETACHED_PROCESS while a test runs; an ai_theater test had started the real library-wide ja_finalize run at 11:47:31",
      "check_text": ("f1s_pytest_guard", "class GuardedPopen")},
+    {"id": "OP-f1s-live-unattended", "element": "an unattended claude -p run never waits idle", "verdict": "REFINE",
+     "requires": None, "detail": "f1s_live.wait returns at once when CLAUDE_CODE_SESSION_ATTENDED=0: f1s-evolve's curator run stayed alive behind the waiter and its caller hung 25 min past its 900 s timeout (2026-10-24)",
+     "check_text": ("f1s_live", "CLAUDE_CODE_SESSION_ATTENDED")},
+    {"id": "OP-pinned-shell-release-time", "element": "a shell write shipped in an earlier release is not today's drift", "verdict": "REFINE",
+     "requires": None, "detail": "pinned_drift: a shell write counts only after the shipped copy's release time; a repeated copy without a timestamp takes the known time (test_pinned_drift)",
+     "check_text": ("pinned_drift", "def _shipped_at(")},
     {"id": "OP-pinned-blame-by-content", "element": "an unshipped pinned edit is blamed on the session whose edit text is in the drift", "verdict": "REFINE",
      "requires": None, "detail": "2026-10-24: a session that had shipped its f1s_audit.py edit was blocked twice for another session's open edit; shell writes and unknown text stay blamed",
      "check_text": ("pinned_drift", "def _wrote_the_drift")},
+    # 2026-10-24 ai_trader proposal: pre-registered hypothesis loop (c874f3bc7; v29 registration e0b85fbef 11:31:59 before report 11:32:19).
+    {"id": "EVO-preregistered-claim", "element": "a fitted/tuned/picked 'X works' claim cites a registration commit older than its verdict receipt, else UNKNOWN", "verdict": "REFINE",
+     "requires": None, "detail": "ztm-verify-before-done section: pin data, registration guard, family-wise correction, append-only ledger with forward Bonferroni, cumulative trial count; ai_trader engines as templates; no new skill and no PROOF phrase rule (phrase-matching FP ceiling)",
+     "check_text": ("skill_verify", "要先登記再算")},
+    # 2026-10-24 f1s-evolve tick: three harvested seat memories (ledger 984a5f25ed10, f6277c451c04, 0d656711de0e)
+    {"id": "EVO-powerloss-zero-fill", "element": "ai_trader v30: files written just before Kernel-Power 41 were zero-filled (2 of 3,238), found by sha256 journal", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls 時間與資料新鮮度: sha256 journal for write-once data, full compare after a power loss, .CORRUPT-bak + re-pull; v30 verdict and correlation numbers stay seat-local",
+     "check_text": ("skill_runtime", "斷電前幾分鐘寫的檔案可能大小正常但內容全是零")},
+    {"id": "EVO-silent-param-fallback", "element": "ai_trader ipo-auction-source: TPEx ignores an unparsed date=yyyy/mm and answers the current month; TWSE intraday 09:00:00 row = previous close", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls: probe a new query with two parameter values; check the first row when mismatches cluster at the first checkpoint; auction fees and feasibility numbers stay in ai_trader",
+     "check_text": ("skill_runtime", "伺服器看不懂的參數會靜默退回預設值")},
+    {"id": "EVO-line-drive-createdtime", "element": "jci_taipei jci-meet-display-names: Drive webhook search by createdTime; image events file_size=0", "verdict": "REFINE",
+     "requires": None, "detail": "line-oa-ingest interpret list gets the two capture facts; the Meet display-name -> member roster and LINE uid are personal data and stay in the jci_taipei memory",
+     "check_text": ("skill_line_ingest", "filter by `createdTime`")},
 ]
 
 

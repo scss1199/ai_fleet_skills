@@ -319,6 +319,11 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
     session_id = str(doc.get("session_id") or "")
     if not session_id or doc.get("agent_id") or not enabled():
         return 0, ""
+    if os.environ.get("CLAUDE_CODE_SESSION_ATTENDED") == "0":
+        # An unattended `claude -p` run (entrypoint sdk-cli) has nobody to wake, and the CLI waits for its async
+        # hooks before it exits: on 2026-10-24 f1s-evolve's curator run (pid 51376) stayed alive behind this waiter
+        # and its caller hung 25 min past its own 900 s timeout. Only attended conversations wait.
+        return 0, ""
     hook = hook or load_hook()
     surface_id = "open-agent-standard" if str(doc.get("turn_id") or "").strip() else "claude"
     transcript = Path(str(doc.get("transcript_path") or ""))
@@ -341,7 +346,7 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
     start = _now()
     state = {"token": token, "pid": os.getpid(), "session_id": session_id, "seat": seat, "surface": surface_id,
              "started": _iso(start), "state": "waiting", "wakes": _recent_wakes(prior, start),
-             "claude_pid": _claude_ancestor(), "transcript": str(transcript),
+             "claude_pid": int(os.environ.get("CLAUDE_PID") or 0) or _claude_ancestor(), "transcript": str(transcript),
              # What it last received: with nothing pending its turn just carried the current contract; with something
              # already pending (it landed after the last tool call) the previous waiter's record, or nothing known.
              "contract": (prior.get("contract") or None) if hook._midturn_pending(surface_id, session_id, seat=sig_seat)

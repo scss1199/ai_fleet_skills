@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-10-24T14:13:30",
+  "generated": "2026-10-24T16:10:48",
   "required": [
     "fames",
     "independent-review",
@@ -33,6 +33,7 @@
     "library-bookmark-coverage",
     "line-oa-ingest",
     "line-oa-send",
+    "meta-data-deletion",
     "mtd-judgment-escalation",
     "mtm-api-pool-offload",
     "mtm-claude-remnant-cleanup",
