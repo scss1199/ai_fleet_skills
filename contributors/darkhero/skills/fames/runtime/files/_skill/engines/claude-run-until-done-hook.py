@@ -135,9 +135,15 @@ CAPTURE_ONGOING = re.compile(
 )
 
 
+QUOTED = re.compile(r"「[^」\n]*」|“[^”\n]*”|\"[^\"\n]*\"|`[^`\n]*`")
+
+
 def _unattended_capture(text: str, session_id: str) -> str | None:
-    """The phrase that leaves a capture running, when this conversation registered no capture watch; None otherwise."""
+    """The phrase that leaves a capture running, when this conversation registered no capture watch; None otherwise.
+    Quoted text is not this reply's own claim: the report on the 2026-10-24 incident quoted 「會一直跑到結束」 and was
+    blocked for it."""
     for line in text[-TAIL_CHARS:].splitlines():
+        line = QUOTED.sub("", line)
         hit = CAPTURE_ONGOING.search(line)
         if not hit or not CAPTURE_NOUN.search(line):
             continue
