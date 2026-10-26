@@ -576,6 +576,17 @@ ELEMENTS = [
     {"id": "EVO-line-drive-createdtime", "element": "jci_taipei jci-meet-display-names: Drive webhook search by createdTime; image events file_size=0", "verdict": "REFINE",
      "requires": None, "detail": "line-oa-ingest interpret list gets the two capture facts; the Meet display-name -> member roster and LINE uid are personal data and stay in the jci_taipei memory",
      "check_text": ("skill_line_ingest", "filter by `createdTime`")},
+    # 2026-10-27 f1s-evolve tick: ai_trader proposal (commit ee5e6e523); jci_taipei f6277c451c04 resent unchanged = already EVO-line-drive-createdtime
+    {"id": "EVO-fsync-before-rename", "element": "ai_trader ee5e6e523: atomic .part -> replace without fsync lets a power cut commit the rename but not the data", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls zero-fill bullet gains the prevention half (flush + os.fsync before replace) and a re-hash verify command; detection half was EVO-powerloss-zero-fill",
+     "check_text": ("skill_runtime", "原子寫入在 rename 前要先 fsync")},
+    # 2026-10-27 f1s-evolve tick: ledger 4e0557dfcc97 (kyloren IG card 006f5f07) + 984a5f25ed10 resent
+    {"id": "EVO-ig-900-to-900k-noise", "element": "kyloren card 006f5f07d1bd3ee6: IG reel 「從900美元創造超過90萬美元」 (keep learning, grow a small account)", "verdict": "INFO",
+     "requires": None, "detail": "rejected as noise: untrusted trading self-promotion with no procedure, tool or verifiable claim; harvest score came from low coverage, not content; triage class noise",
+     "check_text": ("skill_reverse", "generalize（附一句繁中規則）／seat-specific／noise")},
+    {"id": "EVO-v30-leadlag-resent-covered", "element": "ai_trader memory v30-cash-intraday-leadlag-20261024 re-harvested (ledger 984a5f25ed10)", "verdict": "INFO",
+     "requires": None, "detail": "already in F1S: zero-fill/sha256 journal = EVO-powerloss-zero-fill, fsync before replace = EVO-fsync-before-rename, 09:00:00 prior-close row = windows-runtime-pitfalls; v30 verdict and correlations stay seat-local; no change",
+     "check_text": ("skill_runtime", "盤中檔的第一列也可能是前一日收盤")},
     # 2026-10-26 operator (side session): measure the context every conversation pays and cut the measured duplicates.
     {"id": "OP-contract-once-per-conversation", "element": "a conversation receives each contract line once; skills idle 30 days leave the listing", "verdict": "REFINE",
      "requires": None, "detail": "claude_session_hook._contract_dedup drops FAMES CORE / TOKEN CORE / red-line lines the conversation already holds, SessionStart resets; audit-session-tax.py --replay over 32 ai_darkhero conversations: fixed 17,914 -> 16,502 tok, mid-turn 97,079 -> 17,946, later prompts 112,708 -> 45,367 (test_midturn_refresh)",
