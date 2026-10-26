@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "4cd6c4f2f40dde1d72c95b0136e576b587d2cca78832b1db6d04db8b5013a513",
   "runner_state": "armed",
-  "observed_at": "2026-10-26T13:14:29.946237+00:00",
+  "observed_at": "2026-10-26T13:59:18.015136+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -362,16 +362,22 @@
         "receipt_sha256": "98e2f6d11cee28eae402424580052441e528d4360318f6cf76a78a6538c8d368"
       },
       {
-        "agent": "ai_photo",
+        "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-26T15:39:01+08:00",
-        "receipt_sha256": "c2a5ccdaa64216444a658499505036346ff0485852a13e295ab5b3d2aaa683f5"
+        "observed_at": "2026-10-26T21:44:36+08:00",
+        "receipt_sha256": "333f499ec0e7d2411f41775bb0590938022fe5e12d0d0d02e5d955f54aa6e11c"
       },
       {
         "agent": "ai_photo",
         "surface": "claude",
-        "observed_at": "2026-10-26T15:54:05+08:00",
-        "receipt_sha256": "75b96ab1a873a7ad24afe503ea34cff136785d18907f43c8e26d330b653dae75"
+        "observed_at": "2026-10-26T21:28:46+08:00",
+        "receipt_sha256": "ebae5509acdb53e2ad7534b1aa5295cc346eccf726c6fbfe0cd8446e9772e274"
+      },
+      {
+        "agent": "ai_photo",
+        "surface": "claude",
+        "observed_at": "2026-10-26T21:40:47+08:00",
+        "receipt_sha256": "7127ce2c29a9c93bb46853f514c5f629d26c46d0beabaf696e31c95f65760f57"
       },
       {
         "agent": "ai_nuwa",
@@ -388,14 +394,14 @@
       {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-26T16:07:57+08:00",
-        "receipt_sha256": "779837226f7d2ed591f22028acab6ad52453106ed35b3e9497f5a7a7767fb108"
+        "observed_at": "2026-10-26T21:43:41+08:00",
+        "receipt_sha256": "78187e7792b5f21c32613491fdd5cdc8ba6073cbb07d40debd8420129cf9b26c"
       },
       {
-        "agent": "engines",
+        "agent": "ai_fleet_skills",
         "surface": "claude",
-        "observed_at": "2026-10-26T13:35:55+08:00",
-        "receipt_sha256": "f34a83aaff7988494725c6b62014ca2604aa6ee5d2aaf242a1182370a7206892"
+        "observed_at": "2026-10-26T21:44:26+08:00",
+        "receipt_sha256": "054af546dfc82efacf77e4b6b74de6cd2f87779000117d7c78ba4b6c077f4907"
       },
       {
         "agent": "ai_theater",
