@@ -340,6 +340,46 @@ MIDTURN_WATCH=("_registry/fames-protocol.json","_registry/rules-blueprint.json",
 
 
 MIDTURN_HEAD="F1S MID-TURN UPDATE (an upgrade landed while this task was running; apply it from the next step)"
+CONTRACT_LINE_PREFIXES=("TOKEN CORE ","FAMES CORE:","HARD INVARIANTS:","OPERATOR RED LINES:","SEAL-AP-1:",
+                        "Task intake binds goal identity","Apply this contract to the current prompt")
+
+
+def _contract_dedup(surface_id: str, session_id: str, text: str, *, agent_id: str="", reset: bool=False) -> str:
+    """Drop the contract lines this conversation already holds verbatim, and record the rest as held.
+
+    2026-10-26 (audit-session-tax.py, 7 days of ai_darkhero conversations): the first prompt repeated the FAMES CORE
+    and TOKEN CORE lines SessionStart had just delivered (~950 tokens per conversation), and every upgrade re-sent the
+    whole contract mid-turn and again at the next prompt (~174K identical tokens a week). Only CONTRACT_LINE_PREFIXES
+    lines are dropped; per-turn status lines always go out. SessionStart (startup, resume, clear, compact) resets the
+    ledger, since a compacted conversation may no longer hold them. Claude retains hook context; the open-agent
+    surface is ephemeral and keeps every line. Never raises; on any error the text goes out whole."""
+    if surface_id != "claude" or not session_id.strip() or not text:
+        return text
+    try:
+        import hashlib
+        scope=f"{surface_id}\0{session_id}"+(f"\0{agent_id}" if agent_id else "")
+        path=HUB/"_registry"/"token-preflight"/"contract-delivery"/f"{hashlib.sha256(scope.encode('utf-8')).hexdigest()[:24]}.json"
+        held=set()
+        if not reset:
+            try:
+                held=set(json.loads(path.read_text(encoding="utf-8")).get("lines") or [])
+            except (OSError,ValueError,AttributeError):
+                held=set()
+        kept=[]
+        for line in text.split("\n"):
+            if line.strip().startswith(CONTRACT_LINE_PREFIXES):
+                digest=hashlib.sha256(line.strip().encode("utf-8")).hexdigest()[:32]
+                if digest in held:
+                    continue
+                held.add(digest)
+            kept.append(line)
+        path.parent.mkdir(parents=True,exist_ok=True)
+        stage=path.with_name(path.name+f".{os.getpid()}.tmp")
+        stage.write_text(json.dumps({"lines":sorted(held),"at":datetime.now(timezone.utc).isoformat()}),encoding="utf-8")
+        os.replace(stage,path)
+        return "\n".join(kept).strip()
+    except Exception:
+        return text
 
 
 def _orders_files(seat: str) -> list[Path]:
@@ -450,7 +490,7 @@ def live_update(doc, *, event: str="PostToolUse", watch_seat: str | None=None) -
                                     transcript_path=str(doc.get("transcript_path") or ""))):
         if update:
             parts.append(update)
-    return "\n".join(p for p in parts if p).strip()
+    return _contract_dedup(surface_id,session_id,"\n".join(p for p in parts if p).strip(),agent_id=agent_id)
 
 
 def _midturn(doc) -> int:
@@ -702,6 +742,7 @@ def main():
     orders=_curator_orders(agent)
     if orders:
         context=(orders+"\n"+context).strip()
+    context=_contract_dedup(surface_id, session_id, context, reset=event == "SessionStart")
     status_path=CODEX_STATUS if surface_id == "open-agent-standard" else STATUS
     status_path.parent.mkdir(parents=True,exist_ok=True)
     status_path.write_text(json.dumps({"schema":3,"last_fired":datetime.now(timezone.utc).isoformat(),"event":event,"cwd":cwd,"agent":agent,"surface_id":surface_id,"runtime_event_observed":bool(locals().get("runtime_event_observed", False)),"fames_state":state,"t1_hard_lines":t1_state,"session_source":session_source or None,"agc":{k:(result.get("auto_goal_compact") or {}).get(k) for k in ("state","agent","seat_resolution","refreshed","trigger","precompact_hook_armed","elapsed_ms")} if isinstance(locals().get("result"),dict) else None},indent=2),encoding="utf-8")

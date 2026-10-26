@@ -1,5 +1,6 @@
 ---
 name: mtd-judgment-escalation
+disable-model-invocation: true
 description: When to spend Claude tokens for irreducible judgment. Use when zero-token-mechanism paths and PFKT rubrics cannot decide — architecture, migration strategy, operator gates.
 metadata:
   fleet:

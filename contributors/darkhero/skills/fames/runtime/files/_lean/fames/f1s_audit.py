@@ -576,6 +576,10 @@ ELEMENTS = [
     {"id": "EVO-line-drive-createdtime", "element": "jci_taipei jci-meet-display-names: Drive webhook search by createdTime; image events file_size=0", "verdict": "REFINE",
      "requires": None, "detail": "line-oa-ingest interpret list gets the two capture facts; the Meet display-name -> member roster and LINE uid are personal data and stay in the jci_taipei memory",
      "check_text": ("skill_line_ingest", "filter by `createdTime`")},
+    # 2026-10-26 operator (side session): measure the context every conversation pays and cut the measured duplicates.
+    {"id": "OP-contract-once-per-conversation", "element": "a conversation receives each contract line once; skills idle 30 days leave the listing", "verdict": "REFINE",
+     "requires": None, "detail": "claude_session_hook._contract_dedup drops FAMES CORE / TOKEN CORE / red-line lines the conversation already holds, SessionStart resets; audit-session-tax.py --replay over 32 ai_darkhero conversations: fixed 17,914 -> 16,502 tok, mid-turn 97,079 -> 17,946, later prompts 112,708 -> 45,367 (test_midturn_refresh)",
+     "check_text": ("session_hook", "def _contract_dedup(")},
 ]
 
 
