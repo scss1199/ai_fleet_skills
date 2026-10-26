@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "4cd6c4f2f40dde1d72c95b0136e576b587d2cca78832b1db6d04db8b5013a513",
   "runner_state": "armed",
-  "observed_at": "2026-10-26T20:17:53.266380+00:00",
+  "observed_at": "2026-10-26T20:59:33.866009+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -362,10 +362,10 @@
         "receipt_sha256": "98e2f6d11cee28eae402424580052441e528d4360318f6cf76a78a6538c8d368"
       },
       {
-        "agent": "ai_darkhero",
+        "agent": "ai_hgame",
         "surface": "claude",
-        "observed_at": "2026-10-26T22:19:53+08:00",
-        "receipt_sha256": "69d6376cb60e2f5acee6b079917c1aaeb05bb838e08a415d577082128e5094d0"
+        "observed_at": "2026-10-27T04:38:16+08:00",
+        "receipt_sha256": "323266ce6161c4f6054e982aeb5bb13f374047e488922cbec4240a1bdc371bab"
       },
       {
         "agent": "ai_photo",
@@ -374,10 +374,16 @@
         "receipt_sha256": "ebae5509acdb53e2ad7534b1aa5295cc346eccf726c6fbfe0cd8446e9772e274"
       },
       {
+        "agent": "ai_trader",
+        "surface": "claude",
+        "observed_at": "2026-10-27T04:46:07+08:00",
+        "receipt_sha256": "62e7d30a5c09340872dba8937cf126e44871ac25a4d731eef343cf48053b3469"
+      },
+      {
         "agent": "ai_photo",
         "surface": "claude",
-        "observed_at": "2026-10-27T00:13:35+08:00",
-        "receipt_sha256": "1801601660b2c68f82d31b998dc4a6a355a857693dc120f27e56030aecdf6896"
+        "observed_at": "2026-10-27T04:51:43+08:00",
+        "receipt_sha256": "31cfc8739d9d4b140acbe46cabb06181e5da7fd321d65adfe6070df953f74757"
       },
       {
         "agent": "ai_nuwa",
@@ -400,14 +406,14 @@
       {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-26T22:22:24+08:00",
-        "receipt_sha256": "cdef5a73f815ab08bd5865528af1e562ca49dd7c92764f85b9eff4c192693b36"
+        "observed_at": "2026-10-27T04:34:18+08:00",
+        "receipt_sha256": "9ba9a1851a4bf2c18788ff07ea395999454daf3b32a44ccfcc8e7b3178575f46"
       },
       {
-        "agent": "ai_fleet_skills",
+        "agent": "engines",
         "surface": "claude",
-        "observed_at": "2026-10-26T21:44:26+08:00",
-        "receipt_sha256": "054af546dfc82efacf77e4b6b74de6cd2f87779000117d7c78ba4b6c077f4907"
+        "observed_at": "2026-10-27T04:51:02+08:00",
+        "receipt_sha256": "3feeb78cbfbc26d08f40c0824559bd55f06bb9264bc2b4745ceca8e4943b7920"
       },
       {
         "agent": "ai_theater",
