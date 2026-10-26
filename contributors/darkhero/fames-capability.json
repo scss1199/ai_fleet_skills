@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "4cd6c4f2f40dde1d72c95b0136e576b587d2cca78832b1db6d04db8b5013a513",
   "runner_state": "armed",
-  "observed_at": "2026-10-26T06:59:18.985570+00:00",
+  "observed_at": "2026-10-26T07:29:38.414890+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -358,20 +358,26 @@
       {
         "agent": "ai_metadata",
         "surface": "claude",
-        "observed_at": "2026-10-26T14:34:20+08:00",
-        "receipt_sha256": "6bbb2f81e3cb68ab4dac045ef0f471921ba3894ada12f5990d9216f2ff746849"
+        "observed_at": "2026-10-26T15:18:06+08:00",
+        "receipt_sha256": "8bb392892a3e24b87ef1849ef1db373abded25b72a9edb2f34f97dbb769f38e6"
       },
       {
         "agent": "ai_photo",
         "surface": "claude",
-        "observed_at": "2026-10-26T14:17:03+08:00",
-        "receipt_sha256": "145121ee73d9729ff303b11c3d7ba7336fe1f9f2b62b6c2f04c2562a429893ce"
+        "observed_at": "2026-10-26T15:13:13+08:00",
+        "receipt_sha256": "4f623317dc66263145fc5b0b921d77a457a8a9eaadd2300162c8378177a5e4ac"
+      },
+      {
+        "agent": "ai_photo",
+        "surface": "claude",
+        "observed_at": "2026-10-26T15:23:33+08:00",
+        "receipt_sha256": "539525cc2e05c1c4997d05b313fd7a1bae1a7207bc0c68c6e35ae36e9e4add55"
       },
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-26T14:16:41+08:00",
-        "receipt_sha256": "443f380d4d71352ff87b07c5c1a5d277225332ef5eca22ad4f56930d3fe5629e"
+        "observed_at": "2026-10-26T15:06:20+08:00",
+        "receipt_sha256": "ff24b8e1884e30a891adf30995ddecc68f55ad39eb4b30561df96a66506a104c"
       },
       {
         "agent": "ai_ziyaoastro",
@@ -390,6 +396,12 @@
         "surface": "claude",
         "observed_at": "2026-10-26T13:35:55+08:00",
         "receipt_sha256": "f34a83aaff7988494725c6b62014ca2604aa6ee5d2aaf242a1182370a7206892"
+      },
+      {
+        "agent": "ai_theater",
+        "surface": "claude",
+        "observed_at": "2026-10-26T15:18:52+08:00",
+        "receipt_sha256": "dee578da7cad63260d58026b40439da969be35820960f5e610f5e91fa8307f6a"
       }
     ],
     "runtime_release_sha256": "7ed87953ecb882b5701b0c587dd6ef395da3627992a605062499e9abeee536c7"
