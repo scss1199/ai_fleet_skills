@@ -49,6 +49,11 @@ before making access or completeness claims.
   2026-10-22): only the member count and the profiles of people who spoke in a
   saved event are obtainable. When a task says "add everyone in group X", say
   this at intake, before any work, and offer speakers + count.
+- Ad-hoc Drive queries on the webhook archive filter by `createdTime`;
+  `modifiedTime` missed events in the jci_taipei 2026-10-24 capture. Saved image
+  events carry `file_size=0`: the bytes are not in Drive and must be fetched by
+  `message_id` through the LINE message-content API (jci_taipei
+  `_line/line_api.py download_message_content`).
 
 ## Acquire linked social content
 

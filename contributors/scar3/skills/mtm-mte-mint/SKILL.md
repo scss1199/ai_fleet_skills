@@ -1,5 +1,6 @@
 ---
 name: mtm-mte-mint
+disable-model-invocation: true
 description: >-
   MTE-Skill: when an agent repeats the same action 3+ times, mint a minimal-token
   engine script instead of TRN loops. Pairs with ADUS detect→promote. Species MTE.

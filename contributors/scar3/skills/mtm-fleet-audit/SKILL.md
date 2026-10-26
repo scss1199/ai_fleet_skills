@@ -1,5 +1,6 @@
 ---
 name: mtm-fleet-audit
+disable-model-invocation: true
 description: >-
   MTM (minimal-token-mechanism) fleet harvest: auto-pull agent scorecards, park,
   PFKT, SUBMIT — 0-token rubric for skill candidates, optimize, parallel, PFKT compliance.

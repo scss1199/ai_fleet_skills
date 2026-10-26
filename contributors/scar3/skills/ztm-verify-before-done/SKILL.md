@@ -66,6 +66,19 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 同一種錯誤第二次出現時，加一道機械檢查（測試、lint、依賴規則檔、hook 的判斷類別），不要再加一段散文規則；
 長規則文件會被模型當成建議。非 trivial 的邏輯可加 mutation test 當驗證的一部分。
 
+## 即時擷取不能無人看管（operator 2026-10-24，jci_taipei 數位第八次會議漏錄 55 分鐘）
+
+錄會議、字幕側錄、直播／串流下載這類**錯過就無法重來**的擷取，「開了」不等於「錄到了」，「會一直跑到結束」更不是完成：
+
+1. **兩個獨立來源**：主線用本機錄音（讀回檔案在長大才算開了），網頁字幕側錄只當第二來源；背景分頁可能被節流、
+   掉出會議或字幕停更（2026-10-24 12:03 字幕停了，側錄程式還在跑，記到 0 句）。
+2. **登記看門狗再結束回合**：`python C:\ai_workspace\_skill\engines\f1s_live.py capture add --name <名稱> --file <會長大的檔>
+   --stale-s 90 --check-every-s 300 --hours <時數>`。閒置時檔案停止長大就立刻叫醒你（CAPTURE STALLED），
+   每 check-every 秒叫醒你複查（CAPTURE CHECK）；結束時 `capture done --name <名稱>`。
+3. **停滯就救、而且馬上說**：恢復（重開字幕、重新加入、重啟錄音、換來源），讀回又在長大，同時在對話裡告訴 operator。
+4. 機械強制：`claude-run-until-done-hook.py` 看到結尾寫「會一直錄／跑到結束、不用做任何事、進行中」卻沒登記看門狗，
+   就擋下回合結束並給出上面的指令。
+
 ## 驗證器不是目標（METR 2026-08-26，F1S 2026-10-20 吸收）
 
 來源：metr.org/blog/2026-08-26-openai-hugging-face-incident-investigation/（本回合用內建瀏覽器讀過原文）。
@@ -88,6 +101,19 @@ redirect 去向，模型要驗回覆引用了 prompt 裡的暗號；資料頁還
 不穩或慢的目標加輪；遇 429/503 降並發；模型要用正式環境實際用的那把 key 和實際大小的 prompt（暗號藏在長 system prompt 裡），
 api-matrix／key 健康狀態或一字 ping 都不算；(3) 每次存一份 run 檔，與上一份比，超過門檻才標 regressed。
 重用範本：`ai_ziyaoastro/scripts/llm_provider_probe.py`（模型）、`jci_taipei/jci_taipei_website/scripts/page_latency_probe.py`（頁面）。
+
+## 「X 有效／X 預測 Y」要先登記再算（ai_trader c874f3bc7，F1S 2026-10-24 吸收）
+
+凡是擬合、調參、挑選後說「X 有效」的量化主張（交易規則、模型挑選、文章／排序 A/B、F1S 自家紀錄量測），
+引用一個**早於結論收據**的登記 commit，否則寫 UNKNOWN。ai_trader 30 條手工研究線在設計先固定後 24 條 NOT_QUALIFIED，
+matrix engine 333 個假設 2026-10-23 全數 SCREEN_FAIL——樣本內通過的都沒撐過。步驟：
+(1) 釘資料：原始檔寫一次不覆寫，sha256 manifest＋請求日誌；(2) 登記 commit：設計文字、整個參數族、manifest hash 在第一個數字前 commit，
+腳本或其函式庫自上次 commit 後有改、或 manifest 不同，run 就拒跑；(3) 整個族做多重檢定校正（Reality Check／Romano-Wolf）、
+預先命名的 walk-forward、成本壓力，收斂成一個結論字；(4) 自動迴圈用 append-only 帳本：id = sha(spec + 登記截止日)，篩選只讀截止日前、
+前測只讀之後，晉級對所有前測中假設做 Bonferroni，登記過的永不編輯；(5) 累計揭露試了幾個（v29：登記 287／總 1,103）。
+重用範本（ai_trader/sinopac-trading-system/scripts）：`pull_twse_intraday5s.py`（寫一次＋日誌）、
+`research_cash_intraday_leadlag.py` 的 `registration()`/`run()`（登記守門）、`matrix_engine.py` 的 `register()`/`screen()`/`forward()`/`decide()`（帳本＋前測 Bonferroni）。
+這是證據規則不是新 gate：PROOF 不加片語比對，照 ④ 由寫的人引用登記 commit 與收據。
 
 ## UI 驗證（token_budget: low）
 

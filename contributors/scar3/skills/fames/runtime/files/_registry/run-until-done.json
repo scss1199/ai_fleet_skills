@@ -7,5 +7,11 @@
   "enabled": true,
   "max_blocks_per_turn": 2,
   "max_blocks_per_session": 12,
-  "note": "pending_patterns / done_patterns may be overridden here; omitted keys use the hook's defaults. Set enabled=false to park."
+  "note": "pending_patterns / done_patterns may be overridden here; omitted keys use the hook's defaults. Set enabled=false to park.",
+  "live_wake": {
+    "enabled": true,
+    "authority": "operator 2026-10-24 「一樣改 目的就是當任何對話一閒置後立刻套用」",
+    "hook": "_skill/engines/f1s_live.py wait (asyncRewake Stop hook, timeout 259200 s)",
+    "note": "An idle conversation is woken when an F1S upgrade or its seat's curator order lands; at most 24 wakes per conversation per day. Set enabled=false to stop waking (waiters exit within 5 s)."
+  }
 }
