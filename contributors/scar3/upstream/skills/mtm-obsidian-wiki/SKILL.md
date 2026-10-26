@@ -1,5 +1,6 @@
 ---
 name: mtm-obsidian-wiki
+disable-model-invocation: true
 description: >-
   Hub Obsidian LLM Wiki + MTM shared knowledge. Vault C:/ai_workspace/_wiki (data zone, not a project seat).
   TR0: keywords → mtm-wiki-query --brief → resolve 1–3 pages max.
