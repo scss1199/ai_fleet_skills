@@ -549,6 +549,22 @@ def _curator_orders(agent: str) -> str:
         return ""
 
 
+def _article_relay(agent: str, cwd: str) -> str:
+    """operator 2026-10-26: on the operator's prompt to the curator, new LINE articles go to the seat they were sent
+    for (kyloren_quant -> ai_trader as a curator order; the curator's own kyloren_bot articles inline). "" for every
+    other seat or on any error (_skill/engines/article_relay.py). Never raises."""
+    path = HUB / "_skill" / "engines" / "article_relay.py"
+    try:
+        spec = importlib.util.spec_from_file_location("fames_hook_article_relay", path)
+        if not path.is_file() or spec is None or spec.loader is None:
+            return ""
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return str(module.hook_context(agent, cwd) or "")
+    except Exception:
+        return ""
+
+
 def _proof_carry(session_id: str) -> str:
     """Claims the PROOF Stop hook could not push back on because its per-turn/per-session cap was spent
     (claude-proof-hook.py `carried`), shown once at the next prompt (F1S 當下閉環 item 6). Never raises."""
@@ -656,7 +672,8 @@ def main():
     if event == "UserPromptSubmit":
         for update in (_t1_refresh(surface_id, session_id, at_start=False),
                        _charter_refresh(surface_id, session_id, cwd, at_start=False, transcript_path=transcript_path),
-                       _proof_carry(session_id), "" if machine_event else _proof_recurrence(cwd)):
+                       _proof_carry(session_id), "" if machine_event else _proof_recurrence(cwd),
+                       "" if machine_event else _article_relay(agent, cwd)):
             if update:
                 context=(context+"\n"+update).strip()
     else:
