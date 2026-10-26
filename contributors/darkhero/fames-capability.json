@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "4cd6c4f2f40dde1d72c95b0136e576b587d2cca78832b1db6d04db8b5013a513",
   "runner_state": "armed",
-  "observed_at": "2026-10-26T03:59:26.477983+00:00",
+  "observed_at": "2026-10-26T04:31:27.228570+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -358,14 +358,26 @@
       {
         "agent": "ai_photo",
         "surface": "claude",
-        "observed_at": "2026-10-26T02:40:24+08:00",
-        "receipt_sha256": "452eaac825fef84649346ff4d14afea9e9a7dc135e3cc671be8cd78ae0c3b4cb"
+        "observed_at": "2026-10-26T12:27:24+08:00",
+        "receipt_sha256": "3dc46595908e47b4afd9bdb188389b77ea9b502a9d2202631ccda9368d759f05"
       },
       {
         "agent": "ai_darkhero",
         "surface": "claude",
         "observed_at": "2026-10-26T04:05:13+08:00",
         "receipt_sha256": "dad07a46252dc48330f8a33b5676947c0acb915cfdaf31f46d060c4875f9edff"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-10-26T12:28:10+08:00",
+        "receipt_sha256": "3239be6a7437d7f50fbd9e237ac8e195124ca22af4e48ee2ba7e5048a2968750"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-10-26T12:30:05+08:00",
+        "receipt_sha256": "649a8db2944b1732ebc0f8464764854acf3332dca90df23aca11ac8689a1c69c"
       },
       {
         "agent": "ai_darkhero",
