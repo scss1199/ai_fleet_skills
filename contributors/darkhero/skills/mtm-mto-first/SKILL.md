@@ -38,6 +38,8 @@ parent_skill: aex-agent-evolution
 
 - 動手前先問要不要寫新東西，依序：重用現有程式 → 標準函式庫 → 原生功能 → 已安裝套件 → 最後才自己寫。
   精簡但不省驗證、安全與錯誤處理。
+  重用的界線：新資料源若只是替別的已登記假設會讀的 store 加欄位（例 leadlag 把每個已存市場都當 leader），要另開
+  自己的 store，否則設計釘住的輸入會默默改變（ai_trader 2026-10-28：24 個世界指數進 `runtime/research/world_macro`）。
 - 改碼前先全域搜尋既有實作與用法（brownfield）；未搜尋即改碼 PROOF 擋（class `code_change`，
   Lean `ClaimContract.code_change_needs_prior_search`）。scratchpad 腳本不算。
 - 精準修改：只動要改的行，旁邊的程式一行都不碰。

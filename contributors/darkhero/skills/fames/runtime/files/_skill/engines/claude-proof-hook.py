@@ -375,6 +375,12 @@ WRITE_VERB = re.compile(r"(?i)\b(?:cp|mv|install|ln|rsync|robocopy|xcopy|copy|mo
                         r"(?:^|[^0-9&<>=\-])>{1,2}(?!\s*(?:&|/dev/null|\$null|nul\b))")
 PRIVATE_DOC = re.compile(r"(?i)\.(?:pdf|docx?|xlsx?|pptx?|zip|7z|rar|csv|tsv|m4a|mp3|mp4|mov|wav|"
                          r"sqlite3?|db|key|pem|env)\b")
+# 2026-10-28 ai_trader: `curl https://sdmx.oecd.org/public/rest/...?format=csv... -o x.csv` (and a heredoc only quoting
+# that URL) was denied: a /public/ segment inside a REMOTE URL is not a local served directory. URLs are dropped from
+# the shell text before matching unless the command uploads (curl -T/-F/--data-binary @, PUT/POST, -InFile).
+URL_TEXT = re.compile(r"(?i)\bhttps?://[^\s'\"<>|`]+")
+UPLOAD_FLAG = re.compile(r"(?i)(?:^|\s)(?:-T|-F|--upload-file|--form|--data-binary|-InFile)\b|"
+                         r"(?:-X|--request|-Method)\s*['\"]?(?:PUT|POST)\b")
 PUBLISH_CONSENT = re.compile(r"(?i)公開|公布|上網|網站|官網|網頁|部署|上線|deploy|publish|public(?:ly)?|website")
 PUBLISH_REASON = (
     "PROOF publish gate (operator 2026-10-18 「不要再發生」): this tool call puts a non-image file ({what}) in a "
@@ -400,6 +406,8 @@ def publish_consent(prompt_text: str) -> bool:
 def _publish_gate(doc: dict, tool: str, ti: dict) -> dict | None:
     if tool in ("Bash", "PowerShell"):
         text = str(ti.get("command") or "")
+        if not UPLOAD_FLAG.search(text):
+            text = URL_TEXT.sub(" ", text)
     elif tool in ("Write", "Edit", "NotebookEdit"):
         text = str(ti.get("file_path") or ti.get("notebook_path") or "")
     else:
