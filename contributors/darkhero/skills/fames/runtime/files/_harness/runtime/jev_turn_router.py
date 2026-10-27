@@ -210,6 +210,9 @@ def advisory_for_turn(workspace, agent, *, prompt_identity, surface_id,
                           usage={'state': 'CACHED_NOT_REMEASURED'}, cache_sha256=_sha(cache_path))
             return result
         if transport is None:
+            # typesafe is a paid model; T1 free-runtime allows it only for upgrades/evals (fleet LLM_ALLOW_PAID=1).
+            if os.environ.get('LLM_ALLOW_PAID') != '1':
+                return stop('paid_provider_not_allowed')
             key = os.environ.get('TYPESAFE_API_KEY', '') or _matrix_key(workspace)
             if not key:
                 return stop('provider_credential_unavailable')

@@ -84,6 +84,7 @@ TEXTS = {
     "skill_sync_engine": HUB / "_skill" / "engines" / "fleet-skill-sync.py",
     "bus_engine": HUB / "_skill" / "engines" / "_bus.py",
     "ship_engine": HUB / "_skill" / "engines" / "ship-f1s.py",
+    "jev_router": HUB / "_harness" / "runtime" / "jev_turn_router.py",
 }
 
 # The architecture scan.  `requires` names the Lean theorem that must be PROVED for the verdict to stand;
@@ -678,6 +679,10 @@ ELEMENTS = [
     {"id": "EVO-skillspector-deploy-absorb-not-gated", "element": "proposal parts: gate fleet-skill-sync _deploy_to_root and cmd_absorb", "verdict": "INFO",
      "requires": None, "detail": "rejected: every agent surface is link_mode=junction into canon, so a deploy-time refusal cannot stop content and fail-closed would only drop 13 skills (fames, token-preflight, agc-auto-goal-compact, ztm-git-ship) from new seats; cmd_absorb writes the incubator, which is never deployed; the 13 baseline findings stay for per-finding review, no baseline accepted",
      "check_text": ("skill_vet", "Deploy is not gated: every agent surface is a junction into canon, so canon itself is the install point.")},
+    # f1s-evolve 2026-10-28: ai_darkhero SkillSpector review proposal (E1 api.typesafe.ai)
+    {"id": "EVO-jev-paid-gate", "element": "jev_turn_router network path calls paid typesafe jev-1.13.0 whenever a key exists", "verdict": "REFINE",
+     "requires": None, "detail": "adopted: T1 free-runtime forbids paid models at runtime; the real transport now needs LLM_ALLOW_PAID=1 (fleet convention, f1s-mesh PAID_GATE) before any credential read, else stop paid_provider_not_allowed and Jev stays local/free; injected test transports unaffected; test_paid_provider_needs_llm_allow_paid",
+     "check_text": ("jev_router", "if os.environ.get('LLM_ALLOW_PAID') != '1':")},
 ]
 
 
