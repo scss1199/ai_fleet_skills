@@ -10,6 +10,9 @@ HUB=Path(os.environ.get("AI_WORKSPACE") or Path(__file__).resolve().parents[4])
 STATUS=HUB/"_registry"/"token-preflight"/"claude-hook-status.json"
 T1_DELIVERY=HUB/"_registry"/"token-preflight"/"t1-delivery"
 CHARTER_DELIVERY=HUB/"_registry"/"token-preflight"/"charter-delivery"
+# f1s_daily.py rewrites this once a day (operator 2026-10-27): every open conversation takes its diff like an instruction
+# file, and a new conversation gets the whole text at its first prompt (it was never loaded at start).
+DAILY_LIVE=("_registry","f1s-daily","live.md")
 CODEX_STATUS=HUB/"_registry"/"token-preflight"/"codex-hook-status.json"
 MACHINE_EVENT_TAGS=("<task-notification>","<side-sessions-event>","<ci-monitor-event>","<cross-session-message")
 
@@ -167,6 +170,7 @@ def _instruction_files(surface_id: str, cwd: str, transcript_path: str = "") -> 
         memory = _memory_index(transcript_path)
         if memory is not None:
             roots.append(memory)
+        roots.append(HUB.joinpath(*DAILY_LIVE).resolve())
     found: list[Path] = []
     pending = [(p, 0) for p in roots]
     while pending:
@@ -242,7 +246,8 @@ def _charter_refresh(surface_id: str, session_id: str, cwd: str, *, at_start: bo
                 os.replace(stage, blob)
         if last != current or last_doc.get("cwd") != anchor:
             stage = record.with_suffix(".tmp")
-            stage.write_text(json.dumps({"files": current, "cwd": anchor,
+            loaded = {k: v for k, v in current.items() if not (at_start and k == str(HUB.joinpath(*DAILY_LIVE).resolve()))}
+            stage.write_text(json.dumps({"files": loaded, "cwd": anchor,
                                          "at": datetime.now(timezone.utc).isoformat()}), encoding="utf-8")
             os.replace(stage, record)
         if at_start or last == current:
@@ -336,7 +341,7 @@ def _resolve_seat(cwd: str) -> str:
 
 
 MIDTURN_WATCH=("_registry/fames-protocol.json","_registry/rules-blueprint.json",
-               "_skill/fleet-skills/fames/runtime/manifest.json")
+               "_skill/fleet-skills/fames/runtime/manifest.json","_registry/f1s-daily/live.md")
 
 
 MIDTURN_HEAD="F1S MID-TURN UPDATE (an upgrade landed while this task was running; apply it from the next step)"

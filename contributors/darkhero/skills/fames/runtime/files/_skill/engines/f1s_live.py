@@ -281,7 +281,8 @@ def contract_sig(hook, seat: str) -> str:
         orders = list(hook._orders_files(seat))
     except Exception:  # noqa: BLE001 - a hook without the orders store still has a directive and rules
         orders = []
-    for path in [HUB / "_registry" / "rules-blueprint.json", *orders]:
+    # f1s_daily.py's live.md (operator 2026-10-27 「動態作用回所有正在跑的對話」) wakes idle conversations once a day.
+    for path in [HUB / "_registry" / "rules-blueprint.json", HUB / "_registry" / "f1s-daily" / "live.md", *orders]:
         try:
             digest.update(path.read_bytes())
         except OSError:
