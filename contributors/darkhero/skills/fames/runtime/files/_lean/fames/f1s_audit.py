@@ -602,6 +602,20 @@ ELEMENTS = [
     {"id": "EVO-burnin-duplicate-20261027", "element": "hub-root burnin-subtitle-ocr-learning proposal re-sent 2026-10-27 (ledger 42161c5cf4fd, memory unchanged since 2026-10-18)", "verdict": "INFO",
      "requires": None, "detail": "already integrated 2026-10-19 as EVO-theater-cpu-thread-cap and EVO-theater-fansub-corpus (also EVO-burnin-duplicate-20261021); windows-runtime-pitfalls CPU 配額與批次負載 still holds the thread cap and HSV mask; no text added",
      "check_text": ("skill_runtime", "intra_op_num_threads")},
+    # f1s-evolve 2026-10-27: ai_trader matrix-lane-v21 (ledger 6ce432243457) + credit-options-v23 (ledger 8fcbf62f78bb) re-sent
+    {"id": "EVO-matrix-v21-duplicate-20261027", "element": "ai_trader matrix-lane-v21-two-boards-20261018 proposal re-sent again (ledger 6ce432243457)", "verdict": "INFO",
+     "requires": None, "detail": "already integrated 2026-10-18 as EVO-trader-narrow-output (mtm-mto-first: find the parameter that produced the narrowness first) and EVO-trader-v21-seat-local; also EVO-matrix-v21-duplicate-20261022; memory unchanged (modified 2026-10-17T19:33Z); no text added",
+     "check_text": ("skill_method", "先找出產生窄度的參數")},
+    {"id": "EVO-credit-options-v23-duplicate-20261027", "element": "ai_trader credit-options-v23-20261021 proposal re-sent (ledger 8fcbf62f78bb)", "verdict": "INFO",
+     "requires": None, "detail": "already decided 2026-10-23 as EVO-trader-credit-options-v23 (seat-local verdict + dataset inventory); the generic part (pre-register before the first number) is ztm-verify-before-done's registration rule; memory unchanged (modified 2026-10-20T20:27Z); no text added",
+     "check_text": ("skill_verify", "早於結論收據")},
+    # f1s-evolve 2026-10-27: youtube AI news card 0e98692f (ledger c1c71ed6e776) + threads Codex K-line card 7c41a9e8 (ledger ebb06cf6ee03)
+    {"id": "EVO-openai-moonshot-distill-news-noise", "element": "f1s-sources card 0e98692fb21f5e29: AI新聞快報 2026/10/02, OpenAI accuses Moonshot of adversarial distillation of chain of thought", "verdict": "INFO",
+     "requires": None, "detail": "rejected as noise: untrusted news report of an unresolved dispute (the card itself says no attribution evidence was disclosed); no procedure, tool or runtime trap for F1S; harvest score came from low coverage, not content; no text added",
+     "check_text": ("skill_reverse", "generalize（附一句繁中規則）／seat-specific／noise")},
+    {"id": "EVO-codex-kline-analog-seat-local", "element": "kyloren card 7c41a9e81787358a: threads post, ask Codex to find special TSMC K-line patterns and look up what followed historically instead of predicting up/down", "verdict": "INFO",
+     "requires": None, "detail": "rejected as seat-specific: a 398-char trading idea with no code, data or measured result; historical-analog studies belong to ai_trader's own backtest lanes, and any trading use already needs pre-registration under ztm-verify-before-done; no text added",
+     "check_text": ("skill_verify", "早於結論收據")},
 ]
 
 
