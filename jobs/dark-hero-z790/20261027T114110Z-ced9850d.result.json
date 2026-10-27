@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261027T114110Z-ced9850d",
+  "host": "dark-hero-z790",
+  "started_at": "2026-10-27T14:20:02+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_darkhero cwd=ai_darkhero auth=env:CLAUDE_CODE_OAUTH_TOKEN 403.9s]\n首輪 tick 還在背景讀文章；它跑完會自動通知我，我再接著出貨和換掉 altos 的 rider。\n",
+  "stderr": "",
+  "finished_at": "2026-10-27T14:26:46+00:00"
+}
