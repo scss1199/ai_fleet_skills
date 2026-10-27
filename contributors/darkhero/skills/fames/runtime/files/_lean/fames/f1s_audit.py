@@ -732,6 +732,13 @@ ELEMENTS = [
     {"id": "EVO-trader-retire-after-verdict", "element": "ai_trader 2026-10-28 F1S proposal: code_reachability.py takes tests/ as roots (lines 109-111), so a research script imported only by its own test counts as reached; the v29/v30 NOT_QUALIFIED lanes each stayed 4 days", "verdict": "REFINE",
      "requires": None, "detail": "windows-runtime-pitfalls 程式可達性: the retire check is 'who imports or dispatches it besides its own test' == empty; script and its test leave in one commit, receipts and raw data stay in runtime, the puller that owns the store (incl. verify) stays; evidence ai_trader 7b9b59da0 (6 files, -1,921 lines, unreached 15->13, re-run 2026-10-28 = 13)",
      "check_text": ("skill_runtime", "除了自己的測試，還有誰")},
+    # f1s-evolve 2026-10-28 (third run): ai_metadata 8ccead0a12ad re-sent + ai_photo fa83063cb679 (correction c6a21ad83c10)
+    {"id": "EVO-two-way-sync-duplicate-20261028", "element": "ai_metadata correction b95734be558d proposal re-sent (ledger 8ccead0a12ad, same operator words as EVO-two-way-sync-newest-wins)", "verdict": "INFO",
+     "requires": None, "detail": "already adopted in the 2026-10-28 04:06 run as EVO-two-way-sync-newest-wins (windows-runtime-pitfalls 時間與資料新鮮度 two-store sync bullet, present in the installed skill text); re-send carries no new operator words; no text added",
+     "check_text": ("skill_runtime", "兩個來源互相同步，逐項以最新狀態與時間戳判定")},
+    {"id": "EVO-derived-store-not-larger-than-source", "element": "ai_photo 2026-10-27 (operator 「C:\\scss\\_photo_index < 這裡為什麼可以有24GB的無意義重複垃圾?」): compare --write saved every full-size output twice (_pick + review/compare), kept every superseded _prev.png and trial PNG unbounded, and share zips outlived their link expiry; 24 of 25 GB in a derived index folder", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls 時間與資料新鮮度: a derived store (review page, cache, index, share bundle) may not outgrow its source; ask whether the destination already holds the bytes before writing a full-size copy, review pages keep crops plus a path/sha256 pointer, superseded versions and expired bundles move to _delete/<date> (permanent delete stays the operator's, T1 刪除), closure reports du derived/source and treats derived > source as a defect; seat fix commits ai_photo bbd9d92 + 039fc79 (57 tests, IMG_0054 --write leaves only _prev.png); evidence conversation a7c6b9f2 (review/compare 17 G = 7.31 copy + 7.40 prev + 1.09 trial, share 7.5 G, 5-file sha256 identical)",
+     "check_text": ("skill_runtime", "衍生儲存（對照頁、快取、索引、分享包）不得比來源大")},
 ]
 
 
