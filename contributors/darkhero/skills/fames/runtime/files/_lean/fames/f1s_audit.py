@@ -627,6 +627,13 @@ ELEMENTS = [
     {"id": "EVO-trader-forward-design-pins", "element": "ai_trader: pin a pre-registered design's gate files in a test, line endings normalized (tests/test_forward_design_pins.py, eae82caba)", "verdict": "REFINE",
      "requires": None, "detail": "adopted into ztm-verify-before-done registration step (2): committed-and-unmodified does not stop a shared gate file from moving a running forward test's design hash; verified 2026-10-27: test passes on HEAD, matrix_data_pull.py at ee5e6e523~1 hashes 24e9e047 vs pin 23e37846, cost_model.yaml at 014ed0474~1 eb256b49 vs pin 3735964c, cost_gate.py 65527dec vs pin f03902f9",
      "check_text": ("skill_verify", "CRLF 當 LF 讀")},
+    # f1s-evolve 2026-10-27: threads Claude Code quota card 0427566a (ledger 61c2394ae62f) + youtube Karpathy bottleneck card 0e74e819 (ledger 913dc03fb1c2)
+    {"id": "EVO-claude-quota-12-tips-covered", "element": "kyloren card 0427566a9579dd24: threads post, 12 Claude Code quota tips (/context for context hogs, CLAUDE.md slimming, MCP, prompt cache)", "verdict": "INFO",
+     "requires": None, "detail": "already covered: token-preflight measures per-turn load with /context (system tools, MCP tools, memory files, skills) before trimming and prefers a fork because it shares the prompt cache; context-budget-measure memory holds the 10-26 cut; the card carries only headlines, the 12 tips themselves are not in it; no text added",
+     "check_text": ("skill_preflight", "context categories: system tools, MCP tools, memory files, skills")},
+    {"id": "EVO-human-absorption-bottleneck-covered", "element": "f1s-sources card 0e74e819b381a6f1: youtube, an OpenAI founding member says human absorption of knowledge is now the slowest part of the system", "verdict": "INFO",
+     "requires": None, "detail": "rejected as already covered: the actionable part (report so the human absorbs it fast) is f1s-intake's conclusion-first two-sentence rule; the rest is commentary with a noisy ASR transcript, no procedure, tool or runtime trap; no text added",
+     "check_text": ("skill_intake", "繁體中文、結論先行、兩句講完")},
 ]
 
 
