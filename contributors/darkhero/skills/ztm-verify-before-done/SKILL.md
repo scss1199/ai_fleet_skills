@@ -108,7 +108,10 @@ api-matrix／key 健康狀態或一字 ping 都不算；(3) 每次存一份 run 
 引用一個**早於結論收據**的登記 commit，否則寫 UNKNOWN。ai_trader 30 條手工研究線在設計先固定後 24 條 NOT_QUALIFIED，
 matrix engine 333 個假設 2026-10-23 全數 SCREEN_FAIL——樣本內通過的都沒撐過。步驟：
 (1) 釘資料：原始檔寫一次不覆寫，sha256 manifest＋請求日誌；(2) 登記 commit：設計文字、整個參數族、manifest hash 在第一個數字前 commit，
-腳本或其函式庫自上次 commit 後有改、或 manifest 不同，run 就拒跑；(3) 整個族做多重檢定校正（Reality Check／Romano-Wolf）、
+腳本或其函式庫自上次 commit 後有改、或 manifest 不同，run 就拒跑；前測開始存列後，在測試裡把每個 gate 檔釘成 sha256（CRLF 當 LF 讀，
+否則 CRLF 與 LF checkout 同文字不同 hash），共用檔（成本表、I/O helper）一改就讓測試失敗，pin 只能在同一 commit 附理由移動；
+改共用 helper 前先列出哪些登記設計的 gate_files() 含它（「已 commit 且未修改」擋不住共用檔悄悄改掉設計 hash：ai_trader v8-owner 前測開跑後被 4874a0087、014ed0474 移過，
+範本 `tests/test_forward_design_pins.py` eae82caba）；(3) 整個族做多重檢定校正（Reality Check／Romano-Wolf）、
 預先命名的 walk-forward、成本壓力，收斂成一個結論字；(4) 自動迴圈用 append-only 帳本：id = sha(spec + 登記截止日)，篩選只讀截止日前、
 前測只讀之後，晉級對所有前測中假設做 Bonferroni，登記過的永不編輯；(5) 累計揭露試了幾個（v29：登記 287／總 1,103）。
 重用範本（ai_trader/sinopac-trading-system/scripts）：`pull_twse_intraday5s.py`（寫一次＋日誌）、

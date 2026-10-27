@@ -616,6 +616,17 @@ ELEMENTS = [
     {"id": "EVO-codex-kline-analog-seat-local", "element": "kyloren card 7c41a9e81787358a: threads post, ask Codex to find special TSMC K-line patterns and look up what followed historically instead of predicting up/down", "verdict": "INFO",
      "requires": None, "detail": "rejected as seat-specific: a 398-char trading idea with no code, data or measured result; historical-analog studies belong to ai_trader's own backtest lanes, and any trading use already needs pre-registration under ztm-verify-before-done; no text added",
      "check_text": ("skill_verify", "早於結論收據")},
+    # f1s-evolve 2026-10-27: youtube Meta layoff card 01ec60a5 (ledger 19d552db5936) + ai_trader ipo-auction-source re-sent (ledger 0d656711de0e)
+    {"id": "EVO-meta-layoff-training-news-noise", "element": "f1s-sources card 01ec60a55cd8f814: Meta layoff recording, employees' computer use collected to train AI", "verdict": "INFO",
+     "requires": None, "detail": "rejected as noise: untrusted news report about another company's data policy; no procedure, tool or runtime trap for F1S; harvest score came from low coverage, not content; no text added",
+     "check_text": ("skill_reverse", "generalize（附一句繁中規則）／seat-specific／noise")},
+    {"id": "EVO-ipo-auction-duplicate-20261027", "element": "ai_trader ipo-auction-source-20261023 proposal re-sent (ledger 0d656711de0e)", "verdict": "INFO",
+     "requires": None, "detail": "already integrated 2026-10-24 as EVO-silent-param-fallback (windows-runtime-pitfalls: unparsed parameters silently fall back to defaults); fees, 美國標 and the feasibility look are ai_trader lane data and stay in its memory; memory unchanged (modified 2026-10-23T01:45Z); no text added",
+     "check_text": ("skill_runtime", "伺服器看不懂的參數會靜默退回預設值")},
+    # f1s-evolve 2026-10-27: ai_trader forward-design-pins proposal (test eae82caba)
+    {"id": "EVO-trader-forward-design-pins", "element": "ai_trader: pin a pre-registered design's gate files in a test, line endings normalized (tests/test_forward_design_pins.py, eae82caba)", "verdict": "REFINE",
+     "requires": None, "detail": "adopted into ztm-verify-before-done registration step (2): committed-and-unmodified does not stop a shared gate file from moving a running forward test's design hash; verified 2026-10-27: test passes on HEAD, matrix_data_pull.py at ee5e6e523~1 hashes 24e9e047 vs pin 23e37846, cost_model.yaml at 014ed0474~1 eb256b49 vs pin 3735964c, cost_gate.py 65527dec vs pin f03902f9",
+     "check_text": ("skill_verify", "CRLF 當 LF 讀")},
 ]
 
 
