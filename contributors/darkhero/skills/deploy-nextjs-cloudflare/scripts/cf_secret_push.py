@@ -112,7 +112,7 @@ def main():
 
     proc = subprocess.run(
         # --no: only the project-local wrangler (lockfile-pinned devDependency) may receive the secrets;
-        # never let npx download a latest wrangler for this pipe (SkillSpector RP1 review 2026-10-27).
+        # it must never fetch a registry-latest wrangler for this pipe (SkillSpector RP1 review 2026-10-27).
         ["npx", "--no", "wrangler", "secret", "bulk", "--name", args.worker],
         input=json.dumps(payload).encode("utf-8"),
         shell=(sys.platform == "win32"),
