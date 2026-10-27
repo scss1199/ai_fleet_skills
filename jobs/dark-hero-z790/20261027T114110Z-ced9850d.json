@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261027T114110Z-ced9850d",
+  "target_host": "dark-hero-z790",
+  "kind": "prompt",
+  "seat": "ai_darkhero",
+  "prompt": "【operator 2026-10-27，由 altos 對話轉送到 darkhero 執行推進；altos 只被同步更新（tray 全自動同步），不在 altos 開發】\n\noperator 原話：\n「建立一個每日自動整理全部對話內容來反向升級f1s的工作流程 順便去包含文章(如果我沒有特別要求馬上讀哪個文章的話 就是會24hr小時內讀完配合所有正在執行或封存的任務)整理出有用的東西 提高矩陣作用 並動態作用回所有正在跑的對話」\n「你把這個對話送到darkhero去執行推進 這邊(altos)是被同步更新的為主 靠tray來達到全自動同步的效果」\n\n要做（在 darkhero，以 curator 身分，照 F1S：f1s-intake → mtm-mto-first → ztm-verify-before-done）：\n1. 每日自動：把本機所有 Claude Code 對話（~/.claude/projects/*/*.jsonl，執行中＋封存）整理成反向升級 F1S 的素材：operator 修正語句、「需要你決定」、反覆工具錯誤、各座位矩陣；可通用的規則走 f1s-evolve 進 canonical（T1 不可改、Lean 稽核與測試全綠才出貨）。\n2. 文章：operator 在任何對話貼的網址或 LINE 文章（article_relay.py 那條）若當下沒要求馬上讀，24 小時內自動讀完（免費池 mtm-api-pool-offload，零 Claude token），摘要＋要點，並和執行中／封存任務做關聯。\n3. 動態作用回所有正在跑的對話：含閒置對話（f1s_live.py 喚醒）。\n4. 提高矩陣作用：各座位 × 執行中／封存／修正／錯誤／文章 的矩陣，缺口回 project-matrix。\n5. 做完由 fleet 同步（contributors/darkhero）推到 altos／scar3；altos 不另外開發。\n\naltos 已做的草稿（可直接取用或重寫，證據路徑在 altos 本機；digest 副本已放 contributors/altos/f1s-daily/digest-2026-10-27.json）：\n- 引擎 _skill/engines/f1s-daily-digest.py（tick/cycle/articles/status；增量讀 transcripts；URL 入列＋24h SLA；免費池 /v1/messages 判定 generalize／seat-specific／noise；digest-<date>.json＋live.md）。\n- 注入通道：~/.claude/CLAUDE.md 只有一行 @C:\\ai_workspace\\_registry\\f1s-daily\\live.md；claude_session_hook._charter_refresh 會在每個對話下一則提示把 live.md 差異注入（altos 2026-10-27 已實證收到）。\n- 限制：PostToolUse 中途與閒置喚醒走不到，因為 live.md 不在 claude_session_hook.MIDTURN_WATCH。提案：canonical hook 把 _registry/f1s-daily/live.md 加進 MIDTURN_WATCH（f1s_live.py 同一簽名即可喚醒閒置對話）。\n- 已發現：f1s-reverse-learning SKILL.md 寫的 _skill/engines/f1s-harvest.py 與 HubClock rider f1s-harvest 在 altos 不存在（fleet 同步未帶到或未實作）；請在 darkhero 核對並決定是否併入本工作流。\n- altos 已註冊 HubClock rider f1s-daily-digest（4h tick）；darkhero 版本出來後，altos 的 rider 應由同步下來的版本取代或移除。\n\n驗收：darkhero 的 HubClock 有可 cite 的每日 rider；至少一輪 digest 產出路徑；live 注入在一個執行中對話有本回合證據；文章 24h 內讀完有收據；上述全綠再回 result。\n",
+  "from": "ai_altos",
+  "created_at": "2026-10-27T11:41:10+00:00",
+  "expires_at": "2026-10-30T11:41:10+00:00"
+}
