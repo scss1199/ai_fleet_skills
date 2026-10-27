@@ -68,7 +68,10 @@ parent_skill: ztm-verify-before-done
 - **非預期斷電（Kernel-Power 41）後，斷電前幾分鐘寫的檔案可能大小正常但內容全是零**：只寫一次的資料檔要記 sha256
   journal，斷電後全檔比對找壞檔，壞檔改名 `.CORRUPT-bak` 重抓，不要信任檔案存在或大小。預防：原子寫入在 rename 前要先 fsync——寫 `.part`、`flush()` + `os.fsync()`，
   再 `replace`；少了 fsync，斷電時 rename 已落盤而資料沒有。附一個重算 sha256 對 journal 的 verify 指令。
-  （ai_trader v30：3,238 檔壞 2；commit ee5e6e523 matrix_data_pull._save）
+  修一個寫入再 rename 的 helper 時，要全 seat 搜 `os.replace`／`Path.replace`／`os.rename`，把每個複本都修掉；
+  優先修「檔案已存在就跳過」的只寫一次存檔（斷電留下的全零檔永遠不會被重寫，來源只給當期就永久遺失），
+  每個 tick 重寫的狀態檔下一次寫入就自癒，熱路徑可不加 fsync 省延遲。
+  （ai_trader v30：3,238 檔壞 2；commit ee5e6e523 matrix_data_pull._save；8b234c3ac 再修同 seat 三個複本）
 - **伺服器看不懂的參數會靜默退回預設值，不會報錯**：例如 TPEx `date=yyyy/mm` 不解析就回當月資料。新接的查詢要用
   兩個不同參數值比對回應確實不同；盤中檔的第一列也可能是前一日收盤（TWSE 5 秒檔 09:00:00 列），差異集中在第一個
   檢查點時先查這列。（ai_trader ipo-auction-source、v30）

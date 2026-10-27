@@ -580,6 +580,10 @@ ELEMENTS = [
     {"id": "EVO-fsync-before-rename", "element": "ai_trader ee5e6e523: atomic .part -> replace without fsync lets a power cut commit the rename but not the data", "verdict": "REFINE",
      "requires": None, "detail": "windows-runtime-pitfalls zero-fill bullet gains the prevention half (flush + os.fsync before replace) and a re-hash verify command; detection half was EVO-powerloss-zero-fill",
      "check_text": ("skill_runtime", "原子寫入在 rename 前要先 fsync")},
+    # 2026-10-27 f1s-evolve tick: ai_trader addendum to 1793047758 (commit 8b234c3ac, 66 passed)
+    {"id": "EVO-fsync-grep-all-copies", "element": "ai_trader 8b234c3ac: three more write-then-rename copies in the same seat lacked fsync after ee5e6e523 fixed one", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls zero-fill bullet: grep the whole seat for os.replace/Path.replace/os.rename and fix every copy; write-once skip-if-exists stores first, per-tick state files self-heal so hot paths may skip fsync",
+     "check_text": ("skill_runtime", "要全 seat 搜 `os.replace`／`Path.replace`／`os.rename`")},
     # 2026-10-27 f1s-evolve tick: ledger 4e0557dfcc97 (kyloren IG card 006f5f07) + 984a5f25ed10 resent
     {"id": "EVO-ig-900-to-900k-noise", "element": "kyloren card 006f5f07d1bd3ee6: IG reel 「從900美元創造超過90萬美元」 (keep learning, grow a small account)", "verdict": "INFO",
      "requires": None, "detail": "rejected as noise: untrusted trading self-promotion with no procedure, tool or verifiable claim; harvest score came from low coverage, not content; triage class noise",

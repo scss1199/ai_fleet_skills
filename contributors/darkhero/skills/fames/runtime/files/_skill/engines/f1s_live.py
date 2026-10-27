@@ -62,6 +62,12 @@ HW_RING = Path(r"D:\__hwlog")
 HW_STATE = HUB / "_registry" / "fames-hot" / "hw-watch.json"
 HW_STALE_S = 300.0
 HW_ALERT_EVERY_S = 1800.0
+# One curator conversation per review (2026-10-27: an answered ai_trader order woke three idle curator chats; one
+# closed it at 11:14:44, another again at 11:15:33, the third reopened it at 11:15:52). When only the review queue
+# changed, the first waiter to claim it wakes; the others record the change quietly while the claim is fresh.
+REVIEW_CLAIM = HUB / "_registry" / "fames-hot" / "review-claim.json"
+REVIEW_LEASE_S = 1800.0
+REVIEW_CONFIRM_S = 1.0
 ACTIVE_TYPES = ("user", "assistant")
 # Real Claude / Codex conversations carry a UUID; the FAMES run-cases probes write ids like "claude-session".
 SESSION_ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
@@ -309,6 +315,41 @@ def hardware_due(seat: str, curator: str, now: float | None = None) -> str:
             "hwlog_autostart.py --request-restart), read back a segment younger than 10 s, and tell the operator.")
 
 
+def review_queue() -> list | None:
+    """The answered orders waiting for the curator as [seat, n, status, answer time] rows; None when unreadable."""
+    try:
+        spec = importlib.util.spec_from_file_location("f1s_live_curator_orders",
+                                                      HUB / "_skill" / "engines" / "curator_orders.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return [[s, o.get("n"), o.get("status"), (o.get("answer") or {}).get("at")] for s, o in mod.review_queue()]
+    except Exception:  # noqa: BLE001 - no queue known: claim_review wakes as before
+        return None
+
+
+def claim_review(session_id: str, now: float | None = None, sleep=time.sleep) -> bool:
+    """True when this conversation takes the curator review queue: it is not empty and no other conversation claimed
+    the same queue in the last REVIEW_LEASE_S. Two waiters claiming at once: the last write stands, and only its owner
+    finds itself on the re-read. An unreadable queue or claim file -> True (wake as before)."""
+    import hashlib
+    queue = review_queue()
+    if queue is None:
+        return True
+    if not queue:
+        return False
+    now = now if now is not None else _now()
+    key = hashlib.sha256(json.dumps(queue, ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
+    held = _read(REVIEW_CLAIM)
+    if held.get("key") == key and now - float(held.get("at") or 0) < REVIEW_LEASE_S:
+        return held.get("session") == session_id
+    try:
+        _write(REVIEW_CLAIM, {"key": key, "session": session_id, "at": now, "iso": _iso(now), "queue": queue})
+        sleep(REVIEW_CONFIRM_S)
+        return _read(REVIEW_CLAIM).get("session") == session_id
+    except OSError:
+        return True
+
+
 def _recent_wakes(state: dict, now: float) -> list[float]:
     return [float(w) for w in state.get("wakes") or [] if now - float(w) < 86400]
 
@@ -344,13 +385,15 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
     prior = _read(path)
     token = uuid.uuid4().hex
     start = _now()
+    pending = hook._midturn_pending(surface_id, session_id, seat=sig_seat)
     state = {"token": token, "pid": os.getpid(), "session_id": session_id, "seat": seat, "surface": surface_id,
              "started": _iso(start), "state": "waiting", "wakes": _recent_wakes(prior, start),
              "claude_pid": int(os.environ.get("CLAUDE_PID") or 0) or _claude_ancestor(), "transcript": str(transcript),
              # What it last received: with nothing pending its turn just carried the current contract; with something
              # already pending (it landed after the last tool call) the previous waiter's record, or nothing known.
-             "contract": (prior.get("contract") or None) if hook._midturn_pending(surface_id, session_id, seat=sig_seat)
-             else contract_sig(hook, sig_seat)}
+             # "base" is the same without any orders: equal bases mean only the orders changed.
+             "contract": (prior.get("contract") or None) if pending else contract_sig(hook, sig_seat),
+             "base": (prior.get("base") or None) if pending else contract_sig(hook, "")}
     _write(path, state)
 
     def finish(code: int, why: str, text: str = "") -> tuple[int, str]:
@@ -397,9 +440,13 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
             if ready:
                 if transcript.is_file() and _size(transcript) > offset and turned_active(transcript, offset):
                     return finish(0, "active")
-                contract = contract_sig(hook, sig_seat)
-                text = "" if contract == state["contract"] else hook.live_update(doc, event="IdleWake", watch_seat=sig_seat)
-                state["contract"] = contract
+                contract, base = contract_sig(hook, sig_seat), contract_sig(hook, "")
+                review_only = bool(sig_seat) and sig_seat == curator and contract != state["contract"] and base == state["base"]
+                if contract == state["contract"] or (review_only and not claim_review(session_id, sleep=sleep)):
+                    text = ""                              # nothing new, or another curator chat took this review
+                else:
+                    text = hook.live_update(doc, event="IdleWake", watch_seat=sig_seat)
+                state["contract"], state["base"] = contract, base
                 if text:
                     return finish(2, "woke", HEAD + "\n" + text)
                 # Nothing it must act on (or nothing to say): record it, or the same change re-enters the settle loop
