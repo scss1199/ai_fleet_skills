@@ -591,6 +591,13 @@ ELEMENTS = [
     {"id": "OP-contract-once-per-conversation", "element": "a conversation receives each contract line once; skills idle 30 days leave the listing", "verdict": "REFINE",
      "requires": None, "detail": "claude_session_hook._contract_dedup drops FAMES CORE / TOKEN CORE / red-line lines the conversation already holds, SessionStart resets; audit-session-tax.py --replay over 32 ai_darkhero conversations: fixed 17,914 -> 16,502 tok, mid-turn 97,079 -> 17,946, later prompts 112,708 -> 45,367 (test_midturn_refresh)",
      "check_text": ("session_hook", "def _contract_dedup(")},
+    # f1s-evolve 2026-10-27: ai_photo retouch-look-preferences (ledger fb28de79fa48) + burnin-subtitle-ocr-learning re-sent (ledger 42161c5cf4fd)
+    {"id": "EVO-photo-retouch-taste-seat-local", "element": "ai_photo memory retouch-look-preferences: faces soft / background sharp, stronger sky+dehaze, crisp eyes, night coloured light keeps its colour, judge by ai_photo.compare face+sky crops", "verdict": "INFO",
+     "requires": None, "detail": "rejected as seat-specific: operator aesthetic taste for one seat's develop pipeline (finish.py masks, ai_photo.compare), no fleet procedure or runtime trap; stays in the ai_photo memory; no text added",
+     "check_text": ("skill_reverse", "generalize（附一句繁中規則）／seat-specific／noise")},
+    {"id": "EVO-burnin-duplicate-20261027", "element": "hub-root burnin-subtitle-ocr-learning proposal re-sent 2026-10-27 (ledger 42161c5cf4fd, memory unchanged since 2026-10-18)", "verdict": "INFO",
+     "requires": None, "detail": "already integrated 2026-10-19 as EVO-theater-cpu-thread-cap and EVO-theater-fansub-corpus (also EVO-burnin-duplicate-20261021); windows-runtime-pitfalls CPU 配額與批次負載 still holds the thread cap and HSV mask; no text added",
+     "check_text": ("skill_runtime", "intra_op_num_threads")},
 ]
 
 
