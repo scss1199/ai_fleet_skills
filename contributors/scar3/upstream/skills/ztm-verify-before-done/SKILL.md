@@ -39,6 +39,9 @@ parent_skill: aex-agent-evolution
   (b) 沒有既有存放處已經裝得下（回覆、task list、`_registry` 狀態、AGC compact、commit trailer
   Why/Verified-By、SEAL 收據）；(c) 不是摘要或報告。否則寫進回覆。mattpocock/skills 的
   GLOSSARY.md、ADR、docs/agents/*.md、每張 ticket 的 .md、research .md、spec 檔在這裡都過不了 (b)。
+  被 PROOF write gate 擋下時先判斷是不是誤判（引號內的 `>`、工具必備的 manifest、harness 指定的
+  side-session-notes 資料夾），誤判就改 `claude-proof-hook.py` 加測試；不是誤判就把內容寫進回覆。
+  同一個檔換副檔名（.txt）或換檔名再寫＝繞過 gate，禁止（ai_theater 2026-10-26／27 x3）。
 - 「進度」只算使用者看得到的成果（例：帳本有真實成交、正式網站上線、使用者可用的功能），不是 commit 數、
   文件數、告警或驗證腳本；做不到就直接說卡在哪一步（ai_trader owner 2026-09-21／10-12，f1s-reverse-learning）。
 - 宣稱完成時跑 SEAL：`fames_phase_runtime.py --turn --result --closure`。
@@ -55,6 +58,10 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 
 改碼前先做出會對這個 bug 變紅的重現；一次只立一個可證偽的假設；暫時的 debug log 加前綴
 （如 `[DEBUG-<id>]`），修好後全部移除；最後留下一個回歸測試。
+
+只在某一個 checkout 紅、乾淨 worktree 綠的失敗是路徑狀態，不是邏輯：不要當「既有失敗」略過，也不要放寬行為；
+把那份狀態（.env、stop 檔、runtime 檔）加進乾淨 worktree 重現，再於 fixture 把每個模組層級路徑都釘到暫存目錄
+（patch.multiple / monkeypatch），只釘一半等於沒釘（ai_trader 979d7a5e6）。
 
 ## 程式審查（kyloren 15 Skills：Superpowers / Addy Osmani）
 
@@ -108,12 +115,26 @@ api-matrix／key 健康狀態或一字 ping 都不算；(3) 每次存一份 run 
 引用一個**早於結論收據**的登記 commit，否則寫 UNKNOWN。ai_trader 30 條手工研究線在設計先固定後 24 條 NOT_QUALIFIED，
 matrix engine 333 個假設 2026-10-23 全數 SCREEN_FAIL——樣本內通過的都沒撐過。步驟：
 (1) 釘資料：原始檔寫一次不覆寫，sha256 manifest＋請求日誌；(2) 登記 commit：設計文字、整個參數族、manifest hash 在第一個數字前 commit，
-腳本或其函式庫自上次 commit 後有改、或 manifest 不同，run 就拒跑；(3) 整個族做多重檢定校正（Reality Check／Romano-Wolf）、
+腳本或其函式庫自上次 commit 後有改、或 manifest 不同，run 就拒跑；前測開始存列後，在測試裡把每個 gate 檔釘成 sha256（CRLF 當 LF 讀，
+否則 CRLF 與 LF checkout 同文字不同 hash），共用檔（成本表、I/O helper）一改就讓測試失敗，pin 只能在同一 commit 附理由移動；
+改共用 helper 前先列出哪些登記設計的 gate_files() 含它（「已 commit 且未修改」擋不住共用檔悄悄改掉設計 hash：ai_trader v8-owner 前測開跑後被 4874a0087、014ed0474 移過，
+範本 `tests/test_forward_design_pins.py` eae82caba）；(3) 整個族做多重檢定校正（Reality Check／Romano-Wolf）、
 預先命名的 walk-forward、成本壓力，收斂成一個結論字；(4) 自動迴圈用 append-only 帳本：id = sha(spec + 登記截止日)，篩選只讀截止日前、
 前測只讀之後，晉級對所有前測中假設做 Bonferroni，登記過的永不編輯；(5) 累計揭露試了幾個（v29：登記 287／總 1,103）。
 重用範本（ai_trader/sinopac-trading-system/scripts）：`pull_twse_intraday5s.py`（寫一次＋日誌）、
 `research_cash_intraday_leadlag.py` 的 `registration()`/`run()`（登記守門）、`matrix_engine.py` 的 `register()`/`screen()`/`forward()`/`decide()`（帳本＋前測 Bonferroni）。
 這是證據規則不是新 gate：PROOF 不加片語比對，照 ④ 由寫的人引用登記 commit 與收據。
+
+## 參考樣本是量測目標，不是素材（ai_photo 2026-10-27，F1S 2026-10-28 吸收）
+
+使用者點名「理想狀態是 <資料夾／截圖／聲音／文章>」時，那份參考在整個任務裡對之後每一次修改都有效（f1s-intake 原話綁定；
+「我講過」＝已給過的參考沒被用）。做法：(1) 先量參考——把「像」拆成可量的數字（開眼比例、眼下明暗差、版面尺寸、語速、句長）；
+(2) 只動主體自己的內容往那些數字靠，設上限（單次最多 +25% 之類）並守住自然不變量（成對的部位同一比例，光線、膚色、虹膜不換）；
+**把參考的像素／段落貼到主體上不算達到參考**，光線與陰影對不上就會不自然、不對稱；(3) 做完再量一次主體，
+結案要附「參考值／改前／改後」三欄與並排對照（左原圖、中舊版、右新版），舊版留 `_prev` 不覆寫；(4) 沒量到參考值的部位要寫明沒動。
+量測數值與口味（哪種臉要多亮）留在座位自己的 memory，這裡只留程序。
+（ai_photo IMG_0054 大小眼＝整雙眼從 20261010 貼過來；IMG_0063 沒精神＝只銳化沒量眼下 −15～−29 vs 參考 −10～−13；
+重做：兩眼開眼比例同到 0.365，commit 990d901，58 測試）
 
 ## UI 驗證（token_budget: low）
 
