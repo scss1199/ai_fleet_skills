@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261028T101245Z-b911c3d6",
+  "host": "altos",
+  "started_at": "2026-10-28T10:17:01+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_altos cwd=ai_altos auth=cli_credentials_file 209.4s]\nALTOS-113: step1 EXIT=0\nALTOS-113: step1 tail: ...rors\": []}}, \"changed\": false, \"package_sha\": \"70f2d7e0cd8354ac1184dfdc9d3915f2795f40ceffd6855bf3ccce8996b22b6e\", \"receipt\": {\"schema\": 1, \"host\": \"ai_altos\", \"installed_at\": \"2026-10-28T10:04:52.313424+00:00\", \"package_sha\": \"70f2d7e0cd8354ac1184dfdc9d3915f2795f40ceffd6855bf3ccce8996b22b6e\", \"version\": null, \"targets\": [\"C:\\\\ai_workspace\\\\.agents\\\\skills\\\\fames\", \"C:\\\\ai_workspace\\\\.cursor\\\\skills\\\\fames\", \"C:\\\\ai_workspace\\\\.claude\\\\skills\\\\fames\", \"C:\\\\ai_workspace\\\\ai_altos\\\\.agents\\\\skills\\\\fames\", \"C:\\\\ai_workspace\\\\ai_altos\\\\.cursor\\\\skills\\\\fames\", \"C:\\\\ai_workspace\\\\ai_altos\\\\.claude\\\\skills\\\\fames\"], \"verified\": true, \"authority\": \"ai_darkhero\", \"authority_manifest_sha\": \"9274df77523f0e8a\", \"source\": \"https://raw.githubusercontent.com/scss1199/ai_fleet_skills/main/contributors/darkhero\"}, \"fetched_files\": 1, \"errors\": [], \"returncode\": 0}, \"publish\": {\"ok\": true, \"node\": \"ai_altos\", \"contributor\": \"altos\", \"export_root\": \"C:\\\\ai_workspace\\\\_skill\\\\ai_fleet_skills\\\\contributors\\\\altos\", \"skill_count\": 56, \"manifest_sha\": \"476bb48601123f50\", \"pushed\": false, \"committed\": false, \"dirty_files\": 0, \"skills_fingerprint\": \"556c240bc1f7eff8\", \"git_tail\": [], \"reason\": \"clean\"}}\nALTOS-113: step2 receipt fames · upstream ai_darkhero · source ok\nALTOS-113: step2 expected package_sha: 70f2d7e0cd8354ac1184dfdc9d3915f2795f40ceffd6855bf3ccce8996b22b6e\nALTOS-113: step2   PASS     ai_darkhero  70f2d7e0cd8354ac1184dfdc9d3915f2795f40ceffd6855bf3ccce8996b22b6e\nALTOS-113: step2   PASS     ai_altos     70f2d7e0cd8354ac1184dfdc9d3915f2795f40ceffd6855bf3ccce8996b22b6e\nALTOS-113: step2 ok=True (2/2 PASS)\nALTOS-113: step2 EXIT=0\nALTOS-113: step3 3.10.11 (tags/v3.10.11:7d4cc5a, Apr  5 2023, 00:38:17) [MSC v.1929 64 bit (AMD64)]\nALTOS-113: step3 checker_now True\nALTOS-113: step3 binding True\nALTOS-113: step3 EXIT=0\nALTOS-113: 沒有下一步\n",
+  "stderr": "",
+  "finished_at": "2026-10-28T10:20:32+00:00"
+}
