@@ -102,6 +102,11 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 - 「進度」只算使用者看得到的真實成果，不是通過了多少自家檢查；report／alert／驗證腳本的數量不是進度（本段已有）。
 - 未經外部查核的基準分數是指標不是事實（F1S ④）：自評「金牌／全綠」在外部裁判看過前只是待證，寫法對照
   lean-math-prover 的「AI and formal mathematics」段（自評 vs 外部評分是不同證據類別）。
+- 「對得上」不是證據：要驗一個模型／規則／分析準不準，題目在看答案前就凍結成「規則→預測」，並與對照組
+  （隨機替身、換資料、負對照）比分；事後拿結果回頭找對應（「她說 X，圖上也有 Y」）總是對得上，不算命中。
+  只有真資料與夠多替身分得開的題目才列入；回報附 p 值與多重比較警語，知道預期答案的受測者會汙染那組題目；
+  「N/N 一致」沒有對照組就不是訊號（ai_ziyaoastro 2026-10-24／29：fate_probe、synastry_null 凍題＋隨機替身，
+  合盤所有主題都沒贏過隨機配對 p 0.25–0.82）。
 
 ## 延遲數字的證據（jci_taipei 7a3f7c5 + ai_ziyaoastro，F1S 2026-10-22 吸收）
 

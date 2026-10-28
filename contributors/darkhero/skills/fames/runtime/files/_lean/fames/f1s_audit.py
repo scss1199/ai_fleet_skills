@@ -820,6 +820,14 @@ ELEMENTS = [
     {"id": "EVO-theater-video-sort-duplicate-20261029", "element": "ai_theater correction 8d1987bd90df proposal re-sent a third time (ledger 839f057e494d)", "verdict": "INFO",
      "requires": None, "detail": "already rejected 2026-10-28 as EVO-theater-video-sort-task-spec and EVO-theater-video-sort-duplicate-20261028 (a task statement, seat-specific); conversation d9626280's later operator lines (AV_Retired/AV_Normal, 「學會既有的資料夾寫法」) are that seat's own layout rules and the general part is mtm-mto-first ③ brownfield search before writing; no text added",
      "check_text": ("skill_reverse", "generalize（附一句繁中規則）／seat-specific／noise")},
+    # f1s-evolve 2026-10-29 (second pass): ai_ziyaoastro memory discriminating-probe-method (ledger 8d53354408ed) +
+    # ai_trader owner-fx-route-20261029 re-sent under the same ledger 54d2ef9e0a05
+    {"id": "EVO-frozen-prediction-vs-null", "element": "ai_ziyaoastro operator 2026-10-24: chart/rule accuracy is verified by rule→prediction items frozen before the answers and scored against a random-swap null (fate_probe.py, synastry_null.py); post-hoc 'she said X, the chart has Y' always matches; 2026-10-29 synastry themes p 0.25–0.82", "verdict": "REFINE",
+     "requires": None, "detail": "generalized into ztm-verify-before-done ④ Goodhart list: 「對得上」不是證據 — freeze rule→prediction before seeing answers, score against a null (random decoys / swapped data / negative control), keep only items that discriminate, report p with the multiple-comparison caveat, subjects who know the expected answer contaminate, N/N 一致 without a null is not a signal; the astrology/HD item banks, ipsative centring and the probe scripts stay in the seat",
+     "check_text": ("skill_verify", "事後拿結果回頭找對應（「她說 X，圖上也有 Y」）總是對得上，不算命中")},
+    {"id": "EVO-fx-route-duplicate-20261029", "element": "ai_trader memory owner-fx-route-20261029 proposal re-sent (same ledger 54d2ef9e0a05 as the first pass)", "verdict": "INFO",
+     "requires": None, "detail": "already adopted earlier on 2026-10-29 as EVO-backtest-verdict-not-progress (ztm-verify-before-done 模擬／回測 bullet present) plus EVO-feed-server-clock-offset, EVO-exit-cleanup-own-resources-only and the seat-local INFO row; the memory file carries no bullet newer than those rows; no text added",
+     "check_text": ("skill_verify", "回測的判決（NOT_QUALIFIED、乾跑通過）是資訊不是進度")},
 ]
 
 
