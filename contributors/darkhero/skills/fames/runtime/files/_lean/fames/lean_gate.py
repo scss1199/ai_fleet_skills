@@ -186,8 +186,13 @@ def _sha(data: bytes) -> str:
 
 def _file_sha(path: Path) -> str | None:
     try:
+        # chunked sha256, not hashlib.file_digest (3.11+): altos's default `python` is 3.10 and every
+        # fames script run with it raised AttributeError here (2026-10-28); same digest on every version.
+        digest = hashlib.sha256()
         with path.open("rb") as stream:
-            return hashlib.file_digest(stream, "sha256").hexdigest()
+            for chunk in iter(lambda: stream.read(1 << 20), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
     except OSError:
         return None
 
