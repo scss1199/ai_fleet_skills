@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "4cd6c4f2f40dde1d72c95b0136e576b587d2cca78832b1db6d04db8b5013a513",
   "runner_state": "armed",
-  "observed_at": "2026-10-28T07:01:13.860220+00:00",
+  "observed_at": "2026-10-28T07:31:11.760293+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -362,6 +362,12 @@
         "receipt_sha256": "a7e500dd34d4385280e24f0c2747db68e8cc7fc78437b8054b239212cb51e7ca"
       },
       {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-10-28T15:20:44+08:00",
+        "receipt_sha256": "e6f29c71daa7877bf7018e414d78746097119b160b19ce5e380d094b84ffe1be"
+      },
+      {
         "agent": "jci_taipei",
         "surface": "claude",
         "observed_at": "2026-10-28T14:46:31+08:00",
@@ -370,8 +376,14 @@
       {
         "agent": "ai_photo",
         "surface": "claude",
-        "observed_at": "2026-10-28T14:41:30+08:00",
-        "receipt_sha256": "0a25bdaeec5896bb6a6134c2a584b4255d80623b0e4948c2d5b59dcc60171fd9"
+        "observed_at": "2026-10-28T15:30:08+08:00",
+        "receipt_sha256": "a8f7f506e0a71067d4a58c0a81d89a3714809dac18a17d515133b8d7a87aee07"
+      },
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-10-28T15:25:54+08:00",
+        "receipt_sha256": "6fec82fe1c956c3d4bb614ef26458cc530ee92a9e321b48af5b6476ad4223f53"
       },
       {
         "agent": "jci_taipei",
@@ -382,8 +394,8 @@
       {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-10-28T14:28:06+08:00",
-        "receipt_sha256": "7780b22407672cb1a9e0b565ea4fb42e73dd1ef1d64272c6b25f1defb7bb0774"
+        "observed_at": "2026-10-28T15:28:09+08:00",
+        "receipt_sha256": "01da1fe95d74526c71f0b85b80773882faf21d9677e089bad9330831b15bd4c3"
       }
     ],
     "runtime_release_sha256": "d819508c7943a8c4d43cc4ecc838f1f5a7820368404cfadc57a9a4144fd0d70d"
