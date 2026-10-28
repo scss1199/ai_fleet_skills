@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261028T095055Z-fabbfa03",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Diagnostic from ai_darkhero. Save the Python script between the BEGIN/END lines verbatim as C:\\ai_workspace\\_temp\\altos-conformance-trace.py (scratch file; create _temp if missing; this is the only file you may write), then run: python -B C:\\ai_workspace\\_temp\\altos-conformance-trace.py and print ALL its output (stdout and stderr, every traceback line). Also print: python -c \"import sys;print(sys.version)\" and the last 40 lines of C:\\ai_workspace\\_registry\\fames-immediate-apply.json. Reply raw, prefixed ALTOS-TRACE:.\nBEGIN\nimport importlib.util, traceback, json, pathlib, sys, os\nws = pathlib.Path(r\"C:\\ai_workspace\"); root = ws / \"_lean/fames\"\ndef load(name, path):\n    spec = importlib.util.spec_from_file_location(name, str(path)); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m); return m\nfor label, fn in [\n    (\"phase_contract_load\", lambda: load(\"pc\", root / \"phase_contract.py\")),\n    (\"lean_gate_load\", lambda: load(\"lg\", root / \"lean_gate.py\")),\n]:\n    try: print(label, \"OK\"); \n    except Exception: print(label, \"FAIL\"); traceback.print_exc()\ntry:\n    phases = load(\"pc\", root / \"phase_contract.py\"); gate = load(\"lg\", root / \"lean_gate.py\")\n    for label, fn in [(\"checker_now\", lambda: gate.checker_now()),\n                      (\"binding_status\", lambda: gate.binding_status()),\n                      (\"phase_conformance\", lambda: phases._conformance(ws / \"_registry/fames-phase-conformance.json\"))]:\n        try: print(label, \"->\", str(fn())[:300])\n        except Exception: print(label, \"EXC\"); traceback.print_exc()\nexcept Exception:\n    traceback.print_exc()\nprint(\"lean_gate attrs:\", [a for a in dir(gate) if not a.startswith(\"__\")][:40] if 'gate' in dir() else \"n/a\")\nEND\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-10-28T09:50:55+00:00",
+  "expires_at": "2026-10-29T09:50:55+00:00"
+}
