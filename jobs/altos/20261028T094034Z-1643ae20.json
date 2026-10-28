@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261028T094034Z-1643ae20",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Fleet curator ai_darkhero: altos's skill manifest on scss1199/ai_fleet_skills (contributors/altos/manifest.json) was last exported 2026-10-18; scar3 exports hourly via the standard engine. Diagnose and repair the export on this host. Do not edit any file; run only the commands below.\n1. Print `Get-Item C:\\ai_workspace\\ai_altos\\scripts\\altos_fleet_sync.py | % { $_.Length; $_.LastWriteTime }` and the lines of that script matching 'def |subprocess|mtm-fleet|manifest|export|publish|sync' (max 60 lines).\n2. Find the last 3 run records of the HubClock rider `fleet-skill-github-sync` on this host (search C:\\ai_workspace\\_registry for hubclock result/ledger files and C:\\ai_workspace\\_logs) and print each record's time, exit/outcome and last error line.\n3. Print `git -C C:\\ai_workspace\\_skill\\ai_fleet_skills status --short | Select-Object -First 10`, `git -C C:\\ai_workspace\\_skill\\ai_fleet_skills log -1 --format=%h_%ci`, and whether C:\\ai_workspace\\_skill\\ai_fleet_skills\\.git\\index.lock exists.\n4. Run `python C:\\ai_workspace\\_skill\\engines\\mtm-fleet-skill-github.py sync --json` (the standard fleet export the other hosts run) and print its full JSON output; then run `python C:\\ai_workspace\\_skill\\engines\\mtm-fleet-skill-github.py receipt --json` and print it.\nReply with raw lines only, each prefixed ALTOS-SYNC:.\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-10-28T09:40:34+00:00",
+  "expires_at": "2026-10-29T09:40:34+00:00"
+}
