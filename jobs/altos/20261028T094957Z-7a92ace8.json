@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261028T094957Z-7a92ace8",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Read-only diagnostic from ai_darkhero. Change no file.\n1. Print the FULL content of C:\\ai_workspace\\_registry\\fames-immediate-apply.json (it is small).\n2. Print `Get-ChildItem C:\\ai_workspace\\_harness\\runtime\\*.py | % { \"{0} {1} {2}\" -f $_.Name, $_.Length, (Get-FileHash $_ -Algorithm SHA256).Hash.Substring(0,16) }`.\n3. Print `python -c \"import sys; print(sys.version)\"` and `Get-ChildItem C:\\ai_workspace\\_lean -Directory -ErrorAction SilentlyContinue | % Name` and `Test-Path C:\\ai_workspace\\_lean\\fames\\conformance.py`.\n4. Run this and print everything it outputs (it only reads):\npython -c \"import importlib.util,traceback,json,pathlib,sys; sys.path.insert(0,r'C:\\ai_workspace\\_harness\\runtime'); spec=importlib.util.spec_from_file_location('ia', r'C:\\ai_workspace\\_skill\\engines\\fames-immediate-apply.py'); m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m); names=[n for n in dir(m) if 'phase' in n.lower() or 'conform' in n.lower() or 'proof' in n.lower()]; print('NAMES', names); import inspect; [print(n, inspect.signature(getattr(m,n))) for n in names if callable(getattr(m,n))]\"\nReply with raw lines only, prefixed ALTOS-PHASE:.\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-10-28T09:49:57+00:00",
+  "expires_at": "2026-10-29T09:49:57+00:00"
+}
