@@ -59,6 +59,10 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 改碼前先做出會對這個 bug 變紅的重現；一次只立一個可證偽的假設；暫時的 debug log 加前綴
 （如 `[DEBUG-<id>]`），修好後全部移除；最後留下一個回歸測試。
 
+只在某一個 checkout 紅、乾淨 worktree 綠的失敗是路徑狀態，不是邏輯：不要當「既有失敗」略過，也不要放寬行為；
+把那份狀態（.env、stop 檔、runtime 檔）加進乾淨 worktree 重現，再於 fixture 把每個模組層級路徑都釘到暫存目錄
+（patch.multiple / monkeypatch），只釘一半等於沒釘（ai_trader 979d7a5e6）。
+
 ## 程式審查（kyloren 15 Skills：Superpowers / Addy Osmani）
 
 非 trivial 的改碼在宣稱完成前，交給沒寫這段程式的 subagent 走技能 `independent-review`

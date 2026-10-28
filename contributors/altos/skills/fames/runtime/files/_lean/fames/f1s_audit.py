@@ -97,7 +97,7 @@ ELEMENTS = [
     {"id": "R1-details-in-file", "element": "① old wording 「細節放檔案」", "verdict": "REFINE",
      "requires": "F1SCore.rule1_old_vs_rule6_unsat",
      "detail": "Lean: no reply satisfies old ① and ⑥ together; wording changed to 「細節放回覆或既有收據，不新開 .md/.json」",
-     "check_text": ("hot_directive", "細節放回覆或既有收據")},
+     "check_text": ("hot_directive", "不新開 .md/.json")},
     {"id": "R2-components", "element": "② 元件按需啟用 / Jev 只在挑選排序", "verdict": "FORMALIZED",
      "requires": "F1SCore.f1s_satisfiable",
      "detail": "jev_phase_advisor emits advice per phase but FamesKernel.jev_advice_cannot_change_admission proves it never admits; INFO: advice files are state under _registry"},
@@ -157,7 +157,7 @@ ELEMENTS = [
      "check_text": ("hot_directive", "OmniRoute")},
     {"id": "OP-parallel-free-models", "element": "operator 2026-10-27: 時間最貴，能平行拆分就盡可能拆；夠簡單的子任務叫不同的免費模型去執行", "verdict": "REFINE",
      "requires": None, "detail": "hot_directive parallel clause: independent verifiable subtasks open subagents in the same turn, simple mechanical subtasks fan out to several free-pool models; results merge only after read-back (same 1399-char budget)",
-     "check_text": ("hot_directive", "夠簡單的改派免費池多模型並行")},
+     "check_text": ("hot_directive", "夠簡單的派免費池多模型並行")},
     {"id": "KB-claw-md", "element": "kyloren_bot 04171cf7 (IG 2026-10-14): Claw.md — think before writing, ask when unsure, simplest first, precise edits, define done + verify", "verdict": "INFO",
      "requires": None, "detail": "already ①③④⑤ (嚴禁猜, 先重用, verify before done); since 2026-10-15 the precise-edit rule is skill text in mtm-mto-first (精準修改); still no mechanical check",
      "check_text": ("skill_method", "精準修改")},
@@ -519,7 +519,7 @@ ELEMENTS = [
     # prompt already says "parallel".
     {"id": "EVO-split-and-merge", "element": "parallel split and child-result merge left to the operator", "verdict": "REFINE",
      "requires": None, "detail": "hot directive: independent units -> subagents started in the same turn, results read back and merged by the parent; token-preflight step 3 carries the merge rule",
-     "check_text": ("hot_directive", "子對話的回報只是線索，主對話自己收編")},
+     "check_text": ("hot_directive", "子對話回報只是線索")},
     {"id": "EVO-split-merge-skill", "element": "merge rule in the skill that the hot directive routes to", "verdict": "REFINE",
      "requires": None, "detail": "token-preflight: a report is a lead, not evidence; fold the verified part into the parent's result",
      "check_text": ("skill_preflight", "a report is a lead, not evidence")},
@@ -785,6 +785,10 @@ ELEMENTS = [
     {"id": "EVO-sources-dedupe-render-feeds-rejected", "element": "ai_metadata C+E+F: logical-key dedupe/permanent block, static library page, arXiv/HF papers/SEC EDGAR feeds", "verdict": "INFO",
      "requires": None, "detail": "C already covered (item_hash of canonical URL + read set skip duplicates across feeds; errors back off 6h; no permanently dead source measured); E rejected: new page/artifact nobody asked for, cards + BRIEF already are the browse surface; F rejected this tick: arXiv lists hundreds/day with no relevance filter on curated feeds, SEC EDGAR needs a contact address in the User-Agent and investment data is ai_trader's lane; re-evaluate after the round-robin fix shows the existing feeds fresh",
      "check_text": ("sources_engine", "drop what is already read")},
+    # f1s-evolve 2026-10-28: ai_trader proposal "tests must pin module-level paths resolved from the real checkout"
+    {"id": "EVO-trader-checkout-path-state-leak", "element": "ai_trader cockpit_ensure: a failure only in one checkout is leaked path state (.env, owner stop file), not logic", "verdict": "REFINE",
+     "requires": None, "detail": "verified 2026-10-28: commit 979d7a5e6 exists (3 failures reproduced in a clean worktree by adding a flag-only .env + stop file, 52 passed after pinning ENV_FILE and SIM_STOP) and memory cockpit-ensure-tests-env-leak.md exists; added to the 修 bug section of ztm-verify-before-done (one place, not duplicated into mtm-mto-first); behaviour is never loosened, so no red line weakened",
+     "check_text": ("skill_verify", "只在某一個 checkout 紅、乾淨 worktree 綠的失敗是路徑狀態")},
 ]
 
 
