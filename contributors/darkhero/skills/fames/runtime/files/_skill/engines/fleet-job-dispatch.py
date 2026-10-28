@@ -149,6 +149,10 @@ def _publish(repo: Path, hub: Path, files: dict, message: str, branch: str = "ma
             a = git(repo, "worktree", "add", "--detach", str(wt), f"origin/{branch}")
             if a.returncode:
                 return {"ok": False, "error": "worktree_add_failed:" + a.stderr.strip()[-200:]}
+            # A follower's clone is a sparse checkout of its own folders (altos 2026-10-27: contributors/altos,
+            # contributors/darkhero, jobs/altos); the worktree inherits that cone, so a job for another host
+            # was "pathspec did not match any file(s) known to git". The temporary worktree checks out everything.
+            git(wt, "sparse-checkout", "disable")
             rel = []
             for relpath, doc in files.items():
                 _write_json(wt / relpath, doc)

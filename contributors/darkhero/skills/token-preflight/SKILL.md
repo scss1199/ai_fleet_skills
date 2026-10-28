@@ -26,6 +26,23 @@ The script writes a receipt. A session touch without a receipt is not skill cons
 
 Read [references/concept-map.md](references/concept-map.md) only when changing framework architecture.
 
+## Session fan-out and merge (operator 2026-10-28)
+
+Two habits, mechanised by `_skill/engines/session-consolidate.py`:
+
+1. **Fan-out.** When intake yields two or more independent, separately verifiable problems — or a Claude Code
+   home-page style suggestion such as 「繼續 `<branch>` 上進行中的工作：查看未提交的變更…」 — open one session per
+   item in the same turn (`start_session`, `user_asked` when the operator asked, `own_initiative` card otherwise; a
+   session opened for another seat's cwd is detached to top level right after it starts). The parent only folds
+   results back in after reading the child's commit, tests or files. `session-consolidate.py wip` lists every repo's
+   uncommitted / unpushed / unmerged-branch work as such suggestions, routed to the owning seat (cwd basename);
+   `plan --seat <seat>` turns them plus the seat's pending sessions into briefs.
+2. **Merge.** At session open, line "6. SESSIONS/WIP" of the ZCT plan reports the seat's idle sessions (from
+   `_registry/session-consolidate/<seat>.json`). `session-consolidate.py absorb --seat <seat>` prints each idle
+   session's recap, pending ask, files and commits; the curator folds them into `goal_compact.py park <seat>
+   "<milestone>"`, then `archive_session` the ones classified `archive:*` / `merge:absorb-recap`. `keep:pending-operator`
+   sessions stay open; `noise:automated` (1-turn probes) are ignored. The engine never archives anything itself.
+
 ## Resident context audit (kyloren_bot 7b4adc46, 003a6bd3)
 
 When auditing token usage, measure what is loaded on every turn before trimming anything: the app's usage tool (context categories: system tools, MCP tools, memory files, skills) or `/context`, and `/doctor` / `/skill-doctor` when the user runs them. Join the skill list with `_registry/skill-audit/*.jsonl` (actual Skill invocations) and propose dropping always-loaded items that are never invoked. Turning off the 1M window (`CLAUDE_CODE_DISABLE_1M_CONTEXT`) or editing `~/.claude/settings.json` is a global-settings change: operator authorization first.
