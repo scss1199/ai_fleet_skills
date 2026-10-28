@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261028T094428Z-ebad78c9",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Fleet curator ai_darkhero, authorized repair of this host's fleet skill export (the rider's own command, which pushes contributors/altos to scss1199/ai_fleet_skills). Run exactly these, change nothing else:\n1. `python C:\\ai_workspace\\ai_altos\\scripts\\altos_fleet_sync.py sync --node ai_altos` — print its full output (stdout+stderr) and exit code.\n2. `python C:\\ai_workspace\\_skill\\engines\\mtm-fleet-skill-github.py receipt` — print the output.\n3. `git -C C:\\ai_workspace\\_skill\\ai_fleet_skills log -2 --format=%h_%ci_%s` and `git -C C:\\ai_workspace\\_skill\\ai_fleet_skills status --short | Measure-Object -Line`.\n4. From C:\\ai_workspace\\_registry\\hubclock-rider-results.json (and any hubclock rider state/registry file next to it, e.g. hubclock-riders.json / hubclock-state.json), print for rider fleet-skill-github-sync every field: enabled, cadence, consecutive_failures, last_rc, last_run, next_due/backoff/paused/quarantine and the HubClock v2 adaptive fields if present. Also print the last 3 lines of C:\\ai_workspace\\_logs\\fleet\\hubclock-refused.jsonl mentioning fleet-skill-github-sync (any date).\nReply with raw lines only, prefixed ALTOS-RUN:.\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-10-28T09:44:28+00:00",
+  "expires_at": "2026-10-29T09:44:28+00:00"
+}
