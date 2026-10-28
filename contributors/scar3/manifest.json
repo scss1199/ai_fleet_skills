@@ -5,8 +5,8 @@
   "role": "downstream_curator",
   "machine": "scar3",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-10-28T08:26:11Z",
-  "manifest_sha": "3066bff086fbcd65",
+  "generated_at": "2026-10-28T08:32:25Z",
+  "manifest_sha": "ac5ba156bf0ce66c",
   "required": [
     "fames",
     "independent-review",
@@ -22,7 +22,7 @@
     "ztm-fleet-intelligence",
     "token-preflight"
   ],
-  "skill_count": 58,
+  "skill_count": 59,
   "skills": [
     {
       "name": "accountability-unblock",
@@ -380,6 +380,16 @@
       "files": {
         "SKILL.md": "53cd56475655f5692c9adad1b688560170814e98687daf6ed28f3b4de1ac4401",
         "agents/openai.yaml": "8402f43d51910067020402ec779738a2977f61931a6e7b3136fdf1e747394737"
+      }
+    },
+    {
+      "name": "meta-data-deletion",
+      "sha": "bc2fd5f90fd6fbf9",
+      "required": false,
+      "lane": "zero-token-mechanism",
+      "package_sha": "bb353a25a2d43ee21a63b15ae9b020b65b865540f74ec31f45e98f2e967437ed",
+      "files": {
+        "SKILL.md": "bc2fd5f90fd6fbf95899617b3a1866bb28455f6f5554e9179a0c719500bd5bd2"
       }
     },
     {
