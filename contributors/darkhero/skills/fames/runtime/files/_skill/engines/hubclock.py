@@ -969,7 +969,12 @@ class HubClock:
 
     def _reanchor(self, jid, period, old, new):
         """Re-express a rider's last boundary in a new phase, so switching to (or away from) the learner's offsets
-        neither re-fires every rider at once nor squeezes two runs into less than half a period."""
+        neither re-fires every rider at once nor squeezes two runs into less than half a period.
+
+        A new-phase boundary that already passed while the old phase still ruled is not run late at the reload: the
+        learner retunes hourly, and every rider it moved would start at the same tick (2026-10-28 14:02:00, four at
+        once, up to 236 s 'late'). Such a rider keeps the old boundary it was waiting for, one period after its last
+        run; the new phase's next boundary is then at least half a period later (it is >= last + 1.5 periods)."""
         last = self.last.get(jid)
         if not isinstance(last, int) or isinstance(last, bool):
             return
@@ -981,7 +986,12 @@ class HubClock:
         self.last[jid] = key
         nxt = (key + 1) * period + new
         if nxt - fired < period / 2.0:
-            self.not_before[jid] = nxt + period       # too close to the last run: wait for the boundary after
+            nxt += period                             # too close to the last run: wait for the boundary after
+        old_next = start_old + period                 # what the rider was waiting for under the old phase
+        if nxt < time.time() < old_next:
+            self.not_before[jid] = old_next
+        elif nxt > (key + 1) * period + new:
+            self.not_before[jid] = nxt
         else:
             self.not_before.pop(jid, None)
 
@@ -1350,6 +1360,9 @@ class HubClock:
             proc = dispatch(job)
             if proc is not None:
                 start = boundary_start(job, now)
+                nb = self.not_before.get(jid)
+                if start is not None and nb is not None and start < nb <= now:
+                    start = nb                        # a re-anchored run was due at its carried-over boundary
                 self.dispatch_info[jid] = {
                     "dispatched": datetime.datetime.fromtimestamp(now).isoformat(timespec="seconds"),
                     "delay_s": round(now - start, 1) if start is not None else None,

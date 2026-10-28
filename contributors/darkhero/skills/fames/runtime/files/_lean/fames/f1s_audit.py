@@ -767,6 +767,13 @@ ELEMENTS = [
     {"id": "EVO-new-consumer-source-freshness", "element": "ai_trader 2026-10-28 F1S proposal: first_touch was built on a 1-min K cache whose collector its owner retired 10-20; the report only said pool_through, so staleness was silent", "verdict": "REFINE",
      "requires": None, "detail": "windows-runtime-pitfalls 時間與資料新鮮度: a new consumer of an existing source checks the writer is alive first, emits age + stale flag (report-only for research, conservative mode stays for trading), threshold = the market's longest closure (TW Lunar New Year ~10 days); evidence ai_trader 1ada5c877, src/research/first_touch.py MAX_POOL_AGE_DAYS",
      "check_text": ("skill_runtime", "接上既有資料源的新消費者，先查寫入者還活著")},
+    # f1s-evolve 2026-10-28: threads quant-intro card 14e27927 (ledger 86408fe31ab5) + youtube DHH card 0ddc4421 (ledger 4ef8a90c8d0c)
+    {"id": "EVO-quant-data-over-guess-noise", "element": "kyloren card 14e279276af0be15: threads post 「用數據取代猜測／用規則取代情緒」 with a quantx.com.tw course link", "verdict": "INFO",
+     "requires": None, "detail": "rejected as noise: untrusted trading self-promotion (course funnel) with no procedure, tool or verifiable claim; its only general sentence is already T1 嚴禁猜 + ztm-verify-before-done 主張要有本回合證據否則 UNKNOWN, and entry/exit/risk rules are ai_trader's domain, not F1S text; harvest score came from low coverage of trading vocabulary, not content; no text added",
+     "check_text": ("skill_reverse", "generalize（附一句繁中規則）／seat-specific／noise")},
+    {"id": "EVO-dhh-ai-convert-noise", "element": "f1s-sources card 0ddc442162bd72fa: youtube, DHH went from AI sceptic to advocate, hand-written code as 牛仔文化", "verdict": "INFO",
+     "requires": None, "detail": "rejected as noise: untrusted opinion/testimonial about another person's attitude change; no procedure, tool or runtime trap for F1S (ambiguous requests already route through f1s-intake 不准曲解), and the card's own quotes are partly mistranscribed (「手寫城市」); harvest score came from low coverage, not content; no text added",
+     "check_text": ("skill_reverse", "generalize（附一句繁中規則）／seat-specific／noise")},
 ]
 
 
