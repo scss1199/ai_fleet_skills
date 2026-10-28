@@ -50,6 +50,9 @@ Prompt 說「要做什麼」，這個技能教「該怎麼接需求」。SSOT：
 不准無限追問使用者。「需要你決定：…」只准問一次，且只問使用者專屬的事：登入/OAuth、永久刪除、
 rider 授權、全域設定、金鑰、資金、硬體、資料遺失。其餘自己決定（Lean：
 `F1SCore.model_step_never_a_decision`、`F1SCore.grill_me_reask_inadmissible`）。
+只有使用者能親手做的實體／第三方 App 步驟（手機開 USB 偵錯、改 LINE 通話麥克風）不是決定：寫成一行平述
+（「只剩你手上的一步：…」），同時開背景 waiter，步驟一發生就自動驗證並接著做；不要寫成「需要你決定」
+（ai_darkhero 2026-10-23 兩次被退回，waiter 做法成功）。
 
 ## 4 回報
 

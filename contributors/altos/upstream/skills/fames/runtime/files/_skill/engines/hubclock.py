@@ -75,6 +75,26 @@ MAX_CONCURRENT = 8
 DEFAULT_MAX_RUNTIME = 600           # a lock older than this is considered stale (the job died)
 LOCAL_COMPUTE = os.path.join(HUB, "_registry", "fames-local-compute.json")
 _LOCAL_CAP_CACHE = {"mtime": None, "value": MAX_CONCURRENT}
+# Per-run telemetry (operator 2026-10-28: HubClock 可視化 + f1s 自適應排程). One JSON line per completed run; the board
+# (hubclock_board.py) and the learner (hubclock_learn.py) read this exact schema -- add keys only with a schema bump.
+RUNS_LEDGER = os.path.join(HUB, "_registry", "hubclock-runs.jsonl")
+RUNS_LEDGER_MAX = 20 * 1024 * 1024  # rotate to .1 past this size
+RUNS_SCHEMA = 1
+LOAD_GUARD = os.path.join(HUB, "ai_darkhero", "tray", "state", "load_guard.json")  # rewritten every ~2 s
+LOAD_GUARD_STALE_S = 120            # an older sample says nothing about this run -> null, not a stale number
+CTX_KEYS = ("cpu_w", "a770_w", "combined_w", "other_cpu_pct")
+METER_KEYS = ("cpu_tree_s", "peak_mb", "io_read_mb", "io_write_mb", "procs")
+_CTX_CACHE = {"key": None, "value": None}
+_JOBMETER = {"tried": False, "mod": None}
+# HubClock v2 adaptive scheduling (operator 2026-10-28): the learner (hubclock_learn.py) writes a per-rider proposal
+# into POLICY; the `adaptive` block there switches each part on. Missing block or enabled != true = the v1 scheduler.
+ADAPTIVE_FLAGS = ("fast_reap", "offsets", "backoff", "holds", "class_caps")
+CLASS_CAPS_DEFAULT = {"heavy": 1, "medium": 3}
+HOLD_A770_BUSY_W = 50.0             # learner default; load_guard's own a770 idle sample is ~38 W
+HOLD_COMBINED_W_MAX = 250.0         # load_grant.BUDGET_W
+HOLD_DAILY_MAX_S = 3600
+POLL_S = 1                          # fast_reap poll period while a rider runs or waits
+SCHED_EVENTS_RING = 60
 
 
 def _iso_epoch(stamp):
@@ -326,6 +346,58 @@ def load_policy():
         return {}
 
 
+def _int_in(value, lo, hi):
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    return value if isinstance(value, int) and lo <= value <= hi else None
+
+
+def parse_adaptive(doc):
+    """hubclock-policy.json -> (flags, plan).
+
+    flags is {} unless `adaptive.enabled` is literally true; then each of ADAPTIVE_FLAGS is on only when it is
+    literally true too. plan = {"caps": {class: n}, "riders": {id: {...}}} from the learner's `proposal` (+ its
+    `profiles` for load_grant self-gating). Anything malformed is dropped per field, never guessed."""
+    if not isinstance(doc, dict):
+        return {}, {}
+    block = doc.get("adaptive")
+    if not isinstance(block, dict) or block.get("enabled") is not True:
+        return {}, {}
+    flags = {k: block.get(k) is True for k in ADAPTIVE_FLAGS}
+    prop = doc.get("proposal") if isinstance(doc.get("proposal"), dict) else {}
+    profiles = doc.get("profiles") if isinstance(doc.get("profiles"), dict) else {}
+    caps = dict(CLASS_CAPS_DEFAULT)
+    for cls, value in (prop.get("concurrency_caps") or {}).items() if isinstance(prop.get("concurrency_caps"),
+                                                                                    dict) else ():
+        if cls in caps and _int_in(value, 1, MAX_CONCURRENT):
+            caps[cls] = value
+    glob = prop.get("hold_thresholds") if isinstance(prop.get("hold_thresholds"), dict) else {}
+    riders = {}
+    for jid, r in (prop.get("riders") or {}).items() if isinstance(prop.get("riders"), dict) else ():
+        if not isinstance(r, dict):
+            continue
+        holds = r.get("holds") if isinstance(r.get("holds"), dict) else {}
+        grant = (profiles.get(jid) or {}).get("load_grant") if isinstance(profiles.get(jid), dict) else None
+        cls = r.get("concurrency_class") or r.get("class")
+        riders[jid] = {
+            "offset_s": _int_in(r.get("phase_offset_s"), 0, 10 ** 7),
+            "k": _int_in((r.get("backoff") or {}).get("multiplier") if isinstance(r.get("backoff"), dict) else None,
+                         1, 4) or 1,
+            "class": cls if cls in ("heavy", "medium", "light") else None,
+            "protected": r.get("protected") is True,
+            "rise_w": _num((r.get("compute") or {}).get("est_rise_w") if isinstance(r.get("compute"), dict)
+                           else None) or 0.0,
+            "self_gated": bool(holds.get("self_gated")) or bool(isinstance(grant, dict) and grant.get("owners")),
+            "a770_busy_w": _num(holds.get("a770_busy_w")) or _num(glob.get("a770_busy_w")) or HOLD_A770_BUSY_W,
+            "combined_w_max": (_num(holds.get("combined_w_max")) or _num(glob.get("combined_w_max"))
+                               or HOLD_COMBINED_W_MAX),
+            "max_hold_s": _num(holds.get("max_hold_s")),
+        }
+    return flags, {"caps": caps, "riders": riders}
+
+
 def _open_handoff(inbox_root, owner, sender):
     """Id of an unacked message from `sender` still in `owner`'s inbox, else None (acking deletes the file)."""
     import glob as _glob
@@ -411,6 +483,104 @@ def _proc_times(proc):
         return (round(exited - created, 1) if exited > created else None), round(kernel + user, 3)
     except Exception:  # noqa: BLE001
         return None, None
+
+
+# --------------------------------------------------------------------------- per-run telemetry (fail-open)
+def _jobmeter():
+    """hubclock_jobmeter (Windows job-object accounting of the rider's whole process tree), or None."""
+    if not _JOBMETER["tried"]:
+        _JOBMETER["tried"] = True
+        try:
+            here = os.path.dirname(os.path.abspath(__file__))
+            if here not in sys.path:
+                sys.path.insert(0, here)
+            import hubclock_jobmeter
+            _JOBMETER["mod"] = hubclock_jobmeter
+        except Exception:  # noqa: BLE001 -- a missing meter means no tree telemetry, never no dispatch
+            _JOBMETER["mod"] = None
+    return _JOBMETER["mod"]
+
+
+def _attach_meter(proc):
+    """Called right after Popen: the rider and everything it starts from now on are accounted in one job."""
+    try:
+        meter = _jobmeter()
+        if meter is not None:
+            proc.hubclock_meter = meter.open_meter(proc)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _collect_meter(proc):
+    """Read and close the rider's job: {cpu_tree_s, peak_mb, io_read_mb, io_write_mb, procs}, or {}."""
+    handle = getattr(proc, "hubclock_meter", None)
+    if not handle:
+        return {}
+    try:
+        meter = _jobmeter()
+        if meter is None:
+            return {}
+        try:
+            data = meter.read_meter(handle) or {}
+        finally:
+            meter.close_meter(handle)
+            proc.hubclock_meter = None
+        return {k: data[k] for k in METER_KEYS if data.get(k) is not None}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def _num(value):
+    return value if isinstance(value, (int, float)) and not isinstance(value, bool) else None
+
+
+def _machine_ctx(now=None):
+    """Machine load at this instant from load_guard.json: {cpu_w, a770_w, combined_w, other_cpu_pct}; each key is
+    null when the file is missing, unreadable or older than LOAD_GUARD_STALE_S. Re-parsed only when it changed."""
+    out = dict.fromkeys(CTX_KEYS)
+    try:
+        st = os.stat(LOAD_GUARD)
+        if (now if now is not None else time.time()) - st.st_mtime > LOAD_GUARD_STALE_S:
+            return out
+        key = (st.st_mtime_ns, st.st_size)
+        if _CTX_CACHE["key"] != key:
+            with open(LOAD_GUARD, encoding="utf-8-sig") as fh:
+                doc = json.load(fh) or {}
+            sample = doc.get("sample") or {}
+            yld = doc.get("yield") or {}
+            _CTX_CACHE["value"] = {"cpu_w": _num(sample.get("cpu_w")), "a770_w": _num(sample.get("a770_w")),
+                                   "combined_w": _num(doc.get("combined_w")),
+                                   "other_cpu_pct": _num(yld.get("other_cpu_pct"))}
+            _CTX_CACHE["key"] = key
+        out.update(_CTX_CACHE["value"] or {})
+    except Exception:  # noqa: BLE001
+        pass
+    return out
+
+
+def _append_run(jid, rc, finished, info, cadence):
+    """One JSON line per completed run into RUNS_LEDGER (schema RUNS_SCHEMA); rotate to .1 past RUNS_LEDGER_MAX.
+    A failed write loses this line only -- it never reaches dispatch, reap or the results file."""
+    try:
+        info = info or {}
+        line = {"id": jid, "dispatched": info.get("dispatched"), "finished": finished, "rc": rc,
+                "delay_s": info.get("delay_s"), "duration_s": info.get("duration_s"), "cpu_s": info.get("cpu_s")}
+        line.update({k: info.get(k) for k in METER_KEYS})
+        line["ctx_start"] = info.get("ctx_start") or dict.fromkeys(CTX_KEYS)
+        line["ctx_end"] = _machine_ctx()
+        line["cadence"] = cadence
+        line["schema"] = RUNS_SCHEMA
+        line["sched"] = info.get("sched")   # additive (v2): the scheduler decisions behind this run, or null
+        data = (json.dumps(line, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
+        try:
+            if os.path.getsize(RUNS_LEDGER) + len(data) > RUNS_LEDGER_MAX:
+                os.replace(RUNS_LEDGER, RUNS_LEDGER + ".1")
+        except OSError:
+            pass  # no ledger yet, or a reader holds it open: rotate on a later run
+        with open(RUNS_LEDGER, "ab") as fh:
+            fh.write(data)
+    except Exception:  # noqa: BLE001 -- telemetry must never stop the clock
+        pass
 
 
 def _parse_rider_argv(cmd):
@@ -506,6 +676,7 @@ def dispatch(job):
                 proc = subprocess.Popen(cmd, shell=True, **kw)
             else:
                 proc = subprocess.Popen(argv, shell=False, **kw)
+            _attach_meter(proc)  # before the rider can start children; fail-open, counts only
         finally:
             if err:
                 err.close()  # the child holds its own handle
@@ -520,6 +691,12 @@ def dispatch(job):
         sys.stderr.write("hubclock dispatch error %s: %s\n" % (jid, e))
         return None
 
+
+# Failure classification before a DRIVE handoff (HubClock._classify, F1S 當下閉環 item 3).
+STALL_RIDERS = 3
+STALL_WINDOW_S = 1800
+PINNED_RIDERS = {"fames-converge", "fleet-skill-pulse"}
+CURATOR_OWNER = "ai_darkhero"
 
 STDERR_DIR = os.path.join(LOCKDIR, "hubclock-stderr")
 
@@ -724,6 +901,21 @@ class HubClock:
         self.dispatch_info = {}  # job id -> {"dispatched", "delay_s"} for the run in flight (results v2)
         self.policy_mtime = None
         self.stagger = False
+        # v2 adaptive state (all inert while self.adaptive == {}).
+        self.adaptive = {}        # ADAPTIVE_FLAGS -> bool, only when adaptive.enabled is true
+        self.plan = {}            # parse_adaptive() plan: caps + per-rider learner values
+        self.queued = set()       # due riders the last round could not start (cap / class cap / hold)
+        self.refused = {}         # job id -> boundary key of a refused dispatch: polls do not retry it
+        self.hold_since = {}      # job id -> epoch its current hold began
+        self.hold_long = set()    # job ids whose current hold already logged held_too_long
+        self.skip_seen = {}       # job id -> boundary key already counted as a backoff skip
+        self.pending = {}         # job id -> decision counts since its last dispatch (-> the run's `sched`)
+        self.sched_counts = {}    # decision -> count since daemon start (heartbeat)
+        self.sched_events = []    # recent decisions, oldest first (heartbeat)
+        self.offsets_in_use = {}  # job id -> offset its stored last_boundary was computed with
+        self.offset_src = {}      # job id -> "learner" | "stagger" | None
+        self.last_dispatch = {}   # job id -> epoch of its last dispatch (phase re-anchoring)
+        self.not_before = {}      # job id -> epoch: a re-anchored rider waits for this boundary
 
     def _reload_policy(self):
         try:
@@ -733,18 +925,75 @@ class HubClock:
         if m == self.policy_mtime:
             return
         self.policy_mtime = m
-        stagger = bool(load_policy().get("stagger"))
-        if stagger != self.stagger:
-            self.stagger = stagger
+        doc = load_policy()
+        stagger = bool(doc.get("stagger"))
+        adaptive, plan = parse_adaptive(doc)
+        before = (self.stagger, self.adaptive.get("offsets"), self._learned_offsets())
+        self.adaptive, self.plan = adaptive, plan
+        self.stagger = stagger
+        if (stagger, self.adaptive.get("offsets"), self._learned_offsets()) != before:
             self._apply_offsets()
+
+    def _rider(self, jid):
+        """The learner's plan for one rider ({} when adaptive is off or the learner does not know it)."""
+        return (self.plan.get("riders") or {}).get(jid) or {}
+
+    def _learned_offsets(self):
+        if not self.adaptive.get("offsets"):
+            return {}
+        return {jid: r["offset_s"] for jid, r in (self.plan.get("riders") or {}).items()
+                if r.get("offset_s") is not None}
+
+    def _protected(self, job):
+        return _job_priority(job) >= PROTECTED_PRIORITY or self._rider(job.get("id")).get("protected") is True
 
     def _apply_offsets(self):
         offsets = compute_offsets(self.jobs) if self.stagger else {}
+        learned = self._learned_offsets()
         for job in self.jobs:
-            if offsets.get(job.get("id")):
-                job["_offset_s"] = offsets[job["id"]]
+            jid = job.get("id")
+            period = _interval_secs(job)
+            off, src = offsets.get(jid) or 0, ("stagger" if offsets.get(jid) else None)
+            if jid in learned and period and learned[jid] < period:
+                off, src = learned[jid], "learner"       # v2 offsets: the learner's phase, always < cadence
+            if jid and period:
+                old = self.offsets_in_use.get(jid)
+                if old is not None and old != off and "learner" in (src, self.offset_src.get(jid)):
+                    self._reanchor(jid, period, old, off)
+                self.offsets_in_use[jid] = off
+                self.offset_src[jid] = src
+            if off:
+                job["_offset_s"] = off
             else:
                 job.pop("_offset_s", None)
+
+    def _reanchor(self, jid, period, old, new):
+        """Re-express a rider's last boundary in a new phase, so switching to (or away from) the learner's offsets
+        neither re-fires every rider at once nor squeezes two runs into less than half a period.
+
+        A new-phase boundary that already passed while the old phase still ruled is not run late at the reload: the
+        learner retunes hourly, and every rider it moved would start at the same tick (2026-10-28 14:02:00, four at
+        once, up to 236 s 'late'). Such a rider keeps the old boundary it was waiting for, one period after its last
+        run; the new phase's next boundary is then at least half a period later (it is >= last + 1.5 periods)."""
+        last = self.last.get(jid)
+        if not isinstance(last, int) or isinstance(last, bool):
+            return
+        start_old = last * period + old
+        fired = self.last_dispatch.get(jid)
+        if fired is None or not start_old <= fired < start_old + period:
+            fired = start_old
+        key = int((fired - new) // period)            # the new-phase bucket that holds the last run
+        self.last[jid] = key
+        nxt = (key + 1) * period + new
+        if nxt - fired < period / 2.0:
+            nxt += period                             # too close to the last run: wait for the boundary after
+        old_next = start_old + period                 # what the rider was waiting for under the old phase
+        if nxt < time.time() < old_next:
+            self.not_before[jid] = old_next
+        elif nxt > (key + 1) * period + new:
+            self.not_before[jid] = nxt
+        else:
+            self.not_before.pop(jid, None)
 
     def reload(self):
         self._reload_policy()
@@ -800,15 +1049,19 @@ class HubClock:
                 info = dict(self.dispatch_info.pop(jid, None) or {})
                 wall, info["cpu_s"] = _proc_times(proc)
                 info["duration_s"] = wall if wall is not None else round(now - started, 1)
-                self._record(jid, rc, info)
+                info.update(_collect_meter(proc))
+                fired = self._record(jid, rc, info)
                 self.running.pop(jid, None)
                 _release(jid)
+                _append_run(jid, rc, fired, info,
+                            info.get("cadence") or (jobs_by_id.get(jid) or {}).get("cadence"))
 
     def _record(self, jid, rc, info=None):
         fired = datetime.datetime.now().isoformat(timespec="seconds")
         self.fires.append({"id": jid, "fired": fired, "rc": rc})
         self.fires = self.fires[-30:]
         self._record_result(jid, rc, fired, time.time(), info)
+        return fired
 
     def _handoff(self, jid, row):
         """FAMES DRIVE: the third failure in a row ends in one handoff to the rider's owner, not silent retries."""
@@ -823,6 +1076,11 @@ class HubClock:
         stderr = (row.get("last_failure") or {}).get("output_tail")
         if stderr:
             text += " Last output: " + stderr
+        kind, sender, extra = self._classify(jid, row)
+        if kind == "signal":
+            return  # rc 75 = EX_TEMPFAIL, "not executed, prior work still active": by design, not a fault
+        if extra:
+            text = extra + " " + text
         try:
             sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
             import _bus
@@ -831,14 +1089,74 @@ class HubClock:
             # point at it instead of sending another.
             inbox_root = getattr(_bus, "INBOX", None)
             canon = getattr(_bus, "_canon_to", lambda name: name)
-            open_id = _open_handoff(inbox_root, canon(owner), "hubclock-" + jid) if inbox_root else None
+            if kind != "rider":
+                owner = CURATOR_OWNER  # a machine-wide incident has no single rider owner
+            open_id = _open_handoff(inbox_root, canon(owner), sender) if inbox_root else None
             if open_id:
-                row["last_handoff"] = {"to": owner, "id": open_id, "deduped": True, "at": row.get("last_fired")}
+                row["last_handoff"] = {"to": owner, "id": open_id, "deduped": True, "kind": kind,
+                                       "at": row.get("last_fired")}
                 return
-            row["last_handoff"] = {"to": owner, "id": _bus.send(owner, "hubclock-" + jid, text, kind="task"),
+            row["last_handoff"] = {"to": owner, "id": _bus.send(owner, sender, text, kind="task"), "kind": kind,
                                    "at": row.get("last_fired")}
         except Exception as e:  # noqa: BLE001 -- a bus fault must never stop the clock
             row["last_handoff"] = {"to": owner, "error": repr(e)[:160], "at": row.get("last_fired")}
+
+    def _classify(self, jid, row):
+        """Classify a failure streak at the source (F1S 當下閉環 item 3, 2026-10-18) -> (kind, sender, extra text).
+
+        signal       rc 75 (EX_TEMPFAIL): the rider declined to run because prior work is still active.
+        stall        rc 124 while >= STALL_RIDERS other riders also timed out within STALL_WINDOW_S: the machine
+                     stalled (2026-10-16 02:00-05:45, load_guard other_cpu 87.6%), one incident for all of them.
+        pinned-drift fames-converge / fleet-skill-pulse red while a FAMES-release-pinned file differs from the
+                     shipped runtime: one handoff naming the file and the ship command, shared by both riders.
+        rider        anything else: the rider's own handoff, as before.
+        """
+        rc = row.get("last_rc")
+        if rc == 75:
+            return "signal", None, ""
+        if rc == 124:
+            peers = self._recent_timeouts(jid, row.get("last_fired_epoch"))
+            if len(peers) >= STALL_RIDERS:
+                return "stall", "hubclock-stall", (
+                    "HubClock STALL incident: %d other riders also hit their runtime cap within %d min (%s). "
+                    "Treat it as one machine-wide stall (check load_guard.log other_cpu_pct and the riders that "
+                    "started together), not per-rider bugs." % (len(peers), STALL_WINDOW_S // 60, ", ".join(peers[:8])))
+        if jid in PINNED_RIDERS:
+            try:
+                sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                import pinned_drift
+                rows = pinned_drift.drifted()
+            except Exception:  # noqa: BLE001 -- the classifier must never stop the clock
+                rows = []
+            if rows:
+                paths = [r["path"] for r in rows]
+                return "pinned-drift", "hubclock-pinned-drift", (
+                    "HubClock PINNED-DRIFT: FAMES-release-pinned file(s) %s differ from the shipped runtime, which is "
+                    "why %s fail. Ship the edit from the session that made it, or here: %s"
+                    % (", ".join(paths), " and ".join(sorted(PINNED_RIDERS)), pinned_drift.ship_command(paths)))
+        return "rider", "hubclock-" + jid, ""
+
+    def _recent_timeouts(self, jid, epoch):
+        """Other riders whose recent results hold an rc 124 finished within STALL_WINDOW_S of `epoch`."""
+        try:
+            ref = float(epoch)
+        except (TypeError, ValueError):
+            return []
+        out = []
+        for other, row in self.results.items():
+            if other == jid or not isinstance(row, dict):
+                continue
+            for item in row.get("recent") or []:
+                if not isinstance(item, dict) or item.get("rc") != 124:
+                    continue
+                try:
+                    when = datetime.datetime.fromisoformat(str(item.get("fired"))).timestamp()
+                except ValueError:
+                    continue
+                if abs(ref - when) <= STALL_WINDOW_S:
+                    out.append(other)
+                    break
+        return sorted(out)
 
     def _backed_off(self, job, now):
         """A non-protected interval rider in a failure streak fires on every BACKOFF_EVERY-th boundary only."""
@@ -866,9 +1184,15 @@ class HubClock:
         row["runs"] = int(row.get("runs") or 0) + 1
         # Results v2 (2026-10-06): `fired` is when the run FINISHED (reap time); dispatch time, the delay behind
         # its boundary, wall duration and the rider process's own CPU seconds make queueing and cost measurable.
-        extra = {k: v for k, v in (info or {}).items() if k in ("dispatched", "delay_s", "duration_s", "cpu_s")}
+        # 2026-10-28: + the job-object totals of the rider's whole process tree (hubclock_jobmeter). A run without a
+        # meter omits them, and drops the previous run's last_* copies so last_* never mixes two runs.
+        extra = {k: v for k, v in (info or {}).items()
+                 if k in ("dispatched", "delay_s", "duration_s", "cpu_s") + METER_KEYS + ("sched",)}
         for key, value in extra.items():
             row["last_" + key] = value
+        for key in METER_KEYS + ("sched",):
+            if key not in extra:
+                row.pop("last_" + key, None)
         if rc == 0:
             row["consecutive_failures"] = 0
             row.pop("last_handoff", None)  # the streak ended; the next one gets its own handoff
@@ -903,6 +1227,10 @@ class HubClock:
                 self.results = {str(k): v for k, v in rows.items() if isinstance(v, dict)}
         except (OSError, ValueError, AttributeError):
             self.results = {}
+        for jid, row in self.results.items():   # v2 phase re-anchoring needs each rider's last dispatch time
+            epoch = _iso_epoch(row.get("last_dispatched"))
+            if epoch is not None:
+                self.last_dispatch[jid] = epoch
         try:
             with open(BEAT, encoding="utf-8-sig") as fh:
                 fires = (json.load(fh) or {}).get("recent_fires") or []
@@ -953,6 +1281,30 @@ class HubClock:
     def tick(self, now, dry=False):
         self.reload()
         self.reap()
+        dispatched = self._dispatch_round(now, dry=dry, full=True)
+        if not dry:
+            self.write_beat(now, dispatched)
+            self._write_results(now)
+        return dispatched
+
+    def poll(self, now):
+        """v2: a wake-up between minute ticks. fast_reap frees the slots of finished riders at once; every flag that
+        wakes the daemon then dispatches what is due now (a learner phase boundary, a rider that lost the cap race
+        at this minute's tick). The results file stays on the minute tick; the heartbeat is written only when this
+        poll dispatched, because it is what a restart restores last_boundary from (2026-10-28 14:14: a restart
+        before the next tick re-ran every rider a poll had started since the last one)."""
+        if self.adaptive.get("fast_reap"):
+            self.reap()
+        dispatched = self._dispatch_round(now, full=False)
+        if dispatched:
+            self.write_beat(now, dispatched)
+        return dispatched
+
+    def _dispatch_round(self, now, dry=False, full=True):
+        """The v1 dispatch pass (due -> backoff -> lock -> aging+priority sort -> cap), plus the v2 gates, each
+        inert unless its adaptive flag is on. `full` = the minute tick: only it adds aging debt and retries a
+        refused dispatch, exactly as v1 did once per tick; a poll never does either."""
+        ad = self.adaptive
         dispatched = 0
         candidates = []
         for job in self.jobs:
@@ -961,11 +1313,17 @@ class HubClock:
                 continue
             if not is_due(job, now, self.last.get(jid)):
                 continue
+            if self.not_before and self.not_before.get(jid, 0) > now:
+                continue  # re-anchored after a phase change: never two runs within half a period
             if self._backed_off(job, now):
                 continue  # failure streak: wait for the next BACKOFF_EVERY-th boundary (owner already handed off)
+            if ad.get("backoff") and self._learned_skip(job, now):
+                continue  # v2 backoff: the learner's every-k-th boundary
             mr = int(job.get("max_runtime") or DEFAULT_MAX_RUNTIME)
             if _locked(jid, mr) or jid in self.running:
                 continue  # still running from a prior boundary -> skip (no pile-up)
+            if not full and self.refused.get(jid) == boundary_key(job, now):
+                continue  # refused at this boundary already: only the minute tick retries (one log line a minute)
             candidates.append(job)
 
         # Aging is the primary key: after losing one capacity race even a
@@ -976,37 +1334,197 @@ class HubClock:
             reverse=True,
         )
         capacity = max(0, max_concurrent() - len(self.running))
+        queued = set()
         for job in candidates:
             jid = job["id"]
             if capacity <= 0:
                 if not dry:
-                    self.deferred[jid] = self.deferred.get(jid, 0) + 1
+                    queued.add(jid)
+                    if full:
+                        self.deferred[jid] = self.deferred.get(jid, 0) + 1
+                        self._note(jid, "capped", now, "cap %d" % max_concurrent())
                 continue
             if dry:
                 print("  WOULD dispatch %-20s cadence=%s :: %s" % (jid, job.get("cadence"), job.get("command")))
                 dispatched += 1
                 capacity -= 1
                 continue
+            if ad.get("class_caps"):
+                full_class = self._class_full(job)
+                if full_class:
+                    queued.add(jid)
+                    if full:
+                        self.deferred[jid] = self.deferred.get(jid, 0) + 1
+                        self._note(jid, "capped", now, full_class)
+                    continue
+            if ad.get("holds") and self._held(job, now):
+                queued.add(jid)
+                continue
             # optional cheap inline gate: a job may set "gate":false-result to skip; we keep gate INSIDE the
             # dispatched command (self-gating) to never block the clock -- so here we just fire.
             proc = dispatch(job)
             if proc is not None:
                 start = boundary_start(job, now)
+                nb = self.not_before.get(jid)
+                if start is not None and nb is not None and start < nb <= now:
+                    start = nb                        # a re-anchored run was due at its carried-over boundary
                 self.dispatch_info[jid] = {
                     "dispatched": datetime.datetime.fromtimestamp(now).isoformat(timespec="seconds"),
-                    "delay_s": round(now - start, 1) if start is not None else None}
+                    "delay_s": round(now - start, 1) if start is not None else None,
+                    "cadence": job.get("cadence"), "ctx_start": _machine_ctx(),
+                    "sched": self._sched_summary(job, now)}
                 self.last[jid] = boundary_key(job, now)
                 self.deferred[jid] = 0
                 self.running[jid] = (proc, now)
+                self.last_dispatch[jid] = now
+                self.refused.pop(jid, None)
+                self.not_before.pop(jid, None)
                 dispatched += 1
                 capacity -= 1
             else:
                 # A fail-closed lint/launch refusal is still outstanding work.
                 self.deferred[jid] = self.deferred.get(jid, 0) + 1
+                self.refused[jid] = boundary_key(job, now)
         if not dry:
-            self.write_beat(now, dispatched)
-            self._write_results(now)
+            self.queued = queued
         return dispatched
+
+    # ------------------------------------------------------------------ v2 gates
+    def _learned_skip(self, job, now):
+        """v2 backoff: run only every k-th boundary (k = learner multiplier 1..4, never faster than armed).
+        Never for protected riders, daily/@ cadences or periods of a day or more."""
+        jid = job["id"]
+        k = self._rider(jid).get("k") or 1
+        if k <= 1 or self._protected(job):
+            return False
+        p = parse_cadence(job.get("cadence"))
+        if not p or p[0] != "interval" or p[1] >= 86400:
+            return False
+        key = boundary_key(job, now)
+        if key % k == 0:
+            return False
+        if self.skip_seen.get(jid) != key:
+            self.skip_seen[jid] = key
+            self._note(jid, "backoff-skip", now, "every %dth boundary" % k)
+        return True
+
+    def _class_full(self, job):
+        """v2 class caps: '' when the rider may start, else the reason (e.g. 'class heavy 1/1')."""
+        if self._protected(job):
+            return ""
+        cls = self._rider(job["id"]).get("class")
+        cap = (self.plan.get("caps") or {}).get(cls)
+        if not cap:
+            return ""
+        by_id = {j.get("id"): j for j in self.jobs}
+        n = sum(1 for rid in self.running
+                if self._rider(rid).get("class") == cls and not self._protected(by_id.get(rid) or {"id": rid}))
+        return "class %s %d/%d" % (cls, n, cap) if n >= cap else ""
+
+    def _held(self, job, now):
+        """v2 holds for heavy riders: defer while the A770 is busy, or while box W + the rider's rise > the cap.
+        Protected and load_grant self-gated riders are exempt; an unknown or stale load_guard sample never holds.
+        After one full cadence a watts-only hold is released (starvation bound, logged held_too_long); an A770 hold
+        is never force-run -- A770 load is the power-loss red line."""
+        jid = job["id"]
+        plan = self._rider(jid)
+        if plan.get("class") != "heavy" or plan.get("self_gated") or self._protected(job):
+            return False
+        ctx = _machine_ctx(now)
+        a770, box = ctx.get("a770_w"), ctx.get("combined_w")
+        busy = a770 is not None and a770 >= plan.get("a770_busy_w", HOLD_A770_BUSY_W)
+        over = box is not None and box + plan.get("rise_w", 0.0) > plan.get("combined_w_max", HOLD_COMBINED_W_MAX)
+        if not busy and not over:
+            return False
+        why = ("a770 %.0fW>=%.0f" % (a770, plan.get("a770_busy_w", HOLD_A770_BUSY_W)) if busy else
+               "box %.0fW+%.1f>%.0f" % (box, plan.get("rise_w", 0.0), plan.get("combined_w_max", HOLD_COMBINED_W_MAX)))
+        since = self.hold_since.get(jid)
+        if since is None:
+            since = self.hold_since[jid] = now
+            self._note(jid, "held", now, why)
+        period = _interval_secs(job) or plan.get("max_hold_s") or HOLD_DAILY_MAX_S
+        if now - since >= period:
+            if jid not in self.hold_long:
+                self.hold_long.add(jid)
+                self._note(jid, "held_too_long", now, why)
+            if not busy:
+                return False
+        return True
+
+    def _note(self, jid, decision, now, why=None):
+        """One scheduler decision: counted for the rider's next run (`sched`), since start, and in the event ring."""
+        self.pending.setdefault(jid, {})
+        self.pending[jid][decision] = self.pending[jid].get(decision, 0) + 1
+        self.sched_counts[decision] = self.sched_counts.get(decision, 0) + 1
+        self.sched_events.append({"at": datetime.datetime.fromtimestamp(now).isoformat(timespec="seconds"),
+                                  "id": jid, "decision": decision, "why": why})
+        del self.sched_events[:-SCHED_EVENTS_RING]
+
+    def _sched_summary(self, job, now):
+        """The decisions behind this run, for the results ring and the ledger line (`sched`)."""
+        jid = job["id"]
+        notes = self.pending.pop(jid, {})
+        out = {"mode": "adaptive" if self.adaptive else "v1"}
+        for decision in ("capped", "backoff-skip"):
+            if notes.get(decision):
+                out[decision] = notes[decision]
+        since = self.hold_since.pop(jid, None)
+        if since is not None:
+            out["held_s"] = round(now - since, 1)
+        if jid in self.hold_long:
+            self.hold_long.discard(jid)
+            out["held_too_long"] = True
+        if job.get("_offset_s"):
+            out["offset_s"] = job["_offset_s"]
+            out["offset_src"] = self.offset_src.get(jid)
+        plan = self._rider(jid)
+        if self.adaptive.get("backoff") and (plan.get("k") or 1) > 1:
+            out["k"] = plan["k"]
+        if (self.adaptive.get("class_caps") or self.adaptive.get("holds")) and plan.get("class"):
+            out["class"] = plan["class"]
+        return out
+
+    # ------------------------------------------------------------------ the loop
+    def _wakes(self):
+        return bool(self.adaptive.get("fast_reap") or self.adaptive.get("offsets"))
+
+    def _next_wake(self, now, nxt):
+        """Earliest v2 wake-up before the minute tick `nxt`: the next whole second while a rider runs or waits
+        (fast_reap), the next learner phase boundary (offsets). Always > now, so the loop cannot spin."""
+        wake = nxt
+        if self.adaptive.get("fast_reap") and (self.running or self.queued):
+            wake = min(wake, math.floor(now) + POLL_S)
+        if self.adaptive.get("offsets"):
+            for job in self.jobs:
+                period = _interval_secs(job)
+                if period:
+                    off = job.get("_offset_s") or 0
+                    wake = min(wake, (math.floor((now - off) / period) + 1) * period + off)
+        return wake
+
+    def _loop(self, clock=None, sleep=None, until=None):
+        """v1: sleep to each whole-tick boundary and tick(). v2 adds wake-ups between ticks (poll()); the minute
+        tick, its heartbeat and its results write stay where they were."""
+        clock = clock or time.time
+        sleep = sleep or time.sleep
+        while until is None or clock() < until:
+            tick = base_tick(self.jobs)
+            nxt = (int(clock() // tick) + 1) * tick      # the next clock-aligned boundary
+            while self._wakes():
+                now = clock()
+                wake = self._next_wake(now, nxt)
+                if wake >= nxt:
+                    break
+                sleep(max(0.0, wake - now))
+                self.poll(max(clock(), wake))
+            sleep(max(0.0, nxt - clock()))
+            if _yield_requested(self.started):
+                # Hand over before dispatching: the successor restores last_boundary from the heartbeat.
+                print("HubClock: pid %d was asked to step down; exiting." % os.getpid())
+                _release_daemon_flock()
+                return
+            self.tick(clock())
+            _refresh_singleton()
 
     def write_beat(self, now, dispatched):
         beat = {
@@ -1026,9 +1544,18 @@ class HubClock:
             "stagger": self.stagger,
             "jobs": [{"id": j.get("id"), "agent": j.get("agent", ""), "cadence": j.get("cadence"),
                       "offset_s": j.get("_offset_s", 0),
+                      "offset_src": self.offset_src.get(j.get("id")),
                       "last_boundary": self.last.get(j.get("id")),
+                      "not_before": self.not_before.get(j.get("id")),   # v2: a re-anchored wait survives a restart
                       "deferred": self.deferred.get(j.get("id"), 0)} for j in self.jobs],
             "recent_fires": list(reversed(self.fires)),
+            # v2 (additive): flags in force, decisions since start, the latest decisions and current holds.
+            "adaptive": {"flags": self.adaptive or None,
+                         "n_queued": len(self.queued),
+                         "counts": self.sched_counts,
+                         "held": {jid: datetime.datetime.fromtimestamp(t).isoformat(timespec="seconds")
+                                  for jid, t in self.hold_since.items()},
+                         "events": list(reversed(self.sched_events))},
         }
         try:
             tmp = BEAT + ".tmp"
@@ -1040,13 +1567,21 @@ class HubClock:
     def _restore_last(self):
         """Seed last_boundary from the persisted heartbeat so a restart does NOT re-fire a job whose boundary
         already passed today -- in particular a heavy @daily/@weekly job won't re-run just because the daemon
-        bounced. Interval jobs still fire once on the first new bucket (harmless). KB 2026.06.09-18 audit fix F."""
+        bounced. Interval jobs still fire once on the first new bucket (harmless). KB 2026.06.09-18 audit fix F.
+        v2: also the phase each last_boundary was computed with, so a phase change can be re-anchored, and any
+        re-anchored wait (not_before) still pending."""
         try:
             b = json.load(open(BEAT, encoding="utf-8-sig"))
             for j in b.get("jobs", []):
                 jid, lb = j.get("id"), j.get("last_boundary")
                 if jid and lb is not None:
                     self.last[jid] = lb
+                if jid and isinstance(j.get("offset_s"), int):
+                    self.offsets_in_use[jid] = j["offset_s"]
+                    self.offset_src[jid] = j.get("offset_src")
+                nb = j.get("not_before")
+                if jid and isinstance(nb, (int, float)) and not isinstance(nb, bool):
+                    self.not_before[jid] = nb    # 2026-10-28 14:11: dropping it re-ran a 6h rider twice in 7 s
         except Exception:
             pass
 
@@ -1059,18 +1594,7 @@ class HubClock:
         self._load_results()
         print("HubClock daemon up. registry=%s" % REG)
         self.reload()
-        while True:
-            tick = base_tick(self.jobs)
-            now = time.time()
-            nxt = (int(now // tick) + 1) * tick      # the next clock-aligned boundary
-            time.sleep(max(0.0, nxt - now))
-            if _yield_requested(self.started):
-                # Hand over before dispatching: the successor restores last_boundary from the heartbeat.
-                print("HubClock: pid %d was asked to step down; exiting." % os.getpid())
-                _release_daemon_flock()
-                return
-            self.tick(time.time())
-            _refresh_singleton()
+        self._loop()
 
 
 # --------------------------------------------------------------------------- CLI

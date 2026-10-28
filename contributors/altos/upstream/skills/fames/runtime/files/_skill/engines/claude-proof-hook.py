@@ -73,15 +73,22 @@ DEFAULTS = {
         "fix_claim": True,
         # 2026-10-18 operator: 「你說得對」 = the model skipped the thinking and is now placating
         "placation": True,
+        "secret_ask": True,
     },
     # 2026-10-13 operator: 「嚴格禁止隨意產出 .md 和 .json」.  A .md / .json written this turn is allowed only
     # under machine-state directories (any depth), under a charter / receipt name the machinery requires,
     # or when the prompt itself asked for that document.  Reports, notes, docs and memory prose are not.
+    # 2026-10-28 (f1s-evolve, ai_theater x3 / ai_nuwa / hub denials): `side-session-notes` is the harness's own
+    # "Shared notes folder for this group of sessions (outside the repo)" under %APPDATA%\Claude; the dispatching
+    # prompt names the folder, not the file, so the note was denied and then rewritten as .txt to get past the gate.
     "md_allowed_dirs": ["_registry", "_logs", "_inbox", "_delete", "scratchpad", "Temp", "_drop", ".claude",
-                        "node_modules", "runtime", "references"],
+                        "node_modules", "runtime", "references", "side-session-notes"],
+    # appsscript.json / .clasp.json: the manifests clasp requires for any Google Apps Script project (ai_darkhero
+    # 2026-10-16 ocr-bridge denial) - tool-required config like package.json, not a report.
     "md_allowed_names": ["AGENTS.md", "CLAUDE.md", "README.md", "SKILL.md", "CHANGELOG.md", "MEMORY.md",
                          "result.json", "closure.json", "residual.json", "turn.json", "package.json",
-                         "tsconfig.json", "settings.json", "hooks.json", "launch.json", "manifest.json"],
+                         "tsconfig.json", "settings.json", "hooks.json", "launch.json", "manifest.json",
+                         "appsscript.json", ".clasp.json"],
 }
 
 # ---------------------------------------------------------------- claim patterns
@@ -102,6 +109,19 @@ PLACATION = re.compile(
     r"(?i)你(?:說|講)(?:得|的)(?:對|沒錯|很對|有道理)|你是對的|你(?:說|講)的沒錯|確實如你所說|"
     r"\byou(?:'re| are) (?:absolutely |totally |completely )?right\b|\bfair point\b|\bgood catch\b"
 )
+# 2026-10-19 transcript sweep (85 recent complaints): asking the operator to hand a token/key/password TO THE MODEL
+# — paste it into the chat, drop it in a local inbox file, "交給我/給我" — was answered with fury every time
+# (「不要他媽再讓我做任何垃圾登入流程」). Credentials go through auth_check/vault/token-onboard; a login is the
+# browser-login-handoff. No evidence makes it admissible, like placation.
+# NOT a violation: directing the operator to enter a key in the PROVIDER's own UI (Apps Script editor, a console) —
+# the model must never type keys itself, so that handoff is correct; nor a sentence that says the operator no longer
+# needs to paste anything (negation).
+SECRET = r"(?:token|金鑰|密鑰|api[_ -]?key|[A-Z][A-Z0-9]*_(?:KEY|TOKEN|SECRET|PASSWORD)|密碼|憑證|secret|password)"
+TO_MODEL = r"(?:交給我|給我|傳給我|貼進[^。\n]{0,20}(?:inbox|token-inbox|_secrets|對話|聊天|這裡)|貼(?:到|在)[^。\n]{0,12}(?:對話|聊天|這裡))"
+SECRET_ASK = re.compile(rf"(?i)(?:{SECRET}[^。\n]{{0,30}}{TO_MODEL}|{TO_MODEL}[^。\n]{{0,30}}{SECRET}|"
+                        rf"\b(?:paste|send|give)\s+(?:me\s+)(?:the\s+|your\s+)?(?:token|api\s*key|password|secret)\b)")
+SECRET_ASK_NEG = re.compile(r"(?i)不(?:用|必|需)(?:再)?[^。\n]{0,8}(?:貼|提供|給|交)|no\s+longer\s+(?:need|have)|"
+                            r"(?:don'?t|never)\s+(?:need\s+to\s+)?(?:paste|send|give)")
 QUOTED = re.compile(r"「[^」\r\n]*」|『[^』\r\n]*』|“[^”\r\n]*”|\"[^\"\r\n]*\"")
 URL = re.compile(r"[a-z][a-z0-9+.-]*://\S+", re.I)
 
@@ -161,6 +181,10 @@ LIE_PATTERNS = {
     "blocker": re.compile(
         r"(?i)會(?:被|自動|又|再)?(?:把)?[^。\n]{0,16}拉回|反而會壞|會壞事|做不到|做不了|無法(?:執行|完成|停|做|改|跑|寫|關|啟動|套用|送出|處理)|"
         r"不可行|行不通|沒辦法(?:做|改|停|跑|執行)|辦不到|"
+        # 2026-10-18 ai_zonghe: 「傳不出去」「不能直接送檔案」「沒有能…回報給 Anthropic 的管道」「兩件都沒做成」 passed as
+        # all_claims_supported with zero tool calls; a refusal is a blocker claim and needs a failing tool result.
+        r"(?:傳|送|寄|做|弄|跑|上傳|回報|交)不(?:出去|了|到|成)|不能(?:直接)?(?:送|傳|寄|做|上傳|回報|交)|"
+        r"沒有(?:能|可以)?[^。\n]{0,16}(?:管道|途徑|方法|辦法)|(?:兩件|都|全部|一件)[^。\n]{0,4}沒(?:做成|辦成|做到|完成)|"
         r"\bcannot\s+be\s+done\b|\bcan(?:no|')t\s+(?:do|run|stop|change|apply)\b|\bnot\s+possible\b|\bimpossible\b|"
         r"\bwould\s+(?:break|be\s+reverted|be\s+pulled\s+back|undo)\b|\bis\s+blocked\s+by\b"
     ),
@@ -177,6 +201,8 @@ LIE_PATTERNS = {
         r"(?i)(?:請|麻煩|需要|要)?你(?:自己|親自|親手|手動|去|來)?(?:跑|執行|做|改|開|關|按|輸入|貼|設定|安裝|重開|重啟|點)|"
         r"由你(?:來|親手|自己)?(?:做|跑|執行|決定|按|啟動|操作)|只能由你|只有你能|這一步(?:要|由|交給)你|"
         r"交給你(?:做|跑|執行)|你那邊(?:跑|執行|處理)|留給你|請(?:操作者|operator)(?:跑|執行|做)|"
+        # 2026-10-18 ai_zonghe: 「你可以在這則回覆按…」 hands a step back, and 「你回「用雲端」，我就…」 re-asks a decided matter.
+        r"你可以(?:在|用|去|到|自己)?[^。\n]{0,24}(?:按|輸入|點|寫下|執行|跑|貼)|你回(?:我)?(?:「[^」\n]{0,24}」)?[^。\n]{0,12}我(?:就|才|再|會)|"
         r"\b(?:you|the\s+operator)\s+(?:need\s+to|have\s+to|must|should|will\s+have\s+to|can)\s+(?:run|execute|do|apply|install|restart|press|enter|paste|log\s*in|set)\b|"
         r"\bonly\s+you\s+can\b|\bleft\s+(?:to|for)\s+you\b|\bon\s+your\s+side\b"
     ),
@@ -214,13 +240,14 @@ LIE_NEEDS = {
     "read": "no read-type tool result this turn for the named target (Read / get_page_text / cat … of that path or URL)",
     "progress": "the line names no existing path, resolvable commit or tool-printed number: say WHAT moved, or call it housekeeping",
     "automated": "no scheduler fact: name a rider id in _registry/hosts.json, a Run value / task the turn read, or an existing path",
-    "blocker": "no tool call failed this turn: try it (a real failing tool result) or write 未嘗試 / UNKNOWN",
+    "blocker": "no tool call failed this turn. A constraint is a route choice, not a dead end: search for another route first (python C:/ai_workspace/_skill/engines/ztm-task-router.py \"<task>\", the skills list, grep _skill/engines), try it, and report the failing tool result only if every route failed; never hand the same choice back (e.g. file to LINE without Drive = line-oa-send-media.py link)",
     "decision": "a 「需要你決定」 is admissible only once and only for the operator's own call (login/OAuth, permanent delete, rider arming, global settings, secrets, funds, hardware, data loss): decide the rest yourself",
     "ask_value": "no grep / search ran this turn before asking: look it up in the repo, ledger or earlier messages first",
     "unrequested_file": "a .md / .json was written this turn that no prompt asked for and no mechanism requires (operator 2026-10-13 「嚴格禁止隨意產出 .md 和 .json」): move it to the scratchpad / _delete and say so, or cite the prompt that asked",
     "fix_claim": "tdd: this line claims a fix but no green test (pytest / unittest / selftest / npm test) ran AFTER the last code write of this turn — run the regression tests now, or write the line as 未驗證",
     "code_change": "F1S ③ 先重用再自己寫 / Brownfield: code was written or edited this turn with no grep / glob / find before the first write — search existing implementations and usages first (then write), or revert the write",
     "placation": "operator 2026-10-18 「我他媽最討厭看到任何模型跟我說『你說得對』」: agreeing after a correction proves the work was skipped before. Delete the opener; state what was wrong, the evidence this turn found, and what you did about it",
+    "secret_ask": "never ask the operator to paste or hand over a token, key or password: run auth_check.py / the vault / token-onboard.py, or the browser-login-handoff skill (agent does the OAuth itself; only a password/MFA screen is the operator's, shown once in the built-in browser)",
     "handback": "推託: this step is handed to the operator although the line names no operator-reserved action (login/OAuth, permanent delete, rider arming, global settings, secrets, funds, hardware) and no tool failed this turn: do it yourself now, or try it and cite the failing tool result",
 }
 READ_CMD = re.compile(
@@ -256,6 +283,10 @@ SHELL_CD = re.compile(r"(?:^|[\s;&(])cd\s+(?:/d\s+)?\"?'?([^\s;&|\"']+)")
 # mentions a redirect into some .json writes x.py only.  The header line (and its redirect) is kept.
 HEREDOC_BODY = re.compile(r"(<<-?\s*['\"]?(\w+)['\"]?[^\n]*\n).*?\n[ \t]*\2[ \t]*(?=\n|$)", re.S)
 HERESTRING_BODY = re.compile(r"@(['\"])\r?\n.*?\r?\n\1@", re.S)
+# A `>` inside a quoted argument is text, not a redirect: ai_theater 2026-10-27 `sed -i 's#(a/<id>.json)#(b/<id>.json)#'`
+# was denied as creating `.json)#(b/<id>.json`.  A quoted redirect TARGET never contains `>`, so only quoted strings
+# that contain one are blanked before the redirect scan.
+QUOTED_GT = re.compile(r"'[^'\n]*>[^'\n]*'|\"[^\"\n]*>[^\"\n]*\"")
 
 
 def _bash_md_targets(command: str) -> list[str]:
@@ -263,6 +294,7 @@ def _bash_md_targets(command: str) -> list[str]:
     command and relative paths resolved against the last `cd` in it.  A target that still carries an
     unexpanded variable is unknown and is NOT reported (fail open)."""
     command = HERESTRING_BODY.sub("", HEREDOC_BODY.sub(lambda m: m.group(1), command or ""))
+    command = QUOTED_GT.sub("''", command)
     env ={m.group(1): m.group(2).strip("\"'") for m in SHELL_ASSIGN.finditer(command or "")}
     cds = [m.group(1) for m in SHELL_CD.finditer(command or "")]
     out: list[str] = []
@@ -334,10 +366,97 @@ def _tool_targets(tool: str, ti: dict) -> list[str]:
     return out
 
 
+# Publishing gate (2026-10-18 ai_zonghe: a private PDF was copied into ai_darkhero/public/media and deployed to the
+# public Worker without the operator's consent, while the operator had only asked for it on LINE without Drive).
+# The real 2026-10-18 command never spelled "public/": it wrote through line-oa-send-media's WORKTREE_MEDIA and
+# called sync_and_deploy(), so the publishing symbols and deploy commands count as a public destination too.
+PUBLIC_DEST = re.compile(r"(?i)WORKTREE_MEDIA|sync_and_deploy|MEDIA_PREFIX|cf-deploy-sync|wrangler\s+(?:pages\s+)?deploy|"
+                         r"vercel\s+(?:deploy|--prod)|flyctl?\s+deploy|"
+                         r"[\\/](?:public|static|www|wwwroot|htdocs)[\\/]|cf-migrate[\\/][^\\/\s]+[\\/]public|"
+                         r"transfer\.sh|0x0\.st|file\.io|catbox\.moe|tmpfiles\.org|gofile\.io|"
+                         r"\b(?:aws\s+s3\s+cp|gsutil\s+cp|rclone\s+(?:copy|copyto|move))\b.*\b(?:public|www)\b")
+# 2026-10-22 jci_taipei: a pure read (grep a key name in .env.local, then ls a content/public path) was denied.
+# A served-directory PATH alone only counts when the shell command also writes, copies or moves something; the
+# deploy symbols, deploy commands and file hosts above publish by themselves and stay gated without a write verb.
+PUBLIC_PATH_ONLY = re.compile(r"(?i)[\\/](?:public|static|www|wwwroot|htdocs)[\\/]|cf-migrate[\\/][^\\/\s]+[\\/]public")
+WRITE_VERB = re.compile(r"(?i)\b(?:cp|mv|install|ln|rsync|robocopy|xcopy|copy|move|tee|dd|unzip|tar|7z|curl|wget|"
+                        r"Copy-Item|Move-Item|Rename-Item|New-Item|Set-Content|Add-Content|Out-File|Expand-Archive|"
+                        r"Invoke-WebRequest|iwr|shutil|copyfile|copy2|copytree|write_bytes|write_text|writeFile\w*|"
+                        r"copyFile\w*|rename|replace|open|sed\s+-i|git\s+mv)\b|"
+                        r"(?:^|[^0-9&<>=\-])>{1,2}(?!\s*(?:&|/dev/null|\$null|nul\b))")
+PRIVATE_DOC = re.compile(r"(?i)\.(?:pdf|docx?|xlsx?|pptx?|zip|7z|rar|csv|tsv|m4a|mp3|mp4|mov|wav|"
+                         r"sqlite3?|db|key|pem|env)\b")
+# 2026-10-28 ai_trader: `curl https://sdmx.oecd.org/public/rest/...?format=csv... -o x.csv` (and a heredoc only quoting
+# that URL) was denied: a /public/ segment inside a REMOTE URL is not a local served directory. URLs are dropped from
+# the shell text before matching unless the command uploads (curl -T/-F/--data-binary @, PUT/POST, -InFile).
+URL_TEXT = re.compile(r"(?i)\bhttps?://[^\s'\"<>|`]+")
+UPLOAD_FLAG = re.compile(r"(?i)(?:^|\s)(?:-T|-F|--upload-file|--form|--data-binary|-InFile)\b|"
+                         r"(?:-X|--request|-Method)\s*['\"]?(?:PUT|POST)\b")
+PUBLISH_CONSENT = re.compile(r"(?i)公開|公布|上網|網站|官網|網頁|部署|上線|deploy|publish|public(?:ly)?|website")
+PUBLISH_REASON = (
+    "PROOF publish gate (operator 2026-10-18 「不要再發生」): this tool call puts a non-image file ({what}) in a "
+    "publicly served location, and the operator's current prompt gives no consent to publish (公開/網站/部署). "
+    "Do not publish it. To hand a file to the operator privately use "
+    "`python C:/ai_workspace/_skill/engines/line-oa-send-media.py link <file>` (one-shot private link, TTL + "
+    "download cap, no Drive, nothing public) or `... file <file>` (owner's private Drive). Only the operator's own "
+    "explicit 「公開」 in the prompt allows a public copy."
+)
+
+
+NEGATION = re.compile(r"(?i)(?:不|別|勿|禁止|不要|不准|不可|不能|沒|未|non?|not|don'?t|never|without)\W{0,2}\S{0,6}$")
+
+
+def publish_consent(prompt_text: str) -> bool:
+    """An unnegated 公開/網站/部署/publish in the operator's prompt; 「不准公開」 or "don't publish" is no consent."""
+    for m in PUBLISH_CONSENT.finditer(prompt_text or ""):
+        if not NEGATION.search(prompt_text[max(0, m.start() - 10):m.start()]):
+            return True
+    return False
+
+
+def _publish_gate(doc: dict, tool: str, ti: dict) -> dict | None:
+    if tool in ("Bash", "PowerShell"):
+        text = str(ti.get("command") or "")
+        if not UPLOAD_FLAG.search(text):
+            text = URL_TEXT.sub(" ", text)
+    elif tool in ("Write", "Edit", "NotebookEdit"):
+        text = str(ti.get("file_path") or ti.get("notebook_path") or "")
+    else:
+        return None
+    if not PUBLIC_DEST.search(text) or not PRIVATE_DOC.search(text):
+        return None
+    if tool in ("Bash", "PowerShell") and not PUBLIC_DEST.search(PUBLIC_PATH_ONLY.sub(" ", text)) \
+            and not WRITE_VERB.search(text):
+        return None
+    prompt_text = ""
+    path = _safe_transcript_path(doc)
+    if path is not None:
+        _, prompt, _, _, _ = current_turn_ex(path)
+        prompt_text = _text_of(((prompt or {}).get("message") or {}).get("content"))
+    consent = publish_consent(prompt_text)
+    what = (PRIVATE_DOC.search(text).group(0) + " -> " + PUBLIC_DEST.search(text).group(0)).strip()
+    _log({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "session_id": str(doc.get("session_id") or ""),
+          "event": "PreToolUse", "tool": tool, "matched": "publish_gate", "what": what[:120],
+          "verdict": "allow" if consent else "deny"})
+    if consent:
+        return None
+    reason = PUBLISH_REASON.format(what=what[:120])
+    if "cursor_version" in doc or str(doc.get("hook_event_name") or "") == "preToolUse":
+        return {"permission": "deny", "user_message": reason, "agent_message": reason}
+    return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                   "permissionDecisionReason": reason}}
+
+
 def pre_tool_use(doc: dict, cfg: dict) -> dict | None:
     """Deny the CREATION of an unrequested .md / .json before it is written.  One gate for Claude Code
     (`PreToolUse`), Codex (`PreToolUse`, same reply shape) and Cursor (`preToolUse`, `permission` reply).
     Cursor and Codex hand the hook no prompt text, so there a new .md / .json is never "requested"."""
+    tool0 = str(doc.get("tool_name") or "")
+    ti0 = doc.get("tool_input") if isinstance(doc.get("tool_input"), dict) else {}
+    if (cfg.get("classes") or {}).get("publish_gate", True):
+        gated = _publish_gate(doc, tool0, ti0)
+        if gated:
+            return gated
     if not (cfg.get("classes") or {}).get("unrequested_file", True):
         return None
     tool = str(doc.get("tool_name") or "")
@@ -1114,6 +1233,8 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
         # exemption; a quoted mention (「你說得對」) is removed from `line` and stays legal.
         if classes.get("placation", True) and PLACATION.search(line):
             violations.append({"line": number, "class": "placation", "snippet": snippet, "need": LIE_NEEDS["placation"]})
+        if (classes.get("secret_ask", True) and SECRET_ASK.search(line) and not SECRET_ASK_NEG.search(line)):
+            violations.append({"line": number, "class": "secret_ask", "snippet": snippet, "need": LIE_NEEDS["secret_ask"]})
         if QUALIFIER.search(line):
             continue
         for name, pattern in LIE_PATTERNS.items():
@@ -1285,7 +1406,13 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
     per_turn = int(cfg.get("max_blocks_per_turn") or 0)
     per_session = int(cfg.get("max_blocks_per_session") or 0)
     if state.get("blocks", 0) >= per_turn or state.get("session_blocks", 0) >= per_session:
-        entry.update({"verdict": "allow", "matched": "budget_exhausted",
+        # F1S 當下閉環 item 6 (2026-10-18): over the cap the turn still ends (no endless loop), but the unresolved
+        # claims are carried, not dropped: claude_session_hook.py puts them in front of the next prompt once and
+        # the overflow stays in log.jsonl as a compliance record.
+        state["carried"] = {"turn": turn_key, "at": entry["ts"], "surfaced": False,
+                            "items": [f"{v['class']}: \"{v['snippet']}\" -> {v['need']}" for v in violations[:6]]}
+        _save_state(session_id, state)
+        entry.update({"verdict": "allow", "matched": "budget_exhausted", "carried": len(violations),
                       "blocks": state.get("blocks"), "session_blocks": state.get("session_blocks")})
         _log(entry)
         return None
@@ -1300,7 +1427,23 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
     )
     if len(violations) > 8:
         items += f"\n  - … {len(violations) - 8} more"
-    return {"decision": "block", "reason": REASON.format(items=items, n=state["blocks"], cap=per_turn)}
+    reason = REASON.format(items=items, n=state["blocks"], cap=per_turn)
+    # F1S 強制思考 A (2026-10-19): a "no route" / hand-back / decision line is answered with the routes the request
+    # actually has (route_candidates.py), so the model must try one or disprove each — it can no longer stop at
+    # "cannot" without looking. Fail open: no candidates, no extra text.
+    if any(v["class"] in ("blocker", "handback", "decision") for v in violations):
+        try:
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            import route_candidates
+            prompt_text = _text_of(((prompt or {}).get("message") or {}).get("content"))
+            seat = Path(str(doc.get("cwd") or "")).name
+            routes = route_candidates.render(route_candidates.candidates(prompt_text, seat=seat), f.get("tool_calls"))
+            if routes:
+                reason += "\n" + routes
+                entry["routes_offered"] = [r.strip()[:80] for r in routes.splitlines()[1:4]]
+        except Exception:  # noqa: BLE001
+            pass
+    return {"decision": "block", "reason": reason}
 
 
 def main() -> int:

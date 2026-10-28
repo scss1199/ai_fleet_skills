@@ -23,7 +23,7 @@ USAGE
   --set    Literal, for NON-SECRET values that have no env file (e.g. a public
            Firebase project id). Never pass a real secret on the command line —
            it lands in shell history.
-  --apply  Actually run `npx wrangler secret bulk --name <worker>` over stdin.
+  --apply  Actually run `npx --no wrangler secret bulk --name <worker>` over stdin (project-local wrangler only).
 
 KNOWN TRAP (measured 2026-08-06)
   `vercel env pull` writes ENCRYPTED variables as KEY="" — the file looks complete
@@ -111,7 +111,9 @@ def main():
         return 2
 
     proc = subprocess.run(
-        ["npx", "wrangler", "secret", "bulk", "--name", args.worker],
+        # --no: only the project-local wrangler (lockfile-pinned devDependency) may receive the secrets;
+        # it must never fetch a registry-latest wrangler for this pipe (SkillSpector RP1 review 2026-10-27).
+        ["npx", "--no", "wrangler", "secret", "bulk", "--name", args.worker],
         input=json.dumps(payload).encode("utf-8"),
         shell=(sys.platform == "win32"),
     )

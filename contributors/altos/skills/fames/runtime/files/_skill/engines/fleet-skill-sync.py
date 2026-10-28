@@ -531,6 +531,17 @@ def cmd_absorb() -> dict:
             dest_dir = os.path.join(INCUBATOR, dest_name)
             os.makedirs(dest_dir, exist_ok=True)
             dest_md = os.path.join(dest_dir, "SKILL.md")
+            meta_path = os.path.join(dest_dir, "meta.json")
+            try:
+                same = open(dest_md, encoding="utf-8").read().split("\n\n", 1)[-1] == parsed["body"]
+                kept = json.load(open(meta_path, encoding="utf-8")) if same else None
+            except (OSError, ValueError):
+                kept = None
+            if kept:
+                # Unchanged submission: re-stamping it every 15 min made ~60 incubator files look like concurrent hub
+                # edits to every f1s-evolve run, which then held its ship (2026-10-23).
+                absorbed.append(kept)
+                continue
             header = "<!-- absorbed from %s/%s @ %s -->\n\n" % (proj, f, _iso())
             open(dest_md, "w", encoding="utf-8").write(header + parsed["body"])
             meta = {"project": proj, "file": f, "absorbed_at": _iso(), "incubator": dest_name}

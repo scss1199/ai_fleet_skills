@@ -62,6 +62,12 @@ Google 資源（Apps Script／Drive）的唯讀探測階梯，全部不開瀏覽
 - 內建瀏覽器開一個「需要登入」的頁（例：`https://claude.ai/new`），等 3–4 秒再讀 `location.href`。
 - 被導到 `/login`、`reauth=1`、或標題是 Sign in → 判定 `NOT_SIGNED_IN`，證據是那個網址。
 - 使用者說「已登入」不算證據；只有探測結果算。
+- 已登入的站點（2026-10-21 起 LinkedIn，裝置已註冊）先探測 `/feed/` 再用；讀職缺照 LinkedIn 職缺讀法
+  `ai_darkhero/.claude/skills/linkedin-jobs/SKILL.md`（voyager API、csrf 從頁面 cookie 取且不印出、
+  guest API 約 4 次就 429；104 有 Cloudflare 只走內建瀏覽器）。探測失敗才走第 3 步。
+- 舊的 Edge profile 檢查不算登入證據：`sso_browser.py check <realm>` 回 `ok:false`（例 2026-10-22 jci_taipei
+  `google.cloud.console` 停在帳號選擇頁）只代表那個 profile 過期，重新 seed 要開有頭視窗，零彈窗紅線不准。
+  Google Cloud console 等站一律以內建瀏覽器的探測為準，已登入就直接用；realm 過期記在回報裡，不去修它。
 
 ## 3 交接一次（面板可見、只有一個分頁）
 

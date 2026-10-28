@@ -45,6 +45,15 @@ before making access or completeness claims.
   It does not prove that the conversation never existed.
 - Do not call the saved inbox a complete two-way transcript unless outbound OA
   messages are independently persisted and verified.
+- Group member user IDs are 403 at this OA account level (jci_taipei probe
+  2026-10-22): only the member count and the profiles of people who spoke in a
+  saved event are obtainable. When a task says "add everyone in group X", say
+  this at intake, before any work, and offer speakers + count.
+- Ad-hoc Drive queries on the webhook archive filter by `createdTime`;
+  `modifiedTime` missed events in the jci_taipei 2026-10-24 capture. Saved image
+  events carry `file_size=0`: the bytes are not in Drive and must be fetched by
+  `message_id` through the LINE message-content API (jci_taipei
+  `_line/line_api.py download_message_content`).
 
 ## Acquire linked social content
 
@@ -110,9 +119,7 @@ python -m unittest discover -s scripts -p "test_*.py"
 python C:\ai_workspace\_skill\engines\fleet-skill-sync.py verify
 ```
 
-<!-- 2026-08-13: the second line used to be the skill-creator front-matter validator at
-     C:\Users\sc\.codex\skills\.system\skill-creator\scripts\quick_validate.py. It lived inside the
-     Codex user profile, which operator instruction removed from this machine; the only copy is now
-     _delete/2026-08-13-codex-purge/userprofile/.codex/skills/.system/skill-creator/scripts/quick_validate.py.
-     fleet-skill-sync.py verify checks that this skill still resolves on every surface, which is the
-     part that can actually break. -->
+Note (2026-08-13): `fleet-skill-sync.py verify` replaced the skill-creator front-matter validator that
+lived in the Codex user profile, which operator instruction removed from this machine (quarantined copy:
+`_delete/2026-08-13-codex-purge/userprofile/.codex/skills/.system/skill-creator/scripts/quick_validate.py`).
+The sync verify checks that this skill still resolves on every surface, which is the part that can break.

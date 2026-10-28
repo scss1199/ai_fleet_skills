@@ -36,7 +36,7 @@ parent_skill: aex-agent-evolution
 |------|--------|
 | 任何網頁登入／OAuth Console | `ztm-web-auth-ops` + `ztm-cursor-edge-auth` |
 | Meta / Facebook OAuth | `ztm-meta-oauth-console` |
-| LINE webhook → Fly | `zct-fleet-fly-line` |
+| LINE webhook → Cloudflare Worker | `line-oa-ingest`（收件）+ `deploy-nextjs-cloudflare`（Worker 部署）；共用 gateway 原始碼 `_skill/fleet-fly-hooks` |
 | Portal Google SSO Edge | `ztm-portal-google-sso-edge` |
 | Fluid layout | `fleet-fluid-ui` |
 | LLM bulk offload | `mtm-api-pool-offload` |
@@ -58,7 +58,7 @@ Keywords examples: `google sso vercel` · `line webhook fly` · `meta oauth` · 
 ## Decision tree（一句）
 
 1. **只有 Google SSO 網頁** → clone `ai_search/web` or `ai_ut/web`；dedicated `ai-*-web` OAuth；face=`https://{seat_with_hyphens}.kyloren.workers.dev/`（`_`→`-`）  
-2. **LINE inbound** → `zct-fleet-fly-line` + Fly；Vercel 僅薄 rewrite  
+2. **LINE inbound** → Cloudflare Worker：共用 gateway `ai-fleet-fly-hooks`（`/v1/line/<seat>/<bot>`）或 seat 自己的 Worker 路由（jci_taipei＝`ai-jci-taipei` `/api/line/webhook/<code>`）；Fly 已於 2026-10-21 退役，勿再指向 Fly  
 3. **Meta** → Cursor Edge + `ztm-meta-oauth-console`；verify → oauth-verify-ledger  
 4. **Maps／美食** → clone patterns from `ai_eatery`／`ai_foodie`；Places key schema-only  
 5. **LLM** → read `ai_ziyaoastro/docs/LLM_PROVIDERS_SETUP.md` fallback chain；keys via vault／Vercel env NEVER print values  

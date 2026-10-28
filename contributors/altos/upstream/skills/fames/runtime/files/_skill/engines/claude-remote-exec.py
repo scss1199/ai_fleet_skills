@@ -379,6 +379,35 @@ def run_local(prompt: str, seat: str = "ai_darkhero", cfg: dict | None = None, l
     return _run_lane(prompt, seat, cfg, lane)
 
 
+def run_bounded(argv: list, *, input: str, cwd: str, env: dict, timeout: float) -> subprocess.CompletedProcess:
+    """subprocess.run, except that a timeout ends the whole process tree and never waits again unbounded.
+
+    subprocess.run(timeout=) kills only the direct child on Windows and then calls communicate() with no timeout; a
+    grandchild still holding the stdout pipe keeps it blocked. 2026-10-24: f1s-evolve's curator run sat 25 min past its
+    900 s timeout that way. Raises subprocess.TimeoutExpired like run()."""
+    proc = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd,
+                            env=env, text=True, encoding="utf-8", errors="replace", creationflags=CREATE_NO_WINDOW)
+    try:
+        out, err = proc.communicate(input=input, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        try:
+            import psutil
+            for child in psutil.Process(proc.pid).children(recursive=True):
+                try:
+                    child.kill()
+                except psutil.Error:
+                    pass
+        except Exception:  # noqa: BLE001 - psutil missing or the tree already gone: the direct kill still runs
+            pass
+        proc.kill()
+        try:
+            proc.communicate(timeout=10)
+        except (subprocess.TimeoutExpired, ValueError, OSError):
+            pass
+        raise
+    return subprocess.CompletedProcess(argv, proc.returncode, out, err)
+
+
 def _run_lane(prompt: str, seat: str, cfg: dict, lane: str) -> tuple[str, str | None]:
     if not cfg.get("enabled", True):
         return "", "claude_local_disabled"
@@ -414,18 +443,7 @@ def _run_lane(prompt: str, seat: str, cfg: dict, lane: str) -> tuple[str, str | 
         argv += ["--permission-mode", str(mode)]
     t0 = time.time()
     try:
-        proc = subprocess.run(
-            argv,
-            input=prompt,
-            cwd=cwd,
-            env=env,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=float(ex.get("timeout_sec") or 900),
-            creationflags=CREATE_NO_WINDOW,
-        )
+        proc = run_bounded(argv, input=prompt, cwd=cwd, env=env, timeout=float(ex.get("timeout_sec") or 900))
     except subprocess.TimeoutExpired:
         return "", "claude_local_timeout:%ss" % (ex.get("timeout_sec") or 900)
     except OSError as exc:

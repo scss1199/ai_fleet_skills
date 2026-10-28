@@ -149,6 +149,10 @@ def _publish(repo: Path, hub: Path, files: dict, message: str, branch: str = "ma
             a = git(repo, "worktree", "add", "--detach", str(wt), f"origin/{branch}")
             if a.returncode:
                 return {"ok": False, "error": "worktree_add_failed:" + a.stderr.strip()[-200:]}
+            # A follower's clone is a sparse checkout of its own folders (altos 2026-10-27: contributors/altos,
+            # contributors/darkhero, jobs/altos); the worktree inherits that cone, so a job for another host
+            # was "pathspec did not match any file(s) known to git". The temporary worktree checks out everything.
+            git(wt, "sparse-checkout", "disable")
             rel = []
             for relpath, doc in files.items():
                 _write_json(wt / relpath, doc)
@@ -179,7 +183,7 @@ def submit(repo: Path, hub: Path, target_host: str, kind: str, seat: str | None,
     host = target_host.strip().lower()
     if not host or "/" in host or "\\" in host or ".." in host:
         return {"ok": False, "error": "bad_target_host"}
-    if kind not in ("probe", "prompt"):
+    if kind not in ("probe", "prompt", "converge"):
         return {"ok": False, "error": "bad_kind"}
     if kind == "prompt":
         if not prompt or not prompt.strip():
@@ -386,6 +390,20 @@ def pending_jobs(repo: Path, host: str) -> list[str]:
                   and not n.endswith(".claim.json") and n[:-5] not in results)
 
 
+def run_converge(hub: Path, seat: str) -> dict:
+    """The canonical converge with --arm, so a follower's own fames-converge rider is (re)registered on the command
+    that attests and publishes. scar3's rider ran a seat script that never attested, so the fleet read it UNKNOWN
+    for weeks (2026-10-23). A fixed command: the job carries no code, only the seat name."""
+    script = hub / "_skill" / "fleet-skills" / "fames" / "scripts" / "fames_fleet.py"
+    try:
+        proc = subprocess.run([sys.executable, str(script), "converge", "--workspace", str(hub), "--host", seat, "--arm"],
+                              capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=900,
+                              creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {"ok": False, "blocker": f"converge_failed: {type(exc).__name__}"}
+    return {"ok": proc.returncode == 0, "seat": seat, "rc": proc.returncode, "tail": (proc.stdout + proc.stderr)[-1500:]}
+
+
 def tick(repo: Path, hub: Path, host: str | None = None, dry_run: bool = False,
          prober=None, runner=None) -> dict:
     host = (host or this_host()).lower()
@@ -432,6 +450,8 @@ def tick(repo: Path, hub: Path, host: str | None = None, dry_run: bool = False,
             elif job.get("kind") == "prompt":
                 seat = job.get("seat") or "ai_" + host
                 result.update(runner(hub, seat, job.get("prompt") or ""))
+            elif job.get("kind") == "converge":
+                result.update(run_converge(hub, job.get("seat") or "ai_" + host))
             else:
                 result.update({"ok": False, "blocker": "unknown_kind"})
             result["finished_at"] = _iso(_now())
@@ -479,7 +499,7 @@ def main() -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("submit")
     s.add_argument("--target-host", required=True)
-    s.add_argument("--kind", choices=("probe", "prompt"), default="probe")
+    s.add_argument("--kind", choices=("probe", "prompt", "converge"), default="probe")
     s.add_argument("--seat")
     s.add_argument("--prompt-file", type=Path)
     s.add_argument("--ttl-hours", type=float, default=DEFAULT_TTL_HOURS)

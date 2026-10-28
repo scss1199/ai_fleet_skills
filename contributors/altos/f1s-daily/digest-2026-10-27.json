@@ -1,0 +1,180 @@
+{
+ "schema": 1,
+ "date": "2026-10-27",
+ "generated": "2026-10-27T12:01:00+00:00",
+ "host": "ai_altos",
+ "sessions": 14,
+ "running": 2,
+ "triage_source": "pending-pool",
+ "matrix": {
+  "hub": {
+   "running": 0,
+   "archived": 3,
+   "corrections": 0,
+   "recurring_errors": 0,
+   "articles_read": 0,
+   "articles_pending": 0,
+   "in_project_matrix": false
+  },
+  "ai_altos": {
+   "running": 0,
+   "archived": 8,
+   "corrections": 0,
+   "recurring_errors": 2,
+   "articles_read": 0,
+   "articles_pending": 0,
+   "in_project_matrix": true
+  },
+  "jci_taipei": {
+   "running": 1,
+   "archived": 1,
+   "corrections": 0,
+   "recurring_errors": 4,
+   "articles_read": 0,
+   "articles_pending": 0,
+   "in_project_matrix": false
+  },
+  "scratch": {
+   "running": 1,
+   "archived": 0,
+   "corrections": 0,
+   "recurring_errors": 2,
+   "articles_read": 0,
+   "articles_pending": 0,
+   "in_project_matrix": false
+  }
+ },
+ "matrix_gaps": [
+  "jci_taipei"
+ ],
+ "generalize": [],
+ "candidates": [],
+ "recurring_errors": [
+  {
+   "signature": "Traceback (most recent call last):",
+   "count": 5
+  },
+  {
+   "signature": "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Credential Exploration",
+   "count": 3
+  },
+  {
+   "signature": "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Sensitive-Source Prove",
+   "count": 3
+  },
+  {
+   "signature": "exit=#",
+   "count": 2
+  },
+  {
+   "signature": "Permission for this action was denied by the Claude Code auto mode classifier. Reason: Blocked by classifier. ",
+   "count": 2
+  },
+  {
+   "signature": "Command timed out after #m #s",
+   "count": 2
+  },
+  {
+   "signature": "{\"ok\": false, \"job\": \"#T#Z-#\", \"path\": \"jobs/dark-hero-z#/#T#Z-#.json\", \"target_host\": \"dark-hero-z#\", \"kind\":",
+   "count": 2
+  }
+ ],
+ "decisions_open": [],
+ "articles": {},
+ "seats": {
+  "hub": {
+   "running": 0,
+   "archived": 3,
+   "titles_running": [],
+   "errors": {},
+   "articles": [],
+   "decisions": []
+  },
+  "ai_altos": {
+   "running": 0,
+   "archived": 8,
+   "titles_running": [],
+   "errors": {
+    "/usr/bin/bash: eval: line #: unexpected EOF while looking for matching ``'": 1,
+    "<tool_use_error>Blocked: sleep # followed by: python -c \"": 1,
+    "電源配置 GUID: #-f#-#f#-#-#  (平衡)--- VIDEOIDLE": 1,
+    "DETACHED = #x#": 1,
+    "#: import argparse": 1,
+    "Ripgrep search timed out after # seconds. The search may have matched files but did not complete in time. Try ": 1,
+    "PASS {'ok': True, 'skill_gen': '#-#-#.#', 'package_sha': '#', 'version': '#.#.#', 'package_ok': True, 'parity_": 1,
+    "{\"ok\": true, \"node\": \"ai_altos\", \"upstream\": \"ai_darkhero\", \"remote_manifest_sha\": \"#\", \"source_commit\": \"#\", ": 1,
+    "Traceback (most recent call last):": 3,
+    "=== verify-host (with junctions) ===": 1,
+    "== layout ==": 1,
+    "== git pull ==": 1,
+    "{": 1,
+    "# #-#-# #:#:# +# chore(skills/altos): export manifest # (# skills)": 1,
+    "fames exit=#": 1,
+    "Invoke-Expression : At line:# char:#": 1,
+    "The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the": 1,
+    "== self-check ==": 1,
+    "== leanctl help ==": 1,
+    "exit=#": 2,
+    "\"source_sha#\": \"#\",": 1,
+    "backup: C:\\ai_workspace\\ai_altos\\evidence\\preconverge-backup-#T#": 1,
+    "usage: mtm-fleet-skill-github.py [-h]": 1,
+    "host=DESKTOP-RSNIAPR": 1,
+    "=== #": 1,
+    "C:\\Users\\USER\\AppData\\Roaming\\Claude\\claude-code\\#.#.#\\#\\claude.exe": 1
+   },
+   "articles": [],
+   "decisions": []
+  },
+  "jci_taipei": {
+   "running": 1,
+   "archived": 1,
+   "titles_running": [
+    "會議記錄規則學習與重新產生"
+   ],
+   "errors": {
+    "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Credential Exploration": 3,
+    "pdftoppm is not installed. Install poppler-utils (e.g. `brew install poppler` or `apt-get install poppler-util": 1,
+    "[Request interrupted by user for tool use]": 1,
+    "gh NOT on PATH": 1,
+    "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Expose Local Services]": 1,
+    "Traceback (most recent call last):": 2,
+    "Permission for this action was denied by the Claude Code auto mode classifier. Reason: Blocked by classifier. ": 2,
+    "Command timed out after #m #s": 2,
+    "File does not exist. Note: your current working directory is C:\\ai_workspace\\jci_taipei.": 1,
+    "Name       Version         Source": 1,
+    "未找到符合輸入條件的已安裝套件。": 1,
+    "=== https://github.com/scss#/jci_taipei.git": 1,
+    "credential.helper: manager": 1
+   },
+   "articles": [],
+   "decisions": []
+  },
+  "scratch": {
+   "running": 1,
+   "archived": 0,
+   "titles_running": [
+    "每日對話整理與 F1S 升級工作流"
+   ],
+   "errors": {
+    "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Sensitive-Source Prove": 3,
+    "{\"ok\": false, \"job\": \"#T#Z-#\", \"path\": \"jobs/dark-hero-z#/#T#Z-#.json\", \"target_host\": \"dark-hero-z#\", \"kind\":": 2,
+    "=== hook: _harness/hot_refresh/plan_text/record/user prompt assembly": 1,
+    "=== _instruction_files": 1,
+    "Permission for this action was denied by the Claude Code auto mode classifier. Reason: The server-side auto mo": 1,
+    "total #": 1,
+    "ls: cannot access '/c/ai_workspace/_skill/ai_fleet_skills/jobs/dark-hero-z#/': No such file or directory": 1,
+    "PreToolUse:Bash hook error: PROOF write gate (operator #-#-# 「用LEAN和F#S嚴格要求不准寫多餘且無用的垃圾檔案」, Lean ClaimContract.": 1
+   },
+   "articles": [],
+   "decisions": []
+  }
+ },
+ "upstream_proposals": [
+  {
+   "to": "ai_darkhero",
+   "title": "F1S: f1s-daily live digest reaches idle conversations",
+   "why": "altos' daily digest reaches a conversation at its next prompt through the instruction-file diff; adding _registry/f1s-daily/live.md to claude_session_hook.MIDTURN_WATCH would also deliver it mid-turn and wake idle conversations (f1s_live.py).",
+   "evidence": "_registry/f1s-daily/live.md; _skill/engines/f1s-daily-digest.py"
+  }
+ ]
+}

@@ -6149,14 +6149,36 @@ def _publish_capability_receipt(workspace: Path, host: str, receipt: dict) -> di
     # nothing and is not an error.
     git("update-ref", "refs/remotes/origin/main", commit, seen)
     index_stale = False
+    clone_behind = False
     if (git("symbolic-ref", "-q", "HEAD").stdout.strip() == "refs/heads/main"
             and sha_out(git("rev-parse", "--verify", "HEAD^{commit}")) == seen
             and git("update-ref", "-m", message, "refs/heads/main", commit, seen).returncode == 0):
         stage = ("update-index", "--add", "--cacheinfo", f"100644,{blob},{relative.as_posix()}")
         index_stale = git(*stage).returncode != 0 and git(*stage).returncode != 0  # one retry (index.lock)
+    else:
+        # The clone stayed behind (another host pushed first). The receipt is on the remote now; our bytes left in
+        # the working tree made every later fast-forward of the shared clone refuse ("local changes would be
+        # overwritten"), so the clone never caught up and fleet-skill-pulse stayed red (2026-10-23, 11 runs).
+        # Put this path back to what HEAD holds, only if the bytes are still ours; the next join carries the clone
+        # to the published tip.
+        try:
+            ours = target.read_bytes() == wrote
+        except OSError:
+            ours = False
+        if ours:
+            if git("cat-file", "-e", f"HEAD:{relative.as_posix()}").returncode == 0:
+                clone_behind = git("checkout", "HEAD", "--", relative.as_posix()).returncode == 0
+            else:
+                try:
+                    target.unlink()
+                    clone_behind = True
+                except OSError:
+                    clone_behind = False
     result = {"ok": True, "state": "PASS", "changed": True, "commit": commit, "errors": []}
     if index_stale:
         result["index_stale"] = True  # HEAD holds the receipt, the index does not; the next add re-stages it
+    if clone_behind:
+        result["clone_behind"] = True  # published; the working tree waits for the publisher's join
     return result
 
 

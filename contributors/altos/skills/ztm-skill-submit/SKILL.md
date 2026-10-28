@@ -1,5 +1,6 @@
 ---
 name: ztm-skill-submit
+disable-model-invocation: true
 description: Submit reusable workflow skills to the hub curator through a skill-update inbox receipt. Use after a workflow is proven in a project-local skill and should be vetted for fleet adoption.
 ---
 

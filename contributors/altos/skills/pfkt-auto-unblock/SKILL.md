@@ -1,5 +1,6 @@
 ---
 name: pfkt-auto-unblock
+disable-model-invocation: true
 description: >-
   Auto-gate-unblock remediation for A2A and accountability prompt denies.
   The PFKT prompt gate no longer denies (pfkt-v4); its v2 HARD DENY chains are retired.

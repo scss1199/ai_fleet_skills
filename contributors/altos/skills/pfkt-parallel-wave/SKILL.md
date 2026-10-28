@@ -1,5 +1,6 @@
 ---
 name: pfkt-parallel-wave
+disable-model-invocation: true
 description: >-
   PFKT parallel execution — pfkt-wave plan, parallel-dag singleton gates, Multitask vs wave.
   Use before Task/fan-out/subagent or when PFKT deny-parallel fires.

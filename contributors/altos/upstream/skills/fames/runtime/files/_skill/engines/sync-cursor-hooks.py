@@ -28,6 +28,13 @@ CLAUDE_CLAIM_INTEGRITY_HOOK = os.path.join(
 # wired on every host whose package carries the script, in this order after the claim-integrity gate.
 CLAUDE_RUN_UNTIL_DONE_HOOK = os.path.join(COMMON, "_skill", "engines", "claude-run-until-done-hook.py")
 CLAUDE_PROOF_HOOK = os.path.join(COMMON, "_skill", "engines", "claude-proof-hook.py")
+# operator 2026-10-24 「一樣改 目的就是當任何對話一閒置後立刻套用」: the idle waiter runs as an asyncRewake Stop
+# hook and exits 2 to wake the conversation, so it never takes the fail-open launcher (that launcher swallows
+# SystemExit); f1s_live.py exits 0 on every error itself. Wired here so scar3 / altos get it from the package
+# install (2026-10-28: scar3 had the script since 16:22 but no settings entry; only darkhero was hand-wired).
+CLAUDE_LIVE_WAKE_HOOK = os.path.join(COMMON, "_skill", "engines", "f1s_live.py")
+CLAUDE_LIVE_WAKE_TIMEOUT = 259200  # 72 h; f1s_live.LIFETIME_S (70 h) exits before the host kills it
+CLAUDE_PLAIN_COMMANDS = {CLAUDE_LIVE_WAKE_HOOK: (("wait",), {"asyncRewake": True})}
 
 
 def claude_managed_hooks() -> list:
@@ -47,6 +54,8 @@ def claude_managed_hooks() -> list:
         # 2026-10-13 operator 「用LEAN和F1S嚴格要求不准寫多餘且無用的垃圾檔案」: deny an unrequested .md / .json
         # before it is created (CLAUDE_MATCHERS limits it to the tools that write files).
         rows.append(("PreToolUse", CLAUDE_PROOF_HOOK, 10))
+    if os.path.isfile(CLAUDE_LIVE_WAKE_HOOK):
+        rows.append(("Stop", CLAUDE_LIVE_WAKE_HOOK, CLAUDE_LIVE_WAKE_TIMEOUT))
     return rows
 
 
@@ -426,13 +435,15 @@ def _fail_open_entry(entry: dict) -> dict:
 
 
 def _claude_command_group(script: str, timeout: int, event: str = "") -> dict:
-    group = {
-        "hooks": [{
-            "type": "command",
-            "command": claude_hook_command(script),
-            "timeout": timeout,
-        }]
-    }
+    plain = CLAUDE_PLAIN_COMMANDS.get(script)
+    if plain:
+        args, extra = plain
+        handler = {"type": "command",
+                   "command": f'"{PYW}" -P "{script}" ' + " ".join(args),
+                   **extra, "timeout": timeout}
+    else:
+        handler = {"type": "command", "command": claude_hook_command(script), "timeout": timeout}
+    group = {"hooks": [handler]}
     matcher = CLAUDE_MATCHERS.get((event, script))
     return {"matcher": matcher, **group} if matcher else group
 

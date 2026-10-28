@@ -31,6 +31,34 @@ def _harness():
     return module
 
 
+ORDERS_RULE = "curator-orders.mdc"
+
+
+def _curator_orders_rule(agent: str, cwd: Path) -> None:
+    """T1 f1s-governs (2026-10-24): Cursor takes context only from rule files, so this seat's open curator orders
+    are written as an always-applied rule before each prompt (Claude and Codex get them from claude_session_hook).
+    With no open order an existing rule is reset to say so; the file is never created without an order. Never raises."""
+    try:
+        rules = cwd / ".cursor" / "rules"
+        target = rules / ORDERS_RULE
+        spec = importlib.util.spec_from_file_location("cursor_curator_orders", Path(HUB) / "_skill" / "engines" / "curator_orders.py")
+        if spec is None or spec.loader is None or not rules.is_dir():
+            return
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        text = str(module.injection(agent) or "").strip()
+        if not text and not target.is_file():
+            return
+        body = ("---\ndescription: Curator correction orders for this seat (T1 f1s-governs)\nalwaysApply: true\n---\n\n"
+                + (text or "No open curator orders for this seat.") + "\n")
+        if not target.is_file() or target.read_text(encoding="utf-8-sig") != body:
+            stage = target.with_name(target.name + ".tmp")
+            stage.write_text(body, encoding="utf-8", newline="\n")
+            os.replace(stage, target)
+    except Exception:
+        pass
+
+
 def main() -> int:
     doc = cio.read_input()
     cwd = cio.workspace_cwd(doc)
@@ -57,6 +85,7 @@ def main() -> int:
                 os.replace(stage, rule_path)
         except Exception:
             pass
+        _curator_orders_rule(agent, Path(cwd))
         turn = harness.turn_context(
             agent,
             Path(cwd),

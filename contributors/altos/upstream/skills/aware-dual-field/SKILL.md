@@ -1,5 +1,6 @@
 ---
 name: aware-dual-field
+disable-model-invocation: true
 description: >-
   AWARE dual-field consciousness: shared ψ_hub vs seat ψ_seat via residual
   exchange + Periodic Pulay. Use when reviewing fleet shared zones, daily

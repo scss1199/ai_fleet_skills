@@ -60,6 +60,28 @@ operator 2026-10-16：「把他們各自用到的所有技能 經驗 系統 api 
 - 週期：HubClock rider `f1s-harvest`（operator 2026-10-16 核准）每天 03:40 跑 `cycle --triage-limit 120 --propose 3`，
   max_runtime 3600；新目標自動送進 f1s-evolve。
 
+## 橫向：座位之間互相套用強化（`f1s-mesh.py`，operator 2026-10-27）
+
+`f1s-harvest` 只往上收；被判 `seat-specific` 的經驗從此卡在原座位，同能力的其他座位用不到。`_skill\engines\f1s-mesh.py run`
+一次跑完一個回合，處理完畢自動封存：
+
+| 階段 | 做什麼 |
+|---|---|
+| CENSUS | 嚴格模型普查：模型只在**程式碼**（去掉註解行）出現才算，`.md` 只列「僅文件提及」；每個模型標 本機／免費額度／付費；同時算每座位的能力標籤（stt、gas、line、trading…，只看程式碼且 ≥2% 檔案） |
+| MATCH | harvest 帳本中 `seat-specific`／`candidate` 的 memory／system／skill × 擁有相同能力標籤的其他座位（IDF 加權，分數 ≥ `MIN_SCORE`）；對方已有等價內容（單一文件包含率 ≥0.5）就跳過 |
+| REINFORCE | 已派送的邊若對方座位現在已涵蓋 → `adopted`；同一技巧被 ≥2 座位採用、或符合 ≥3 座位 → 一次性提案給 f1s-evolve 升成全艦規則；21 天沒回應 → `stale` |
+| GATE | NVIDIA SkillSpector（`_harness/tools/skillspector`，固定 commit a5425e59，`--no-llm` 純靜態，座位經驗不外送）掃每條邊的來源：分數 ≥50 或有 HIGH/CRITICAL → `blocked-risk` 不送；掃描器不在或失敗 → 暫緩（fail closed）。已審核接受的發現只放 `_registry/f1s-mesh/skillspector/hub-baseline.yaml`；`scan-fleet` 掃全部 canonical 技能 |
+| DISPATCH | 每個目標座位一則 inbox task（最多 5 條，其餘留下一回合），每條附靜態風險分數 |
+| CLOSE → ARCHIVE | 每條邊都到終態、每則訊息檔都在才結案，收據移到 `_registry/f1s-mesh/archive/<round>.json`；缺件就留在 `rounds/` 並寫原因 |
+
+**收到 `F1S mesh:` inbox 的座位**：逐條讀來源，適用就套用，然後
+`python C:\ai_workspace\_skill\engines\f1s-mesh.py adopt <edge> --evidence "<路徑或 commit>"`；不適用就
+`reject <edge> --reason "<為什麼>"`。`status` 看回合與邊數，`tiers` 依任務意圖判斷付費／免費／無模型能否套用到他座位，
+`render` 從狀態重產 `ai_darkhero/f1s-projects-ai-map.html`（數字不手寫）。
+SkillSpector 在 Windows 不能用 `--output`（Safe file output unsupported）→ 讀 stdout；`--recursive` 有 aggregate 上限（56 個只回 32 個），
+要逐一掃；`--exclude` 壓不掉 SC8/SC9（範圍外的 .pyc 照報），要用 baseline 規則。
+週期跑需要 operator 核准的 HubClock rider；未核准前由 curator 在對話中手動 `run`。
+
 ## 紅線
 
 - 只收名稱與文字，不讀 `.env`／金鑰值；fracdigi、quant 整個不掃；`ai_ut` 的 UT.xlsx 不是文字來源。
