@@ -75,6 +75,17 @@ MAX_CONCURRENT = 8
 DEFAULT_MAX_RUNTIME = 600           # a lock older than this is considered stale (the job died)
 LOCAL_COMPUTE = os.path.join(HUB, "_registry", "fames-local-compute.json")
 _LOCAL_CAP_CACHE = {"mtime": None, "value": MAX_CONCURRENT}
+# Per-run telemetry (operator 2026-10-28: HubClock 可視化 + f1s 自適應排程). One JSON line per completed run; the board
+# (hubclock_board.py) and the learner (hubclock_learn.py) read this exact schema -- add keys only with a schema bump.
+RUNS_LEDGER = os.path.join(HUB, "_registry", "hubclock-runs.jsonl")
+RUNS_LEDGER_MAX = 20 * 1024 * 1024  # rotate to .1 past this size
+RUNS_SCHEMA = 1
+LOAD_GUARD = os.path.join(HUB, "ai_darkhero", "tray", "state", "load_guard.json")  # rewritten every ~2 s
+LOAD_GUARD_STALE_S = 120            # an older sample says nothing about this run -> null, not a stale number
+CTX_KEYS = ("cpu_w", "a770_w", "combined_w", "other_cpu_pct")
+METER_KEYS = ("cpu_tree_s", "peak_mb", "io_read_mb", "io_write_mb", "procs")
+_CTX_CACHE = {"key": None, "value": None}
+_JOBMETER = {"tried": False, "mod": None}
 
 
 def _iso_epoch(stamp):
@@ -413,6 +424,103 @@ def _proc_times(proc):
         return None, None
 
 
+# --------------------------------------------------------------------------- per-run telemetry (fail-open)
+def _jobmeter():
+    """hubclock_jobmeter (Windows job-object accounting of the rider's whole process tree), or None."""
+    if not _JOBMETER["tried"]:
+        _JOBMETER["tried"] = True
+        try:
+            here = os.path.dirname(os.path.abspath(__file__))
+            if here not in sys.path:
+                sys.path.insert(0, here)
+            import hubclock_jobmeter
+            _JOBMETER["mod"] = hubclock_jobmeter
+        except Exception:  # noqa: BLE001 -- a missing meter means no tree telemetry, never no dispatch
+            _JOBMETER["mod"] = None
+    return _JOBMETER["mod"]
+
+
+def _attach_meter(proc):
+    """Called right after Popen: the rider and everything it starts from now on are accounted in one job."""
+    try:
+        meter = _jobmeter()
+        if meter is not None:
+            proc.hubclock_meter = meter.open_meter(proc)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _collect_meter(proc):
+    """Read and close the rider's job: {cpu_tree_s, peak_mb, io_read_mb, io_write_mb, procs}, or {}."""
+    handle = getattr(proc, "hubclock_meter", None)
+    if not handle:
+        return {}
+    try:
+        meter = _jobmeter()
+        if meter is None:
+            return {}
+        try:
+            data = meter.read_meter(handle) or {}
+        finally:
+            meter.close_meter(handle)
+            proc.hubclock_meter = None
+        return {k: data[k] for k in METER_KEYS if data.get(k) is not None}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def _num(value):
+    return value if isinstance(value, (int, float)) and not isinstance(value, bool) else None
+
+
+def _machine_ctx(now=None):
+    """Machine load at this instant from load_guard.json: {cpu_w, a770_w, combined_w, other_cpu_pct}; each key is
+    null when the file is missing, unreadable or older than LOAD_GUARD_STALE_S. Re-parsed only when it changed."""
+    out = dict.fromkeys(CTX_KEYS)
+    try:
+        st = os.stat(LOAD_GUARD)
+        if (now if now is not None else time.time()) - st.st_mtime > LOAD_GUARD_STALE_S:
+            return out
+        key = (st.st_mtime_ns, st.st_size)
+        if _CTX_CACHE["key"] != key:
+            with open(LOAD_GUARD, encoding="utf-8-sig") as fh:
+                doc = json.load(fh) or {}
+            sample = doc.get("sample") or {}
+            yld = doc.get("yield") or {}
+            _CTX_CACHE["value"] = {"cpu_w": _num(sample.get("cpu_w")), "a770_w": _num(sample.get("a770_w")),
+                                   "combined_w": _num(doc.get("combined_w")),
+                                   "other_cpu_pct": _num(yld.get("other_cpu_pct"))}
+            _CTX_CACHE["key"] = key
+        out.update(_CTX_CACHE["value"] or {})
+    except Exception:  # noqa: BLE001
+        pass
+    return out
+
+
+def _append_run(jid, rc, finished, info, cadence):
+    """One JSON line per completed run into RUNS_LEDGER (schema RUNS_SCHEMA); rotate to .1 past RUNS_LEDGER_MAX.
+    A failed write loses this line only -- it never reaches dispatch, reap or the results file."""
+    try:
+        info = info or {}
+        line = {"id": jid, "dispatched": info.get("dispatched"), "finished": finished, "rc": rc,
+                "delay_s": info.get("delay_s"), "duration_s": info.get("duration_s"), "cpu_s": info.get("cpu_s")}
+        line.update({k: info.get(k) for k in METER_KEYS})
+        line["ctx_start"] = info.get("ctx_start") or dict.fromkeys(CTX_KEYS)
+        line["ctx_end"] = _machine_ctx()
+        line["cadence"] = cadence
+        line["schema"] = RUNS_SCHEMA
+        data = (json.dumps(line, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
+        try:
+            if os.path.getsize(RUNS_LEDGER) + len(data) > RUNS_LEDGER_MAX:
+                os.replace(RUNS_LEDGER, RUNS_LEDGER + ".1")
+        except OSError:
+            pass  # no ledger yet, or a reader holds it open: rotate on a later run
+        with open(RUNS_LEDGER, "ab") as fh:
+            fh.write(data)
+    except Exception:  # noqa: BLE001 -- telemetry must never stop the clock
+        pass
+
+
 def _parse_rider_argv(cmd):
     """Return (argv, use_shell). shell=False avoids cmd.exe flash on pythonw riders.
 
@@ -506,6 +614,7 @@ def dispatch(job):
                 proc = subprocess.Popen(cmd, shell=True, **kw)
             else:
                 proc = subprocess.Popen(argv, shell=False, **kw)
+            _attach_meter(proc)  # before the rider can start children; fail-open, counts only
         finally:
             if err:
                 err.close()  # the child holds its own handle
@@ -806,15 +915,19 @@ class HubClock:
                 info = dict(self.dispatch_info.pop(jid, None) or {})
                 wall, info["cpu_s"] = _proc_times(proc)
                 info["duration_s"] = wall if wall is not None else round(now - started, 1)
-                self._record(jid, rc, info)
+                info.update(_collect_meter(proc))
+                fired = self._record(jid, rc, info)
                 self.running.pop(jid, None)
                 _release(jid)
+                _append_run(jid, rc, fired, info,
+                            info.get("cadence") or (jobs_by_id.get(jid) or {}).get("cadence"))
 
     def _record(self, jid, rc, info=None):
         fired = datetime.datetime.now().isoformat(timespec="seconds")
         self.fires.append({"id": jid, "fired": fired, "rc": rc})
         self.fires = self.fires[-30:]
         self._record_result(jid, rc, fired, time.time(), info)
+        return fired
 
     def _handoff(self, jid, row):
         """FAMES DRIVE: the third failure in a row ends in one handoff to the rider's owner, not silent retries."""
@@ -937,9 +1050,15 @@ class HubClock:
         row["runs"] = int(row.get("runs") or 0) + 1
         # Results v2 (2026-10-06): `fired` is when the run FINISHED (reap time); dispatch time, the delay behind
         # its boundary, wall duration and the rider process's own CPU seconds make queueing and cost measurable.
-        extra = {k: v for k, v in (info or {}).items() if k in ("dispatched", "delay_s", "duration_s", "cpu_s")}
+        # 2026-10-28: + the job-object totals of the rider's whole process tree (hubclock_jobmeter). A run without a
+        # meter omits them, and drops the previous run's last_* copies so last_* never mixes two runs.
+        extra = {k: v for k, v in (info or {}).items()
+                 if k in ("dispatched", "delay_s", "duration_s", "cpu_s") + METER_KEYS}
         for key, value in extra.items():
             row["last_" + key] = value
+        for key in METER_KEYS:
+            if key not in extra:
+                row.pop("last_" + key, None)
         if rc == 0:
             row["consecutive_failures"] = 0
             row.pop("last_handoff", None)  # the streak ended; the next one gets its own handoff
@@ -1065,7 +1184,8 @@ class HubClock:
                 start = boundary_start(job, now)
                 self.dispatch_info[jid] = {
                     "dispatched": datetime.datetime.fromtimestamp(now).isoformat(timespec="seconds"),
-                    "delay_s": round(now - start, 1) if start is not None else None}
+                    "delay_s": round(now - start, 1) if start is not None else None,
+                    "cadence": job.get("cadence"), "ctx_start": _machine_ctx()}
                 self.last[jid] = boundary_key(job, now)
                 self.deferred[jid] = 0
                 self.running[jid] = (proc, now)
