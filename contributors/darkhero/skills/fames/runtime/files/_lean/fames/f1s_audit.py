@@ -53,6 +53,7 @@ TEXTS = {
     "skill_mto": HUB / "_skill" / "fleet-skills" / "mtm-mto-first" / "SKILL.md",
     "skill_runtime": HUB / "_skill" / "fleet-skills" / "windows-runtime-pitfalls" / "SKILL.md",
     "harvest_engine": HUB / "_skill" / "engines" / "f1s-harvest.py",
+    "daily_engine": HUB / "_skill" / "engines" / "f1s_daily.py",
     "skill_apikey": HUB / "_skill" / "fleet-skills" / "api-key-apply" / "SKILL.md",
     "ui_lint": HUB / "_skill" / "engines" / "ui-guideline-lint.py",
     "skill_review": HUB / "_skill" / "fleet-skills" / "independent-review" / "SKILL.md",
@@ -739,6 +740,15 @@ ELEMENTS = [
     {"id": "EVO-derived-store-not-larger-than-source", "element": "ai_photo 2026-10-27 (operator 「C:\\scss\\_photo_index < 這裡為什麼可以有24GB的無意義重複垃圾?」): compare --write saved every full-size output twice (_pick + review/compare), kept every superseded _prev.png and trial PNG unbounded, and share zips outlived their link expiry; 24 of 25 GB in a derived index folder", "verdict": "REFINE",
      "requires": None, "detail": "windows-runtime-pitfalls 時間與資料新鮮度: a derived store (review page, cache, index, share bundle) may not outgrow its source; ask whether the destination already holds the bytes before writing a full-size copy, review pages keep crops plus a path/sha256 pointer, superseded versions and expired bundles move to _delete/<date> (permanent delete stays the operator's, T1 刪除), closure reports du derived/source and treats derived > source as a defect; seat fix commits ai_photo bbd9d92 + 039fc79 (57 tests, IMG_0054 --write leaves only _prev.png); evidence conversation a7c6b9f2 (review/compare 17 G = 7.31 copy + 7.40 prev + 1.09 trial, share 7.5 G, 5-file sha256 identical)",
      "check_text": ("skill_runtime", "衍生儲存（對照頁、快取、索引、分享包）不得比來源大")},
+    {"id": "EVO-write-gate-quoted-gt", "element": "ai_theater 2026-10-28 F1S proposal (ledger 3bc4e14f7f74, tool-error d267fae82ad1 x3): PreToolUse write gate denied `sed -i 's#(runtime/lexicon_deltas/<id>.json)#(Q:/_subtitle/_lexicon/deltas/<id>.json)#'` as creating `.json)#(Q:/.../<id>.json` (conversation 246184a8 2026-10-27 04:20)", "verdict": "REFINE",
+     "requires": None, "detail": "claude-proof-hook QUOTED_GT: a quoted argument containing `>` is blanked before the redirect scan in _bash_md_targets (a quoted redirect target never contains `>`); test_proof_write_gate.py replays the real command; the proposal's own rule (「嚴禁產生任何未經請求的冗餘檔案」) is already rule ⑥ and is not re-added",
+     "check_text": ("proof_hook", "QUOTED_GT = re.compile")},
+    {"id": "EVO-write-gate-side-session-notes", "element": "same proposal, the other 2 of 3 denials (ai_theater 035d9756 2026-10-26, 246184a8 2026-10-27; also ai_nuwa 10-23, hub 10-26): Write of a hand-over note into %APPDATA%\\Claude\\side-session-notes\\local_<id>\\ was denied; the dispatching prompt says 「Shared notes folder for this group of sessions (outside the repo; … leave hand-over notes or large findings there)」 but names the folder, not the file, so doc_requested() is false; the seat then wrote the note as .txt to pass the gate", "verdict": "REFINE",
+     "requires": None, "detail": "md_allowed_dirs += side-session-notes (harness-designated, outside every repo, read back by sibling sessions = rule ⑥ (a)); appsscript.json / .clasp.json added to md_allowed_names (clasp-required manifests, the one real ai_darkhero 2026-10-16 ocr-bridge denial); ztm-verify-before-done ⑥: a denied write is either a hook false positive to fix with a test or content for the reply - re-writing under another name or extension is bypassing the gate",
+     "check_text": ("proof_hook", "\"side-session-notes\"")},
+    {"id": "EVO-daily-error-window", "element": "ai_darkhero 2026-10-28 F1S proposal (ledger 0db1318cbaaf, tool-error 4c14851c9c68 x4): 3 of the 4 Bash denials are the 2026-10-13 15:38-15:52 gate-probe session c65d0212 (hook self-test), 15 days old; f1s_daily.lessons() emitted every signature with n>=3 regardless of age while render_live already filtered on e[\"last\"] >= since", "verdict": "REFINE",
+     "requires": None, "detail": "f1s_daily.lessons: tool-error lessons need e[\"last\"] >= since (same 24h window as render_live); test_lessons_skip_stale_error_signatures; the proposal itself is rejected as stale noise (no new rule), the one fresh denial is covered by EVO-write-gate-side-session-notes",
+     "check_text": ("daily_engine", "e[\"n\"] >= 3 and e[\"last\"] >= since")},
 ]
 
 

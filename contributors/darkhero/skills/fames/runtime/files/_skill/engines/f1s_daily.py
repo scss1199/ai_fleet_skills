@@ -470,11 +470,13 @@ def lessons(state: dict, since: str) -> list[dict]:
         if c["ts"] >= since and c["text"]:
             out.append({"kind": "conversation", "seat": c["seat"], "name": "correction " + _sha(c["text"]),
                         "path": str(PROJECTS), "state": "correction", "summary": c["text"][:300], "text": c["text"]})
+    # Same window as render_live: a signature whose last hit is older than `since` is history, not a lesson
+    # (2026-10-28: the 10-13 write-gate probe session resurfaced as "repeated tool error x4" 15 days later).
     for seat, sigs in state["errors"].items():
         if seat in LOCAL_ONLY:
             continue
         for sig, e in sigs.items():
-            if e["n"] >= 3:
+            if e["n"] >= 3 and e["last"] >= since:
                 out.append({"kind": "conversation", "seat": seat, "name": "tool-error " + _sha(sig), "path": str(PROJECTS),
                             "state": "tool-error", "summary": f"repeated tool error x{e['n']}: {sig}", "text": sig})
     return out

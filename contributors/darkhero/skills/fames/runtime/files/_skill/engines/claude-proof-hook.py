@@ -78,11 +78,17 @@ DEFAULTS = {
     # 2026-10-13 operator: 「嚴格禁止隨意產出 .md 和 .json」.  A .md / .json written this turn is allowed only
     # under machine-state directories (any depth), under a charter / receipt name the machinery requires,
     # or when the prompt itself asked for that document.  Reports, notes, docs and memory prose are not.
+    # 2026-10-28 (f1s-evolve, ai_theater x3 / ai_nuwa / hub denials): `side-session-notes` is the harness's own
+    # "Shared notes folder for this group of sessions (outside the repo)" under %APPDATA%\Claude; the dispatching
+    # prompt names the folder, not the file, so the note was denied and then rewritten as .txt to get past the gate.
     "md_allowed_dirs": ["_registry", "_logs", "_inbox", "_delete", "scratchpad", "Temp", "_drop", ".claude",
-                        "node_modules", "runtime", "references"],
+                        "node_modules", "runtime", "references", "side-session-notes"],
+    # appsscript.json / .clasp.json: the manifests clasp requires for any Google Apps Script project (ai_darkhero
+    # 2026-10-16 ocr-bridge denial) - tool-required config like package.json, not a report.
     "md_allowed_names": ["AGENTS.md", "CLAUDE.md", "README.md", "SKILL.md", "CHANGELOG.md", "MEMORY.md",
                          "result.json", "closure.json", "residual.json", "turn.json", "package.json",
-                         "tsconfig.json", "settings.json", "hooks.json", "launch.json", "manifest.json"],
+                         "tsconfig.json", "settings.json", "hooks.json", "launch.json", "manifest.json",
+                         "appsscript.json", ".clasp.json"],
 }
 
 # ---------------------------------------------------------------- claim patterns
@@ -277,6 +283,10 @@ SHELL_CD = re.compile(r"(?:^|[\s;&(])cd\s+(?:/d\s+)?\"?'?([^\s;&|\"']+)")
 # mentions a redirect into some .json writes x.py only.  The header line (and its redirect) is kept.
 HEREDOC_BODY = re.compile(r"(<<-?\s*['\"]?(\w+)['\"]?[^\n]*\n).*?\n[ \t]*\2[ \t]*(?=\n|$)", re.S)
 HERESTRING_BODY = re.compile(r"@(['\"])\r?\n.*?\r?\n\1@", re.S)
+# A `>` inside a quoted argument is text, not a redirect: ai_theater 2026-10-27 `sed -i 's#(a/<id>.json)#(b/<id>.json)#'`
+# was denied as creating `.json)#(b/<id>.json`.  A quoted redirect TARGET never contains `>`, so only quoted strings
+# that contain one are blanked before the redirect scan.
+QUOTED_GT = re.compile(r"'[^'\n]*>[^'\n]*'|\"[^\"\n]*>[^\"\n]*\"")
 
 
 def _bash_md_targets(command: str) -> list[str]:
@@ -284,6 +294,7 @@ def _bash_md_targets(command: str) -> list[str]:
     command and relative paths resolved against the last `cd` in it.  A target that still carries an
     unexpanded variable is unknown and is NOT reported (fail open)."""
     command = HERESTRING_BODY.sub("", HEREDOC_BODY.sub(lambda m: m.group(1), command or ""))
+    command = QUOTED_GT.sub("''", command)
     env ={m.group(1): m.group(2).strip("\"'") for m in SHELL_ASSIGN.finditer(command or "")}
     cds = [m.group(1) for m in SHELL_CD.finditer(command or "")]
     out: list[str] = []

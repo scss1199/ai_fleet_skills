@@ -39,6 +39,9 @@ parent_skill: aex-agent-evolution
   (b) 沒有既有存放處已經裝得下（回覆、task list、`_registry` 狀態、AGC compact、commit trailer
   Why/Verified-By、SEAL 收據）；(c) 不是摘要或報告。否則寫進回覆。mattpocock/skills 的
   GLOSSARY.md、ADR、docs/agents/*.md、每張 ticket 的 .md、research .md、spec 檔在這裡都過不了 (b)。
+  被 PROOF write gate 擋下時先判斷是不是誤判（引號內的 `>`、工具必備的 manifest、harness 指定的
+  side-session-notes 資料夾），誤判就改 `claude-proof-hook.py` 加測試；不是誤判就把內容寫進回覆。
+  同一個檔換副檔名（.txt）或換檔名再寫＝繞過 gate，禁止（ai_theater 2026-10-26／27 x3）。
 - 「進度」只算使用者看得到的成果（例：帳本有真實成交、正式網站上線、使用者可用的功能），不是 commit 數、
   文件數、告警或驗證腳本；做不到就直接說卡在哪一步（ai_trader owner 2026-09-21／10-12，f1s-reverse-learning）。
 - 宣稱完成時跑 SEAL：`fames_phase_runtime.py --turn --result --closure`。
