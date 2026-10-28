@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-10-28T06:18:07Z",
-  "manifest_sha": "b83fcd7968eec99d",
+  "generated_at": "2026-10-28T07:06:57Z",
+  "manifest_sha": "71a9884151e1c052",
   "required": [
     "fames",
     "independent-review",
@@ -571,12 +571,12 @@
     },
     {
       "name": "windows-runtime-pitfalls",
-      "sha": "627ae8c71288e63c",
+      "sha": "2d01d48f71694cff",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "74c76f590e6a1423d4dace410037e67f75c0b04fbbc3b0b7b8d4dfda8a83e3eb",
+      "package_sha": "227cbc30ad537ea9e16d0ea5ccc2a43a47fc2765e39b99efdb04552e7da9d0fe",
       "files": {
-        "SKILL.md": "bf6db806f4767d0582bfe627cdecd60672402086ce85b38724ed76b338e3f70c"
+        "SKILL.md": "846f29af3c8bebafe6a4807c76c5ab3d33016c0ebb0eda3842f0773ce3c60c75"
       }
     },
     {

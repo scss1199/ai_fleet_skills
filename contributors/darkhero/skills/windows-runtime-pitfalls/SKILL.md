@@ -45,6 +45,17 @@ parent_skill: ztm-verify-before-done
   overlay 執行緒 139.6→2.2 CPU-s／600 s）。共用 argtypes 的結構指標一律 `ctypes.c_void_p`（`byref()` 照用），或用私有
   `ctypes.WinDLL("user32")`。診斷：`py-spy dump --native` 頂端是 NtUserPeekMessage／DispatchMessage，再從別的行程對其
   視窗呼叫 GetUpdateRect（更新區永遠不空）。（ai_darkhero 21550c71 sleep_mode/hub_tray）
+- **拖放是跨行程同步 COM 呼叫：drop target 卡住，來源的 Explorer 視窗就跟著死。** `ole32!DoDragDrop` 在來源執行緒等
+  目標的 `IDropTarget::Drop` 回傳，期間用 PeekMessage 空轉（~1000–2700 ctxsw/s、15–33% 一核），之後任何打進該執行緒的
+  跨行程呼叫（OneDrive COM surrogate、Copilot、設定）全部跟著掛。2026-10-28：PotPlayer 在 Drop 裡做 D3D9 Present，顯示卡
+  Arc A310（4 GB、接兩台 3072×1728）顯存 89–90% 時 `NtGdiDdDDIPresent` 永不返回，`TerminateProcess` 後行程變殭屍
+  （exit code 已設、3 條執行緒仍在 NtGdiDdDDI* 等待、960 MB 顯存不放），Explorer 資料夾視窗空轉 13 小時。
+  診斷順序：IsHungAppWindow／Ghost 視窗 → WCT（要先 `RegisterWaitChainCOMCallback`，否則 COM 外送只顯示 Blocked）→
+  dbghelp 小型 minidump 取 RIP（`minidump`+`pefile` 解到 module!export，不需 WinDbg）→ PDH `GPU Adapter Memory` 對
+  DXGI 的 dedicated 容量（PDH 的 luid 是大寫十六進位，DXGI 小寫，比對要 lower）。解法：殭屍只有顯示驅動重置
+  （Win+Ctrl+Shift+B，**SendInput 注入不被核心接受，要實體按**）或重開機；Explorer 不用重啟，目標一死 DoDragDrop 就返回。
+  預防：顯示卡顯存 ≥85% 先警告並列出佔用者。引擎 `fleet-hang-guard.py probe|run|watch`（probe 揪錯 lane 與 stabilize
+  穩定 lane 平行；kill／gfx-reset 各自要 operator 旗標）。（ai_darkhero evidence/hang-dnd-20261028）
 
 ## 重試、鎖、排程
 
