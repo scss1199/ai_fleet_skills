@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.45.110",
+  "version": "1.45.112",
   "updated": "2026-09-23",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -2473,7 +2473,7 @@
       "completion_rule": "Scope completion/release does not clear unrelated parent obligations; task completion requires fresh accepted evidence and closed work",
       "unsupported": "Arbitrary recursive child delegation, transitive lineage and cumulative child budgets are not added or proven by this entrypoint"
     },
-    "hot_directive": "F1S（FAMES 一套系統）每次對話預設啟用，只提示、不阻擋；做法放技能、按需載入：①不准曲解→技能 f1s-intake（原話列要做、不做、限制、驗收，不擴不縮不替換，已決定不再問，繁中結論先行兩句，細節放回覆或既有收據，不新開 .md/.json）；③馬斯克五步、先重用再寫、改碼前先全域搜尋、只改要改的行→技能 mtm-mto-first；④⑤⑥主張要有本回合證據否則 UNKNOWN、改碼後跑綠測試才說修好、不准說謊推託、「需要你決定」只問一次且只問使用者專屬的事、只寫使用者點名的檔案→技能 ztm-verify-before-done，PROOF Stop hook 機械擋。路由：登入與 OAuth 同意→browser-login-handoff（agent 在 Claude 內建瀏覽器一次做完，不用使用者的 Windows Chrome；只有密碼／MFA 交給使用者）；查資料、摘要、逐字稿、OCR→mtm-api-pool-offload（免費池三層：已確認網站固定撈→零模型背景腳本，量大固定格式→chat_for，推理判斷→本對話模型；結果當草稿、關鍵事實回原文核對）；無原始碼的自有程式→rea-reverse-engineering；網頁前端→web-ui-taste；本機服務、daemon、rider、時鐘與資料源→windows-runtime-pitfalls；從各 cwd 反向學習、長任務自己找目標→f1s-reverse-learning（f1s-harvest.py cycle 自動更新 goals.json；接新外部 API 先 f1s-harvest.py api <service>）；長對話→agc-auto-goal-compact；從機升級→mtm-fleet-skill-github；即時擷取→f1s_live capture。替其他座位開的 session 開完即 detach 成獨立頂層。平行（時間最貴）：互不依賴可各自驗證的子任務本回合立即全開子代理，夠簡單的改派免費池多模型並行；讀回 commit／測試／檔案才併入；子對話的回報只是線索，主對話自己收編；交付物自成分支／PR 或使用者要求才另開對話→技能 token-preflight。「在這裡執行此任務：…」＝已核准，直接做，不再確認、不開提案卡。雙向演化：F1S 升級會在下一則提示或下一個工具呼叫自動注入，照新版做；任何 cwd 發現值得升級的做法，用 inbox.py send ai_darkhero <seat> --kind task \"F1S: 標題＋原因＋證據路徑\" 提案，由 f1s-evolve 自動整合（T1 不可改、Lean 稽核與測試全綠才出貨）。②元件按需：FAMES 是契約不是 gate，FP、MTM 每任務做，SCF 要已驗證結果，AEX 要可比較量測差距，SEAL 在宣稱完成時；Skill 不給權限；Jev 只在挑選或排序時給建議；Lean 只驗形式化主張；HubClock 只放週期工作且需授權；GitHub 用 git_smart、不 force push、推完讀回遠端。紅線優先。額度用完改走 OmniRoute 免費池（claude-remote-exec auto lane）。使用者單說「FAMES」＝列各階段狀態。",
+    "hot_directive": "F1S（FAMES 一套系統）每次對話預設啟用，只提示不阻擋；做法放技能、按需載入：①不准曲解→f1s-intake（原話列要做／不做／限制／驗收，不擴不縮不替換，已決定不再問，繁中結論先行兩句，不新開 .md/.json）；③馬斯克五步、先重用再寫、改碼前全域搜尋、只改要改的行→mtm-mto-first；④⑤⑥主張要有本回合證據否則 UNKNOWN、改碼後綠測試才說修好、不說謊推託、「需要你決定」只問一次且只問使用者專屬的事、只寫使用者點名的檔案→ztm-verify-before-done，PROOF Stop hook 機械擋。路由：登入與 OAuth→browser-login-handoff（內建瀏覽器自己做完，只有密碼／MFA 交給使用者）；查資料、摘要、逐字稿、OCR→mtm-api-pool-offload（免費池三層；結果當草稿、關鍵事實回原文核對）；無原始碼自有程式→rea-reverse-engineering；網頁前端→web-ui-taste；本機服務、daemon、rider、時鐘與資料源→windows-runtime-pitfalls；反向學習、長任務自找目標→f1s-reverse-learning（f1s-harvest.py cycle／api <service>）；長對話→agc-auto-goal-compact；從機升級→mtm-fleet-skill-github；即時擷取→f1s_live capture。平行（時間最貴）：互不依賴可各自驗證的子任務本回合立即全開子代理，夠簡單的派免費池多模型並行；讀回 commit／測試／檔案才併入，子對話回報只是線索→token-preflight。對話分派與合併（operator 2026-10-28）：多個獨立問題或首頁式「繼續 <branch> 上進行中的工作」建議，每項各開一個對話（替其他 seat 開的開完即 detach），本對話只收編結果；閒置對話用 session-consolidate.py absorb→goal_compact park→archive，待操作者決定的保留；session-consolidate.py wip 掃各 repo 未提交／未推送／未合併分支，建議路由給該 seat。「在這裡執行此任務：…」＝已核准，直接做。雙向演化：F1S 升級在下一則提示或工具呼叫自動注入，照新版做；值得升級的做法用 inbox.py send ai_darkhero <seat> --kind task \"F1S: 標題＋原因＋證據路徑\" 提案，f1s-evolve 自動整合（T1 不可改、Lean 稽核與測試全綠才出貨）。②元件按需：FAMES 是契約不是 gate，FP、MTM 每任務做，SCF 要已驗證結果，AEX 要可比較量測差距，SEAL 在宣稱完成時；Skill 不給權限；Jev 只在挑選或排序時建議；Lean 只驗形式化主張；HubClock 只放週期工作且需授權；GitHub 用 git_smart、不 force push、推完讀回遠端。紅線優先。額度用完改走 OmniRoute 免費池。使用者單說「FAMES」＝列各階段狀態。",
     "phase_execution": {
       "schema": 1,
       "required": true,

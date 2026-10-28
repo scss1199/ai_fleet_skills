@@ -53,6 +53,7 @@ TEXTS = {
     "skill_mto": HUB / "_skill" / "fleet-skills" / "mtm-mto-first" / "SKILL.md",
     "skill_runtime": HUB / "_skill" / "fleet-skills" / "windows-runtime-pitfalls" / "SKILL.md",
     "harvest_engine": HUB / "_skill" / "engines" / "f1s-harvest.py",
+    "sources_engine": HUB / "_skill" / "engines" / "f1s-sources.py",
     "daily_engine": HUB / "_skill" / "engines" / "f1s_daily.py",
     "skill_apikey": HUB / "_skill" / "fleet-skills" / "api-key-apply" / "SKILL.md",
     "ui_lint": HUB / "_skill" / "engines" / "ui-guideline-lint.py",
@@ -774,6 +775,16 @@ ELEMENTS = [
     {"id": "EVO-dhh-ai-convert-noise", "element": "f1s-sources card 0ddc442162bd72fa: youtube, DHH went from AI sceptic to advocate, hand-written code as 牛仔文化", "verdict": "INFO",
      "requires": None, "detail": "rejected as noise: untrusted opinion/testimonial about another person's attitude change; no procedure, tool or runtime trap for F1S (ambiguous requests already route through f1s-intake 不准曲解), and the card's own quotes are partly mistranscribed (「手寫城市」); harvest score came from low coverage, not content; no text added",
      "check_text": ("skill_reverse", "generalize（附一句繁中規則）／seat-specific／noise")},
+    # f1s-evolve 2026-10-28: ai_metadata proposal "參考 ai_library 訂閱/更新機制，自動抓 AI 與投資資訊來源" (A-F)
+    {"id": "EVO-sources-due-first-round-robin", "element": "ai_metadata D: one-due-target round robin (src/ai_metadata/resident.py) so a burst of sources cannot starve the rider budget", "verdict": "REFINE",
+     "requires": None, "detail": "measured gap: every curated feed (claude-code-changelog, gh-releases-*, hn-*, openrouter, hf) last listed 2026-10-18/19 while two deep YouTube backfills (@bestpartners 359, @shasha77 241 pending) took max_new each tick (last-tick.json skipped_budget 16); f1s-sources tick now polls due backfilled sources first, then backfills least-recently-listed first; test_due_latest_first_then_backfill_round_robin fails on the old order",
+     "check_text": ("sources_engine", "then backfills least-recently-listed first (round robin")},
+    {"id": "EVO-sources-bookmark-channel-deferred", "element": "ai_metadata A+B: Edge folder P/ai_feeds/<ai|invest>/<source> as subscription + probe-unknowns audit", "verdict": "INFO",
+     "requires": None, "detail": "rejected for now: no ai_feeds folder exists in the Edge Default Bookmarks (grep count 0 on 2026-10-28), so the reader would be code without input; B already exists as listing: unsupported reported by status; revisit when the operator creates the folder",
+     "check_text": ("sources_engine", "reported, never faked")},
+    {"id": "EVO-sources-dedupe-render-feeds-rejected", "element": "ai_metadata C+E+F: logical-key dedupe/permanent block, static library page, arXiv/HF papers/SEC EDGAR feeds", "verdict": "INFO",
+     "requires": None, "detail": "C already covered (item_hash of canonical URL + read set skip duplicates across feeds; errors back off 6h; no permanently dead source measured); E rejected: new page/artifact nobody asked for, cards + BRIEF already are the browse surface; F rejected this tick: arXiv lists hundreds/day with no relevance filter on curated feeds, SEC EDGAR needs a contact address in the User-Agent and investment data is ai_trader's lane; re-evaluate after the round-robin fix shows the existing feeds fresh",
+     "check_text": ("sources_engine", "drop what is already read")},
 ]
 
 
