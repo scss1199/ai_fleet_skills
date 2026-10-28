@@ -1541,6 +1541,7 @@ class HubClock:
                       "offset_s": j.get("_offset_s", 0),
                       "offset_src": self.offset_src.get(j.get("id")),
                       "last_boundary": self.last.get(j.get("id")),
+                      "not_before": self.not_before.get(j.get("id")),   # v2: a re-anchored wait survives a restart
                       "deferred": self.deferred.get(j.get("id"), 0)} for j in self.jobs],
             "recent_fires": list(reversed(self.fires)),
             # v2 (additive): flags in force, decisions since start, the latest decisions and current holds.
@@ -1562,7 +1563,8 @@ class HubClock:
         """Seed last_boundary from the persisted heartbeat so a restart does NOT re-fire a job whose boundary
         already passed today -- in particular a heavy @daily/@weekly job won't re-run just because the daemon
         bounced. Interval jobs still fire once on the first new bucket (harmless). KB 2026.06.09-18 audit fix F.
-        v2: also the phase each last_boundary was computed with, so a phase change can be re-anchored."""
+        v2: also the phase each last_boundary was computed with, so a phase change can be re-anchored, and any
+        re-anchored wait (not_before) still pending."""
         try:
             b = json.load(open(BEAT, encoding="utf-8-sig"))
             for j in b.get("jobs", []):
@@ -1572,6 +1574,9 @@ class HubClock:
                 if jid and isinstance(j.get("offset_s"), int):
                     self.offsets_in_use[jid] = j["offset_s"]
                     self.offset_src[jid] = j.get("offset_src")
+                nb = j.get("not_before")
+                if jid and isinstance(nb, (int, float)) and not isinstance(nb, bool):
+                    self.not_before[jid] = nb    # 2026-10-28 14:11: dropping it re-ran a 6h rider twice in 7 s
         except Exception:
             pass
 
