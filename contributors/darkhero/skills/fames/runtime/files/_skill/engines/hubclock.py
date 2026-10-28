@@ -1290,10 +1290,15 @@ class HubClock:
     def poll(self, now):
         """v2: a wake-up between minute ticks. fast_reap frees the slots of finished riders at once; every flag that
         wakes the daemon then dispatches what is due now (a learner phase boundary, a rider that lost the cap race
-        at this minute's tick). Writes no heartbeat and no results file -- those stay on the minute tick."""
+        at this minute's tick). The results file stays on the minute tick; the heartbeat is written only when this
+        poll dispatched, because it is what a restart restores last_boundary from (2026-10-28 14:14: a restart
+        before the next tick re-ran every rider a poll had started since the last one)."""
         if self.adaptive.get("fast_reap"):
             self.reap()
-        return self._dispatch_round(now, full=False)
+        dispatched = self._dispatch_round(now, full=False)
+        if dispatched:
+            self.write_beat(now, dispatched)
+        return dispatched
 
     def _dispatch_round(self, now, dry=False, full=True):
         """The v1 dispatch pass (due -> backoff -> lock -> aging+priority sort -> cap), plus the v2 gates, each
