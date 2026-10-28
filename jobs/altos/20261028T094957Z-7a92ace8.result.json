@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261028T094957Z-7a92ace8",
+  "host": "altos",
+  "started_at": "2026-10-28T09:52:01+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_altos cwd=ai_altos auth=cli_credentials_file 41.9s]\nALTOS-PHASE: === 1 fames-immediate-apply.json ===\nALTOS-PHASE: {\nALTOS-PHASE:   \"ok\": false,\nALTOS-PHASE:   \"state\": \"UNKNOWN\",\nALTOS-PHASE:   \"reason\": \"local_phase_conformance_unavailable\",\nALTOS-PHASE:   \"phase_proof\": {\nALTOS-PHASE:     \"ok\": false,\nALTOS-PHASE:     \"state\": \"UNKNOWN\",\nALTOS-PHASE:     \"reason\": \"AttributeError\"\nALTOS-PHASE:   },\nALTOS-PHASE:   \"generated\": \"2026-10-28T09:47:23.532496+00:00\",\nALTOS-PHASE:   \"attempted_package_sha\": \"29faabc18afcb010da9e9d59f011e4fb6ea851f591791aa5bf5d1f04e322a2ee\",\nALTOS-PHASE:   \"runtime_activation\": \"UNKNOWN_UNTIL_ACTUAL_LIFECYCLE_RECEIPT\",\nALTOS-PHASE:   \"scope\": \"local_package_and_hook_configuration\"\nALTOS-PHASE: }\nALTOS-PHASE: === 2 _harness/runtime/*.py ===\nALTOS-PHASE: document_preservation.py 5840 7AF583A1D534C543\nALTOS-PHASE: dsh_fames_hook.py 2463 35F126D239B2AE1D\nALTOS-PHASE: fames_capabilities.py 7349 C55AD66713D987B3\nALTOS-PHASE: fames_phase_runtime.py 27330 F95237B99113311E\nALTOS-PHASE: fames_session_harness.py 69886 661B1415307E946F\nALTOS-PHASE: fames_turn_binding.py 9248 EBC57EB024B976D7\nALTOS-PHASE: jev_phase_advisor.py 18755 3512AF5166341135\nALTOS-PHASE: jev_skill_advisor.py 23347 438E0E7C39EE6105\nALTOS-PHASE: jev_task_projection.py 12475 B902A14055A9C411\nALTOS-PHASE: jev_turn_router.py 14245 47AD7E822148FD85\nALTOS-PHASE: local_skill_router.py 17106 56E939AA220E460C\nALTOS-PHASE: native_skill_scope.py 12205 6C69F8254178A4FE\nALTOS-PHASE: skill_scope.py 19443 372FFCEFE9D41AC5\nALTOS-PHASE: === 3 python / _lean ===\nALTOS-PHASE: 3.10.11 (tags/v3.10.11:7d4cc5a, Apr  5 2023, 00:38:17) [MSC v.1929 64 bit (AMD64)]\nALTOS-PHASE: cache\nALTOS-PHASE: downloads\nALTOS-PHASE: fames\nALTOS-PHASE: hubmath\nALTOS-PHASE: state\nALTOS-PHASE: toolchains\nALTOS-PHASE: __pycache__\nALTOS-PHASE: True\nALTOS-PHASE: === 4 module introspection ===\nALTOS-PHASE: NAMES ['ensure_conformance']\nALTOS-PHASE: ensure_conformance (workspace)\n",
+  "stderr": "",
+  "finished_at": "2026-10-28T09:52:45+00:00"
+}
