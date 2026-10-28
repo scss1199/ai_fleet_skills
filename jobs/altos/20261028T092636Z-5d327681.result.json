@@ -1,0 +1,95 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261028T092636Z-5d327681",
+  "host": "altos",
+  "started_at": "2026-10-28T09:28:18+00:00",
+  "kind": "probe",
+  "ok": true,
+  "probe": {
+    "hostname": "desktop-rsniapr",
+    "hub": "C:\\ai_workspace",
+    "collected_at": "2026-10-28T09:28:18+00:00",
+    "hub_commit": "UNKNOWN",
+    "hub_branch": "UNKNOWN",
+    "fames": {
+      "version": "1.45.112",
+      "package_sha": "29faabc18afcb010da9e9d59f011e4fb6ea851f591791aa5bf5d1f04e322a2ee"
+    },
+    "runtime_release": {
+      "generation": 137,
+      "state": "INSTALLED"
+    },
+    "receipt": {
+      "expected": "29faabc18afcb010da9e9d59f011e4fb6ea851f591791aa5bf5d1f04e322a2ee",
+      "nodes": {
+        "ai_darkhero": [
+          "PASS",
+          "29faabc18afcb010da9e9d59f011e4fb6ea851f591791aa5bf5d1f04e322a2ee"
+        ],
+        "ai_altos": [
+          "UNKNOWN",
+          "198b63e2afd8257f26159e90663b247dc0aacc74920b5594d9c0366c7e4885e4"
+        ]
+      }
+    },
+    "riders": [
+      {
+        "id": "fleet-skill-github-sync",
+        "enabled": null,
+        "cmd": "C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe C:\\ai_workspace\\ai_altos\\scripts\\altos_fleet_sync.py s"
+      },
+      {
+        "id": "fleet-job-dispatch",
+        "enabled": null,
+        "cmd": "C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\fleet-job-dispatch.py t"
+      },
+      {
+        "id": "fames-converge",
+        "enabled": null,
+        "cmd": "C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\fleet-skills\\fames\\scripts\\fame"
+      }
+    ],
+    "claude_cli": {
+      "ready": true,
+      "blocker": null,
+      "cli": "C:\\Users\\USER\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Anthropic.ClaudeCode_Microsoft.Winget.Source_8wekyb3d8bbwe\\claude.EXE"
+    },
+    "nested_hub_folder_present": false,
+    "hardware": {
+      "cpu_count": 8,
+      "ram_total_mb": 16257,
+      "ram_avail_mb": 10559,
+      "os": "Windows 10.0.26300",
+      "disk_free_mb": 320324,
+      "node": "24.19.0",
+      "omniroute_fit": {
+        "fit": true,
+        "reasons": [],
+        "needs": {
+          "node_min": "22.22.2 (22.x) or 24-26",
+          "ram_avail_mb": 1500,
+          "disk_free_mb": 4096
+        }
+      }
+    },
+    "claude_hooks": {
+      "Stop": [
+        "claude-run-until-done-hook.py",
+        "claude-proof-hook.py",
+        "f1s_live.py\" wait"
+      ],
+      "SubagentStop": [
+        "claude-proof-hook.py"
+      ],
+      "SessionStart": [
+        "claude_session_hook.py"
+      ],
+      "UserPromptSubmit": [
+        "claude_session_hook.py"
+      ]
+    },
+    "has_claude_proof_hook": true,
+    "has_claude_run_until_done_hook": true
+  },
+  "finished_at": "2026-10-28T09:28:24+00:00"
+}
