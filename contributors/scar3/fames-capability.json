@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "scar3",
-  "package_sha": "97887ab54681a481154bd71512546dd4dd063d4d2de921d9619666e7fec986b2",
+  "package_sha": "29faabc18afcb010da9e9d59f011e4fb6ea851f591791aa5bf5d1f04e322a2ee",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "4cd6c4f2f40dde1d72c95b0136e576b587d2cca78832b1db6d04db8b5013a513",
   "runner_state": "armed",
-  "observed_at": "2026-10-28T09:00:42.368524+00:00",
+  "observed_at": "2026-10-28T09:31:29.552574+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -355,7 +355,7 @@
     "base_proof_state": "PASS",
     "native_state": "UNKNOWN",
     "native_events": [],
-    "runtime_release_sha256": "d819508c7943a8c4d43cc4ecc838f1f5a7820368404cfadc57a9a4144fd0d70d"
+    "runtime_release_sha256": "9f4e662e32e503921b91ac0a2273349e1b2c3909289eb37876c2658f6961c0cf"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
