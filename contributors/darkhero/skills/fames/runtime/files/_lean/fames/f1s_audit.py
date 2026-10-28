@@ -802,6 +802,24 @@ ELEMENTS = [
     {"id": "EVO-trader-universe-holdout-seat-specific", "element": "ai_trader rules 5+6: count the ranked universe before blaming it (v14 1,127 names, K=3 + 5,000 cap); split explore/holdout before scanning, close the line if nothing >=0.05 same-sign", "verdict": "INFO",
      "requires": None, "detail": "rejected as seat-specific: both are ai_trader research-lane methodology already recorded in its own memory matrix-lane-v21-two-boards-20261018.md; the general part (mine the data before answering a complaint, pre-register then stop on fail) is already T1 嚴禁猜 + memory no-diagnostic-questions; thresholds 0.05 / K / 2023-07 are trading parameters, not F1S text; no text added",
      "check_text": ("skill_runtime", "API 列得到的才算存在")},
+    # f1s-evolve 2026-10-29: ai_trader memory owner-fx-route-20261029 (ledger 54d2ef9e0a05) + ai_photo fa83063cb679 / ai_theater 839f057e494d re-sent
+    {"id": "EVO-backtest-verdict-not-progress", "element": "ai_trader owner 2026-10-29 「現在不碰台指帳戶…只要 50 美金才具備操作意義 否則半年都在講幹話」: v32/v33 pre-registered backtests judged NOT_QUALIFIED were offered as progress; memory How-to-apply ④ 回測判決不當「沒有下一步」的理由", "verdict": "REFINE",
+     "requires": None, "detail": "ztm-verify-before-done 進度 bullet (the 09-21/10-12 rule already said progress = what the user sees) gains the stop-reason half: a simulated/backtest verdict is information, never a reason to end with 沒有下一步; operator-only steps go as one plain line (f1s-intake §3) while the agent keeps building what it can until the ledger moves; evidence memory owner-fx-route-20261029 + ai_trader sinopac-trading-system 935d1e664/3c8d55d8f (demo sends 02:15-02:36)",
+     "check_text": ("skill_verify", "回測的判決（NOT_QUALIFIED、乾跑通過）是資訊不是進度")},
+    {"id": "EVO-feed-server-clock-offset", "element": "ai_trader 25920a3a5: GoMarkets-Demo MT5 tick.time runs ~3 h ahead of UTC; staleness measured against UTC misjudged every quote", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls 時間與資料新鮮度: a feed's timestamps are the server's clock; learn offset = server_time - utc_now from the freshest tick after connect, raise it only on a newer tick, age = (now + offset) - tick.time, relearn on reconnect; verified 2026-10-29 in ai_trader/sinopac-trading-system/src/services/mt5_broker.py _server_offset",
+     "check_text": ("skill_runtime", "時間戳是對方伺服器的時鐘，不是 UTC")},
+    {"id": "EVO-exit-cleanup-own-resources-only", "element": "ai_trader c8d33f58d: a dryrun runner's window-end flatten closed a position another demo runner had opened on the same account (-0.26 AUD); the shared magic label was read as ownership", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls 重試、鎖、排程: instances sharing an account/dir/queue clean up only what this process created (own ticket/id set; a shared label is not ownership) and dry-run never runs the mutating branch; verified 2026-10-29 in ai_trader/sinopac-trading-system/scripts/fx_scalp_runner.py own_tickets + mode != dryrun guard",
+     "check_text": ("skill_runtime", "收尾只動自己建立的東西，乾跑永不執行會改狀態的分支")},
+    {"id": "EVO-fx-route-seat-local", "element": "the rest of owner-fx-route-20261029: broker choice (IG vs GoMarkets-Demo), MT5 silent install, IG REST probe, Algo Trading Ctrl+E via SendKeys, demo P&L", "verdict": "INFO",
+     "requires": None, "detail": "stays in the ai_trader memory: account/broker facts and lane data; 'never ask the owner for account/server/password' is already T1 金鑰 + the PROOF hook; AppActivate+SendKeys into a foreground terminal is a seat-local one-off, not a fleet method (zero-foreground red line); no text added"},
+    {"id": "EVO-derived-store-duplicate-20261029", "element": "ai_photo correction c6a21ad83c10 proposal re-sent (ledger fa83063cb679, same operator words as EVO-derived-store-not-larger-than-source)", "verdict": "INFO",
+     "requires": None, "detail": "already adopted in the 2026-10-28 third run as EVO-derived-store-not-larger-than-source (windows-runtime-pitfalls 衍生儲存 bullet present in the installed skill text); conversation a7c6b9f2 holds only the seat's own fix bbd9d92 and nothing new; no text added",
+     "check_text": ("skill_runtime", "衍生儲存（對照頁、快取、索引、分享包）不得比來源大")},
+    {"id": "EVO-theater-video-sort-duplicate-20261029", "element": "ai_theater correction 8d1987bd90df proposal re-sent a third time (ledger 839f057e494d)", "verdict": "INFO",
+     "requires": None, "detail": "already rejected 2026-10-28 as EVO-theater-video-sort-task-spec and EVO-theater-video-sort-duplicate-20261028 (a task statement, seat-specific); conversation d9626280's later operator lines (AV_Retired/AV_Normal, 「學會既有的資料夾寫法」) are that seat's own layout rules and the general part is mtm-mto-first ③ brownfield search before writing; no text added",
+     "check_text": ("skill_reverse", "generalize（附一句繁中規則）／seat-specific／noise")},
 ]
 
 

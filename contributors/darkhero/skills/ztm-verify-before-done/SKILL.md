@@ -44,6 +44,10 @@ parent_skill: aex-agent-evolution
   同一個檔換副檔名（.txt）或換檔名再寫＝繞過 gate，禁止（ai_theater 2026-10-26／27 x3）。
 - 「進度」只算使用者看得到的成果（例：帳本有真實成交、正式網站上線、使用者可用的功能），不是 commit 數、
   文件數、告警或驗證腳本；做不到就直接說卡在哪一步（ai_trader owner 2026-09-21／10-12，f1s-reverse-learning）。
+  模擬／回測的判決（NOT_QUALIFIED、乾跑通過）是資訊不是進度，也不能拿來當「沒有下一步」的理由：真路線卡在
+  只有使用者能做的步驟（開戶 KYC、入金、登入終端機）時照 f1s-intake §3 寫一行等它發生，其餘自己能做的
+  （連線層、demo 真送單、對帳、復原）繼續做到帳本會動為止（ai_trader owner 2026-10-29
+  「只要 50 美金才具備操作意義 否則半年都在講幹話」）。
 - 宣稱完成時跑 SEAL：`fames_phase_runtime.py --turn --result --closure`。
 
 ## 必跑（0-token engines 優先）
