@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261028T091116Z-1c795563",
+  "host": "altos",
+  "started_at": "2026-10-28T09:12:01+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_altos cwd=ai_altos auth=cli_credentials_file 41.5s]\nALTOS-RUNTIME: state=UNKNOWN_LOCAL_CHANGES generation=135 attempted_release_sha256=d819508c7943a8c4d43cc4ecc838f1f5a7820368404cfadc57a9a4144fd0d70d observed_at=2026-10-28T09:04:52.391493+00:00\nALTOS-RUNTIME: errors_count=1\nALTOS-RUNTIME: code=unmanaged_or_modified_destination path=_skill/engines/fleet-job-dispatch.py current_sha256=5ed14c656e9b83a3b8883cd803724dd2833f98c87f5a164264826da66234d2ae wanted_sha256=9145679e7a40869f7ab42647e5fb6506717e5b5c1268b444b55ce585a98135ba\nALTOS-RUNTIME: [_skill/engines/fleet-job-dispatch.py] status: fatal: not a git repository (or any of the parent directories): .git\nALTOS-RUNTIME: [_skill/engines/fleet-job-dispatch.py] log: fatal: not a git repository (or any of the parent directories): .git\nALTOS-RUNTIME: HEAD: fatal: not a git repository (or any of the parent directories): .git\nALTOS-RUNTIME: status_lines: 1 (the single line is the fatal error above, not a changed file)\nALTOS-RUNTIME: C:/ai_workspace/.git does not exist, so the hub root is not a git repository on altos; git provenance for the path is UNKNOWN.\n",
+  "stderr": "",
+  "finished_at": "2026-10-28T09:13:04+00:00"
+}
