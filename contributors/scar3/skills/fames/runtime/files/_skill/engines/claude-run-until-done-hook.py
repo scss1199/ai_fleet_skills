@@ -194,7 +194,9 @@ def _origin_cwd(transcript: Path) -> str:
 
 
 def _open_orders(doc: dict, transcript: Path) -> tuple[str, list[dict]]:
-    """(seat, the curator's open orders for it) — curator_orders.py; ("", []) on any error (fail open)."""
+    """(seat, the curator's open orders this conversation must answer) — curator_orders.py; ("", []) on any error
+    (fail open). An order another conversation owns (it answered or claimed it) does not hold this turn: on 2026-10-28
+    reopened jci_taipei#5 pushed every jci_taipei session, and only its owner had the evidence to answer."""
     try:
         cwd = _origin_cwd(transcript) or str(doc.get("cwd") or "")
         if not cwd.strip():
@@ -202,7 +204,7 @@ def _open_orders(doc: dict, transcript: Path) -> tuple[str, list[dict]]:
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         import curator_orders
         seat = curator_orders.seat_of(cwd)
-        return seat, curator_orders.open_orders(seat)
+        return seat, curator_orders.open_orders(seat, session_id=str(doc.get("session_id") or ""))
     except Exception:  # noqa: BLE001 - fail open: a broken order store never blocks a turn
         return "", []
 

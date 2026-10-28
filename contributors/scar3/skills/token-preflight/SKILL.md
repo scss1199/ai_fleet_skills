@@ -30,8 +30,7 @@ Read [references/concept-map.md](references/concept-map.md) only when changing f
 
 When auditing token usage, measure what is loaded on every turn before trimming anything: the app's usage tool (context categories: system tools, MCP tools, memory files, skills) or `/context`, and `/doctor` / `/skill-doctor` when the user runs them. Join the skill list with `_registry/skill-audit/*.jsonl` (actual Skill invocations) and propose dropping always-loaded items that are never invoked. Turning off the 1M window (`CLAUDE_CODE_DISABLE_1M_CONTEXT`) or editing `~/.claude/settings.json` is a global-settings change: operator authorization first.
 
-<!-- 2026-08-13: the line that pointed at `cca-token-governance` was removed with that skill.
-     operator instruction: remove everything Codex-related from this machine; the skill and the
-     Claude-to-Codex review route it governed are quarantined in
-     _delete/2026-08-13-codex-purge (hub-skills/, hub-engines/). Cross-provider token usage is
-     no longer a route this hub can take. -->
+Note (2026-08-13): the pointer to `cca-token-governance` was removed with that skill when operator
+instruction removed everything Codex-related from this machine (skill and the Claude-to-Codex review
+route are quarantined in `_delete/2026-08-13-codex-purge`, hub-skills/ and hub-engines/). Cross-provider
+token usage is no longer a route this hub can take.

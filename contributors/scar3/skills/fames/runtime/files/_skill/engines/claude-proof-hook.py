@@ -78,11 +78,17 @@ DEFAULTS = {
     # 2026-10-13 operator: 「嚴格禁止隨意產出 .md 和 .json」.  A .md / .json written this turn is allowed only
     # under machine-state directories (any depth), under a charter / receipt name the machinery requires,
     # or when the prompt itself asked for that document.  Reports, notes, docs and memory prose are not.
+    # 2026-10-28 (f1s-evolve, ai_theater x3 / ai_nuwa / hub denials): `side-session-notes` is the harness's own
+    # "Shared notes folder for this group of sessions (outside the repo)" under %APPDATA%\Claude; the dispatching
+    # prompt names the folder, not the file, so the note was denied and then rewritten as .txt to get past the gate.
     "md_allowed_dirs": ["_registry", "_logs", "_inbox", "_delete", "scratchpad", "Temp", "_drop", ".claude",
-                        "node_modules", "runtime", "references"],
+                        "node_modules", "runtime", "references", "side-session-notes"],
+    # appsscript.json / .clasp.json: the manifests clasp requires for any Google Apps Script project (ai_darkhero
+    # 2026-10-16 ocr-bridge denial) - tool-required config like package.json, not a report.
     "md_allowed_names": ["AGENTS.md", "CLAUDE.md", "README.md", "SKILL.md", "CHANGELOG.md", "MEMORY.md",
                          "result.json", "closure.json", "residual.json", "turn.json", "package.json",
-                         "tsconfig.json", "settings.json", "hooks.json", "launch.json", "manifest.json"],
+                         "tsconfig.json", "settings.json", "hooks.json", "launch.json", "manifest.json",
+                         "appsscript.json", ".clasp.json"],
 }
 
 # ---------------------------------------------------------------- claim patterns
@@ -277,6 +283,10 @@ SHELL_CD = re.compile(r"(?:^|[\s;&(])cd\s+(?:/d\s+)?\"?'?([^\s;&|\"']+)")
 # mentions a redirect into some .json writes x.py only.  The header line (and its redirect) is kept.
 HEREDOC_BODY = re.compile(r"(<<-?\s*['\"]?(\w+)['\"]?[^\n]*\n).*?\n[ \t]*\2[ \t]*(?=\n|$)", re.S)
 HERESTRING_BODY = re.compile(r"@(['\"])\r?\n.*?\r?\n\1@", re.S)
+# A `>` inside a quoted argument is text, not a redirect: ai_theater 2026-10-27 `sed -i 's#(a/<id>.json)#(b/<id>.json)#'`
+# was denied as creating `.json)#(b/<id>.json`.  A quoted redirect TARGET never contains `>`, so only quoted strings
+# that contain one are blanked before the redirect scan.
+QUOTED_GT = re.compile(r"'[^'\n]*>[^'\n]*'|\"[^\"\n]*>[^\"\n]*\"")
 
 
 def _bash_md_targets(command: str) -> list[str]:
@@ -284,6 +294,7 @@ def _bash_md_targets(command: str) -> list[str]:
     command and relative paths resolved against the last `cd` in it.  A target that still carries an
     unexpanded variable is unknown and is NOT reported (fail open)."""
     command = HERESTRING_BODY.sub("", HEREDOC_BODY.sub(lambda m: m.group(1), command or ""))
+    command = QUOTED_GT.sub("''", command)
     env ={m.group(1): m.group(2).strip("\"'") for m in SHELL_ASSIGN.finditer(command or "")}
     cds = [m.group(1) for m in SHELL_CD.finditer(command or "")]
     out: list[str] = []
@@ -375,6 +386,12 @@ WRITE_VERB = re.compile(r"(?i)\b(?:cp|mv|install|ln|rsync|robocopy|xcopy|copy|mo
                         r"(?:^|[^0-9&<>=\-])>{1,2}(?!\s*(?:&|/dev/null|\$null|nul\b))")
 PRIVATE_DOC = re.compile(r"(?i)\.(?:pdf|docx?|xlsx?|pptx?|zip|7z|rar|csv|tsv|m4a|mp3|mp4|mov|wav|"
                          r"sqlite3?|db|key|pem|env)\b")
+# 2026-10-28 ai_trader: `curl https://sdmx.oecd.org/public/rest/...?format=csv... -o x.csv` (and a heredoc only quoting
+# that URL) was denied: a /public/ segment inside a REMOTE URL is not a local served directory. URLs are dropped from
+# the shell text before matching unless the command uploads (curl -T/-F/--data-binary @, PUT/POST, -InFile).
+URL_TEXT = re.compile(r"(?i)\bhttps?://[^\s'\"<>|`]+")
+UPLOAD_FLAG = re.compile(r"(?i)(?:^|\s)(?:-T|-F|--upload-file|--form|--data-binary|-InFile)\b|"
+                         r"(?:-X|--request|-Method)\s*['\"]?(?:PUT|POST)\b")
 PUBLISH_CONSENT = re.compile(r"(?i)公開|公布|上網|網站|官網|網頁|部署|上線|deploy|publish|public(?:ly)?|website")
 PUBLISH_REASON = (
     "PROOF publish gate (operator 2026-10-18 「不要再發生」): this tool call puts a non-image file ({what}) in a "
@@ -400,6 +417,8 @@ def publish_consent(prompt_text: str) -> bool:
 def _publish_gate(doc: dict, tool: str, ti: dict) -> dict | None:
     if tool in ("Bash", "PowerShell"):
         text = str(ti.get("command") or "")
+        if not UPLOAD_FLAG.search(text):
+            text = URL_TEXT.sub(" ", text)
     elif tool in ("Write", "Edit", "NotebookEdit"):
         text = str(ti.get("file_path") or ti.get("notebook_path") or "")
     else:

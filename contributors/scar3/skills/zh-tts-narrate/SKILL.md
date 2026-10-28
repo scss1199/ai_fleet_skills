@@ -13,8 +13,9 @@ parent_skill: aex-agent-evolution
 
 # zh-tts-narrate
 
-**Runtime:** `C:/ai_workspace/ai_demo/.venv/Scripts/python.exe -m edge_tts` (edge-tts 7.2.8 installed
-2026-10-11; needs network to Microsoft's read-aloud endpoint, no subscription, no key).
+**Runtime:** `C:/ai_workspace/ai_demo/.venv/Scripts/python.exe -m edge_tts` (edge-tts 7.3.1 since
+2026-10-28: 7.2.8 got a 403 handshake from the endpoint; needs network to Microsoft's read-aloud endpoint, no
+subscription, no key).
 
 ## One-liners
 ```bash
@@ -38,6 +39,10 @@ List all: `python -m edge_tts --list-voices | findstr zh-`.
 - `regen-audio.py` pins an ffprobe path under another user profile; `render-brief.mjs` resolves ffmpeg/ffprobe
   from PATH or the current user's WinGet packages instead — use that resolver when porting.
 - Narration text is sent to a Microsoft endpoint: never put secrets or unpublished personal data in it.
+- A 403 handshake means the installed edge-tts is too old for the endpoint: upgrade the package first.
+- The endpoint sometimes returns `NoAudioReceived` for one request, and a resend of the same text can succeed.
+  For multi-line scripts send one request per sentence, retry each up to about 8 times with backoff, and check
+  that every mp3 is larger than 0 bytes before concatenating (seen on the 2026-10-28 Recco test clips).
 
 ## Evidence
 `ai_darkhero/evidence/ai-demo-pivot-20261011/` (render self-test 2026-10-11: 3 chapters narrated, 10.1 s MP4).

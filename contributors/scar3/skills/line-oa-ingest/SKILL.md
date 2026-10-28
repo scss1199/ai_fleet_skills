@@ -119,9 +119,7 @@ python -m unittest discover -s scripts -p "test_*.py"
 python C:\ai_workspace\_skill\engines\fleet-skill-sync.py verify
 ```
 
-<!-- 2026-08-13: the second line used to be the skill-creator front-matter validator at
-     C:\Users\sc\.codex\skills\.system\skill-creator\scripts\quick_validate.py. It lived inside the
-     Codex user profile, which operator instruction removed from this machine; the only copy is now
-     _delete/2026-08-13-codex-purge/userprofile/.codex/skills/.system/skill-creator/scripts/quick_validate.py.
-     fleet-skill-sync.py verify checks that this skill still resolves on every surface, which is the
-     part that can actually break. -->
+Note (2026-08-13): `fleet-skill-sync.py verify` replaced the skill-creator front-matter validator that
+lived in the Codex user profile, which operator instruction removed from this machine (quarantined copy:
+`_delete/2026-08-13-codex-purge/userprofile/.codex/skills/.system/skill-creator/scripts/quick_validate.py`).
+The sync verify checks that this skill still resolves on every surface, which is the part that can break.

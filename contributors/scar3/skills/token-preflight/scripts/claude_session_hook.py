@@ -10,6 +10,9 @@ HUB=Path(os.environ.get("AI_WORKSPACE") or Path(__file__).resolve().parents[4])
 STATUS=HUB/"_registry"/"token-preflight"/"claude-hook-status.json"
 T1_DELIVERY=HUB/"_registry"/"token-preflight"/"t1-delivery"
 CHARTER_DELIVERY=HUB/"_registry"/"token-preflight"/"charter-delivery"
+# f1s_daily.py rewrites this once a day (operator 2026-10-27): every open conversation takes its diff like an instruction
+# file, and a new conversation gets the whole text at its first prompt (it was never loaded at start).
+DAILY_LIVE=("_registry","f1s-daily","live.md")
 CODEX_STATUS=HUB/"_registry"/"token-preflight"/"codex-hook-status.json"
 MACHINE_EVENT_TAGS=("<task-notification>","<side-sessions-event>","<ci-monitor-event>","<cross-session-message")
 
@@ -167,6 +170,7 @@ def _instruction_files(surface_id: str, cwd: str, transcript_path: str = "") -> 
         memory = _memory_index(transcript_path)
         if memory is not None:
             roots.append(memory)
+        roots.append(HUB.joinpath(*DAILY_LIVE).resolve())
     found: list[Path] = []
     pending = [(p, 0) for p in roots]
     while pending:
@@ -242,7 +246,8 @@ def _charter_refresh(surface_id: str, session_id: str, cwd: str, *, at_start: bo
                 os.replace(stage, blob)
         if last != current or last_doc.get("cwd") != anchor:
             stage = record.with_suffix(".tmp")
-            stage.write_text(json.dumps({"files": current, "cwd": anchor,
+            loaded = {k: v for k, v in current.items() if not (at_start and k == str(HUB.joinpath(*DAILY_LIVE).resolve()))}
+            stage.write_text(json.dumps({"files": loaded, "cwd": anchor,
                                          "at": datetime.now(timezone.utc).isoformat()}), encoding="utf-8")
             os.replace(stage, record)
         if at_start or last == current:
@@ -336,7 +341,7 @@ def _resolve_seat(cwd: str) -> str:
 
 
 MIDTURN_WATCH=("_registry/fames-protocol.json","_registry/rules-blueprint.json",
-               "_skill/fleet-skills/fames/runtime/manifest.json")
+               "_skill/fleet-skills/fames/runtime/manifest.json","_registry/f1s-daily/live.md")
 
 
 MIDTURN_HEAD="F1S MID-TURN UPDATE (an upgrade landed while this task was running; apply it from the next step)"
@@ -477,7 +482,7 @@ def live_update(doc, *, event: str="PostToolUse", watch_seat: str | None=None) -
     if not _midturn_changed(surface_id,session_id,agent_id=agent_id,seat=sig_seat,cwd=cwd,event=event):
         return ""
     parts=[]
-    orders="" if agent_id else _curator_orders(seat)
+    orders="" if agent_id else _curator_orders(seat,session_id)
     if orders:
         parts.append(orders)
     try:
@@ -574,9 +579,10 @@ def _proof_recurrence(cwd: str) -> str:
         return ""
 
 
-def _curator_orders(agent: str) -> str:
+def _curator_orders(agent: str, session_id: str = "") -> str:
     """T1 f1s-governs (operator 2026-10-24): this seat's open correction orders from the curator, or for the curator
-    the answered orders waiting for review (_skill/engines/curator_orders.py). "" when none. Never raises."""
+    the answered orders waiting for review (_skill/engines/curator_orders.py). An order another conversation owns
+    renders as one read-only line for this one. "" when none. Never raises."""
     path = HUB / "_skill" / "engines" / "curator_orders.py"
     try:
         spec = importlib.util.spec_from_file_location("fames_hook_curator_orders", path)
@@ -584,7 +590,10 @@ def _curator_orders(agent: str) -> str:
             return ""
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        return str(module.injection(agent) or "")
+        try:
+            return str(module.injection(agent, session_id) or "")
+        except TypeError:  # an older engine without the owner argument
+            return str(module.injection(agent) or "")
     except Exception:
         return ""
 
@@ -739,7 +748,7 @@ def main():
             context=(context+"\n"+record).strip()
         _everything_bg_prewarm()
     # The curator's orders go first, above this seat's own plan: they outrank its decisions (T1 f1s-governs).
-    orders=_curator_orders(agent)
+    orders=_curator_orders(agent, session_id)
     if orders:
         context=(orders+"\n"+context).strip()
     context=_contract_dedup(surface_id, session_id, context, reset=event == "SessionStart")

@@ -45,6 +45,17 @@ parent_skill: ztm-verify-before-done
   overlay 執行緒 139.6→2.2 CPU-s／600 s）。共用 argtypes 的結構指標一律 `ctypes.c_void_p`（`byref()` 照用），或用私有
   `ctypes.WinDLL("user32")`。診斷：`py-spy dump --native` 頂端是 NtUserPeekMessage／DispatchMessage，再從別的行程對其
   視窗呼叫 GetUpdateRect（更新區永遠不空）。（ai_darkhero 21550c71 sleep_mode/hub_tray）
+- **拖放是跨行程同步 COM 呼叫：drop target 卡住，來源的 Explorer 視窗就跟著死。** `ole32!DoDragDrop` 在來源執行緒等
+  目標的 `IDropTarget::Drop` 回傳，期間用 PeekMessage 空轉（~1000–2700 ctxsw/s、15–33% 一核），之後任何打進該執行緒的
+  跨行程呼叫（OneDrive COM surrogate、Copilot、設定）全部跟著掛。2026-10-28：PotPlayer 在 Drop 裡做 D3D9 Present，顯示卡
+  Arc A310（4 GB、接兩台 3072×1728）顯存 89–90% 時 `NtGdiDdDDIPresent` 永不返回，`TerminateProcess` 後行程變殭屍
+  （exit code 已設、3 條執行緒仍在 NtGdiDdDDI* 等待、960 MB 顯存不放），Explorer 資料夾視窗空轉 13 小時。
+  診斷順序：IsHungAppWindow／Ghost 視窗 → WCT（要先 `RegisterWaitChainCOMCallback`，否則 COM 外送只顯示 Blocked）→
+  dbghelp 小型 minidump 取 RIP（`minidump`+`pefile` 解到 module!export，不需 WinDbg）→ PDH `GPU Adapter Memory` 對
+  DXGI 的 dedicated 容量（PDH 的 luid 是大寫十六進位，DXGI 小寫，比對要 lower）。解法：殭屍只有顯示驅動重置
+  （Win+Ctrl+Shift+B，**SendInput 注入不被核心接受，要實體按**）或重開機；Explorer 不用重啟，目標一死 DoDragDrop 就返回。
+  預防：顯示卡顯存 ≥85% 先警告並列出佔用者。引擎 `fleet-hang-guard.py probe|run|watch`（probe 揪錯 lane 與 stabilize
+  穩定 lane 平行；kill／gfx-reset 各自要 operator 旗標）。（ai_darkhero evidence/hang-dnd-20261028）
 
 ## 重試、鎖、排程
 
@@ -54,6 +65,10 @@ parent_skill: ztm-verify-before-done
   下一輪又從頭重跑（ai_trader strategy_lineage 300 s 逾時、一小時被殺 3 次）；預算快用完時不要再開新的一天／新的一批
   （news_tone 保留 DAY_RESERVE_S）；前置條件已知不成立（owner 停用的 cockpit）就跳過，不要讓它每輪 rc=1。
   （ai_trader workflow-audit-20261020）
+- **呼叫有額度的遠端（Drive、LINE、Workers、免費池）的週期 rider，先比本機變更指紋，沒變就零遠端呼叫直接結束**：
+  沒有變化的一輪也去 list／fetch，額度就這樣燒光。參考實作 ai_photo `src/ai_photo/drive_sync.py` 的
+  `local_state()`／`last_full()`，測試 `tests/test_drive_sync.py::test_unchanged_folder_spends_no_rclone_call`。
+  （ai_photo 2923431；2026-10-27 Cloudflare 全帳號額度耗盡事件）
 - **git 128 先查殘留 `.git/index.lock`**：確認沒有長命 git 行程後改名成 `index.lock.stale-<時間>.MIGRATED-bak`（不刪）。
   殘鎖會讓排程備份「靜默不 commit」好幾天。（ai_trader git-index-lock-stale）
 - **把 runtime 資料移出 git 追蹤後，checkout／reset 到舊 commit 會用舊版覆寫正在用的檔案**（資料庫、kill flag）；
@@ -63,15 +78,42 @@ parent_skill: ztm-verify-before-done
 
 - **事件時間與收到時間比對前先確認本機時鐘已同步**（W32Time 可能幾週沒同步）；時鐘慢會讓「收到早於事件」這種檢查
   靜默拒絕所有訊號，而且被去重的記錄把痕跡吃掉。（ai_trader orb-missed-signal-clock-skew）
+- **檔案內嵌的時間戳記可能是匯出時間，不是事件時間**：LINE 匯出的 m4a 四軌 creation_time 全落在 22:08:03–22:08:15
+  （匯出那一刻）。這類時間只拿來和可信來源（簽到表、議程、使用者給的時間）比對、超過門檻就標待審，永遠不直接寫成事實。
+  （jci_taipei jci-minutes-web-pipeline-benchmark 2026-10-23）
 - **外部資料源過期時，下游要明確進入保守模式並把原因寫出來**，同時記錄「上游修好後多久才會生效」（節流快取）。
   （ai_trader pcr-iv-stale-feed-blocks-longs）
+- **接上既有資料源的新消費者，先查寫入者還活著**（index.json last_run、rider 清單、owner 退役紀錄）再寫；輸出帶資料年齡與
+  stale 旗標，研究／報告類只標示不擋（交易決策類照上一條進保守模式）。門檻取該市場最長休市日數（台股農曆年約 10 天），
+  否則長假被誤報、收集器停掉卻靜默。只寫 pool_through 之類的截止日不算新鮮度標示。（ai_trader first_touch 1ada5c877：
+  1 分 K 收集器 10-20 已退役，MAX_POOL_AGE_DAYS=10，報告 pool_age_days 9）
 - **非預期斷電（Kernel-Power 41）後，斷電前幾分鐘寫的檔案可能大小正常但內容全是零**：只寫一次的資料檔要記 sha256
   journal，斷電後全檔比對找壞檔，壞檔改名 `.CORRUPT-bak` 重抓，不要信任檔案存在或大小。預防：原子寫入在 rename 前要先 fsync——寫 `.part`、`flush()` + `os.fsync()`，
   再 `replace`；少了 fsync，斷電時 rename 已落盤而資料沒有。附一個重算 sha256 對 journal 的 verify 指令。
-  （ai_trader v30：3,238 檔壞 2；commit ee5e6e523 matrix_data_pull._save）
+  修一個寫入再 rename 的 helper 時，要全 seat 搜 `os.replace`／`Path.replace`／`os.rename`，把每個複本都修掉；
+  優先修「檔案已存在就跳過」的只寫一次存檔（斷電留下的全零檔永遠不會被重寫，來源只給當期就永久遺失），
+  每個 tick 重寫的狀態檔下一次寫入就自癒，熱路徑可不加 fsync 省延遲。
+  （ai_trader v30：3,238 檔壞 2；commit ee5e6e523 matrix_data_pull._save；8b234c3ac 再修同 seat 三個複本）
+- **斷電後 append-only 的 JSONL／log 尾巴會留一段 NUL，下一列直接黏在 NUL 後面**：讀取端每列先 strip `' \t\r\n\x00'`，
+  仍 `json.loads` 失敗的那列跳過（計數，不 raise）；寫入端 append 前先讀最後一個位元組，不是 `\n` 就先補一個換行，
+  新列才不會黏在殘骸上。例外：設計釘住的 gate 檔讀取端不得默默改寬容，要另案提出。
+  （ai_trader 2026-10-27：17,065 個 runtime 檔有 7 個帶 NUL 段，3 個 JSONL 有有效列黏在後面；commit 00d2d65f8）
 - **伺服器看不懂的參數會靜默退回預設值，不會報錯**：例如 TPEx `date=yyyy/mm` 不解析就回當月資料。新接的查詢要用
   兩個不同參數值比對回應確實不同；盤中檔的第一列也可能是前一日收盤（TWSE 5 秒檔 09:00:00 列），差異集中在第一個
   檢查點時先查這列。（ai_trader ipo-auction-source、v30）
+- **兩個來源互相同步，逐項以最新狀態與時間戳判定，兩個方向都要寫，衍生檔跟著來源的刪除走。** 判定順序
+  搬移→重複→新增→刪除；哪邊是「最新」看那一項的修改時間，不是整份檔案誰新。一個方向停了幾天的真正原因是
+  「以為寫不進去」（Chrome 的加密書籤檔）——「做不到」要先在對方同款機制上實測過才算（Edge 前一天已驗證：移開加密副本就讀明文檔），
+  沒測過的不可能是 UNKNOWN 不是限制。來源項目被刪，對應的衍生檔（下載資料夾、快取）要搬進 `_delete/<日期>-…`，永久刪除留給 operator。
+  找孤兒衍生檔用帳號名或編號**完全比對**，名稱片段配對（`karina`、`twice`）會把舊資料夾誤判成還有來源。
+  （ai_metadata 2026-10-27：Chrome 佇列 144 筆＝移除 23／新增 42／去重 75／空夾 4，commit 5d213312 58 測試；
+  `__beauty` 兩個孤兒夾 1,934 檔搬到 `P:\_delete\2026-10-26-deleted-bookmarks\`）
+- **衍生儲存（對照頁、快取、索引、分享包）不得比來源大；每次寫出完整輸出前先問「目的地是否已持有同一份」。**
+  同一張完整輸出寫兩份（一份進目的地、一份留在對照資料夾）、被換掉的舊版無上限累積、試跑檔與過期的分享壓縮檔沒人回收，
+  一個本該不到 1 GB 的索引夾就長到 25 GB。規則：對照頁只留裁切／縮圖和指向目的地的路徑或 sha256，完整輸出只寫目的地一份；
+  被取代的版本與過期分享包搬進 `_delete/<日期>-…`（永久刪除留給 operator）；每批收尾量 `du` 衍生夾與來源夾的比值寫進回報，
+  衍生夾比來源大就是缺陷不是正常。（ai_photo 2026-10-27：`_photo_index` 25 G 中 review\compare 17 G＝_pick 副本 7.31 G
+  ＋_prev 7.40 G＋試跑 1.09 G，share 7.5 G；抽 5 張 sha256 全同；commit bbd9d92／039fc79，57 測試）
 
 ## CPU 配額與批次負載
 
@@ -126,5 +168,10 @@ parent_skill: ztm-verify-before-done
 
 - **判斷死碼要把子程序派工（`python -m pkg.mod`、`scripts/x.py` 字串）、排程 rider 命令、launcher、以及把原始碼當文字
   讀的測試都算進根節點**，只看 import 圖會把正在跑的東西列進清理名單。（ai_trader subprocess-dispatch-breaks-import-graph）
+- **反過來，判決後退役研究腳本時不能把測試當根節點**：reachability 工具把 tests/ 當 root，所以只剩自己測試在 import
+  的腳本會被算成 reached（ai_trader v29/v30 兩條 NOT_QUALIFIED 線各多留了 4 天）。真正的檢查是「除了自己的測試，還有誰
+  import 或 dispatch 它」為空：為空就退役，腳本與它的測試同一個 commit 拿掉，收據與 raw 資料留在 runtime；擁有資料
+  store 的 puller（含 `verify` 子命令）不隨研究線退役。（ai_trader 7b9b59da0：6 檔 −1,921 行、unreached 15→13；
+  sinopac-trading-system/scripts/code_reachability.py；memory v30-cash-intraday-leadlag-20261024）
 - **控制第三方軟體先找它的設定語意（登錄檔／設定檔），不要先做 UI 模擬**；例：PotPlayer 切檔變大小是
   `ScreenFitBySize`。（hub-root potplayer-fixed-window-registry）

@@ -56,6 +56,7 @@
     "_skill/engines/cursor-fames-hot-refresh.py",
     "_skill/engines/cursor_bootstrap_pack.py",
     "_skill/engines/f1s-transcript-audit.py",
+    "_skill/engines/f1s_daily.py",
     "_skill/engines/f1s_live.py",
     "_skill/engines/fames-immediate-apply.py",
     "_skill/engines/fames_execution_evidence.py",

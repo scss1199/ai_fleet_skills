@@ -38,6 +38,8 @@ parent_skill: aex-agent-evolution
 
 - 動手前先問要不要寫新東西，依序：重用現有程式 → 標準函式庫 → 原生功能 → 已安裝套件 → 最後才自己寫。
   精簡但不省驗證、安全與錯誤處理。
+  重用的界線：新資料源若只是替別的已登記假設會讀的 store 加欄位（例 leadlag 把每個已存市場都當 leader），要另開
+  自己的 store，否則設計釘住的輸入會默默改變（ai_trader 2026-10-28：24 個世界指數進 `runtime/research/world_macro`）。
 - 改碼前先全域搜尋既有實作與用法（brownfield）；未搜尋即改碼 PROOF 擋（class `code_change`，
   Lean `ClaimContract.code_change_needs_prior_search`）。scratchpad 腳本不算。
 - 精準修改：只動要改的行，旁邊的程式一行都不碰。
@@ -59,6 +61,15 @@ parent_skill: aex-agent-evolution
 - 「最後才自動化」的門檻：同一件手工操作做到第三次才寫成腳本或技能；寫之前先查別的座位做過沒：
   `python %AI_WORKSPACE%\_skill\engines\f1s-harvest.py tools "<關鍵字>"`（全艦工具與技能）、`api <service>`（外部 API）
   （反向學習自 ai_metadata aex-mtm-loop-metadata）。
+- 爆紅工具的接法（使用者從 IG／LINE 轉來的 GitHub 技能包、agent 工具、瀏覽器）：①先認正牌：同名 repo 常不只一個，
+  `gh repo view <owner>/<repo> --json licenseInfo,createdAt,stargazerCount,pushedAt`（或 search API）看授權、建立日、星數，
+  沒授權或認不出正牌就停在這一步；②只讀不裝：`gh api -H "Accept: application/vnd.github.raw" repos/<owner>/<repo>/contents/<path>`
+  讀腳本本體，不裝 plugin、不跑它的安裝腳本（`irm … | iex`、`curl … | sh` 一律不執行）；③查本座位有沒有同等功能
+  （`f1s-harvest.py tools`、grep）；④沒有就用自己的資料把方法重做成本地模組＋測試，接進既有報告當 report block
+  （fail-open，不是 gate），模擬結果一律標「模擬不是勝率」；⑤真的要裝二進位或套件才能比（無頭瀏覽器、索引器）：
+  先過 SkillSpector／供應鏈檢查，只裝到專案範圍（不改 ~/.claude 全域設定，那要使用者授權），語意／LLM pass 不得
+  動用付費模型；換掉現役工具只憑同一批輸入的 A/B 量測（成功數不低於現役、記憶體或 token 差距寫進收據），量不到或
+  輸的就記下數字與不採用原因，不換。（反向學習自 ai_trader first-touch-sim-20261028，commit 5f4d0a02c）
 
 ## 工具與 context 紀律（kyloren_bot b7b4e052、bac266b7、053de955）
 

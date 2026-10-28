@@ -99,6 +99,13 @@ operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是�
 429 自動停用該 provider 15 分鐘，實測 rpd 用完就在呼叫前跳過。`python _skill\engines\api_budget.py show` 看今日用量，
 `learn --write` 從 429 回推每個 provider 的實測上限；背景標註不必等 key-health 的 ok／quota0 才知道額度沒了。
 
+## 並行派發（operator 2026-10-27「時間最貴…叫不同的免費模型去執行足夠簡單的任務」）
+
+一批互不依賴、格式固定的簡單工作（分類、抽取、改寫、逐條判讀）不要一條一條叫，用
+`_llm.Pool().fan_out([messages, ...], task="extract", jsonmode=True, workers=4)`：每條工作輪流分給不同的免費供應者同時跑
+（各家額度並行消耗），失敗或 jsonmode 回散文的那條自動退回 `chat_for(task)`；回傳順序同輸入。永不派 ollama
+（本機模型可能落在 A770，斷電紅線）。結果仍是草稿：關鍵事實回原文核對。
+
 ## 規則
 
 - 結果是草稿：數字、日期、費率、法規這類會被拿來做決定的事實，要回到抓下來的原文或官方網址核對，並在回覆附來源網址；核對不了就寫 UNKNOWN。
@@ -112,6 +119,13 @@ operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是�
   FinMind 新聞無 token 400、Google News RSS 只存約 2 天。
 - 抓到的「內文」只是裸網址或登入牆殼（IG/Threads 登出頁的選單字）不算讀過：長度門檻擋不住它，要比對頁面是否含
   真內容；讀不到就改用內建瀏覽器 `get_page_text` 或標 UNKNOWN（ai_trader owner-links 2026-10-12：73 項裡 63 項是殼）。
+- 免金鑰世界總經第 1 層來源（ai_trader 2026-10-28 實測，`scripts/pull_world_macro.py`，commit ff5159dc6，332 區 2,353 序列）：
+  FRED `fredgraph.csv?id=<id>`（一次一個 id，多 id 回 zip）、IMF WEO DataMapper `api/v1/<indicator>`（全經濟體 1980–2031）、
+  World Bank api v2（`per_page=20000`，一指標一頁）、OECD SDMX（CLI 用 `DSD_STES@DF_CLI`，`format=csvfilewithlabels`）、
+  BIS stats api v2（`WS_CBPOL` 政策利率 36 區含 TW）、ECB data-api（`FM.B.U2.EUR.4F.KR.MRR_FR.LEV`）。stooq 對每個代號都回
+  robots 頁，不要路由過去。這些不需金鑰，`f1s-harvest.py api` 查不到是正常的（它只登記金鑰／API host）。
+- 固定撈腳本的 User-Agent 用誠實的工具名（例 `ai_trader-research-pull/1.0`），不要裝成瀏覽器：只有 OS 字串、沒有其他瀏覽器
+  標頭的假瀏覽器 UA 讓 FRED 讀取逾時、IMF 回 403，誠實 UA 兩者都 2 秒內回（ai_trader 2026-10-28，10 組 UA×端點）。
 
 ## 2026-10-15 修掉的搜尋問題（ai_ut、ai_trader 實用回報）
 
