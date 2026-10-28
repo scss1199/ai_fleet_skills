@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261028T095355Z-33329332",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Fleet curator ai_darkhero, authorized repair: your earlier manual sync ran under the default `python` (3.10.11); the HubClock rider uses C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe. Re-run the rider's command with that interpreter's console twin and report the end of its output. Change no other file.\n1. Run: & \"C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" C:\\ai_workspace\\ai_altos\\scripts\\altos_fleet_sync.py sync --node ai_altos  (capture stdout+stderr to a variable; print the exit code; then print ONLY the LAST 2500 characters of the combined output, so the final \"fames\" and \"publish\" fields are visible).\n2. Print the full content of C:\\ai_workspace\\_registry\\fames-immediate-apply.json.\n3. Run: & \"C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" C:\\ai_workspace\\_skill\\engines\\mtm-fleet-skill-github.py receipt  and print it.\n4. Print `git -C C:\\ai_workspace\\_skill\\ai_fleet_skills log -3 --format=%h_%ci_%s`.\nReply raw lines only, prefixed ALTOS-312:.\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-10-28T09:53:55+00:00",
+  "expires_at": "2026-10-29T09:53:55+00:00"
+}
