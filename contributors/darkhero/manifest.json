@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-10-28T01:53:23Z",
-  "manifest_sha": "f7ca728c5dba5d38",
+  "generated_at": "2026-10-28T02:32:32Z",
+  "manifest_sha": "b5026915c6064c4b",
   "required": [
     "fames",
     "independent-review",
@@ -581,12 +581,12 @@
     },
     {
       "name": "zh-tts-narrate",
-      "sha": "5178875462514349",
+      "sha": "4408e0d615a3f7dd",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "c6b9a245b21150109ed97ca133228adc790261320fc4591577e18024b99301d8",
+      "package_sha": "704855e1735a140a1633627bc2678427b3ea9a2d9096ad4a1b9dec0e94bb778f",
       "files": {
-        "SKILL.md": "517887546251434909c9b2542aaf26c6f8561c5d23ae3b06216398e72e8da6bd"
+        "SKILL.md": "4408e0d615a3f7dd8a6550bab6326dcad8c30aa1ae02ea688f37d6533c696735"
       }
     },
     {
