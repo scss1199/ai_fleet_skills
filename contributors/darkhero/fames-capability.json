@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "4cd6c4f2f40dde1d72c95b0136e576b587d2cca78832b1db6d04db8b5013a513",
   "runner_state": "armed",
-  "observed_at": "2026-10-28T16:46:14.684899+00:00",
+  "observed_at": "2026-10-28T17:16:28.936438+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,6 +356,12 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
+        "agent": "ai_metadata",
+        "surface": "claude",
+        "observed_at": "2026-10-29T01:09:45+08:00",
+        "receipt_sha256": "60400fb687f38b2c25082a01cde6b2d463bd6b07b6c94a5906b8bea407f271f6"
+      },
+      {
         "agent": "ai_nuwa",
         "surface": "claude",
         "observed_at": "2026-10-29T00:09:19+08:00",
@@ -368,10 +374,16 @@
         "receipt_sha256": "091036d9c472beb3a6b66fdd9f3e17c86952cb4b11c7f4a4738ab4e207e3be14"
       },
       {
-        "agent": "ai_darkhero",
+        "agent": "ai_trader",
         "surface": "claude",
-        "observed_at": "2026-10-29T00:46:08+08:00",
-        "receipt_sha256": "a717daec95ed665c92aa4a7ae38f19f8e89fb02d514aac53f64907b51dc1ed5b"
+        "observed_at": "2026-10-29T01:05:06+08:00",
+        "receipt_sha256": "016e71e2478d49fc94f34475fb527cec77f58b7616b05d7c1661342f27042311"
+      },
+      {
+        "agent": "ai_theater",
+        "surface": "claude",
+        "observed_at": "2026-10-29T01:04:30+08:00",
+        "receipt_sha256": "b7fcd8ed5bf1ad3990ea4814d8dfe255391ae874559d402e8ca01b8918489cb2"
       },
       {
         "agent": "ai_darkhero",
@@ -382,8 +394,8 @@
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-10-29T00:07:13+08:00",
-        "receipt_sha256": "0a216995f69729a781796f8060a5dd14cd4355a1924982823dcdba5449c3b65e"
+        "observed_at": "2026-10-29T00:49:34+08:00",
+        "receipt_sha256": "e0c93666875769f14dab27ea1aca070a72033982f637f345cafc067495506dd5"
       },
       {
         "agent": "ai_ziyaoastro",
@@ -414,6 +426,12 @@
         "surface": "claude",
         "observed_at": "2026-10-29T00:19:49+08:00",
         "receipt_sha256": "68c13313eec3d76349fa6b6788cc560cae5f45684f814c9f1c1098c01000878a"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-10-29T01:15:27+08:00",
+        "receipt_sha256": "ea48340e132434668c923ad12bbaff857d72babf1286e6b2426c26faa5b0f855"
       },
       {
         "agent": "ai_darkhero",
