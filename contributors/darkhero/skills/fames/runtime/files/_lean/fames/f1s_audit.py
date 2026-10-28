@@ -789,6 +789,19 @@ ELEMENTS = [
     {"id": "EVO-trader-checkout-path-state-leak", "element": "ai_trader cockpit_ensure: a failure only in one checkout is leaked path state (.env, owner stop file), not logic", "verdict": "REFINE",
      "requires": None, "detail": "verified 2026-10-28: commit 979d7a5e6 exists (3 failures reproduced in a clean worktree by adding a flag-only .env + stop file, 52 passed after pinning ENV_FILE and SIM_STOP) and memory cockpit-ensure-tests-env-leak.md exists; added to the 修 bug section of ztm-verify-before-done (one place, not duplicated into mtm-mto-first); behaviour is never loosened, so no red line weakened",
      "check_text": ("skill_verify", "只在某一個 checkout 紅、乾淨 worktree 綠的失敗是路徑狀態")},
+    # f1s-evolve 2026-10-29: ai_trader proposals "語音轉文字四條實測規則" + "六條通用資料／研究規則"
+    {"id": "EVO-long-audio-stt-dedupe-chunk-diarize", "element": "ai_trader 2026-10-29 4h restaurant recording: PCM-diff same-source check, parallel whisper throughput, chunk+latest-first, offline wespeaker + ward clustering", "verdict": "REFINE",
+     "requires": None, "detail": "mtm-api-pool-offload 規則: evidence scratchpad stt_seg.py/run_all.py/diar.py (linkage='ward' branch present) and full/run_log.jsonl exist, transcript_full.txt 208,787 B; the proposal's 'about 3x realtime aggregate' was corrected to the run_log measure (24 chunks, ~14,493 s audio in ~2.5 h, per-chunk wall 234-6,992 s) and the batch is tied to the existing load_grant rule; gender-by-pitch kept as 推定 only",
+     "check_text": ("skill_pool", "max|A−B|=0 就是同源")},
+    {"id": "EVO-watch-growing-file-not-run-log", "element": "ai_trader 2026-10-29: watchdog on a per-chunk run_log reported stale for 25 min while 8 workers were writing", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls 時間與資料新鮮度: watch the file that grows every segment (JSONL/heartbeat), not the per-block run_log; same evidence run_log.jsonl",
+     "check_text": ("skill_runtime", "看守長任務要盯「每段都會長的檔」")},
+    {"id": "EVO-source-empty-ok-names-nan-enumeration", "element": "ai_trader v30 memory: holiday ok+0 rows, parse by name, text in numeric = NaN, API contract enumeration bounds history", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls 時間與資料新鮮度: one bullet; evidence C:/Users/sc/.claude/projects/C--ai-workspace-ai-trader/memory/v30-cash-intraday-leadlag-20261024.md line 20 (shioaji lists only live TXO, 1 login + 2 kbars); proposal rule 1 (09:00:00 row = previous close) already present in the 伺服器看不懂的參數 bullet, no text added for it",
+     "check_text": ("skill_runtime", "「ok、0 列」不等於完成")},
+    {"id": "EVO-trader-universe-holdout-seat-specific", "element": "ai_trader rules 5+6: count the ranked universe before blaming it (v14 1,127 names, K=3 + 5,000 cap); split explore/holdout before scanning, close the line if nothing >=0.05 same-sign", "verdict": "INFO",
+     "requires": None, "detail": "rejected as seat-specific: both are ai_trader research-lane methodology already recorded in its own memory matrix-lane-v21-two-boards-20261018.md; the general part (mine the data before answering a complaint, pre-register then stop on fail) is already T1 嚴禁猜 + memory no-diagnostic-questions; thresholds 0.05 / K / 2023-07 are trading parameters, not F1S text; no text added",
+     "check_text": ("skill_runtime", "API 列得到的才算存在")},
 ]
 
 
