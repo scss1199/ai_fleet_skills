@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261028T100355Z-de6727ce",
+  "host": "scar3",
+  "started_at": "2026-10-28T10:06:01+00:00",
+  "kind": "converge",
+  "ok": true,
+  "seat": "ai_scar3",
+  "rc": 0,
+  "tail": "-LOADED-POPULATION-SCALAR']}, {'capability_id': 'background-execution-enforcement', 'state': 'PASS', 'validator_exit': 0, 'positive_control': True, 'negative_control_rejected': True, 'caller_backed': True, 'evidence_refs': ['case://C-BACKGROUND-BASE', 'case://C-BACKGROUND-CHILD-FLAGS', 'case://C-BACKGROUND-DETACHED-ONLY', 'case://C-BACKGROUND-PROMPT', 'case://C-BACKGROUND-READBACK']}, {'capability_id': 'hardware-compute-scheduling', 'state': 'PASS', 'validator_exit': 0, 'positive_control': True, 'negative_control_rejected': True, 'caller_backed': True, 'evidence_refs': ['case://C-COMPUTE-BASE', 'case://C-COMPUTE-BACKGROUND-P-CORE', 'case://C-COMPUTE-URGENCY-EVIDENCE', 'case://C-COMPUTE-AUTHORITY', 'case://C-COMPUTE-OVER-CAP', 'case://C-COMPUTE-WORKERS', 'case://C-COMPUTE-EXCLUSIVE-AUTH', 'case://C-COMPUTE-READBACK']}], 'evidence_refs': ['C:\\\\ai_workspace\\\\_skill\\\\fleet-skills\\\\fames\\\\bundle-manifest.json', 'C:\\\\ai_workspace\\\\_skill\\\\fleet-skills\\\\fames\\\\references\\\\cases.json'], 'execution_adoption': {'runtime_state': 'PASS', 'phase_proof_state': 'PASS', 'base_proof_state': 'PASS', 'native_state': 'UNKNOWN', 'native_events': [], 'runtime_release_sha256': '96cbcd437b2c613f3d1cdb634458318efd5f09e441bd09642e6e93835f5c84b3'}, 'capability_evidence_scope': 'local_validator_cases_not_native_lifecycle'}, 'publication': {'ok': True, 'state': 'PASS', 'changed': True, 'commit': 'b216845806bd9c033b8b137debfaf57ce39c0814', 'errors': [], 'clone_behind': True}, 'errors': []}, 'errors': []}\n",
+  "finished_at": "2026-10-28T10:11:51+00:00"
+}
