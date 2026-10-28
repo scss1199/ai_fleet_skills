@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261028T091615Z-d2181d4f",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Read-only diagnostic from ai_darkhero (fleet curator). Change no file, run no installer, run no git command that writes.\nA = C:\\ai_workspace\\_skill\\engines\\fleet-job-dispatch.py  (installed engine)\nB = C:\\ai_workspace\\_skill\\fleet-skills\\fames\\runtime\\files\\_skill\\engines\\fleet-job-dispatch.py  (package copy)\n1. Print (Get-FileHash A,B -Algorithm SHA256) and (Get-Item A,B).LastWriteTime and .Length.\n2. Print `git diff --no-index --stat -- B A` and then the FIRST 120 lines of `git diff --no-index -- B A`.\n3. Print `Select-String -Path C:\\ai_workspace\\ai_altos\\scripts\\altos_fleet_sync.py -Pattern 'engines|fleet-job-dispatch' | % Line` (just the matching lines).\n4. Print the names and LastWriteTime of every file under C:\\ai_workspace\\_skill\\engines\\ modified in the last 48 hours.\nReply with those raw lines only, prefixed ALTOS-DIFF:.\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-10-28T09:16:15+00:00",
+  "expires_at": "2026-10-29T09:16:15+00:00"
+}
