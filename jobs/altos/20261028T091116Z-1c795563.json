@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261028T091116Z-1c795563",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Read-only diagnostic from ai_darkhero (fleet curator). Change no file, run no installer.\n1. Read C:\\ai_workspace\\_registry\\fames-runtime-release.json and print: state, generation, attempted_release_sha256, observed_at, and for EVERY entry in errors[]: code, path, current_sha256, wanted_sha256 (one line each).\n2. For each such path, print `git -C C:\\ai_workspace status --short -- <path>` and `git -C C:\\ai_workspace log -1 --format=%h_%ci -- <path>`.\n3. Print `git -C C:\\ai_workspace rev-parse --abbrev-ref HEAD` and `git -C C:\\ai_workspace status --short | Measure-Object -Line`.\nReply with those raw lines only, prefixed ALTOS-RUNTIME:.\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-10-28T09:11:16+00:00",
+  "expires_at": "2026-10-29T09:11:16+00:00"
+}
