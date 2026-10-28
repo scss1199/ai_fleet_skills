@@ -72,6 +72,10 @@ parent_skill: ztm-verify-before-done
   （jci_taipei jci-minutes-web-pipeline-benchmark 2026-10-23）
 - **外部資料源過期時，下游要明確進入保守模式並把原因寫出來**，同時記錄「上游修好後多久才會生效」（節流快取）。
   （ai_trader pcr-iv-stale-feed-blocks-longs）
+- **接上既有資料源的新消費者，先查寫入者還活著**（index.json last_run、rider 清單、owner 退役紀錄）再寫；輸出帶資料年齡與
+  stale 旗標，研究／報告類只標示不擋（交易決策類照上一條進保守模式）。門檻取該市場最長休市日數（台股農曆年約 10 天），
+  否則長假被誤報、收集器停掉卻靜默。只寫 pool_through 之類的截止日不算新鮮度標示。（ai_trader first_touch 1ada5c877：
+  1 分 K 收集器 10-20 已退役，MAX_POOL_AGE_DAYS=10，報告 pool_age_days 9）
 - **非預期斷電（Kernel-Power 41）後，斷電前幾分鐘寫的檔案可能大小正常但內容全是零**：只寫一次的資料檔要記 sha256
   journal，斷電後全檔比對找壞檔，壞檔改名 `.CORRUPT-bak` 重抓，不要信任檔案存在或大小。預防：原子寫入在 rename 前要先 fsync——寫 `.part`、`flush()` + `os.fsync()`，
   再 `replace`；少了 fsync，斷電時 rename 已落盤而資料沒有。附一個重算 sha256 對 journal 的 verify 指令。

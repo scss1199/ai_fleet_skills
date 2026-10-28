@@ -65,6 +65,33 @@ def is_curator(cwd: str) -> bool:
     return seat_of(cwd) == curator()
 
 
+def _session_cwd() -> str | None:
+    """Folder of the Claude Code session running this command (nearest claude-code ancestor), or None.
+
+    The cwd alone can be faked by `cd C:\\ai_workspace`: on 2026-10-28 a jci_taipei session closed its own orders
+    #4 and #5 that way, minutes after answering them, before the curator had reviewed either."""
+    try:
+        import psutil  # noqa: WPS433
+        for proc in psutil.Process(os.getpid()).parents():
+            try:
+                if proc.name().lower().startswith("claude") and "claude-code" in (proc.exe() or "").lower():
+                    return proc.cwd()
+            except (psutil.Error, OSError):
+                continue
+    except Exception:  # noqa: BLE001 - no psutil or no access: fall back to the cwd check alone
+        return None
+    return None
+
+
+def _require_curator(cwd: str, what: str) -> dict:
+    """Both the command's cwd and the session it runs in must be the curator's; returns the audit record."""
+    session = _session_cwd()
+    if not is_curator(cwd) or (session is not None and not is_curator(session)):
+        raise PermissionError(f"only {curator()} {what} (cwd resolves to {seat_of(cwd)}, "
+                              f"session to {seat_of(session) if session else 'none'})")
+    return {"cwd": os.path.abspath(cwd), "session": session}
+
+
 def _path(seat: str) -> str:
     return os.path.join(ORDERS_DIR, f"{seat}.json")
 
@@ -117,8 +144,7 @@ def _hub_rel(path: str) -> str:
 
 def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None = None) -> dict:
     cwd = cwd or os.getcwd()
-    if not is_curator(cwd):
-        raise PermissionError(f"only {curator()} issues orders (cwd resolves to {seat_of(cwd)})")
+    _require_curator(cwd, "issues orders")
     if seat == curator():
         raise ValueError("an order corrects another cwd, not the curator")
     if seat not in _projects._load():
@@ -158,14 +184,14 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
 
 def _curator_change(seat: str, n: int, cwd: str | None, status: str, note: str = "") -> dict:
     cwd = cwd or os.getcwd()
-    if not is_curator(cwd):
-        raise PermissionError(f"only {curator()} reopens or closes orders")
+    who = _require_curator(cwd, "reopens or closes orders")
     doc = load(seat)
     order = _find(doc, n)
     if status == "open" and order.get("answer"):
         order.setdefault("history", []).append(order.pop("answer"))
     order["status"] = status
     order[f"{status}_at" if status == "closed" else "reopened_at"] = _now()
+    order["closed_from" if status == "closed" else "reopened_from"] = who
     if note:
         order["note"] = note
     _save(seat, doc)

@@ -759,6 +759,9 @@ ELEMENTS = [
     {"id": "EVO-graphify-open-token-eval-not-installed", "element": "ai_darkhero 2026-10-28 F1S proposal: evaluate Graphify (codebase knowledge graph) to cut per-seat session-open tokens vs mtm-github-ops snapshot + audit-session-tax.py --replay", "verdict": "INFO",
      "requires": None, "detail": "step ① done this tick, nothing installed: canonical repo is Graphify-Labs/graphify (Apache-2.0, created 2026-04-03, 137,053 stars 2026-10-28, PyPI name graphifyy); code pass is local tree-sitter with 0 LLM credits, but the docs/media semantic pass uses the assistant's model (paid at runtime unless a free-pool key is configured = T1 free-runtime) and `graphify install` registers a user-scope skill under ~/.claude (T1 授權; `--project` scope exists); README sells a Cloud trial, ignore it; acceptance stays as proposed (same seat, same task --replay, open tokens clearly lower, result unchanged) and the replay is a curator task outside this tick, not an F1S text change",
      "check_text": ("skill_mto", "只裝到專案範圍")},
+    {"id": "EVO-new-consumer-source-freshness", "element": "ai_trader 2026-10-28 F1S proposal: first_touch was built on a 1-min K cache whose collector its owner retired 10-20; the report only said pool_through, so staleness was silent", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls 時間與資料新鮮度: a new consumer of an existing source checks the writer is alive first, emits age + stale flag (report-only for research, conservative mode stays for trading), threshold = the market's longest closure (TW Lunar New Year ~10 days); evidence ai_trader 1ada5c877, src/research/first_touch.py MAX_POOL_AGE_DAYS",
+     "check_text": ("skill_runtime", "接上既有資料源的新消費者，先查寫入者還活著")},
 ]
 
 
