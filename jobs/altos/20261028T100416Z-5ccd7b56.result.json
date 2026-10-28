@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261028T100416Z-5ccd7b56",
+  "host": "altos",
+  "started_at": "2026-10-28T10:07:01+00:00",
+  "kind": "converge",
+  "ok": false,
+  "seat": "ai_altos",
+  "rc": 1,
+  "tail": "FAIL {'ok': False, 'changed': False, 'host': 'ai_altos', 'heartbeat': {'schema': 1, 'host': 'ai_altos', 'at': '2026-10-28T10:07:01.612276+00:00', 'outcome': 'error', 'package_sha': '70f2d7e0cd8354ac1184dfdc9d3915f2795f40ceffd6855bf3ccce8996b22b6e', 'authority': 'https://raw.githubusercontent.com/scss1199/ai_fleet_skills/main/contributors/darkhero', 'rider_state': 'armed', 'rider_detail': 'fames-converge @15m', 'capability_state': 'UNKNOWN', 'capability_set_sha': None, 'validator_set_sha': None, 'errors': []}, 'rider': {'ok': True, 'host': 'ai_altos', 'rider': 'armed', 'detail': 'fames-converge @15m', 'changed': False, 'proposal': 'C:\\\\ai_workspace\\\\_skill\\\\engines\\\\register-rider.py add HubClock fames-converge \"C:\\\\Users\\\\USER\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\pythonw.exe C:\\\\ai_workspace\\\\_skill\\\\fleet-skills\\\\fames\\\\scripts\\\\fames_fleet.py converge --workspace C:\\\\ai_workspace --host ai_altos --arm\" --cadence 15m --priority 90 --desc \"FAMES self-convergence: verified GitHub generation pull + heartbeat\"', 'errors': []}, 'capability': {'ok': False, 'state': 'UNKNOWN', 'errors': ['follow did not pass']}, 'errors': []}\n",
+  "finished_at": "2026-10-28T10:10:20+00:00"
+}
