@@ -16,6 +16,7 @@ CLI (issue / reopen / close only from the curator's cwd, ai_darkhero or the hub 
   python curator_orders.py issue <seat> --title T --do TEXT [--freeze HUB_PATH]... [--forbid CMDLINE_PART]...
   python curator_orders.py list [<seat>]
   python curator_orders.py answer <seat> <n> --evidence PATH [PATH...] | --cannot REASON
+  python curator_orders.py claim <seat> <n> [--release] [--session ID]   (owner: the one conversation pushed to answer)
   python curator_orders.py reopen <seat> <n> --note TEXT
   python curator_orders.py close <seat> <n>
 The cwd check keeps a seat from issuing or closing by accident; it is not a sandbox.
@@ -164,7 +165,23 @@ def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None 
     return order
 
 
-def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = None) -> dict:
+def _session_id(session: str | None = None) -> str:
+    """The Claude conversation running this command (CLAUDE_CODE_SESSION_ID), or "" outside one."""
+    return str(session if session is not None else os.environ.get("CLAUDE_CODE_SESSION_ID") or "").strip()
+
+
+def owner_of(order: dict) -> str:
+    return str((order.get("owner") or {}).get("session") or "")
+
+
+def owned_by_other(order: dict, session_id: str) -> bool:
+    """True when another conversation owns this order: it reads the order but is not pushed to answer it."""
+    owner = owner_of(order)
+    return bool(owner) and bool(session_id) and owner != session_id
+
+
+def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = None,
+           session: str | None = None) -> dict:
     cwd = cwd or os.getcwd()
     if bool(evidence) == bool(reason.strip()):
         raise ValueError("answer with --evidence PATH... or --cannot REASON, not both")
@@ -175,9 +192,36 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
     order = _find(doc, n)
     if order["status"] != "open":
         raise ValueError(f"order #{n} is {order['status']}, not open")
+    sid = _session_id(session)
     order["status"] = "done" if evidence else "cannot"
-    order["answer"] = {"at": _now(), "from": os.path.abspath(cwd),
+    order["answer"] = {"at": _now(), "from": os.path.abspath(cwd), "session": sid,
                        "evidence": [os.path.abspath(os.path.join(cwd, p)) for p in evidence], "reason": reason.strip()}
+    if sid and not owner_of(order):
+        # The answering conversation owns the order from now on: when the curator reopens it, only that
+        # conversation is pushed to finish it (jci_taipei 2026-10-28: #5 reopened pushed every jci_taipei session).
+        order["owner"] = {"session": sid, "from": os.path.abspath(cwd), "at": _now(), "by": "answer"}
+    _save(seat, doc)
+    return order
+
+
+def claim(seat: str, n: int, release: bool = False, cwd: str | None = None, session: str | None = None) -> dict:
+    """Bind an open order to one conversation (or release it). The owning conversation, or the curator, may change
+    an existing owner; any conversation may claim an unowned order. Freeze / forbid are unaffected."""
+    cwd = cwd or os.getcwd()
+    sid = _session_id(session)
+    if not sid:
+        raise ValueError("no session id: run inside a Claude conversation (CLAUDE_CODE_SESSION_ID) or pass --session")
+    doc = load(seat)
+    order = _find(doc, n)
+    if order["status"] != "open":
+        raise ValueError(f"order #{n} is {order['status']}, not open")
+    current = owner_of(order)
+    if current and current != sid and not is_curator(cwd):
+        raise PermissionError(f"order #{n} is owned by conversation {current[:8]}; only it or {curator()} may change that")
+    if release:
+        order.pop("owner", None)
+    else:
+        order["owner"] = {"session": sid, "from": os.path.abspath(cwd), "at": _now(), "by": "claim"}
     _save(seat, doc)
     return order
 
@@ -206,12 +250,17 @@ def close(seat: str, n: int, cwd: str | None = None) -> dict:
     return _curator_change(seat, n, cwd, "closed")
 
 
-def open_orders(seat: str) -> list[dict]:
-    return [o for o in load(seat)["orders"] if o.get("status") == "open"]
+def open_orders(seat: str, session_id: str | None = None) -> list[dict]:
+    """The seat's open orders; with `session_id`, only those this conversation must answer (unowned or its own)."""
+    orders = [o for o in load(seat)["orders"] if o.get("status") == "open"]
+    if session_id is None:
+        return orders
+    return [o for o in orders if not owned_by_other(o, session_id)]
 
 
-def injection(seat: str) -> str:
-    """Context text for a session in `seat`: its open orders, or the curator's review queue."""
+def injection(seat: str, session_id: str = "") -> str:
+    """Context text for a session in `seat`: its open orders, or the curator's review queue. An order another
+    conversation owns is one line (read it, do not answer it); the owner and unowned orders get the full text."""
     if seat == curator():
         queue = review_queue()
         if not queue:
@@ -226,9 +275,12 @@ def injection(seat: str) -> str:
              "先處理，再做其他事："]
     for o in orders:
         extra = "".join(f" [{k}: {', '.join(o[k])}]" for k in ("freeze", "forbid") if o.get(k))
-        lines.append(f"#{o['n']} {o['title']}: {o['do']}{extra}")
+        if owned_by_other(o, session_id):
+            lines.append(f"#{o['n']} {o['title']}: 由對話 {owner_of(o)[:8]} 負責中，本對話讀過即可，不要 answer、不要停工{extra}")
+        else:
+            lines.append(f"#{o['n']} {o['title']}: {o['do']}{extra}")
     lines.append(f"回報: python {HUB}/_skill/engines/curator_orders.py answer {seat} <n> --evidence <path> "
-                 "| --cannot \"<原因>\"")
+                 "| --cannot \"<原因>\"（answer 的對話成為該令的負責對話；接手前先 claim {seat} <n>）")
     return "\n".join(lines)
 
 
@@ -283,6 +335,11 @@ def main(argv=None) -> int:
     g = s.add_mutually_exclusive_group(required=True)
     g.add_argument("--evidence", nargs="+")
     g.add_argument("--cannot")
+    s = sub.add_parser("claim")
+    s.add_argument("seat")
+    s.add_argument("n", type=int)
+    s.add_argument("--release", action="store_true")
+    s.add_argument("--session", default=None, help="conversation id (default: CLAUDE_CODE_SESSION_ID)")
     s = sub.add_parser("reopen")
     s.add_argument("seat")
     s.add_argument("n", type=int)
@@ -299,6 +356,8 @@ def main(argv=None) -> int:
             out = {s: load(s)["orders"] for s in seats}
         elif a.cmd == "answer":
             out = answer(a.seat, a.n, a.evidence or (), a.cannot or "")
+        elif a.cmd == "claim":
+            out = claim(a.seat, a.n, release=a.release, session=a.session)
         elif a.cmd == "reopen":
             out = reopen(a.seat, a.n, a.note)
         else:

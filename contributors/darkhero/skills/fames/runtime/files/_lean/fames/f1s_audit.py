@@ -539,6 +539,11 @@ ELEMENTS = [
     {"id": "OP-f1s-governs-enforced", "element": "the four enforcement points read one order store", "verdict": "REFINE",
      "requires": None, "detail": "freeze / forbid hold until the curator closes the order; the curator's own commits are never refused; Logi Options+ is never a forbid target",
      "check_text": ("curator_orders", "def frozen_hits")},
+    # f1s-evolve 2026-10-28 (jci_taipei proposal): reopened order #5 was pushed to every jci_taipei session by run-until-done,
+    # while only the conversation that had answered it held the evidence; the others could neither answer nor say cannot.
+    {"id": "EVO-order-owner-session", "element": "a curator order is pushed to the one conversation that owns it; other conversations of the seat read it as one line and are not held", "verdict": "REFINE",
+     "requires": None, "detail": "curator_orders: the answering conversation becomes the order's owner (CLAUDE_CODE_SESSION_ID), `claim <seat> <n> [--release]` binds or frees it; open_orders(seat, session_id) and injection(seat, session_id) drop or shorten orders another conversation owns; run-until-done and claude_session_hook pass the session id; freeze / forbid unchanged (test_curator_orders::test_a_reopened_order_holds_only_its_owning_conversation)",
+     "check_text": ("curator_orders", "def owned_by_other")},
     # 2026-10-24 operator: 「一樣改 目的就是當任何對話一閒置後立刻套用」.
     {"id": "OP-f1s-live-idle-wake", "element": "an idle conversation applies an F1S upgrade or its seat's curator order the moment it lands", "verdict": "REFINE",
      "requires": None, "detail": "f1s_live.py wait runs as an asyncRewake Stop hook and exits 2 with the update text; quiet exit when the conversation turns active, a newer waiter takes over, the kill switch is off or the daily cap is hit (test_f1s_live)",
