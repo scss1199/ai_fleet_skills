@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261028T101245Z-b911c3d6",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Fleet curator ai_darkhero, authorized: run this host's own fleet-sync rider command once with the rider's interpreter, then report. Change nothing else.\n1. & \"C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" C:\\ai_workspace\\ai_altos\\scripts\\altos_fleet_sync.py sync --node ai_altos  -> print exit code and ONLY the last 1200 characters of combined output.\n2. & \"C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" C:\\ai_workspace\\_skill\\engines\\mtm-fleet-skill-github.py receipt -> print it.\n3. python -c \"import sys;print(sys.version)\" then: python -B -c \"import importlib.util,pathlib; p=pathlib.Path(r'C:\\ai_workspace\\_lean\\fames\\lean_gate.py'); s=importlib.util.spec_from_file_location('lg',p); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); print('checker_now', m.checker_now() is not None); print('binding', m.binding_status().get('all_bound'))\"  (this is the 3.10 default python; it must now work).\nReply raw lines only, prefixed ALTOS-113:.\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-10-28T10:12:45+00:00",
+  "expires_at": "2026-10-29T10:12:45+00:00"
+}
