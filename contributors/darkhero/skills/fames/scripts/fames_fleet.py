@@ -5914,6 +5914,24 @@ def arm(workspace: Path, host: str, apply: bool = False) -> dict:
     return result
 
 
+def _launch_hygiene(workspace: Path, ok) -> str:
+    """operator 2026-10-29: every host checks its cwds, sweeps residue and reports, as part of F1S sync.
+    Detached and self-throttled (fleet-hygiene.py runs once per 20 h), so the 15-min rider never waits."""
+    engine = workspace / "_skill" / "engines" / "fleet-hygiene.py"
+    if not ok or not engine.is_file():
+        return "skipped" if ok else "not-converged"
+    try:
+        log = workspace / "_registry" / "fleet-hygiene"
+        log.mkdir(parents=True, exist_ok=True)
+        out = open(log / "launch.log", "ab")
+        subprocess.Popen([sys.executable, str(engine), "run", "--apply"], stdout=out, stderr=subprocess.STDOUT,
+                         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(subprocess, "DETACHED_PROCESS", 0),
+                         close_fds=True)
+        return "launched"
+    except (OSError, subprocess.SubprocessError) as exc:
+        return f"launch-failed:{type(exc).__name__}"
+
+
 def converge(
     workspace: Path,
     host: str,
@@ -5967,6 +5985,7 @@ def converge(
         "errors": errors[:5],
     }
     _write_json_atomic(workspace / CONVERGE_DIR / f"{key}.json", heartbeat)
+    heartbeat["hygiene"] = _launch_hygiene(workspace, outcome.get("ok"))
     return {
         "ok": bool(outcome.get("ok") and capability.get("ok")),
         "changed": bool(outcome.get("changed")),
