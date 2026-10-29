@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "dc49a3f287d80bf9b257410cbfc6560961c868e5eadf9a0a886f8c9418a1ba69",
+  "package_sha": "776d28653bf79b4cabf143364498e2c38f1317e1fedfb98e528963ed26199c42",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "4cd6c4f2f40dde1d72c95b0136e576b587d2cca78832b1db6d04db8b5013a513",
   "runner_state": "armed",
-  "observed_at": "2026-10-29T04:46:04.874759+00:00",
+  "observed_at": "2026-10-29T07:09:33.376799+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,34 +353,9 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "OBSERVED_PARTIAL_POPULATION",
-    "native_events": [
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-10-29T12:13:05+08:00",
-        "receipt_sha256": "a3e645ac20e1978357b97ce3581532ca8439ff8ddb7cc96d8cd821bdb4e2636c"
-      },
-      {
-        "agent": "ai_trader",
-        "surface": "claude",
-        "observed_at": "2026-10-29T12:34:22+08:00",
-        "receipt_sha256": "5933a38da450ffa3cd1d93f7f0fdb8af869dc50cce4104800dac0d1d4d4a94c1"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-10-29T12:07:18+08:00",
-        "receipt_sha256": "51d74323f5e3e6d324d440410f79458cbd86d8b4b87bc57969d164b67224cdf1"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-10-29T12:08:34+08:00",
-        "receipt_sha256": "5d8e2f8b2606085de7a9fe2d075b5626993bef679dfbc9a6f25aea2391eb37db"
-      }
-    ],
-    "runtime_release_sha256": "88c8ff80d3c428de6083de9ce410163c576e7bf12b2d6387c5afb537cd83736f"
+    "native_state": "UNKNOWN",
+    "native_events": [],
+    "runtime_release_sha256": "ab7ac65f8e431aa027defb2ff6d3ce6e7041cf3f5e48f5e8818a666342b1de60"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
