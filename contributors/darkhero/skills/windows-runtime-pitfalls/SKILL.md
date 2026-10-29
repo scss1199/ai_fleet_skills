@@ -112,6 +112,14 @@ parent_skill: ztm-verify-before-done
   優先修「檔案已存在就跳過」的只寫一次存檔（斷電留下的全零檔永遠不會被重寫，來源只給當期就永久遺失），
   每個 tick 重寫的狀態檔下一次寫入就自癒，熱路徑可不加 fsync 省延遲。
   （ai_trader v30：3,238 檔壞 2；commit ee5e6e523 matrix_data_pull._save；8b234c3ac 再修同 seat 三個複本）
+  只寫一次的存放區出貨規範（ai_trader 44ce255ef，F1S 2026-10-29 吸收）：就地寫目標的 writer（`np.savez_compressed(目標)`、
+  `Path.write_bytes`）沒有 rename，靜態掃「寫＋rename 的函數」看不到它，斷電一樣留全零檔——只寫一次的存放區一律走同一個
+  tmp→fsync→replace helper；同一支 CLI 附 `verify` 子命令：journal 每列記 sha256，verify 全檔重算、列 mismatch／missing／unjournaled、
+  有壞檔 exit 4；掃描再加一條：對 `glob('*.npz'/'*.gz')` 且 `exists()` 就跳過的存放區，同模組必須有 verify
+  （範本 sinopac-trading-system/tests/test_fsync_before_rename.py＋test_pull_fx_ticks_verify.py，2026-10-29 hub 重跑 8 passed；
+  實測 histdata 164/164、dukascopy 4/4 相符）。工具陷阱：Claude Bash 的 heredoc 會把雙反斜線收成單反斜線，Python 原始碼字串裡
+  「反斜線 x00」就變成真 NUL 進檔（SyntaxError: source code string cannot contain null bytes）；要產生該轉義文字用 Write 工具或
+  `chr(92)+'x00'` 拼。
 - **斷電後 append-only 的 JSONL／log 尾巴會留一段 NUL，下一列直接黏在 NUL 後面**：讀取端每列先 strip `' \t\r\n\x00'`，
   仍 `json.loads` 失敗的那列跳過（計數，不 raise）；寫入端 append 前先讀最後一個位元組，不是 `\n` 就先補一個換行，
   新列才不會黏在殘骸上。例外：設計釘住的 gate 檔讀取端不得默默改寬容，要另案提出。
@@ -199,3 +207,9 @@ parent_skill: ztm-verify-before-done
   sinopac-trading-system/scripts/code_reachability.py；memory v30-cash-intraday-leadlag-20261024）
 - **控制第三方軟體先找它的設定語意（登錄檔／設定檔），不要先做 UI 模擬**；例：PotPlayer 切檔變大小是
   `ScreenFitBySize`。（hub-root potplayer-fixed-window-registry）
+- **Claude Bash 工具會把命令文字裡的雙反斜線收成單反斜線，heredoc 的 'EOF' 引號不保護它**：用 heredoc 餵 Python 去 patch
+  原始碼時，來源裡的 `\\x00` 落地成真正的 0x00（pytest `source code string cannot contain null bytes`、CreateProcess
+  `embedded null character`），`\\.` 變成無效跳脫，正規表示式與路徑字串全走樣，而且同一寫法重修還是錯。做法：要透過
+  Bash 產生含反斜線的原始碼，先用 Write 工具把腳本寫成檔案再執行（Write 不收反斜線），或用 `chr(92) + "x00"` 拼；落地後用
+  Python `bytes([0]) in data` 檢查有沒有 NUL。（ai_trader 2026-10-29 order #14 連踩三次；ai_darkhero 同日 patch f1s-sources.py
+  的 `[ \t]+` 與 PAGE_STUB 正規表示式同樣走樣；memory bash-tool-heredoc-backslash-collapse、bash-tool-quirks）

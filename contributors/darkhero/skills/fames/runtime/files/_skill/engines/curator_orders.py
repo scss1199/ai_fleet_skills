@@ -12,8 +12,15 @@ An order lives in _registry/curator-orders/<seat>.json and reaches the seat four
   4. fleet-process-guard.py stops a process whose command line an order forbids (never the protected list).
 The seat answers with evidence paths or a reason; the curator closes the order (its freeze/forbid end) or reopens it.
 
+operator 2026-10-29 (「讓f1s直接把這裡討論的內容變成完整提示詞直接送到其他對應cwd的主對話直接開始」): the `do` text IS the
+complete prompt the seat executes -- self-contained (goal, context, concrete steps, constraints, acceptance, how to
+answer), never a pointer into ai_darkhero's conversation. Delivery to the seat's MAIN conversation: f1s_live wakes an
+idle chat with the full text; when the curator sends it itself (desktop send_message, or start_session in that cwd
+when no chat is open) it records `deliver <seat> <n> --session <id>` so the order knows which conversation runs it.
+
 CLI (issue / reopen / close only from the curator's cwd, ai_darkhero or the hub root):
-  python curator_orders.py issue <seat> --title T --do TEXT [--freeze HUB_PATH]... [--forbid CMDLINE_PART]...
+  python curator_orders.py issue <seat> --title T (--do TEXT | --prompt-file PATH) [--freeze HUB_PATH]... [--forbid CMDLINE_PART]...
+  python curator_orders.py deliver <seat> <n> --session LOCAL_ID   (the seat's main conversation it was sent to)
   python curator_orders.py list [<seat>]
   python curator_orders.py answer <seat> <n> --evidence PATH [PATH...] | --cannot REASON
   python curator_orders.py claim <seat> <n> [--release] [--session ID]   (owner: the one conversation pushed to answer)
@@ -145,6 +152,8 @@ def _hub_rel(path: str) -> str:
 
 def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None = None) -> dict:
     cwd = cwd or os.getcwd()
+    if not (do or "").strip():
+        raise ValueError("an order needs its full prompt text (--do or --prompt-file)")
     _require_curator(cwd, "issues orders")
     if seat == curator():
         raise ValueError("an order corrects another cwd, not the curator")
@@ -161,6 +170,19 @@ def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None 
              "issued_from": os.path.abspath(cwd), "title": title, "do": do,
              "freeze": [_hub_rel(p) for p in freeze], "forbid": list(forbid), "status": "open"}
     doc["orders"].append(order)
+    _save(seat, doc)
+    return order
+
+
+def deliver(seat: str, n: int, session: str, cwd: str | None = None) -> dict:
+    """Record the seat's main conversation the curator sent this order to (desktop send_message / start_session)."""
+    cwd = cwd or os.getcwd()
+    _require_curator(cwd, "delivers orders")
+    if not str(session or "").strip():
+        raise ValueError("deliver needs the target conversation id")
+    doc = load(seat)
+    order = _find(doc, n)
+    order["delivery"] = {"session": str(session).strip(), "at": _now(), "from": os.path.abspath(cwd)}
     _save(seat, doc)
     return order
 
@@ -272,7 +294,7 @@ def injection(seat: str, session_id: str = "") -> str:
     if not orders:
         return ""
     lines = [f"CURATOR ORDERS — {curator()}（F1S 校正令）優先於本 cwd 自己的決定；紅線與 operator 本人指令仍在其上。"
-             "先處理，再做其他事："]
+             "每一令就是完整提示詞：直接開始執行，不等 operator 開口，先處理，再做其他事："]
     for o in orders:
         extra = "".join(f" [{k}: {', '.join(o[k])}]" for k in ("freeze", "forbid") if o.get(k))
         if owned_by_other(o, session_id):
@@ -324,11 +346,17 @@ def main(argv=None) -> int:
     s = sub.add_parser("issue")
     s.add_argument("seat")
     s.add_argument("--title", required=True)
-    s.add_argument("--do", required=True)
+    g = s.add_mutually_exclusive_group(required=True)
+    g.add_argument("--do")
+    g.add_argument("--prompt-file", help="the complete prompt, read as UTF-8 (argv mangles non-ASCII on Windows)")
     s.add_argument("--freeze", action="append", default=[])
     s.add_argument("--forbid", action="append", default=[])
     s = sub.add_parser("list")
     s.add_argument("seat", nargs="?")
+    s = sub.add_parser("deliver")
+    s.add_argument("seat")
+    s.add_argument("n", type=int)
+    s.add_argument("--session", required=True, help="the seat's main conversation id the order was sent to")
     s = sub.add_parser("answer")
     s.add_argument("seat")
     s.add_argument("n", type=int)
@@ -350,7 +378,10 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     try:
         if a.cmd == "issue":
-            out = issue(a.seat, a.title, a.do, a.freeze, a.forbid)
+            out = issue(a.seat, a.title, a.do if a.do is not None else open(a.prompt_file, encoding="utf-8-sig").read(), a.freeze, a.forbid)
+        elif a.cmd == "deliver":
+            out = deliver(a.seat, a.n, a.session)
+
         elif a.cmd == "list":
             seats = [a.seat] if a.seat else _seats_with_orders()
             out = {s: load(s)["orders"] for s in seats}
