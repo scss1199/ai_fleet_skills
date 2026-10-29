@@ -118,12 +118,17 @@ def contributor_slug(hub: Path, host: str) -> str:
     reg = _load(hub / "_registry" / "fleet-skill-github.json", {})
     nodes = reg.get("nodes") or {}
     rows = nodes.items() if isinstance(nodes, dict) else [(n.get("node") or n.get("id"), n) for n in nodes]
+    host_l = host.lower()
     for name, node in rows:
         if not isinstance(node, dict):
             continue
-        hosts = {str(node.get("host") or "").lower(), str(node.get("hostname") or "").lower(), str(name or "").lower()}
-        if host in hosts or f"ai_{host}" in hosts or any(h and (h in host or host in h) for h in hosts if len(h) > 3):
-            return str(node.get("contributor") or node.get("slug") or name)
+        names = {str(h).lower() for h in (node.get("hostnames") or [])}
+        names |= {str(node.get("host") or "").lower(), str(node.get("hostname") or "").lower()}
+        if host_l in names:
+            return str(node.get("contributor_slug") or node.get("contributor") or node.get("machine") or name)
+    for name, node in rows:   # a node whose machine name is the hostname's prefix (altos: DESKTOP-xxx is not; scar3: SCAR3 is)
+        if isinstance(node, dict) and str(node.get("machine") or "").lower() and host_l.startswith(str(node.get("machine")).lower()):
+            return str(node.get("contributor_slug") or node.get("machine"))
     return host
 
 
