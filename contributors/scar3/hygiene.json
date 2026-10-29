@@ -1,0 +1,139 @@
+{
+  "schema": "fleet-hygiene/1",
+  "host": "scar3",
+  "at": "2026-10-29T22:48:37",
+  "hub": "C:\\ai_workspace",
+  "seconds": 40.9,
+  "check": {
+    "seats": [
+      {
+        "seat": "ai_busker",
+        "missing": [
+          "CLAUDE.md",
+          "AGENTS.md",
+          ".cursor\\hooks.json"
+        ],
+        "findings": [
+          "charter_missing:CLAUDE.md,AGENTS.md,.cursor\\hooks.json"
+        ],
+        "repo": "hub",
+        "newest_file": "2026-08-10",
+        "activity": "DORMANT"
+      },
+      {
+        "seat": "ai_cctv",
+        "missing": [],
+        "findings": [],
+        "repo": "own",
+        "dirty": 17,
+        "unpushed": 0,
+        "last_commit": "2026-10-23",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_darkhero",
+        "missing": [
+          "CLAUDE.md",
+          "AGENTS.md",
+          ".cursor\\hooks.json"
+        ],
+        "findings": [
+          "charter_missing:CLAUDE.md,AGENTS.md,.cursor\\hooks.json"
+        ],
+        "repo": "hub",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_karaoke",
+        "missing": [],
+        "findings": [],
+        "repo": "hub",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_scar3",
+        "missing": [],
+        "findings": [
+          "dirty_files:705"
+        ],
+        "repo": "own",
+        "dirty": 705,
+        "unpushed": 0,
+        "last_commit": "2026-10-28",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_wallpaper",
+        "missing": [],
+        "findings": [],
+        "repo": "own",
+        "dirty": 49,
+        "unpushed": 0,
+        "last_commit": "2026-10-28",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "sdnext_a770",
+        "missing": [
+          "CLAUDE.md",
+          "AGENTS.md",
+          ".cursor\\hooks.json"
+        ],
+        "findings": [
+          "charter_missing:CLAUDE.md,AGENTS.md,.cursor\\hooks.json"
+        ],
+        "repo": "hub",
+        "newest_file": "2026-08-10",
+        "activity": "DORMANT"
+      }
+    ],
+    "scheduled_tasks": [],
+    "counts": {
+      "ACTIVE": 5,
+      "IDLE": 0,
+      "DORMANT": 2
+    },
+    "violations": 4
+  },
+  "sweep": {
+    "applied": true,
+    "planned": 8,
+    "planned_bytes": 5819234,
+    "by_class": {
+      "cache_dir": {
+        "count": 7,
+        "bytes": 2285928
+      },
+      "backup": {
+        "count": 1,
+        "bytes": 3533306
+      }
+    },
+    "skipped": {
+      "git_tracked": 5,
+      "protected": 0
+    },
+    "moved": 8,
+    "engine": "fleet-residue-quarantine.py",
+    "errors": []
+  },
+  "delete_bytes": 7356821308,
+  "summary": {
+    "seats": 7,
+    "violations": 4,
+    "activity": {
+      "ACTIVE": 5,
+      "IDLE": 0,
+      "DORMANT": 2
+    },
+    "scheduled_task_findings": 0,
+    "moved": 8,
+    "planned_bytes": 5819234,
+    "applied": true
+  }
+}
