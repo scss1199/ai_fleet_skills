@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "3c59e8217350a4eb766d7010da225be137c9aea86d61c1ff62a41a4b5d0ebee6",
   "runner_state": "armed",
-  "observed_at": "2026-10-29T19:57:03.716008+00:00",
+  "observed_at": "2026-10-29T20:27:05.645025+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,6 +356,12 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-10-30T04:22:07+08:00",
+        "receipt_sha256": "d73818383f0c4790f333d29b591c2446e65d73bb229bed468621f67832000297"
+      },
+      {
         "agent": "ai_trader",
         "surface": "claude",
         "observed_at": "2026-10-30T01:07:15+08:00",
@@ -390,6 +396,12 @@
         "surface": "claude",
         "observed_at": "2026-10-30T01:06:06+08:00",
         "receipt_sha256": "0e11ca3f9a32db195b30f00dfffc4a4232ee4e2813b120f8c95b611e67529223"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-10-30T04:22:22+08:00",
+        "receipt_sha256": "43fbbba8c0b930bcb10dea883c5e8149672c841d7534c184314731d2ca839984"
       }
     ],
     "runtime_release_sha256": "9be9d58e43976c97fcb7a7f64a516117a39c597df7393a0439ab38cecb273268"
