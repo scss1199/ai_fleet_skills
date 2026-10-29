@@ -60,6 +60,7 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 `auto/chat`（104 秒）、`auto/fast`、`auto/writing`（不存在）、`zc/*`、`oc/deepseek-v4-flash-free`（暫停 30 分）、
 `cerebras/*`（403）、nvidia `deepseek-v4-*`（已下架，410）。
 **不是免費、永不路由**：`dva/*`、`cxa/*`、`aug/*`、`no-think/*`（轉接付費訂閱的 Claude／GPT）。
+Claude Max 方案附的 Anthropic API 月額度同樣屬付費訂閱、不進免費池：超額即計費，連結 Console 組織與設上限是 operator 的帳務決定。
 其他 provider 的金鑰狀態看 `python _skill\engines\key-health.py summary`；新金鑰可用後重跑實測再改標籤。
 
 ## 各座位任務 → 免費池對應（2026-10-16 掃描）

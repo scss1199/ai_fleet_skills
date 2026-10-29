@@ -871,6 +871,13 @@ ELEMENTS = [
     {"id": "EVO-pfkt-hub-wide-duplicate-20261029", "element": "ai_trader memory pfkt-template-verify-hub-pytest proposal re-sent (same ledger f4c2b92671df as the 2026-10-23 pass)", "verdict": "INFO",
      "requires": None, "detail": "already integrated 2026-10-23 as EVO-pfkt-hub-wide-template-verify: zat-verify-gate._hub_wide_verify refuses a bare pytest / py_compile . for mint, split and done (tests/test_pfkt_atomic_writes.py 6 passed on 2026-10-29) and _evidence_ok rejects evidence older than minted_at; the seat-local _migration/conftest.py guard stays in ai_trader; no text added",
      "check_text": ("zat_verify_gate", "def _hub_wide_verify")},
+    # f1s-evolve 2026-10-29: ai_darkhero Claude Max API credit + ai_trader fail-closed server clock offset
+    {"id": "EVO-claude-max-credit-not-free-pool", "element": "ai_darkhero proposal: link a Console org to the Max plan and add its monthly Anthropic API credit to the free pool with a spend cap", "verdict": "INFO",
+     "requires": None, "detail": "rejected: the credit is part of a paid subscription with billed overage, so T1 free-runtime keeps it out of runtime routing like the existing dva/cxa bridges; linking the Console org and any spend cap are operator billing decisions (card ai_darkhero/_registry/kyloren-knowledge/consolidate/cards/930a8f430c25dc6a.md); mtm-api-pool-offload never-route line now names it",
+     "check_text": ("skill_pool", "Claude Max 方案附的 Anthropic API 月額度同樣屬付費訂閱、不進免費池")},
+    {"id": "EVO-server-clock-offset-fail-closed", "element": "self-clocked feeds (MT5, shioaji tick.datetime, exchange CSVs) subtract a learned offset before labelling UTC, record server_offset_s in every receipt, and fail closed when the offset is unknown", "verdict": "REFINE",
+     "requires": None, "detail": "adopted into windows-runtime-pitfalls next to the MT5 server-clock rule; evidence ai_trader 398e7be30 (bars labelled +00:00 were UTC+3) and cfb8b068d (learned_offset_s raises ServerOffsetUnknown, 900 s grid, test_unknown_server_offset_fails_closed_and_known_one_is_rounded_to_the_zone)",
+     "check_text": ("skill_runtime", "offset 未知就 fail closed（raise／非零 exit），永不預設 0")},
 ]
 
 

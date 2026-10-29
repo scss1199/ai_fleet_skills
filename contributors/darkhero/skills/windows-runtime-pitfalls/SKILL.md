@@ -96,6 +96,10 @@ parent_skill: ztm-verify-before-done
   現在時間減它，每一筆都成了「未來」或永遠新鮮。做法：連線後用看到的最新一筆學 offset＝server_time − utc_now，之後只有
   更新的 tick 才把 offset 往上修，新鮮度＝(now＋offset) − tick.time，超過門檻才算過期；換伺服器／重連就重學。
   （ai_trader 25920a3a5，sinopac-trading-system/src/services/mt5_broker.py `_server_offset`）
+  寫出的資料也一樣：自帶時鐘的來源（MT5、shioaji tick.datetime、交易所 CSV）先減掉 offset 才能標 UTC，offset 四捨五入到
+  900 秒時區格線並寫進每份 receipt（`server_offset_s`）；offset 未知就 fail closed（raise／非零 exit），永不預設 0——
+  `or 0.0` 正是 MT5 bar 被標成 +00:00、時段全晚 3 小時的機制。只寫 UTC 卻沒有 offset 欄位的 receipt 一律當 UNKNOWN。
+  （ai_trader 398e7be30、cfb8b068d，scripts/pull_mt5_history.py `learned_offset_s`，tests/test_pull_mt5_history.py）
 - **檔案內嵌的時間戳記可能是匯出時間，不是事件時間**：LINE 匯出的 m4a 四軌 creation_time 全落在 22:08:03–22:08:15
   （匯出那一刻）。這類時間只拿來和可信來源（簽到表、議程、使用者給的時間）比對、超過門檻就標待審，永遠不直接寫成事實。
   （jci_taipei jci-minutes-web-pipeline-benchmark 2026-10-23）
