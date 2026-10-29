@@ -113,7 +113,12 @@ operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是�
 - 輸出留在指令的 JSON 或既有收據，只把摘要與來源網址帶進對話，不新開 .md/.json。
 - 免費池回空或全部 provider 失敗：照實回報，再改用本對話的工具，不要編。
 - 確認一個資料源時一併記下：免金鑰與否、歷史深度（每類別第一天）、每日量與每頁耗時（決定節奏與總時數），以及
-  同題試過失敗的來源和錯誤碼，讓別的座位不再重探；原始 JSON 按日落地並把 sha256 寫進 pull_log。ai_trader 2026-10-16：
+  同題試過失敗的來源和錯誤碼，讓別的座位不再重探；原始 JSON 按日落地並把 sha256 寫進 pull_log。
+  指定的免金鑰端點回 503／429 時，退路要留痕不偽裝：把狀態碼＋回應本文原樣記進 pull_log，先讀 429 頁面指到的說明
+  （Dukascopy 歷史已搬到 AWS Requester-Pays，要 AWS 憑證付費，不是暫時故障），再換同等免金鑰來源、同一個誠實 UA，
+  收據裡寫一段重疊區間交叉比對（共同小時的 tick 數、價格區間、中位點差），兩源對不上的小時標出來，不把替代源寫成原指定源。
+  （ai_trader 3013762dd `scripts/pull_fx_ticks.py`；收據 runtime/research/fx_scalp/report-20261029T012045.json
+  `data.dukascopy_cross_check`／`data.journal_errors`）ai_trader 2026-10-16：
   cnyes `api.cnyes.com/media/api/v1/newslist/category/<cat>?startAt=&endAt=&limit=30&page=N` 免金鑰、帶日期與個股標籤
   （headline 2012 起、tw_stock／us_stock／wd_stock 2015 起，約 0.7 秒一頁、一個類別一年約 8 分鐘）；同題 GDELT 這台 IP 429、
   FinMind 新聞無 token 400、Google News RSS 只存約 2 天。

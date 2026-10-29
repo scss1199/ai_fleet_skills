@@ -27,6 +27,10 @@ parent_skill: ztm-verify-before-done
   呼叫端拿到 10053/10054 而不是 403，看起來像「偶發環境問題」。（ai_trader http-refusal-before-body-read-rst）
 - **判斷行程死活時，AccessDenied ≠ 已死。** 權限不足（例：S4U／session 0 起的行程）要當 UNKNOWN，不能據此再起一份，
   否則兩個 daemon 搶同一個 pid 檔一起跑。（ai_trader hubclock-duplicate-daemons）
+- **靜默安裝程式會提權後無聲跑好幾分鐘，一般權限看不到也殺不掉；看守要盯安裝目錄或它的 log，不是視窗。** 這台機器
+  UAC `ConsentPromptBehaviorAdmin=0`，安裝程式的 `/auto`／`/S` 直接提權不彈窗（零彈窗紅線下這是預期），於是「沒視窗」不等於
+  沒在裝、「殺不掉」不等於當機：完成判定用目標目錄出現主程式＋版本檔、或 `%APPDATA%` 下的 profile 資料夾，逾時再回報
+  UNKNOWN 附兩者路徑。（ai_trader 2026-10-29 mt5setup.exe /auto 約 6 分鐘無視窗；memory owner-fx-route-20261029）
 - **背景 python 會跳「應用程式錯誤」對話框**：CPython 3.12 的 `platform.*` 走 WMI COM thread，機器忙時崩潰 → csrss
   硬錯誤框（短暫、無 Event 1000）。背景程序避免在 import 期呼叫 `platform.machine()/uname()` 這類查詢；零彈窗紅線。
   （ai_trader zero-popup-python-crash-dialog；hub memory pythonw-platform-ver-flash）
@@ -65,6 +69,11 @@ parent_skill: ztm-verify-before-done
   下一輪又從頭重跑（ai_trader strategy_lineage 300 s 逾時、一小時被殺 3 次）；預算快用完時不要再開新的一天／新的一批
   （news_tone 保留 DAY_RESERVE_S）；前置條件已知不成立（owner 停用的 cockpit）就跳過，不要讓它每輪 rc=1。
   （ai_trader workflow-audit-20261020）
+- **「報價過期」「來源斷線」這類狀態是一段 episode，記一次進入＋一次恢復（附持續秒數），不是每次輪詢記一列**：
+  0.5 秒一輪的迴圈在紐約收盤後 12 分鐘寫了 247 列同一句話，真正的事件（何時斷、斷多久）反而要事後數列才知道。
+  做法：狀態機保存「目前是否在 episode 內」，轉入時寫 `*_begin`，轉出時寫 `*_end` 帶 `duration_s`；同一狀態重複輪詢
+  不寫。待機中的長迴圈另外每 5 分鐘寫一列 `heartbeat`（帶關鍵計數），看守才分得出「閒置」與「死掉」——這是
+  「盯每段都會長的檔」（時間與資料新鮮度）那條的寫入端。（ai_trader 79ecb9ee3；sinopac-trading-system/scripts/fx_scalp_runner.py `last_heartbeat`）
 - **多個實例共用同一個帳戶／目錄／佇列時，收尾只動自己建立的東西，乾跑永不執行會改狀態的分支**：共用的標籤
   （MT5 magic、comment、檔名前綴）只證明「同一支程式」，不證明「這個行程」；收尾（視窗結束平倉、清理、退役）用本行程
   自己記下的 ticket／id 集合判定歸屬，另一個實例開的一律不碰。ai_trader 2026-10-29：一個 dryrun runner 在視窗結束時把
