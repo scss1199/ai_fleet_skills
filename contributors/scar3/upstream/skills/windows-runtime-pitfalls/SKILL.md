@@ -27,6 +27,10 @@ parent_skill: ztm-verify-before-done
   呼叫端拿到 10053/10054 而不是 403，看起來像「偶發環境問題」。（ai_trader http-refusal-before-body-read-rst）
 - **判斷行程死活時，AccessDenied ≠ 已死。** 權限不足（例：S4U／session 0 起的行程）要當 UNKNOWN，不能據此再起一份，
   否則兩個 daemon 搶同一個 pid 檔一起跑。（ai_trader hubclock-duplicate-daemons）
+- **靜默安裝程式會提權後無聲跑好幾分鐘，一般權限看不到也殺不掉；看守要盯安裝目錄或它的 log，不是視窗。** 這台機器
+  UAC `ConsentPromptBehaviorAdmin=0`，安裝程式的 `/auto`／`/S` 直接提權不彈窗（零彈窗紅線下這是預期），於是「沒視窗」不等於
+  沒在裝、「殺不掉」不等於當機：完成判定用目標目錄出現主程式＋版本檔、或 `%APPDATA%` 下的 profile 資料夾，逾時再回報
+  UNKNOWN 附兩者路徑。（ai_trader 2026-10-29 mt5setup.exe /auto 約 6 分鐘無視窗；memory owner-fx-route-20261029）
 - **背景 python 會跳「應用程式錯誤」對話框**：CPython 3.12 的 `platform.*` 走 WMI COM thread，機器忙時崩潰 → csrss
   硬錯誤框（短暫、無 Event 1000）。背景程序避免在 import 期呼叫 `platform.machine()/uname()` 這類查詢；零彈窗紅線。
   （ai_trader zero-popup-python-crash-dialog；hub memory pythonw-platform-ver-flash）
@@ -45,6 +49,17 @@ parent_skill: ztm-verify-before-done
   overlay 執行緒 139.6→2.2 CPU-s／600 s）。共用 argtypes 的結構指標一律 `ctypes.c_void_p`（`byref()` 照用），或用私有
   `ctypes.WinDLL("user32")`。診斷：`py-spy dump --native` 頂端是 NtUserPeekMessage／DispatchMessage，再從別的行程對其
   視窗呼叫 GetUpdateRect（更新區永遠不空）。（ai_darkhero 21550c71 sleep_mode/hub_tray）
+- **拖放是跨行程同步 COM 呼叫：drop target 卡住，來源的 Explorer 視窗就跟著死。** `ole32!DoDragDrop` 在來源執行緒等
+  目標的 `IDropTarget::Drop` 回傳，期間用 PeekMessage 空轉（~1000–2700 ctxsw/s、15–33% 一核），之後任何打進該執行緒的
+  跨行程呼叫（OneDrive COM surrogate、Copilot、設定）全部跟著掛。2026-10-28：PotPlayer 在 Drop 裡做 D3D9 Present，顯示卡
+  Arc A310（4 GB、接兩台 3072×1728）顯存 89–90% 時 `NtGdiDdDDIPresent` 永不返回，`TerminateProcess` 後行程變殭屍
+  （exit code 已設、3 條執行緒仍在 NtGdiDdDDI* 等待、960 MB 顯存不放），Explorer 資料夾視窗空轉 13 小時。
+  診斷順序：IsHungAppWindow／Ghost 視窗 → WCT（要先 `RegisterWaitChainCOMCallback`，否則 COM 外送只顯示 Blocked）→
+  dbghelp 小型 minidump 取 RIP（`minidump`+`pefile` 解到 module!export，不需 WinDbg）→ PDH `GPU Adapter Memory` 對
+  DXGI 的 dedicated 容量（PDH 的 luid 是大寫十六進位，DXGI 小寫，比對要 lower）。解法：殭屍只有顯示驅動重置
+  （Win+Ctrl+Shift+B，**SendInput 注入不被核心接受，要實體按**）或重開機；Explorer 不用重啟，目標一死 DoDragDrop 就返回。
+  預防：顯示卡顯存 ≥85% 先警告並列出佔用者。引擎 `fleet-hang-guard.py probe|run|watch`（probe 揪錯 lane 與 stabilize
+  穩定 lane 平行；kill／gfx-reset 各自要 operator 旗標）。（ai_darkhero evidence/hang-dnd-20261028）
 
 ## 重試、鎖、排程
 
@@ -54,6 +69,20 @@ parent_skill: ztm-verify-before-done
   下一輪又從頭重跑（ai_trader strategy_lineage 300 s 逾時、一小時被殺 3 次）；預算快用完時不要再開新的一天／新的一批
   （news_tone 保留 DAY_RESERVE_S）；前置條件已知不成立（owner 停用的 cockpit）就跳過，不要讓它每輪 rc=1。
   （ai_trader workflow-audit-20261020）
+- **「報價過期」「來源斷線」這類狀態是一段 episode，記一次進入＋一次恢復（附持續秒數），不是每次輪詢記一列**：
+  0.5 秒一輪的迴圈在紐約收盤後 12 分鐘寫了 247 列同一句話，真正的事件（何時斷、斷多久）反而要事後數列才知道。
+  做法：狀態機保存「目前是否在 episode 內」，轉入時寫 `*_begin`，轉出時寫 `*_end` 帶 `duration_s`；同一狀態重複輪詢
+  不寫。待機中的長迴圈另外每 5 分鐘寫一列 `heartbeat`（帶關鍵計數），看守才分得出「閒置」與「死掉」——這是
+  「盯每段都會長的檔」（時間與資料新鮮度）那條的寫入端。（ai_trader 79ecb9ee3；sinopac-trading-system/scripts/fx_scalp_runner.py `last_heartbeat`）
+- **多個實例共用同一個帳戶／目錄／佇列時，收尾只動自己建立的東西，乾跑永不執行會改狀態的分支**：共用的標籤
+  （MT5 magic、comment、檔名前綴）只證明「同一支程式」，不證明「這個行程」；收尾（視窗結束平倉、清理、退役）用本行程
+  自己記下的 ticket／id 集合判定歸屬，另一個實例開的一律不碰。ai_trader 2026-10-29：一個 dryrun runner 在視窗結束時把
+  另一個 demo runner 剛開的倉平掉（−0.26 AUD），修法＝`own_tickets` 集合＋`mode == "dryrun"` 不平倉（c8d33f58d）。
+  排程 rider、清理腳本、雙向同步的「刪掉對方多出來的」同理。
+- **呼叫有額度的遠端（Drive、LINE、Workers、免費池）的週期 rider，先比本機變更指紋，沒變就零遠端呼叫直接結束**：
+  沒有變化的一輪也去 list／fetch，額度就這樣燒光。參考實作 ai_photo `src/ai_photo/drive_sync.py` 的
+  `local_state()`／`last_full()`，測試 `tests/test_drive_sync.py::test_unchanged_folder_spends_no_rclone_call`。
+  （ai_photo 2923431；2026-10-27 Cloudflare 全帳號額度耗盡事件）
 - **git 128 先查殘留 `.git/index.lock`**：確認沒有長命 git 行程後改名成 `index.lock.stale-<時間>.MIGRATED-bak`（不刪）。
   殘鎖會讓排程備份「靜默不 commit」好幾天。（ai_trader git-index-lock-stale）
 - **把 runtime 資料移出 git 追蹤後，checkout／reset 到舊 commit 會用舊版覆寫正在用的檔案**（資料庫、kill flag）；
@@ -63,15 +92,52 @@ parent_skill: ztm-verify-before-done
 
 - **事件時間與收到時間比對前先確認本機時鐘已同步**（W32Time 可能幾週沒同步）；時鐘慢會讓「收到早於事件」這種檢查
   靜默拒絕所有訊號，而且被去重的記錄把痕跡吃掉。（ai_trader orb-missed-signal-clock-skew）
+- **行情／事件來源的時間戳是對方伺服器的時鐘，不是 UTC**：GoMarkets-Demo 的 MT5 `tick.time` 比 UTC 快約 3 小時，拿 UTC
+  現在時間減它，每一筆都成了「未來」或永遠新鮮。做法：連線後用看到的最新一筆學 offset＝server_time − utc_now，之後只有
+  更新的 tick 才把 offset 往上修，新鮮度＝(now＋offset) − tick.time，超過門檻才算過期；換伺服器／重連就重學。
+  （ai_trader 25920a3a5，sinopac-trading-system/src/services/mt5_broker.py `_server_offset`）
+- **檔案內嵌的時間戳記可能是匯出時間，不是事件時間**：LINE 匯出的 m4a 四軌 creation_time 全落在 22:08:03–22:08:15
+  （匯出那一刻）。這類時間只拿來和可信來源（簽到表、議程、使用者給的時間）比對、超過門檻就標待審，永遠不直接寫成事實。
+  （jci_taipei jci-minutes-web-pipeline-benchmark 2026-10-23）
 - **外部資料源過期時，下游要明確進入保守模式並把原因寫出來**，同時記錄「上游修好後多久才會生效」（節流快取）。
   （ai_trader pcr-iv-stale-feed-blocks-longs）
+- **接上既有資料源的新消費者，先查寫入者還活著**（index.json last_run、rider 清單、owner 退役紀錄）再寫；輸出帶資料年齡與
+  stale 旗標，研究／報告類只標示不擋（交易決策類照上一條進保守模式）。門檻取該市場最長休市日數（台股農曆年約 10 天），
+  否則長假被誤報、收集器停掉卻靜默。只寫 pool_through 之類的截止日不算新鮮度標示。（ai_trader first_touch 1ada5c877：
+  1 分 K 收集器 10-20 已退役，MAX_POOL_AGE_DAYS=10，報告 pool_age_days 9）
 - **非預期斷電（Kernel-Power 41）後，斷電前幾分鐘寫的檔案可能大小正常但內容全是零**：只寫一次的資料檔要記 sha256
   journal，斷電後全檔比對找壞檔，壞檔改名 `.CORRUPT-bak` 重抓，不要信任檔案存在或大小。預防：原子寫入在 rename 前要先 fsync——寫 `.part`、`flush()` + `os.fsync()`，
   再 `replace`；少了 fsync，斷電時 rename 已落盤而資料沒有。附一個重算 sha256 對 journal 的 verify 指令。
-  （ai_trader v30：3,238 檔壞 2；commit ee5e6e523 matrix_data_pull._save）
+  修一個寫入再 rename 的 helper 時，要全 seat 搜 `os.replace`／`Path.replace`／`os.rename`，把每個複本都修掉；
+  優先修「檔案已存在就跳過」的只寫一次存檔（斷電留下的全零檔永遠不會被重寫，來源只給當期就永久遺失），
+  每個 tick 重寫的狀態檔下一次寫入就自癒，熱路徑可不加 fsync 省延遲。
+  （ai_trader v30：3,238 檔壞 2；commit ee5e6e523 matrix_data_pull._save；8b234c3ac 再修同 seat 三個複本）
+- **斷電後 append-only 的 JSONL／log 尾巴會留一段 NUL，下一列直接黏在 NUL 後面**：讀取端每列先 strip `' \t\r\n\x00'`，
+  仍 `json.loads` 失敗的那列跳過（計數，不 raise）；寫入端 append 前先讀最後一個位元組，不是 `\n` 就先補一個換行，
+  新列才不會黏在殘骸上。例外：設計釘住的 gate 檔讀取端不得默默改寬容，要另案提出。
+  （ai_trader 2026-10-27：17,065 個 runtime 檔有 7 個帶 NUL 段，3 個 JSONL 有有效列黏在後面；commit 00d2d65f8）
 - **伺服器看不懂的參數會靜默退回預設值，不會報錯**：例如 TPEx `date=yyyy/mm` 不解析就回當月資料。新接的查詢要用
   兩個不同參數值比對回應確實不同；盤中檔的第一列也可能是前一日收盤（TWSE 5 秒檔 09:00:00 列），差異集中在第一個
   檢查點時先查這列。（ai_trader ipo-auction-source、v30）
+- **「ok、0 列」不等於完成，欄位按名稱不按位置，API 列得到的才算存在。** 來源對假日回 ok＋0 列，要另一個來源也說
+  休市才記完成；官方行事曆說開盤但兩個來源都沒資料＝臨時休市，正確答案是空。數字欄出現文字（除息／除權、`---`）記
+  NaN（未知），不是 0。規劃多年回測前先查 API 的合約列舉範圍：shioaji `Contracts` 只列目前掛牌的 TXO，到期合約不在裡面，
+  選擇權多年盤中歷史在券商 API 不存在，只能前瞻收集——先 1 次登入＋2 次 kbars 探測再排計畫。（ai_trader v30 2026-10-24）
+- **看守長任務要盯「每段都會長的檔」**（逐段 JSONL、心跳檔），不要盯「整塊完成才寫一行」的 run_log：ai_trader
+  2026-10-29 長錄音轉文字 run_log 25 分鐘沒新行，其實 8 個程序都在寫，盯 run_log 就是 stale 誤報。
+- **兩個來源互相同步，逐項以最新狀態與時間戳判定，兩個方向都要寫，衍生檔跟著來源的刪除走。** 判定順序
+  搬移→重複→新增→刪除；哪邊是「最新」看那一項的修改時間，不是整份檔案誰新。一個方向停了幾天的真正原因是
+  「以為寫不進去」（Chrome 的加密書籤檔）——「做不到」要先在對方同款機制上實測過才算（Edge 前一天已驗證：移開加密副本就讀明文檔），
+  沒測過的不可能是 UNKNOWN 不是限制。來源項目被刪，對應的衍生檔（下載資料夾、快取）要搬進 `_delete/<日期>-…`，永久刪除留給 operator。
+  找孤兒衍生檔用帳號名或編號**完全比對**，名稱片段配對（`karina`、`twice`）會把舊資料夾誤判成還有來源。
+  （ai_metadata 2026-10-27：Chrome 佇列 144 筆＝移除 23／新增 42／去重 75／空夾 4，commit 5d213312 58 測試；
+  `__beauty` 兩個孤兒夾 1,934 檔搬到 `P:\_delete\2026-10-26-deleted-bookmarks\`）
+- **衍生儲存（對照頁、快取、索引、分享包）不得比來源大；每次寫出完整輸出前先問「目的地是否已持有同一份」。**
+  同一張完整輸出寫兩份（一份進目的地、一份留在對照資料夾）、被換掉的舊版無上限累積、試跑檔與過期的分享壓縮檔沒人回收，
+  一個本該不到 1 GB 的索引夾就長到 25 GB。規則：對照頁只留裁切／縮圖和指向目的地的路徑或 sha256，完整輸出只寫目的地一份；
+  被取代的版本與過期分享包搬進 `_delete/<日期>-…`（永久刪除留給 operator）；每批收尾量 `du` 衍生夾與來源夾的比值寫進回報，
+  衍生夾比來源大就是缺陷不是正常。（ai_photo 2026-10-27：`_photo_index` 25 G 中 review\compare 17 G＝_pick 副本 7.31 G
+  ＋_prev 7.40 G＋試跑 1.09 G，share 7.5 G；抽 5 張 sha256 全同；commit bbd9d92／039fc79，57 測試）
 
 ## CPU 配額與批次負載
 
@@ -126,5 +192,10 @@ parent_skill: ztm-verify-before-done
 
 - **判斷死碼要把子程序派工（`python -m pkg.mod`、`scripts/x.py` 字串）、排程 rider 命令、launcher、以及把原始碼當文字
   讀的測試都算進根節點**，只看 import 圖會把正在跑的東西列進清理名單。（ai_trader subprocess-dispatch-breaks-import-graph）
+- **反過來，判決後退役研究腳本時不能把測試當根節點**：reachability 工具把 tests/ 當 root，所以只剩自己測試在 import
+  的腳本會被算成 reached（ai_trader v29/v30 兩條 NOT_QUALIFIED 線各多留了 4 天）。真正的檢查是「除了自己的測試，還有誰
+  import 或 dispatch 它」為空：為空就退役，腳本與它的測試同一個 commit 拿掉，收據與 raw 資料留在 runtime；擁有資料
+  store 的 puller（含 `verify` 子命令）不隨研究線退役。（ai_trader 7b9b59da0：6 檔 −1,921 行、unreached 15→13；
+  sinopac-trading-system/scripts/code_reachability.py；memory v30-cash-intraday-leadlag-20261024）
 - **控制第三方軟體先找它的設定語意（登錄檔／設定檔），不要先做 UI 模擬**；例：PotPlayer 切檔變大小是
   `ScreenFitBySize`。（hub-root potplayer-fixed-window-registry）
