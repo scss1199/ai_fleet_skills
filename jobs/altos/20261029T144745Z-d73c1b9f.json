@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261029T144745Z-d73c1b9f",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Fleet curator ai_darkhero, operator-authorized (2026-10-29): re-run the F1S hygiene pass on the fixed engine so this host's report lands under contributors/altos (the first one was filed under the raw hostname). Change nothing else.\n1. Run this host's fleet-sync rider command once (altos_fleet_sync.py sync --node ai_altos, Python312 exe) so FAMES >= 1.45.126 is installed; print the \"version\" from C:\\ai_workspace\\_skill\\fleet-skills\\fames\\bundle-manifest.json.\n2. Run `<Python312 exe> C:\\ai_workspace\\_skill\\engines\\fleet-hygiene.py run --apply --force` and print ONLY its \"summary\" and \"publication\" objects.\nReply raw lines only, each prefixed ALTOS-HYG2:.\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-10-29T14:47:45+00:00",
+  "expires_at": "2026-10-30T14:47:45+00:00"
+}
