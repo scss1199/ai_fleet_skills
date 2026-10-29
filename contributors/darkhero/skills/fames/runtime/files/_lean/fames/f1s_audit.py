@@ -864,6 +864,13 @@ ELEMENTS = [
     {"id": "EVO-write-once-store-hub-scan-not-built", "element": "ai_trader 44ce255ef ③ (journal reader tolerant of NUL runs and torn tail rows) and ④ asked as a hub-level scan rule", "verdict": "INFO",
      "requires": None, "detail": "③ is already the next windows-runtime-pitfalls bullet (strip ' \\t\\r\\n\\x00' per row, count and skip torn rows, since ai_trader 00d2d65f8); ④: the hub has no fsync scanner (tests/test_fsync_before_rename.py is seat-level in ai_trader/sinopac-trading-system; the hub's _harness/tests/test_fleet_skill_registry_atomic.py tests one writer, it does not scan), so the rule is carried as skill text pointing at the seat template instead of a new hub engine; no engine added",
      "check_text": ("skill_runtime", "strip `' \\t\\r\\n\\x00'`")},
+    # f1s-evolve 2026-10-29 (fourth pass): two ai_trader memories re-sent under their original ledger ids
+    {"id": "EVO-workflow-audit-duplicate-20261029", "element": "ai_trader memory workflow-audit-20261020 proposal re-sent (same ledger bceda5503e7f as the 2026-10-21 pass)", "verdict": "INFO",
+     "requires": None, "detail": "already integrated 2026-10-21 as EVO-trader-consumer-or-delete (mtm-mto-first ③: name the consumer, remove a lane with its verdict, notify only on a new fact, measure waste from the seat's own logs) and EVO-trader-timeout-started-state (windows-runtime-pitfalls STARTED state + backoff + budget reserve); memory unchanged since its 2026-10-23 index-summary move, both bound texts present on 2026-10-29; ORB-family retirement stays the owner's lane decision; no text added",
+     "check_text": ("skill_method", "講出誰讀它的輸出")},
+    {"id": "EVO-pfkt-hub-wide-duplicate-20261029", "element": "ai_trader memory pfkt-template-verify-hub-pytest proposal re-sent (same ledger f4c2b92671df as the 2026-10-23 pass)", "verdict": "INFO",
+     "requires": None, "detail": "already integrated 2026-10-23 as EVO-pfkt-hub-wide-template-verify: zat-verify-gate._hub_wide_verify refuses a bare pytest / py_compile . for mint, split and done (tests/test_pfkt_atomic_writes.py 6 passed on 2026-10-29) and _evidence_ok rejects evidence older than minted_at; the seat-local _migration/conftest.py guard stays in ai_trader; no text added",
+     "check_text": ("zat_verify_gate", "def _hub_wide_verify")},
 ]
 
 
