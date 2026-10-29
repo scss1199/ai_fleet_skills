@@ -1,0 +1,348 @@
+{
+  "schema": "fleet-hygiene/1",
+  "host": "dark-hero-z790",
+  "at": "2026-10-29T22:32:18",
+  "hub": "C:\\ai_workspace",
+  "seconds": 260.2,
+  "check": {
+    "seats": [
+      {
+        "seat": "ai_accountancy",
+        "missing": [],
+        "findings": [],
+        "repo": "own",
+        "dirty": 5,
+        "unpushed": 0,
+        "last_commit": "2026-10-27",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_busker",
+        "missing": [],
+        "findings": [],
+        "repo": "hub",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_career",
+        "missing": [],
+        "findings": [
+          "dirty_files:79"
+        ],
+        "repo": "own",
+        "dirty": 79,
+        "unpushed": 0,
+        "last_commit": "2026-10-29",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_darkhero",
+        "missing": [],
+        "findings": [
+          "dirty_files:1168"
+        ],
+        "repo": "own",
+        "dirty": 1168,
+        "unpushed": 0,
+        "last_commit": "2026-10-29",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_demo",
+        "missing": [],
+        "findings": [],
+        "repo": "own",
+        "dirty": 4,
+        "unpushed": 0,
+        "last_commit": "2026-10-28",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_eatery",
+        "missing": [],
+        "findings": [],
+        "repo": "own",
+        "dirty": 40,
+        "unpushed": 0,
+        "last_commit": "2026-10-27",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_guitar",
+        "missing": [],
+        "findings": [],
+        "repo": "own",
+        "dirty": 38,
+        "unpushed": 0,
+        "last_commit": "2026-10-27",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_heartlink",
+        "missing": [],
+        "findings": [],
+        "repo": "own",
+        "dirty": 4,
+        "unpushed": 0,
+        "last_commit": "2026-10-27",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_hgame",
+        "missing": [
+          "CLAUDE.md",
+          "AGENTS.md",
+          ".cursor\\hooks.json"
+        ],
+        "findings": [
+          "charter_missing:CLAUDE.md,AGENTS.md,.cursor\\hooks.json"
+        ],
+        "repo": "hub",
+        "newest_file": "2026-08-27",
+        "activity": "DORMANT"
+      },
+      {
+        "seat": "ai_karaoke",
+        "missing": [
+          "CLAUDE.md",
+          "AGENTS.md",
+          ".cursor\\hooks.json"
+        ],
+        "findings": [
+          "charter_missing:CLAUDE.md,AGENTS.md,.cursor\\hooks.json"
+        ],
+        "repo": "hub",
+        "newest_file": "2026-08-08",
+        "activity": "DORMANT"
+      },
+      {
+        "seat": "ai_master",
+        "missing": [],
+        "findings": [],
+        "repo": "hub",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_metadata",
+        "missing": [],
+        "findings": [
+          "dirty_files:2361"
+        ],
+        "repo": "own",
+        "dirty": 2361,
+        "unpushed": 0,
+        "last_commit": "2026-10-29",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_network",
+        "missing": [],
+        "findings": [],
+        "repo": "own",
+        "dirty": 9,
+        "unpushed": 0,
+        "last_commit": "2026-10-27",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_nuwa",
+        "missing": [],
+        "findings": [
+          "dirty_files:1129"
+        ],
+        "repo": "own",
+        "dirty": 1129,
+        "unpushed": 0,
+        "last_commit": "2026-10-29",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_photo",
+        "missing": [],
+        "findings": [],
+        "repo": "own",
+        "dirty": 2,
+        "unpushed": "UNKNOWN",
+        "last_commit": "2026-10-29",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_scar3",
+        "missing": [],
+        "findings": [],
+        "repo": "hub",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_search",
+        "missing": [],
+        "findings": [],
+        "repo": "own",
+        "dirty": 8,
+        "unpushed": 0,
+        "last_commit": "2026-10-27",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_theater",
+        "missing": [],
+        "findings": [],
+        "repo": "hub",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_trader",
+        "missing": [],
+        "findings": [],
+        "repo": "own",
+        "dirty": 12,
+        "unpushed": 0,
+        "last_commit": "2026-10-29",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_ut",
+        "missing": [],
+        "findings": [],
+        "repo": "own",
+        "dirty": 2,
+        "unpushed": 0,
+        "last_commit": "2026-10-27",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_wallpaper",
+        "missing": [],
+        "findings": [],
+        "repo": "own",
+        "dirty": 3,
+        "unpushed": 0,
+        "last_commit": "2026-10-27",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_ziyaoastro",
+        "missing": [],
+        "findings": [
+          "dirty_files:69"
+        ],
+        "repo": "own",
+        "dirty": 69,
+        "unpushed": 0,
+        "last_commit": "2026-10-29",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_zonghe",
+        "missing": [],
+        "findings": [],
+        "repo": "own",
+        "dirty": 12,
+        "unpushed": 0,
+        "last_commit": "2026-10-27",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "fracdigi",
+        "missing": [],
+        "findings": [],
+        "repo": "hub",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "jci_taipei",
+        "missing": [],
+        "findings": [
+          "dirty_files:67"
+        ],
+        "repo": "own",
+        "dirty": 67,
+        "unpushed": 0,
+        "last_commit": "2026-10-28",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "sdnext_a770",
+        "missing": [],
+        "findings": [],
+        "repo": "hub",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      }
+    ],
+    "scheduled_tasks": [],
+    "counts": {
+      "ACTIVE": 24,
+      "IDLE": 0,
+      "DORMANT": 2
+    },
+    "violations": 8
+  },
+  "sweep": {
+    "applied": true,
+    "planned": 85,
+    "planned_bytes": 103592846,
+    "by_class": {
+      "cache_dir": {
+        "count": 55,
+        "bytes": 13833961
+      },
+      "temp": {
+        "count": 1,
+        "bytes": 188
+      },
+      "stale": {
+        "count": 1,
+        "bytes": 6827
+      },
+      "backup": {
+        "count": 28,
+        "bytes": 89751870
+      }
+    },
+    "skipped": {
+      "git_tracked": 10,
+      "protected": 0
+    },
+    "moved": 85,
+    "engine": "fleet-residue-quarantine.py",
+    "errors": []
+  },
+  "delete_bytes": 141930426879,
+  "summary": {
+    "seats": 26,
+    "violations": 8,
+    "activity": {
+      "ACTIVE": 24,
+      "IDLE": 0,
+      "DORMANT": 2
+    },
+    "scheduled_task_findings": 0,
+    "moved": 85,
+    "planned_bytes": 103592846,
+    "applied": true
+  }
+}
