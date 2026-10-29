@@ -118,12 +118,17 @@ def contributor_slug(hub: Path, host: str) -> str:
     reg = _load(hub / "_registry" / "fleet-skill-github.json", {})
     nodes = reg.get("nodes") or {}
     rows = nodes.items() if isinstance(nodes, dict) else [(n.get("node") or n.get("id"), n) for n in nodes]
+    host_l = host.lower()
     for name, node in rows:
         if not isinstance(node, dict):
             continue
-        hosts = {str(node.get("host") or "").lower(), str(node.get("hostname") or "").lower(), str(name or "").lower()}
-        if host in hosts or f"ai_{host}" in hosts or any(h and (h in host or host in h) for h in hosts if len(h) > 3):
-            return str(node.get("contributor") or node.get("slug") or name)
+        names = {str(h).lower() for h in (node.get("hostnames") or [])}
+        names |= {str(node.get("host") or "").lower(), str(node.get("hostname") or "").lower()}
+        if host_l in names:
+            return str(node.get("contributor_slug") or node.get("contributor") or node.get("machine") or name)
+    for name, node in rows:   # a node whose machine name is the hostname's prefix (altos: DESKTOP-xxx is not; scar3: SCAR3 is)
+        if isinstance(node, dict) and str(node.get("machine") or "").lower() and host_l.startswith(str(node.get("machine")).lower()):
+            return str(node.get("contributor_slug") or node.get("machine"))
     return host
 
 
@@ -435,6 +440,15 @@ def run(hub: Path = HUB, host: str | None = None, apply: bool = False, force: bo
     state_p = OUT / f"{host}.state.json"
     state = _load(state_p, {})
     if not force and now - float(state.get("last_run_epoch") or 0) < THROTTLE_S:
+        # scar3 2026-10-29: a run started over SSH has no Windows credential store, so its carrier push is rejected;
+        # the rider's next detached launch (which has the credentials) must still deliver that report instead of
+        # waiting 20 h behind the throttle.
+        last_pub = state.get("last_publication") or {}
+        if do_publish and last_pub.get("ok") is False and (OUT / f"{host}.json").is_file():
+            pub = publish(hub, host, _load(OUT / f"{host}.json", {}))
+            state["last_publication"] = pub
+            _save(state_p, state)
+            return {"skipped": "throttled", "republished": pub, "last_run": state.get("last_run"), "host": host}
         return {"skipped": "throttled", "last_run": state.get("last_run"), "host": host}
     lock = OUT / f"{host}.lock"
     try:
