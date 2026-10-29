@@ -1,0 +1,149 @@
+{
+  "schema": "fleet-hygiene/1",
+  "host": "desktop-rsniapr",
+  "at": "2026-10-29T22:54:01",
+  "hub": "C:\\ai_workspace",
+  "seconds": 9.9,
+  "check": {
+    "seats": [
+      {
+        "seat": "ai_altos",
+        "missing": [],
+        "findings": [],
+        "repo": "own",
+        "dirty": 5,
+        "unpushed": 0,
+        "last_commit": "2026-10-18",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_darkhero",
+        "missing": [],
+        "findings": [],
+        "repo": "own",
+        "dirty": 0,
+        "unpushed": 0,
+        "last_commit": "2026-10-29",
+        "newest_file": "2026-10-29",
+        "activity": "ACTIVE"
+      },
+      {
+        "seat": "ai_roas",
+        "missing": [
+          "CLAUDE.md",
+          "AGENTS.md",
+          ".cursor\\hooks.json"
+        ],
+        "findings": [
+          "charter_missing:CLAUDE.md,AGENTS.md,.cursor\\hooks.json"
+        ],
+        "repo": "hub",
+        "newest_file": "2026-10-16",
+        "activity": "IDLE"
+      },
+      {
+        "seat": "jci_taipei",
+        "missing": [
+          ".cursor\\hooks.json"
+        ],
+        "findings": [
+          "charter_missing:.cursor\\hooks.json"
+        ],
+        "repo": "own",
+        "dirty": 47,
+        "unpushed": 0,
+        "last_commit": "2026-09-21",
+        "newest_file": "2026-09-21",
+        "activity": "DORMANT"
+      },
+      {
+        "seat": "jci_taipei_cf_stage_bead917",
+        "missing": [
+          "CLAUDE.md",
+          "AGENTS.md",
+          ".cursor\\hooks.json"
+        ],
+        "findings": [
+          "charter_missing:CLAUDE.md,AGENTS.md,.cursor\\hooks.json"
+        ],
+        "repo": "hub",
+        "newest_file": "2026-08-24",
+        "activity": "DORMANT"
+      },
+      {
+        "seat": "jci_taipei_committee_profiles",
+        "missing": [
+          ".cursor\\hooks.json"
+        ],
+        "findings": [
+          "charter_missing:.cursor\\hooks.json"
+        ],
+        "repo": "own",
+        "dirty": 2,
+        "unpushed": "UNKNOWN",
+        "last_commit": "2026-08-27",
+        "newest_file": "2026-08-27",
+        "activity": "DORMANT"
+      },
+      {
+        "seat": "jci_taipei_plaud_flow",
+        "missing": [
+          ".cursor\\hooks.json"
+        ],
+        "findings": [
+          "charter_missing:.cursor\\hooks.json"
+        ],
+        "repo": "own",
+        "dirty": 0,
+        "unpushed": 0,
+        "last_commit": "2026-08-27",
+        "newest_file": "2026-08-27",
+        "activity": "DORMANT"
+      }
+    ],
+    "scheduled_tasks": [],
+    "counts": {
+      "ACTIVE": 2,
+      "IDLE": 1,
+      "DORMANT": 4
+    },
+    "violations": 5
+  },
+  "sweep": {
+    "applied": true,
+    "planned": 5,
+    "planned_bytes": 5061114,
+    "by_class": {
+      "cache_dir": {
+        "count": 4,
+        "bytes": 1573490
+      },
+      "backup": {
+        "count": 1,
+        "bytes": 3487624
+      }
+    },
+    "skipped": {
+      "git_tracked": 0,
+      "protected": 0
+    },
+    "moved": 5,
+    "engine": "fleet-residue-quarantine.py",
+    "errors": []
+  },
+  "delete_bytes": 287736169,
+  "summary": {
+    "seats": 7,
+    "violations": 5,
+    "activity": {
+      "ACTIVE": 2,
+      "IDLE": 1,
+      "DORMANT": 4
+    },
+    "scheduled_task_findings": 0,
+    "moved": 5,
+    "planned_bytes": 5061114,
+    "applied": true
+  }
+}
