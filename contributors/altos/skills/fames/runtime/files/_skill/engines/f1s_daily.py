@@ -534,6 +534,16 @@ def write_matrix(rows: dict, gap: dict, day: str) -> str:
     return "written"
 
 
+def fleet_hygiene_rows(since: str) -> list[dict]:
+    """Every host's latest hygiene.json from the carrier clone (fleet-hygiene.py fleet), newest first; none = no section."""
+    try:
+        mod = _module("fleet_hygiene_for_daily", "fleet-hygiene.py")
+        rows = mod.fleet()
+    except Exception:  # noqa: BLE001 - the digest never fails on a missing or broken sibling
+        return []
+    return sorted((r for r in rows if str(r.get("at") or "") >= since[:10]), key=lambda r: str(r.get("at")), reverse=True)[:6]
+
+
 def render_live(day: str, state: dict, rows: dict, gap: dict, since: str) -> str:
     lines = [f"# F1S daily digest {day} (f1s_daily.py; replaces the previous one)",
              "Apply from this turn in every conversation: the operator corrections below are the operator's own words "
@@ -559,6 +569,13 @@ def render_live(day: str, state: dict, rows: dict, gap: dict, since: str) -> str
         lines.append("## 「需要你決定」 asked (24h): " + ", ".join(f"{s} {n}" for s, n in sorted(dec.items())))
     if gap["unregistered_seats"]:
         lines.append("## Matrix gaps: unregistered seats " + ", ".join(gap["unregistered_seats"]))
+    hyg = fleet_hygiene_rows(since)
+    if hyg:
+        lines.append("## Fleet hygiene (hosts' own check/sweep reports, fleet-hygiene.py)")
+        for h in hyg:
+            lines.append(f"- [{h['contributor']}] {str(h.get('at'))[:16]} seats {h.get('seats')} violations {h.get('violations')} "
+                         f"activity {h.get('activity')} moved {h.get('moved')} _delete {h.get('delete_gb')} GB"
+                         + (" findings: " + "; ".join(h["findings"][:5]) if h.get("findings") else ""))
     text = "\n".join(lines) + "\n"
     return text if len(text) <= LIVE_MAX_CHARS else text[:LIVE_MAX_CHARS - 40].rsplit("\n", 1)[0] + "\n(truncated)\n"
 
