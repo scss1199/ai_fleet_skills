@@ -435,6 +435,15 @@ def run(hub: Path = HUB, host: str | None = None, apply: bool = False, force: bo
     state_p = OUT / f"{host}.state.json"
     state = _load(state_p, {})
     if not force and now - float(state.get("last_run_epoch") or 0) < THROTTLE_S:
+        # scar3 2026-10-29: a run started over SSH has no Windows credential store, so its carrier push is rejected;
+        # the rider's next detached launch (which has the credentials) must still deliver that report instead of
+        # waiting 20 h behind the throttle.
+        last_pub = state.get("last_publication") or {}
+        if do_publish and last_pub.get("ok") is False and (OUT / f"{host}.json").is_file():
+            pub = publish(hub, host, _load(OUT / f"{host}.json", {}))
+            state["last_publication"] = pub
+            _save(state_p, state)
+            return {"skipped": "throttled", "republished": pub, "last_run": state.get("last_run"), "host": host}
         return {"skipped": "throttled", "last_run": state.get("last_run"), "host": host}
     lock = OUT / f"{host}.lock"
     try:
