@@ -60,6 +60,7 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 `auto/chat`（104 秒）、`auto/fast`、`auto/writing`（不存在）、`zc/*`、`oc/deepseek-v4-flash-free`（暫停 30 分）、
 `cerebras/*`（403）、nvidia `deepseek-v4-*`（已下架，410）。
 **不是免費、永不路由**：`dva/*`、`cxa/*`、`aug/*`、`no-think/*`（轉接付費訂閱的 Claude／GPT）。
+Claude Max 方案附的 Anthropic API 月額度同樣屬付費訂閱、不進免費池：超額即計費，連結 Console 組織與設上限是 operator 的帳務決定。
 其他 provider 的金鑰狀態看 `python _skill\engines\key-health.py summary`；新金鑰可用後重跑實測再改標籤。
 
 ## 各座位任務 → 免費池對應（2026-10-16 掃描）
@@ -109,11 +110,23 @@ operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是�
 ## 規則
 
 - 結果是草稿：數字、日期、費率、法規這類會被拿來做決定的事實，要回到抓下來的原文或官方網址核對，並在回覆附來源網址；核對不了就寫 UNKNOWN。
+- 交叉審問法（2026-10-29，kyloren-knowledge 664f9c3d…：前 Google 高管訪談的做法）：研究類提示不問「你覺得怎麼樣」——那只會得到
+  順著你的答案；要「把支持與反對的理由全部列出，寫成報告」。第一家模型答完，把答案原樣丟給第二家問「少了什麼、哪裡偏了」，
+  再回第一家或第三家潤飾，來回至少兩輪、至少兩家 provider（`fan_out` 的輪流派發天生就跨家；單題用 `chat_for` 連叫兩家）。
+  分工不變：海量資訊處理、快速搜資料外包給模型；判斷與決定留在第 3 層，外包思考會變笨。
+- 本機模型的量化下限（2026-10-29，kyloren-knowledge 75d3972b…：FP16 每參數 2 bytes、INT8 1、INT4 0.5）：INT4／Q4 已是品質極限，
+  幾百億參數硬塞 Q2／Q3 不如換小一號模型跑 Q8。darkhero 現況（2026-10-29 `ollama list`／`show`）：qwen2.5-coder 14B 全為 Q4_K_M、
+  deepseek-r1 8B q8_0、qwen3 8B／14B 預設 Q4，沒有 Q2／Q3；新增本機模型時先看 `ollama show` 的 quantization，不收 Q2／Q3。
 - 不送出去的東西：金鑰、帳戶與持倉資料、`ai_ut` 的 UT.xlsx 內容（專有資料）、任何 operator 標成私密的檔案。查詢字串可以送，資料本身不送。語音預設用本機（`--engine local`）。
 - 輸出留在指令的 JSON 或既有收據，只把摘要與來源網址帶進對話，不新開 .md/.json。
 - 免費池回空或全部 provider 失敗：照實回報，再改用本對話的工具，不要編。
 - 確認一個資料源時一併記下：免金鑰與否、歷史深度（每類別第一天）、每日量與每頁耗時（決定節奏與總時數），以及
-  同題試過失敗的來源和錯誤碼，讓別的座位不再重探；原始 JSON 按日落地並把 sha256 寫進 pull_log。ai_trader 2026-10-16：
+  同題試過失敗的來源和錯誤碼，讓別的座位不再重探；原始 JSON 按日落地並把 sha256 寫進 pull_log。
+  指定的免金鑰端點回 503／429 時，退路要留痕不偽裝：把狀態碼＋回應本文原樣記進 pull_log，先讀 429 頁面指到的說明
+  （Dukascopy 歷史已搬到 AWS Requester-Pays，要 AWS 憑證付費，不是暫時故障），再換同等免金鑰來源、同一個誠實 UA，
+  收據裡寫一段重疊區間交叉比對（共同小時的 tick 數、價格區間、中位點差），兩源對不上的小時標出來，不把替代源寫成原指定源。
+  （ai_trader 3013762dd `scripts/pull_fx_ticks.py`；收據 runtime/research/fx_scalp/report-20261029T012045.json
+  `data.dukascopy_cross_check`／`data.journal_errors`）ai_trader 2026-10-16：
   cnyes `api.cnyes.com/media/api/v1/newslist/category/<cat>?startAt=&endAt=&limit=30&page=N` 免金鑰、帶日期與個股標籤
   （headline 2012 起、tw_stock／us_stock／wd_stock 2015 起，約 0.7 秒一頁、一個類別一年約 8 分鐘）；同題 GDELT 這台 IP 429、
   FinMind 新聞無 token 400、Google News RSS 只存約 2 天。
@@ -124,6 +137,13 @@ operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是�
   World Bank api v2（`per_page=20000`，一指標一頁）、OECD SDMX（CLI 用 `DSD_STES@DF_CLI`，`format=csvfilewithlabels`）、
   BIS stats api v2（`WS_CBPOL` 政策利率 36 區含 TW）、ECB data-api（`FM.B.U2.EUR.4F.KR.MRR_FR.LEV`）。stooq 對每個代號都回
   robots 頁，不要路由過去。這些不需金鑰，`f1s-harvest.py api` 查不到是正常的（它只登記金鑰／API host）。
+- 長錄音轉文字（ai_trader 2026-10-29，4 小時餐廳錄音，faster-whisper medium int8 CPU）：
+  兩支不同手機的錄音先比 PCM（ffmpeg 解成 16k 單聲道逐點相減，max|A−B|=0 就是同源，只轉一支；sha256 不同、大小相同不代表不同聲音）。
+  單程序 4 執行緒約 2.7 倍即時，8 程序並行加總卻沒有線性放大（記憶體頻寬飽和；run_log 24 塊、約 14,493 秒音訊花約 2.5 小時，
+  每塊 234–6,992 秒不等），所以要快是切 10 分鐘塊、最需要的時段先跑、每塊逐段 flush JSONL，先交出要用的部分；開跑前照
+  windows-runtime-pitfalls 先拿 load grant。講者分群：pyannote 管線要 HF token 不能離線，但快取的 `wespeaker-voxceleb-resnet34-LM`
+  可離線在 CPU 載入；whisper 段落取 embedding 後 `AgglomerativeClustering` 用 cosine/average 會把約 90% 併成一群，
+  `linkage="ward"`、`n_clusters=人數` 才分得開；基頻中位數猜性別（>165 Hz 女）只能標「推定」。
 - 固定撈腳本的 User-Agent 用誠實的工具名（例 `ai_trader-research-pull/1.0`），不要裝成瀏覽器：只有 OS 字串、沒有其他瀏覽器
   標頭的假瀏覽器 UA 讓 FRED 讀取逾時、IMF 回 403，誠實 UA 兩者都 2 秒內回（ai_trader 2026-10-28，10 組 UA×端點）。
 

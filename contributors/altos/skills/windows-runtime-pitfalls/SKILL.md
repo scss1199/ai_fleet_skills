@@ -27,6 +27,10 @@ parent_skill: ztm-verify-before-done
   呼叫端拿到 10053/10054 而不是 403，看起來像「偶發環境問題」。（ai_trader http-refusal-before-body-read-rst）
 - **判斷行程死活時，AccessDenied ≠ 已死。** 權限不足（例：S4U／session 0 起的行程）要當 UNKNOWN，不能據此再起一份，
   否則兩個 daemon 搶同一個 pid 檔一起跑。（ai_trader hubclock-duplicate-daemons）
+- **靜默安裝程式會提權後無聲跑好幾分鐘，一般權限看不到也殺不掉；看守要盯安裝目錄或它的 log，不是視窗。** 這台機器
+  UAC `ConsentPromptBehaviorAdmin=0`，安裝程式的 `/auto`／`/S` 直接提權不彈窗（零彈窗紅線下這是預期），於是「沒視窗」不等於
+  沒在裝、「殺不掉」不等於當機：完成判定用目標目錄出現主程式＋版本檔、或 `%APPDATA%` 下的 profile 資料夾，逾時再回報
+  UNKNOWN 附兩者路徑。（ai_trader 2026-10-29 mt5setup.exe /auto 約 6 分鐘無視窗；memory owner-fx-route-20261029）
 - **背景 python 會跳「應用程式錯誤」對話框**：CPython 3.12 的 `platform.*` 走 WMI COM thread，機器忙時崩潰 → csrss
   硬錯誤框（短暫、無 Event 1000）。背景程序避免在 import 期呼叫 `platform.machine()/uname()` 這類查詢；零彈窗紅線。
   （ai_trader zero-popup-python-crash-dialog；hub memory pythonw-platform-ver-flash）
@@ -65,6 +69,16 @@ parent_skill: ztm-verify-before-done
   下一輪又從頭重跑（ai_trader strategy_lineage 300 s 逾時、一小時被殺 3 次）；預算快用完時不要再開新的一天／新的一批
   （news_tone 保留 DAY_RESERVE_S）；前置條件已知不成立（owner 停用的 cockpit）就跳過，不要讓它每輪 rc=1。
   （ai_trader workflow-audit-20261020）
+- **「報價過期」「來源斷線」這類狀態是一段 episode，記一次進入＋一次恢復（附持續秒數），不是每次輪詢記一列**：
+  0.5 秒一輪的迴圈在紐約收盤後 12 分鐘寫了 247 列同一句話，真正的事件（何時斷、斷多久）反而要事後數列才知道。
+  做法：狀態機保存「目前是否在 episode 內」，轉入時寫 `*_begin`，轉出時寫 `*_end` 帶 `duration_s`；同一狀態重複輪詢
+  不寫。待機中的長迴圈另外每 5 分鐘寫一列 `heartbeat`（帶關鍵計數），看守才分得出「閒置」與「死掉」——這是
+  「盯每段都會長的檔」（時間與資料新鮮度）那條的寫入端。（ai_trader 79ecb9ee3；sinopac-trading-system/scripts/fx_scalp_runner.py `last_heartbeat`）
+- **多個實例共用同一個帳戶／目錄／佇列時，收尾只動自己建立的東西，乾跑永不執行會改狀態的分支**：共用的標籤
+  （MT5 magic、comment、檔名前綴）只證明「同一支程式」，不證明「這個行程」；收尾（視窗結束平倉、清理、退役）用本行程
+  自己記下的 ticket／id 集合判定歸屬，另一個實例開的一律不碰。ai_trader 2026-10-29：一個 dryrun runner 在視窗結束時把
+  另一個 demo runner 剛開的倉平掉（−0.26 AUD），修法＝`own_tickets` 集合＋`mode == "dryrun"` 不平倉（c8d33f58d）。
+  排程 rider、清理腳本、雙向同步的「刪掉對方多出來的」同理。
 - **呼叫有額度的遠端（Drive、LINE、Workers、免費池）的週期 rider，先比本機變更指紋，沒變就零遠端呼叫直接結束**：
   沒有變化的一輪也去 list／fetch，額度就這樣燒光。參考實作 ai_photo `src/ai_photo/drive_sync.py` 的
   `local_state()`／`last_full()`，測試 `tests/test_drive_sync.py::test_unchanged_folder_spends_no_rclone_call`。
@@ -78,6 +92,14 @@ parent_skill: ztm-verify-before-done
 
 - **事件時間與收到時間比對前先確認本機時鐘已同步**（W32Time 可能幾週沒同步）；時鐘慢會讓「收到早於事件」這種檢查
   靜默拒絕所有訊號，而且被去重的記錄把痕跡吃掉。（ai_trader orb-missed-signal-clock-skew）
+- **行情／事件來源的時間戳是對方伺服器的時鐘，不是 UTC**：GoMarkets-Demo 的 MT5 `tick.time` 比 UTC 快約 3 小時，拿 UTC
+  現在時間減它，每一筆都成了「未來」或永遠新鮮。做法：連線後用看到的最新一筆學 offset＝server_time − utc_now，之後只有
+  更新的 tick 才把 offset 往上修，新鮮度＝(now＋offset) − tick.time，超過門檻才算過期；換伺服器／重連就重學。
+  （ai_trader 25920a3a5，sinopac-trading-system/src/services/mt5_broker.py `_server_offset`）
+  寫出的資料也一樣：自帶時鐘的來源（MT5、shioaji tick.datetime、交易所 CSV）先減掉 offset 才能標 UTC，offset 四捨五入到
+  900 秒時區格線並寫進每份 receipt（`server_offset_s`）；offset 未知就 fail closed（raise／非零 exit），永不預設 0——
+  `or 0.0` 正是 MT5 bar 被標成 +00:00、時段全晚 3 小時的機制。只寫 UTC 卻沒有 offset 欄位的 receipt 一律當 UNKNOWN。
+  （ai_trader 398e7be30、cfb8b068d，scripts/pull_mt5_history.py `learned_offset_s`，tests/test_pull_mt5_history.py）
 - **檔案內嵌的時間戳記可能是匯出時間，不是事件時間**：LINE 匯出的 m4a 四軌 creation_time 全落在 22:08:03–22:08:15
   （匯出那一刻）。這類時間只拿來和可信來源（簽到表、議程、使用者給的時間）比對、超過門檻就標待審，永遠不直接寫成事實。
   （jci_taipei jci-minutes-web-pipeline-benchmark 2026-10-23）
@@ -94,6 +116,14 @@ parent_skill: ztm-verify-before-done
   優先修「檔案已存在就跳過」的只寫一次存檔（斷電留下的全零檔永遠不會被重寫，來源只給當期就永久遺失），
   每個 tick 重寫的狀態檔下一次寫入就自癒，熱路徑可不加 fsync 省延遲。
   （ai_trader v30：3,238 檔壞 2；commit ee5e6e523 matrix_data_pull._save；8b234c3ac 再修同 seat 三個複本）
+  只寫一次的存放區出貨規範（ai_trader 44ce255ef，F1S 2026-10-29 吸收）：就地寫目標的 writer（`np.savez_compressed(目標)`、
+  `Path.write_bytes`）沒有 rename，靜態掃「寫＋rename 的函數」看不到它，斷電一樣留全零檔——只寫一次的存放區一律走同一個
+  tmp→fsync→replace helper；同一支 CLI 附 `verify` 子命令：journal 每列記 sha256，verify 全檔重算、列 mismatch／missing／unjournaled、
+  有壞檔 exit 4；掃描再加一條：對 `glob('*.npz'/'*.gz')` 且 `exists()` 就跳過的存放區，同模組必須有 verify
+  （範本 sinopac-trading-system/tests/test_fsync_before_rename.py＋test_pull_fx_ticks_verify.py，2026-10-29 hub 重跑 8 passed；
+  實測 histdata 164/164、dukascopy 4/4 相符）。工具陷阱：Claude Bash 的 heredoc 會把雙反斜線收成單反斜線，Python 原始碼字串裡
+  「反斜線 x00」就變成真 NUL 進檔（SyntaxError: source code string cannot contain null bytes）；要產生該轉義文字用 Write 工具或
+  `chr(92)+'x00'` 拼。
 - **斷電後 append-only 的 JSONL／log 尾巴會留一段 NUL，下一列直接黏在 NUL 後面**：讀取端每列先 strip `' \t\r\n\x00'`，
   仍 `json.loads` 失敗的那列跳過（計數，不 raise）；寫入端 append 前先讀最後一個位元組，不是 `\n` 就先補一個換行，
   新列才不會黏在殘骸上。例外：設計釘住的 gate 檔讀取端不得默默改寬容，要另案提出。
@@ -101,6 +131,12 @@ parent_skill: ztm-verify-before-done
 - **伺服器看不懂的參數會靜默退回預設值，不會報錯**：例如 TPEx `date=yyyy/mm` 不解析就回當月資料。新接的查詢要用
   兩個不同參數值比對回應確實不同；盤中檔的第一列也可能是前一日收盤（TWSE 5 秒檔 09:00:00 列），差異集中在第一個
   檢查點時先查這列。（ai_trader ipo-auction-source、v30）
+- **「ok、0 列」不等於完成，欄位按名稱不按位置，API 列得到的才算存在。** 來源對假日回 ok＋0 列，要另一個來源也說
+  休市才記完成；官方行事曆說開盤但兩個來源都沒資料＝臨時休市，正確答案是空。數字欄出現文字（除息／除權、`---`）記
+  NaN（未知），不是 0。規劃多年回測前先查 API 的合約列舉範圍：shioaji `Contracts` 只列目前掛牌的 TXO，到期合約不在裡面，
+  選擇權多年盤中歷史在券商 API 不存在，只能前瞻收集——先 1 次登入＋2 次 kbars 探測再排計畫。（ai_trader v30 2026-10-24）
+- **看守長任務要盯「每段都會長的檔」**（逐段 JSONL、心跳檔），不要盯「整塊完成才寫一行」的 run_log：ai_trader
+  2026-10-29 長錄音轉文字 run_log 25 分鐘沒新行，其實 8 個程序都在寫，盯 run_log 就是 stale 誤報。
 - **兩個來源互相同步，逐項以最新狀態與時間戳判定，兩個方向都要寫，衍生檔跟著來源的刪除走。** 判定順序
   搬移→重複→新增→刪除；哪邊是「最新」看那一項的修改時間，不是整份檔案誰新。一個方向停了幾天的真正原因是
   「以為寫不進去」（Chrome 的加密書籤檔）——「做不到」要先在對方同款機制上實測過才算（Edge 前一天已驗證：移開加密副本就讀明文檔），
@@ -175,3 +211,9 @@ parent_skill: ztm-verify-before-done
   sinopac-trading-system/scripts/code_reachability.py；memory v30-cash-intraday-leadlag-20261024）
 - **控制第三方軟體先找它的設定語意（登錄檔／設定檔），不要先做 UI 模擬**；例：PotPlayer 切檔變大小是
   `ScreenFitBySize`。（hub-root potplayer-fixed-window-registry）
+- **Claude Bash 工具會把命令文字裡的雙反斜線收成單反斜線，heredoc 的 'EOF' 引號不保護它**：用 heredoc 餵 Python 去 patch
+  原始碼時，來源裡的 `\\x00` 落地成真正的 0x00（pytest `source code string cannot contain null bytes`、CreateProcess
+  `embedded null character`），`\\.` 變成無效跳脫，正規表示式與路徑字串全走樣，而且同一寫法重修還是錯。做法：要透過
+  Bash 產生含反斜線的原始碼，先用 Write 工具把腳本寫成檔案再執行（Write 不收反斜線），或用 `chr(92) + "x00"` 拼；落地後用
+  Python `bytes([0]) in data` 檢查有沒有 NUL。（ai_trader 2026-10-29 order #14 連踩三次；ai_darkhero 同日 patch f1s-sources.py
+  的 `[ \t]+` 與 PAGE_STUB 正規表示式同樣走樣；memory bash-tool-heredoc-backslash-collapse、bash-tool-quirks）
