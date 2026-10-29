@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261029T134920Z-607b1ca6",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Fleet curator ai_darkhero, operator-authorized (2026-10-29): deliver the hub_tray code (with the new window-snap feature, ai_darkhero commit 68c2fa21) to this host WITHOUT starting it, and report the free-pool key state. Change nothing else.\n1. If C:\\ai_workspace\\ai_darkhero does not exist: run `git clone --depth 1 https://github.com/scss1199/ai_darkhero.git C:\\ai_workspace\\ai_darkhero` using this host's existing git credential (the same one the fleet riders push the carrier with; never type or print a token). Print the exit code and the last 3 lines of output. If it fails with an auth/permission error, print AUTH-FAIL and stop item 1 (the repo is private; nothing else to try).\n2. If the clone exists: print whether C:\\ai_workspace\\ai_darkhero\\tray\\window_snap.py and tray\\hub_tray.py exist, and `git -C C:\\ai_workspace\\ai_darkhero log -1 --format=%H`. Do NOT run hub_tray.py, do NOT register any rider or autostart (operator: tray 先不用開).\n3. Free pool: print whether C:\\ai_workspace\\_secrets\\api-matrix.json exists (yes/no only) and whether C:\\ai_workspace\\_skill\\engines\\token-onboard.py exists. Do not create keys, do not print any secret.\nReply raw lines only, each prefixed ALTOS-TRAY:.\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-10-29T13:49:20+00:00",
+  "expires_at": "2026-10-30T13:49:20+00:00"
+}
