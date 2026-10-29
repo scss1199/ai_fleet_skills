@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "scar3",
-  "package_sha": "1fa988bfd48ef6b6704ea8b801044495c6aa4341d1ad206e363b373c9b1b964e",
+  "package_sha": "7ab6d5655fbac7e373b10052331786529a4bf3fb1c10a7c11e21654453538a37",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
-  "validator_set_sha": "4cd6c4f2f40dde1d72c95b0136e576b587d2cca78832b1db6d04db8b5013a513",
+  "validator_set_sha": "3c59e8217350a4eb766d7010da225be137c9aea86d61c1ff62a41a4b5d0ebee6",
   "runner_state": "armed",
-  "observed_at": "2026-10-29T14:00:32.959450+00:00",
+  "observed_at": "2026-10-29T14:46:15.783234+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -355,7 +355,7 @@
     "base_proof_state": "PASS",
     "native_state": "UNKNOWN",
     "native_events": [],
-    "runtime_release_sha256": "e2fd7f0a1a2004f5e85077d432b28e529ebfe64eeed26801fcc1fb8b266f2a8f"
+    "runtime_release_sha256": "16772231e7003122521c4e98ee59c0a0235aa3ba94b8417b46a4b19f592d4f08"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
