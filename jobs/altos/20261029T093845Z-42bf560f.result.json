@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261029T093845Z-42bf560f",
+  "host": "altos",
+  "started_at": "2026-10-29T13:43:04+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_altos cwd=ai_altos auth=cli_credentials_file 89.7s]\nFOLLOW-1029: 1 sync cmd=C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\ai_workspace\\ai_altos\\scripts\\altos_fleet_sync.py sync --node ai_altos (hosts.json /hosts/HubClock/riders/0; I ran it with python.exe instead of pythonw so the output could be captured)\nFOLLOW-1029: 1 sync EXIT=1 — pull/install ok=true updated_count=56 errors=[] fames receipt verified=true package_sha=1fa988bfd48e… authority_manifest_sha=03a4dd51851ac37a; publish ok=false state=UNKNOWN reason=skill_copy_verification_failed failed_skills=[\"fames.incoming\"] (previous copy kept at C:\\ai_workspace\\_registry\\fleet-skill-export-backups\\ae4654e939e94cfd900ac61f7198559d\\skills)\nFOLLOW-1029: 1 bundle-manifest version=1.45.123\nFOLLOW-1029: 1 bundle-manifest package_sha=1fa988bfd48ef6b6704ea8b801044495c6aa4341d1ad206e363b373c9b1b964e\nFOLLOW-1029: 1 dir free-pool engines exit=0\nFOLLOW-1029: 2 _llm.py providers EXIT=1 (traceback last lines):\nFOLLOW-1029: 2   File \"C:\\ai_workspace\\_skill\\engines\\_llm.py\", line 719, in <module>\nFOLLOW-1029: 2     pool=Pool()\nFOLLOW-1029: 2   File \"C:\\ai_workspace\\_skill\\engines\\_llm.py\", line 54, in __init__\nFOLLOW-1029: 2     if not m: raise RuntimeError(f\"no api-matrix at {MATRIX}\")\nFOLLOW-1029: 2 RuntimeError: no api-matrix at C:\\ai_workspace\\_secrets\\api-matrix.json\nFOLLOW-1029: 3 NO-GIT (C:\\ai_workspace\\ai_darkhero does not exist on this host); no pull run\nFOLLOW-1029: 3 C:\\ai_workspace\\ai_darkhero\\tray\\window_snap.py exists=false\nFOLLOW-1029: 3 hub_tray.py not started; running tray not restarted\nFOLLOW-1029: nothing else changed; blocked on curator: provide api-matrix.json for altos, decide how window_snap.py reaches altos (no ai_darkhero checkout here), fix the fames.incoming publish check\n",
+  "stderr": "",
+  "finished_at": "2026-10-29T13:44:55+00:00"
+}
