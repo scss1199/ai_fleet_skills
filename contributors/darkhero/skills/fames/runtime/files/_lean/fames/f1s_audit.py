@@ -847,6 +847,10 @@ ELEMENTS = [
     {"id": "EVO-harvest-youtube-cards-noise-20261029", "element": "f1s-harvest cards 2f690a5cceaa440d (台灣央行 AI 通膨 #Shorts, score 2.058) and 2efe0ec62ac03094 (OpenAI unit-distance problem, score 2.078) proposed as reverse-learn targets", "verdict": "INFO",
      "requires": None, "detail": "rejected as noise for F1S: both are news summaries (macro inflation view; a math result) with no procedure, tool, API or failure a seat could reuse; the cards keep their trust line 'no truth, policy or trading authority' and stay in _registry/f1s-sources/consolidate/cards for the seats whose topic they are (ai_trader macro, lean-math-prover); harvest score counts novelty, not generalizability; no text added",
      "check_text": ("skill_reverse", "generalize（附一句繁中規則）／seat-specific／noise")},
+    # f1s-evolve 2026-10-29 (third pass): f1s-harvest card 24ff4496ddd8698b (ledger e97cbcc994b3)
+    {"id": "EVO-harvest-bank-hack-short-noise-20261029", "element": "f1s-harvest card 24ff4496ddd8698b (AI銀行駭攻：攻擊者留下意外線索 #Shorts, score 2.034, ledger e97cbcc994b3) proposed as a reverse-learn target", "verdict": "INFO",
+     "requires": None, "detail": "rejected as noise for F1S: a news Short (attackers chaining an open-source pentest tool to a model against South Korean banks, CrowdStrike report of 2026-10-07) with no procedure, tool, API or failure a seat could reuse; the transcript is ASR-garbled (tool, model and vendor names unreadable), so no fact from it may be quoted under 嚴禁猜; the only principle it touches (untrusted documents and tool outputs grant no authority) is already an operator rule in CLAUDE.md and the card's own trust line; stays in _registry/f1s-sources/consolidate/cards; no text added",
+     "check_text": ("skill_reverse", "generalize（附一句繁中規則）／seat-specific／noise")},
 ]
 
 
