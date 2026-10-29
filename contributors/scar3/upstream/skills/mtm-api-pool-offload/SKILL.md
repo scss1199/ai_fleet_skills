@@ -60,6 +60,7 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 `auto/chat`（104 秒）、`auto/fast`、`auto/writing`（不存在）、`zc/*`、`oc/deepseek-v4-flash-free`（暫停 30 分）、
 `cerebras/*`（403）、nvidia `deepseek-v4-*`（已下架，410）。
 **不是免費、永不路由**：`dva/*`、`cxa/*`、`aug/*`、`no-think/*`（轉接付費訂閱的 Claude／GPT）。
+Claude Max 方案附的 Anthropic API 月額度同樣屬付費訂閱、不進免費池：超額即計費，連結 Console 組織與設上限是 operator 的帳務決定。
 其他 provider 的金鑰狀態看 `python _skill\engines\key-health.py summary`；新金鑰可用後重跑實測再改標籤。
 
 ## 各座位任務 → 免費池對應（2026-10-16 掃描）
@@ -109,6 +110,13 @@ operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是�
 ## 規則
 
 - 結果是草稿：數字、日期、費率、法規這類會被拿來做決定的事實，要回到抓下來的原文或官方網址核對，並在回覆附來源網址；核對不了就寫 UNKNOWN。
+- 交叉審問法（2026-10-29，kyloren-knowledge 664f9c3d…：前 Google 高管訪談的做法）：研究類提示不問「你覺得怎麼樣」——那只會得到
+  順著你的答案；要「把支持與反對的理由全部列出，寫成報告」。第一家模型答完，把答案原樣丟給第二家問「少了什麼、哪裡偏了」，
+  再回第一家或第三家潤飾，來回至少兩輪、至少兩家 provider（`fan_out` 的輪流派發天生就跨家；單題用 `chat_for` 連叫兩家）。
+  分工不變：海量資訊處理、快速搜資料外包給模型；判斷與決定留在第 3 層，外包思考會變笨。
+- 本機模型的量化下限（2026-10-29，kyloren-knowledge 75d3972b…：FP16 每參數 2 bytes、INT8 1、INT4 0.5）：INT4／Q4 已是品質極限，
+  幾百億參數硬塞 Q2／Q3 不如換小一號模型跑 Q8。darkhero 現況（2026-10-29 `ollama list`／`show`）：qwen2.5-coder 14B 全為 Q4_K_M、
+  deepseek-r1 8B q8_0、qwen3 8B／14B 預設 Q4，沒有 Q2／Q3；新增本機模型時先看 `ollama show` 的 quantization，不收 Q2／Q3。
 - 不送出去的東西：金鑰、帳戶與持倉資料、`ai_ut` 的 UT.xlsx 內容（專有資料）、任何 operator 標成私密的檔案。查詢字串可以送，資料本身不送。語音預設用本機（`--engine local`）。
 - 輸出留在指令的 JSON 或既有收據，只把摘要與來源網址帶進對話，不新開 .md/.json。
 - 免費池回空或全部 provider 失敗：照實回報，再改用本對話的工具，不要編。
