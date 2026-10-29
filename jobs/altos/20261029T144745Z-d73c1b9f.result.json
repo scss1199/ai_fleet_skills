@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261029T144745Z-d73c1b9f",
+  "host": "altos",
+  "started_at": "2026-10-29T14:52:01+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_altos cwd=ai_altos auth=cli_credentials_file 141.9s]\nALTOS-HYG2: FAMES version 1.45.126 (sync exit 0, package_sha 8b14f4d71a1f…, verified true, contributors/altos push 0795aa09..dc85b819)\nALTOS-HYG2: summary {\"seats\":7,\"violations\":5,\"activity\":{\"ACTIVE\":2,\"IDLE\":1,\"DORMANT\":4},\"scheduled_task_findings\":0,\"moved\":5,\"planned_bytes\":5061114,\"applied\":true}\nALTOS-HYG2: publication {\"ok\":true,\"commit\":\"170da11c\",\"attempts\":1}\nALTOS-HYG2: note: hygiene exit 0; one non-fatal SyntaxWarning in _skill\\engines\\_paths.py:5 (invalid escape '\\e'); I did not check that commit 170da11c sits under contributors/altos.\n",
+  "stderr": "",
+  "finished_at": "2026-10-29T14:54:25+00:00"
+}
