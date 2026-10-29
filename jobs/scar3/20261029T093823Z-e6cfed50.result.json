@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261029T093823Z-e6cfed50",
+  "host": "scar3",
+  "started_at": "2026-10-29T13:44:02+00:00",
+  "kind": "prompt",
+  "ok": false,
+  "blocker": "claude_remote_exec_check_unreadable",
+  "stderr": "TimeoutExpired",
+  "finished_at": "2026-10-29T13:49:04+00:00"
+}
