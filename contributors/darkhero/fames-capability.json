@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "78acc7bb54eeb9d5d00f7246f57da5d18ff3d4ff3aab4fcc9818867627064b2b",
+  "package_sha": "1fa988bfd48ef6b6704ea8b801044495c6aa4341d1ad206e363b373c9b1b964e",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "4cd6c4f2f40dde1d72c95b0136e576b587d2cca78832b1db6d04db8b5013a513",
   "runner_state": "armed",
-  "observed_at": "2026-10-29T12:31:02.679228+00:00",
+  "observed_at": "2026-10-29T12:54:51.903668+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,40 +353,9 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "OBSERVED_PARTIAL_POPULATION",
-    "native_events": [
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-10-29T17:48:41+08:00",
-        "receipt_sha256": "ef6c728b4128110d99ab89826d72ad7bbc6e52dbc3f8db59caf6762c84461710"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-10-29T17:41:41+08:00",
-        "receipt_sha256": "fdd4dd7ed5913825d95d07193fe4011cc2ae4692d29e6d7d02ac1fb9948cea10"
-      },
-      {
-        "agent": "ai_photo",
-        "surface": "claude",
-        "observed_at": "2026-10-29T17:41:24+08:00",
-        "receipt_sha256": "bf2f7ca7b4ded14505e98f99cc7b5cf2303af44825b62ae14e0445c60737ba1f"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-10-29T20:23:15+08:00",
-        "receipt_sha256": "d79b4c5f8694d97061db25857c2e91e07816084335ed13b402c83827f840f41d"
-      },
-      {
-        "agent": "ai_photo",
-        "surface": "claude",
-        "observed_at": "2026-10-29T17:44:06+08:00",
-        "receipt_sha256": "0b7938adfe4517b75d5756a41ec6a703d786bddcce6c8d3f5edebcec3ba72377"
-      }
-    ],
-    "runtime_release_sha256": "ecc8f17c7f28d2591c95c95bfe0928cef7988e5cf2b9c97edede8a0ac5d09f20"
+    "native_state": "UNKNOWN",
+    "native_events": [],
+    "runtime_release_sha256": "e2fd7f0a1a2004f5e85077d432b28e529ebfe64eeed26801fcc1fb8b266f2a8f"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
