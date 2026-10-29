@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261029T143209Z-077203e2",
+  "host": "altos",
+  "started_at": "2026-10-29T14:37:01+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_altos cwd=ai_altos auth=cli_credentials_file 378.6s]\nALTOS-HYG: step1 sync=altos_fleet_sync.py sync --node ai_altos (Python312\\python.exe) EXIT=1 ok=false updated=47 errors=9 (fames:\"incoming copy is unversioned, installed 1.45.125\"; line-oa-ingest/token-preflight/ztm-cursor-edge-auth/ztm-git-ship/ztm-oauth-redirect-fleet/ztm-skill-submit:\"canonical install failed\"; pfkt-parallel-wave/windows-runtime-pitfalls:\"[Errno 13] Permission denied ... .incoming\\SKILL.md\")\nALTOS-HYG: bundle-manifest version=1.45.125\nALTOS-HYG: fleet-hygiene.py exists=True\nALTOS-HYG: hygiene EXIT=0\nALTOS-HYG: summary={\"seats\":7,\"violations\":5,\"activity\":{\"ACTIVE\":2,\"IDLE\":1,\"DORMANT\":4},\"scheduled_task_findings\":0,\"moved\":187,\"planned_bytes\":282551214,\"applied\":true}\nALTOS-HYG: publication={\"ok\":true,\"commit\":\"8afc8f01\",\"attempts\":1}\nALTOS-HYG: report=C:\\ai_workspace\\_registry\\fleet-hygiene\\desktop-rsniapr.json\nALTOS-HYG: seat=ai_roas findings=[\"charter_missing:CLAUDE.md,AGENTS.md,.cursor\\hooks.json\"]\nALTOS-HYG: seat=jci_taipei findings=[\"charter_missing:.cursor\\hooks.json\"]\nALTOS-HYG: seat=jci_taipei_cf_stage_bead917 findings=[\"charter_missing:CLAUDE.md,AGENTS.md,.cursor\\hooks.json\"]\nALTOS-HYG: seat=jci_taipei_committee_profiles findings=[\"charter_missing:.cursor\\hooks.json\"]\nALTOS-HYG: seat=jci_taipei_plaud_flow findings=[\"charter_missing:.cursor\\hooks.json\"]\nALTOS-HYG: scheduled_tasks=[]\n\n沒有下一步（照指令沒有修改其他東西；sync 的 9 個錯誤交由 ai_darkhero 處理）\n",
+  "stderr": "",
+  "finished_at": "2026-10-29T14:43:22+00:00"
+}
