@@ -27,6 +27,10 @@ parent_skill: ztm-verify-before-done
   呼叫端拿到 10053/10054 而不是 403，看起來像「偶發環境問題」。（ai_trader http-refusal-before-body-read-rst）
 - **判斷行程死活時，AccessDenied ≠ 已死。** 權限不足（例：S4U／session 0 起的行程）要當 UNKNOWN，不能據此再起一份，
   否則兩個 daemon 搶同一個 pid 檔一起跑。（ai_trader hubclock-duplicate-daemons）
+- **靜默安裝程式會提權後無聲跑好幾分鐘，一般權限看不到也殺不掉；看守要盯安裝目錄或它的 log，不是視窗。** 這台機器
+  UAC `ConsentPromptBehaviorAdmin=0`，安裝程式的 `/auto`／`/S` 直接提權不彈窗（零彈窗紅線下這是預期），於是「沒視窗」不等於
+  沒在裝、「殺不掉」不等於當機：完成判定用目標目錄出現主程式＋版本檔、或 `%APPDATA%` 下的 profile 資料夾，逾時再回報
+  UNKNOWN 附兩者路徑。（ai_trader 2026-10-29 mt5setup.exe /auto 約 6 分鐘無視窗；memory owner-fx-route-20261029）
 - **背景 python 會跳「應用程式錯誤」對話框**：CPython 3.12 的 `platform.*` 走 WMI COM thread，機器忙時崩潰 → csrss
   硬錯誤框（短暫、無 Event 1000）。背景程序避免在 import 期呼叫 `platform.machine()/uname()` 這類查詢；零彈窗紅線。
   （ai_trader zero-popup-python-crash-dialog；hub memory pythonw-platform-ver-flash）
@@ -65,6 +69,16 @@ parent_skill: ztm-verify-before-done
   下一輪又從頭重跑（ai_trader strategy_lineage 300 s 逾時、一小時被殺 3 次）；預算快用完時不要再開新的一天／新的一批
   （news_tone 保留 DAY_RESERVE_S）；前置條件已知不成立（owner 停用的 cockpit）就跳過，不要讓它每輪 rc=1。
   （ai_trader workflow-audit-20261020）
+- **「報價過期」「來源斷線」這類狀態是一段 episode，記一次進入＋一次恢復（附持續秒數），不是每次輪詢記一列**：
+  0.5 秒一輪的迴圈在紐約收盤後 12 分鐘寫了 247 列同一句話，真正的事件（何時斷、斷多久）反而要事後數列才知道。
+  做法：狀態機保存「目前是否在 episode 內」，轉入時寫 `*_begin`，轉出時寫 `*_end` 帶 `duration_s`；同一狀態重複輪詢
+  不寫。待機中的長迴圈另外每 5 分鐘寫一列 `heartbeat`（帶關鍵計數），看守才分得出「閒置」與「死掉」——這是
+  「盯每段都會長的檔」（時間與資料新鮮度）那條的寫入端。（ai_trader 79ecb9ee3；sinopac-trading-system/scripts/fx_scalp_runner.py `last_heartbeat`）
+- **多個實例共用同一個帳戶／目錄／佇列時，收尾只動自己建立的東西，乾跑永不執行會改狀態的分支**：共用的標籤
+  （MT5 magic、comment、檔名前綴）只證明「同一支程式」，不證明「這個行程」；收尾（視窗結束平倉、清理、退役）用本行程
+  自己記下的 ticket／id 集合判定歸屬，另一個實例開的一律不碰。ai_trader 2026-10-29：一個 dryrun runner 在視窗結束時把
+  另一個 demo runner 剛開的倉平掉（−0.26 AUD），修法＝`own_tickets` 集合＋`mode == "dryrun"` 不平倉（c8d33f58d）。
+  排程 rider、清理腳本、雙向同步的「刪掉對方多出來的」同理。
 - **呼叫有額度的遠端（Drive、LINE、Workers、免費池）的週期 rider，先比本機變更指紋，沒變就零遠端呼叫直接結束**：
   沒有變化的一輪也去 list／fetch，額度就這樣燒光。參考實作 ai_photo `src/ai_photo/drive_sync.py` 的
   `local_state()`／`last_full()`，測試 `tests/test_drive_sync.py::test_unchanged_folder_spends_no_rclone_call`。
@@ -78,6 +92,10 @@ parent_skill: ztm-verify-before-done
 
 - **事件時間與收到時間比對前先確認本機時鐘已同步**（W32Time 可能幾週沒同步）；時鐘慢會讓「收到早於事件」這種檢查
   靜默拒絕所有訊號，而且被去重的記錄把痕跡吃掉。（ai_trader orb-missed-signal-clock-skew）
+- **行情／事件來源的時間戳是對方伺服器的時鐘，不是 UTC**：GoMarkets-Demo 的 MT5 `tick.time` 比 UTC 快約 3 小時，拿 UTC
+  現在時間減它，每一筆都成了「未來」或永遠新鮮。做法：連線後用看到的最新一筆學 offset＝server_time − utc_now，之後只有
+  更新的 tick 才把 offset 往上修，新鮮度＝(now＋offset) − tick.time，超過門檻才算過期；換伺服器／重連就重學。
+  （ai_trader 25920a3a5，sinopac-trading-system/src/services/mt5_broker.py `_server_offset`）
 - **檔案內嵌的時間戳記可能是匯出時間，不是事件時間**：LINE 匯出的 m4a 四軌 creation_time 全落在 22:08:03–22:08:15
   （匯出那一刻）。這類時間只拿來和可信來源（簽到表、議程、使用者給的時間）比對、超過門檻就標待審，永遠不直接寫成事實。
   （jci_taipei jci-minutes-web-pipeline-benchmark 2026-10-23）
@@ -101,6 +119,12 @@ parent_skill: ztm-verify-before-done
 - **伺服器看不懂的參數會靜默退回預設值，不會報錯**：例如 TPEx `date=yyyy/mm` 不解析就回當月資料。新接的查詢要用
   兩個不同參數值比對回應確實不同；盤中檔的第一列也可能是前一日收盤（TWSE 5 秒檔 09:00:00 列），差異集中在第一個
   檢查點時先查這列。（ai_trader ipo-auction-source、v30）
+- **「ok、0 列」不等於完成，欄位按名稱不按位置，API 列得到的才算存在。** 來源對假日回 ok＋0 列，要另一個來源也說
+  休市才記完成；官方行事曆說開盤但兩個來源都沒資料＝臨時休市，正確答案是空。數字欄出現文字（除息／除權、`---`）記
+  NaN（未知），不是 0。規劃多年回測前先查 API 的合約列舉範圍：shioaji `Contracts` 只列目前掛牌的 TXO，到期合約不在裡面，
+  選擇權多年盤中歷史在券商 API 不存在，只能前瞻收集——先 1 次登入＋2 次 kbars 探測再排計畫。（ai_trader v30 2026-10-24）
+- **看守長任務要盯「每段都會長的檔」**（逐段 JSONL、心跳檔），不要盯「整塊完成才寫一行」的 run_log：ai_trader
+  2026-10-29 長錄音轉文字 run_log 25 分鐘沒新行，其實 8 個程序都在寫，盯 run_log 就是 stale 誤報。
 - **兩個來源互相同步，逐項以最新狀態與時間戳判定，兩個方向都要寫，衍生檔跟著來源的刪除走。** 判定順序
   搬移→重複→新增→刪除；哪邊是「最新」看那一項的修改時間，不是整份檔案誰新。一個方向停了幾天的真正原因是
   「以為寫不進去」（Chrome 的加密書籤檔）——「做不到」要先在對方同款機制上實測過才算（Edge 前一天已驗證：移開加密副本就讀明文檔），
