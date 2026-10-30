@@ -125,6 +125,13 @@ parent_skill: ztm-verify-before-done
   內主動解除，並寫一列有原因的紀錄（`excluded_close`）；(c) 一個測試把狀態建立在窗口前、推進時鐘跨過邊界，斷言狀態已解除。
   「窗口內沒新動作」的測試過了不代表窗口有效。（ai_trader 956eb20c8：`seconds_to_excluded_hour()`＋`exclude_lead_s`，
   tests/test_fx_scalp_runner.py test_held_position_is_flattened_before_the_excluded_hour_starts；memory owner-fx-route-20261029）
+- **測試夾具用「now − Δ」當事件時間、被測碼用本地日曆日當鍵，午夜後 Δ 內整套測試會假失敗**：夾具把成交時間設成
+  now−5 分鐘，碼以台北日期分桶 daily_realized 再查「今天」，台北 00:00–00:05 之間成交落在昨天、觀測在今天，拿到 0；
+  同一 commit 00:05 後全綠（ai_trader 2026-10-31 2f2140f3d：test_sim_risk_book*.py 4 failed→12 passed→全套 2862 passed）。
+  規則：(a) 夾具不用牆鐘減偏移，固定一個凍結時刻（或把 now 注入被測碼）讓事件與觀測落在同一日曆日；
+  (b) 任何以本地日期分桶的邏輯要有一個「事件在前一日 23:5x、觀測在次日 00:0x」的跨日測試，明寫期望；
+  (c) 剛推完就出現與改動無關的失敗，先看牆鐘是否在日界／時段邊界，再用乾淨 worktree 跑「同一 commit」
+  （`git worktree add --detach <scratch> <sha>`）判別，比跑前一 commit 更有判別力。（ai_trader memory risk-book-tests-taipei-midnight-window）
 - **事件時間與收到時間比對前先確認本機時鐘已同步**（W32Time 可能幾週沒同步）；時鐘慢會讓「收到早於事件」這種檢查
   靜默拒絕所有訊號，而且被去重的記錄把痕跡吃掉。（ai_trader orb-missed-signal-clock-skew）
 - **行情／事件來源的時間戳是對方伺服器的時鐘，不是 UTC**：GoMarkets-Demo 的 MT5 `tick.time` 比 UTC 快約 3 小時，拿 UTC
