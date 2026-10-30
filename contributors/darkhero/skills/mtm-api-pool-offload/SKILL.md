@@ -153,6 +153,10 @@ operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是�
   UNTESTED 而現有資料量得動的主張，用講者自己講的數字當預先登記門檻（supported_if 寫進收據、附 design_sha256）直接量：收據 JSON
   進該 seat 的 runtime/research/，結果回寫帳本該列，不另開 .md（ai_trader 505d100c6 scripts/research_voice_claims.py；
   runtime/research/voice_claims/report-20261030T194453Z.json：c6 台指 1 分鐘振幅中位數落 [70,80]、c23 四組外匯 D1 方向性）。
+  同一套做法適用任何進來的語音訊息、會議錄音、聊天建議。先用 seat 手上已有的檔案結清，不為一條主張新拉資料；講者的數字要
+  掃 seat 有的每個解析度（1／5／15／30／60 分）再判：判決只看他說的單位，但數字真正吻合的解析度寫進該列（ai_trader order #22：
+  70–80 點是 60 分鐘中位數 78，不是 1 分鐘的 9，c6 仍 TESTED_NEG）。結清後仍 UNTESTED 的每列要寫「還缺什麼資料」（帳本 note 欄，
+  例「需要 owner 實際標點位的資料集；目前沒有」），下次資料到了直接量，不必重讀錄音。
   回報第一句講使用者的結果帳本（成交／帳戶／實際產出）動了沒，研究判決只是附註（ztm-verify-before-done 「進度」規則）。
 - 固定撈腳本的 User-Agent 用誠實的工具名（例 `ai_trader-research-pull/1.0`），不要裝成瀏覽器：只有 OS 字串、沒有其他瀏覽器
   標頭的假瀏覽器 UA 讓 FRED 讀取逾時、IMF 回 403，誠實 UA 兩者都 2 秒內回（ai_trader 2026-10-28，10 組 UA×端點）。

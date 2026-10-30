@@ -139,6 +139,18 @@ matrix engine 333 個假設 2026-10-23 全數 SCREEN_FAIL——樣本內通過�
 `research_cash_intraday_leadlag.py` 的 `registration()`/`run()`（登記守門）、`matrix_engine.py` 的 `register()`/`screen()`/`forward()`/`decide()`（帳本＋前測 Bonferroni）。
 這是證據規則不是新 gate：PROOF 不加片語比對，照 ④ 由寫的人引用登記 commit 與收據。
 
+## 勝率先拆出場機制再歸因（ai_trader v37 2f2140f3d，F1S 2026-10-31 吸收）
+
+回報任何規則、模型或車道的勝率／敗率前，先把每筆結果按**出場機制**分組（到目標、停損、視窗結束強平／逾時平倉、手動），
+各組列筆數與淨額：勝率是出場機制決定的，不是訊號——出場政策可以把勝率買上去，淨值與 t 不會因此轉正。
+做法：(1) 勝率單獨不算進步，勝率、強平率、淨值、t 四個數同一行一起報，缺一寫 UNKNOWN；(2) 出場政策的候選跟進場門檻一樣
+整族預先登記（走上面「要先登記再算」），挑選只用登記時寫好的準則，**事後看到更好的同族變體不接線**，只在收據裡記；
+(3) 留倉到視窗後的政策（resolve／trailing）結算要掃 D+1 的成交列，否則勝率被截斷。
+ai_trader FX demo 帳本 52 筆：視窗結束強平 20 筆 0 勝、到目標 29 筆全勝、停損只 3 筆，中位持有 3,513 s＝整個視窗；
+v37 96 組出場×門檻 NOT_QUALIFIED（family p 1.0、walk-forward −136.7 USD），預先登記的 P2 樣本外勝率 56.5→78.0%、強平 50→8%、
+淨 −45.8→−42.4 USD；同組 flatten 版淨更好（−11.2）但事後才看到，沒接線。收據 runtime/research/fx_exit_policy/report-20261030T234347.json、
+settlement-<day>.json 的 by_magic／exits。這是 ④ 的證據規則不是新 gate：PROOF 不加片語比對。
+
 ## 大表的極值格子先驗方法（ai_trader 044cb51de，F1S 2026-10-30 吸收）
 
 任何大規模統計表（相關矩陣、排序分數、回測總表、評分面板）交付前，先看極值格子：top／bottom N 若**貼在值域邊界**（±1.000、0、滿分）
@@ -147,6 +159,14 @@ matrix engine 333 個假設 2026-10-23 全數 SCREEN_FAIL——樣本內通過�
 (3) 修完的 top 要能用一句話解釋成已知關係（同一資產兩個時鐘、母子公司），解釋不出來的留 UNKNOWN。
 ai_trader 第一版 9,330×9,330 相關矩陣用「各自視窗 z 分數除以共同日數」近似，top pairs 全是 ±1.000；改成六個遮罩矩陣乘法的精確 Pearson 後，
 top 變成同一資產兩個時鐘（FX ETF vs 匯率隔日 bar）。收據 ai_trader/sinopac-trading-system/runtime/research/correlation_matrix/order19-receipt.json（first_build_defect）。
+
+同一類表的**本徵分解**（相關／共變異矩陣的 eigenportfolio、因子數）另有三條讀法（ai_trader d85dd5bbf，F1S 2026-10-31 吸收）：
+(1) 本徵值大不等於可預測，結構只認兩個數——高於 Marchenko–Pastur 上緣（q=N/T）的個數，與**半樣本本徵向量 |cos|**，
+跨半樣本不穩（|cos| 低於約 0.5）的方向就算 λ 很大也只列不當因子；(2) 兩兩共同日拼出的矩陣可能不是半正定（最小本徵值為負），
+拿本徵向量當權重前先做 PSD 修補或改成共同日宇宙，否則寫 UNKNOWN；(3) 對稱／不對稱先量（||A−Aᵀ||/||A||）再選解法：
+對稱用 Lanczos（eigsh），有向 lag 矩陣用 Arnoldi（eigs）。ai_trader 9,330 檔：λ1 占 29.6%、60 個高於 MP 邊界 14.56，
+但半樣本 |cos| k=1 0.78、k=3 0.32、k≥5 ≤0.33→只有前 3–4 個方向是結構，最小本徵值 −155。收據 runtime/research/correlation_matrix/eigen/summary.json
+（marchenko_pastur.above_upper_edge、stability.cos_first_vs_second）。
 
 ## 大掃描相關檢定的三道閘（ai_trader e60f51a5d，F1S 2026-10-30 吸收）
 
