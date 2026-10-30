@@ -56,6 +56,10 @@ FIRST_READ_BYTES = 32 * 1024 * 1024
 KEEP_DAYS = 14
 ARTICLE_SLA_S = 24 * 3600
 ARTICLES_PER_TICK = 40                 # 6 h rider: 160 a day keeps a backlog inside the 24 h SLA
+# 2026-10-31: a tick measured 14 min 50 s for 40 articles (~22 s each: fetch + free-model digest) and HubClock
+# kills a rider at 600 s (DEFAULT_MAX_RUNTIME) - f1s-daily was rc 124 four runs straight and no digest landed.
+# The article pass stops at this budget and the rest waits for the next tick; scan + daily still run after it.
+ARTICLE_BUDGET_S = 420
 DAILY_AFTER_HOUR = 3
 LIVE_MAX_CHARS = 2600
 NW = 0x08000000 if os.name == "nt" else 0
@@ -414,7 +418,8 @@ def task_list(state: dict, opened: set[str], n: int = 60) -> list[dict]:
     return (opened_rows + archived)[:n]
 
 
-def read_articles(state: dict, now: float, opened: set[str], limit: int = ARTICLES_PER_TICK) -> dict:
+def read_articles(state: dict, now: float, opened: set[str], limit: int = ARTICLES_PER_TICK,
+                  budget_s: float = ARTICLE_BUDGET_S) -> dict:
     for u in state["urls"].values():                   # SLA: every pending URL past 24h is late, read or not
         if u["status"] == "pending":
             u["late"] = now - _epoch(u["seen"]) > ARTICLE_SLA_S
@@ -430,7 +435,12 @@ def read_articles(state: dict, now: float, opened: set[str], limit: int = ARTICL
         return {"read": 0, "pending": len(todo), "blocked": f"distill-url: {type(exc).__name__}"}
     tasks = task_list(state, opened)
     done = failed = 0
+    budget_hit = False
+    t0 = time.time()
     for u in todo:
+        if (done or failed) and time.time() - t0 >= budget_s:
+            budget_hit = True                     # the rest stays pending for the next tick (SLA still tracked)
+            break
         try:
             res = distill.distill_one(u["url"])
             res = res if isinstance(res, dict) else {}
@@ -459,7 +469,11 @@ def read_articles(state: dict, now: float, opened: set[str], limit: int = ARTICL
             if u["attempts"] >= 3:
                 u["status"] = "unreadable"            # never fabricated: recorded as unreadable with the reason
             failed += 1
-    return {"read": done, "failed": failed, "pending": sum(1 for u in state["urls"].values() if u["status"] == "pending")}
+    out = {"read": done, "failed": failed, "pending": sum(1 for u in state["urls"].values() if u["status"] == "pending")}
+    if budget_hit:
+        out["budget_hit"] = True
+        out["elapsed_s"] = round(time.time() - t0, 1)
+    return out
 
 
 # ── daily ───────────────────────────────────────────────────────────────────────────────────────

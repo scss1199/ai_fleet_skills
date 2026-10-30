@@ -148,6 +148,19 @@ matrix engine 333 個假設 2026-10-23 全數 SCREEN_FAIL——樣本內通過�
 ai_trader 第一版 9,330×9,330 相關矩陣用「各自視窗 z 分數除以共同日數」近似，top pairs 全是 ±1.000；改成六個遮罩矩陣乘法的精確 Pearson 後，
 top 變成同一資產兩個時鐘（FX ETF vs 匯率隔日 bar）。收據 ai_trader/sinopac-trading-system/runtime/research/correlation_matrix/order19-receipt.json（first_build_defect）。
 
+## 大掃描相關檢定的三道閘（ai_trader e60f51a5d，F1S 2026-10-30 吸收）
+
+一個饋送、因子或特徵對幾千檔標的掃相關（或對幾百個假設掃分數）後說「X 與 Y 相關」，掃描本身會製造贏家：格子越多，
+碰巧越過固定門檻的越多。交付前三道閘全過才算有東西，缺一道寫 UNKNOWN：(1) **solid-n 下限**——頭條極值只能來自共同觀測數
+≥ 下限（ai_trader 用 SOLID_N=200）的格子，薄格（n 63–85）的 |corr| 只列不排名；(2) **循環位移 surrogate**——把饋送整列循環位移
+（位移 ≥ 最小格數，抽 ≥ 200 次）重算同一個統計量，真值要超過 surrogate 的 p95，並附「碰巧越過門檻的期望格數」與實際越過數並列；
+(3) **對已持有資訊的增量 R²**——目標先回歸在矩陣已有的對照列（如 ^VIX，須早於交易時段已知），加入饋送後 R² 多出的量才是貢獻，
+相關高但增量 R² 接近 0 ＝ 重複資訊、權重 0。ai_trader 2026-10-30 五個免費情緒饋送掃 9,330 檔：第一版 6/48 過 band，全是薄格或已持有的
+VIX 資訊（VVIX→TWII −0.396 但增量 R² 0.009）；加三道閘後碰巧期望 2.4 vs 實際 6、最佳增量 R² 0.03–0.05，結論反轉為零權重。
+重用範本：`ai_trader/sinopac-trading-system/scripts/sentiment_feeds.py` 的 `band()`（surrogate）、`incremental()`（增量 R²）、SOLID_N 遮罩；
+收據 `runtime/research/sentiment_feeds/report.json`（expected_above_band_by_chance、above_band_solid、incremental_best）。
+這是 ④ 的證據規則不是新 gate：PROOF 不加片語比對。
+
 ## 參考樣本是量測目標，不是素材（ai_photo 2026-10-27，F1S 2026-10-28 吸收）
 
 使用者點名「理想狀態是 <資料夾／截圖／聲音／文章>」時，那份參考在整個任務裡對之後每一次修改都有效（f1s-intake 原話綁定；
