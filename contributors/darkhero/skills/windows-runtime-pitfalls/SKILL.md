@@ -112,6 +112,13 @@ parent_skill: ztm-verify-before-done
   做法：持久化上次推送的集合＋每項窗口截止；每輪算 retracted＝上次集合 − 本次集合 且 now＜窗口截止，retracted 非空就推，
   測試要同時覆蓋「撤回有推」與「到期沒推」。適用每個 seat 的 LINE／通知閘。（ai_trader 3a6ab78cd：東森 2614 截止日早上
   spread +10.9%→+9.0% 掉出申購名單卻無訊息；subscription_apply_list.py run() retracted／was，tests/test_subscription_apply_list.py）
+- **時間窗口／黑名單時段要管「已持有的狀態」，不只擋新動作**：閘放在「有沒有持倉」判斷之後，只會擋進場，
+  窗口前最後一刻進的單會被抱著跨過窗口（ai_trader fx_scalp_runner 排除 21、0 UTC 的 rollover，20:30 UTC 進場抱到 21:00 後：
+  付了 swap、連吃 3 次 60 s 報價停滯，excluded_hour 計數仍是 0）。規則：設定了任何時間窗口（排除時段、休市、維護、黑名單）
+  就要三件都做——(a) 窗口內不開新動作；(b) 行程自己擁有的狀態（持倉、鎖、租約、未完成批次）在窗口開始前一段 lead time
+  內主動解除，並寫一列有原因的紀錄（`excluded_close`）；(c) 一個測試把狀態建立在窗口前、推進時鐘跨過邊界，斷言狀態已解除。
+  「窗口內沒新動作」的測試過了不代表窗口有效。（ai_trader 956eb20c8：`seconds_to_excluded_hour()`＋`exclude_lead_s`，
+  tests/test_fx_scalp_runner.py test_held_position_is_flattened_before_the_excluded_hour_starts；memory owner-fx-route-20261029）
 - **事件時間與收到時間比對前先確認本機時鐘已同步**（W32Time 可能幾週沒同步）；時鐘慢會讓「收到早於事件」這種檢查
   靜默拒絕所有訊號，而且被去重的記錄把痕跡吃掉。（ai_trader orb-missed-signal-clock-skew）
 - **行情／事件來源的時間戳是對方伺服器的時鐘，不是 UTC**：GoMarkets-Demo 的 MT5 `tick.time` 比 UTC 快約 3 小時，拿 UTC
