@@ -312,7 +312,12 @@ def _is_human_prompt(row: dict) -> bool:
     blocks = _blocks(row)
     if not blocks:
         return False
-    return not any(isinstance(b, dict) and b.get("type") == "tool_result" for b in blocks)
+    if any(isinstance(b, dict) and b.get("type") == "tool_result" for b in blocks):
+        return False
+    # 2026-10-30: a background task's <task-notification> row has no isMeta flag but is tool output, not the
+    # operator speaking — it must not open a new prompt budget (same rule as claude-proof-hook.py).
+    text = "\n".join(str(b.get("text") or "") for b in blocks if isinstance(b, dict) and b.get("type") == "text")
+    return not text.lstrip().startswith("<task-notification>")
 
 
 def closing_text(path: Path) -> tuple[str, str | None]:

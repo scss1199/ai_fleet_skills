@@ -34,6 +34,21 @@ about the pipeline, not about a module existing on disk.
    `web_video_zct` worked for months while `probe_url` returned `non_fetch` for `web_video` and
    the Chrome→lane sync only read bookmarks already filed under `_mission_/<lane>`.
    Guard: `library_coverage._pipeline_ok`, which checks the ROUTE, not the import.
+3. **Status-level fake** — an auth/acquisition status that is not the result of a probe.
+   IG sat on 待驗證 for a month because the status page only checked that the cookie file
+   existed, `index.html` embedded a stale blocked-list, and every rebuild without `--probe`
+   dropped the verdict back to 待驗證; kemono (login-free) was listed as needing verification.
+   Rules (operator 2026-10-29, ai_metadata `216f9704`):
+   - 待驗證 is only the state BEFORE a live probe. A verified/blocked verdict is keyed on the
+     credential-file fingerprint and survives rebuilds until the file changes.
+   - A login-free source is `PUBLIC_READ` (公開來源), never 待驗證; its fetch failure is
+     來源端阻擋, not a login request to the operator.
+   - A primary source that answers 403 (twitter) must show the archive lane (Wayback) as the
+     live path with the per-account count it actually fetched — "blocked" alone is not a status.
+   - 不訂閱 = the download queue row is `declined` and the sweep never re-arms it; the
+     bookmark itself stays (the operator's list is not the engine's state).
+   Guard (ai_metadata): `tests/test_auth_inventory.py`, `tests/test_bookmark_sweep_refresh.py`,
+   `tests/test_person_page_schedule_status.py`.
 
 CITE: `C:\claude_technique\technique_output\50-techniques\zt-producer-consumer-audit.md`.
 

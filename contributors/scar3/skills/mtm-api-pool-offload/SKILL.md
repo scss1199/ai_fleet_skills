@@ -144,6 +144,12 @@ operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是�
   windows-runtime-pitfalls 先拿 load grant。講者分群：pyannote 管線要 HF token 不能離線，但快取的 `wespeaker-voxceleb-resnet34-LM`
   可離線在 CPU 載入；whisper 段落取 embedding 後 `AgglomerativeClustering` 用 cosine/average 會把約 90% 併成一群，
   `linkage="ward"`、`n_clusters=人數` 才分得開；基頻中位數猜性別（>165 Hz 女）只能標「推定」。
+- 錄音／逐字稿要「統整、琢磨」別人說的話（操盤手、顧問、會議發言）時，交付物是逐條主張帳本，不是再一份摘要
+  （ai_trader 2026-10-29：34 條，6 條被本 seat 已登記的回測否定、11 條事實成立、3 條純自述）：每條標講者、原句時間戳與
+  evidence_status ∈ TESTED_POS／TESTED_NEG／FACT_OK／UNTESTED／SELF_REPORT／UNKNOWN；TESTED 要指向本 seat 的測試或收據，FACT 要指向
+  能開的來源，自述與未測的不得寫成事實。講者由內容判定（聲紋分群會把一個人的話標到別人頭上，疑點回原音）；先找講話者自己
+  數字互相矛盾的地方。對方推薦的平台／券商／供應商另列來源表，附主管機關態度、評分網站的 pay-to-rate 報導與投訴數，結論寫在
+  使用者所在地的法律保護下。之後再有人引用這段錄音，直接用帳本的 evidence_status 回答。
 - 固定撈腳本的 User-Agent 用誠實的工具名（例 `ai_trader-research-pull/1.0`），不要裝成瀏覽器：只有 OS 字串、沒有其他瀏覽器
   標頭的假瀏覽器 UA 讓 FRED 讀取逾時、IMF 回 403，誠實 UA 兩者都 2 秒內回（ai_trader 2026-10-28，10 組 UA×端點）。
 

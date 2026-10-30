@@ -139,6 +139,15 @@ matrix engine 333 個假設 2026-10-23 全數 SCREEN_FAIL——樣本內通過�
 `research_cash_intraday_leadlag.py` 的 `registration()`/`run()`（登記守門）、`matrix_engine.py` 的 `register()`/`screen()`/`forward()`/`decide()`（帳本＋前測 Bonferroni）。
 這是證據規則不是新 gate：PROOF 不加片語比對，照 ④ 由寫的人引用登記 commit 與收據。
 
+## 大表的極值格子先驗方法（ai_trader 044cb51de，F1S 2026-10-30 吸收）
+
+任何大規模統計表（相關矩陣、排序分數、回測總表、評分面板）交付前，先看極值格子：top／bottom N 若**貼在值域邊界**（±1.000、0、滿分）
+或**全等於同一個數**，先懷疑方法再懷疑資料，不准當發現交付。做法：(1) 取 top/bottom 各 N 格，附每格的樣本數（共同日數、交易筆數）；
+(2) 邊界值配小樣本＝近似法貼邊的假象，改成精確公式（分母用每對自己的共同觀測，不用全表共同數）再算一次；
+(3) 修完的 top 要能用一句話解釋成已知關係（同一資產兩個時鐘、母子公司），解釋不出來的留 UNKNOWN。
+ai_trader 第一版 9,330×9,330 相關矩陣用「各自視窗 z 分數除以共同日數」近似，top pairs 全是 ±1.000；改成六個遮罩矩陣乘法的精確 Pearson 後，
+top 變成同一資產兩個時鐘（FX ETF vs 匯率隔日 bar）。收據 ai_trader/sinopac-trading-system/runtime/research/correlation_matrix/order19-receipt.json（first_build_defect）。
+
 ## 參考樣本是量測目標，不是素材（ai_photo 2026-10-27，F1S 2026-10-28 吸收）
 
 使用者點名「理想狀態是 <資料夾／截圖／聲音／文章>」時，那份參考在整個任務裡對之後每一次修改都有效（f1s-intake 原話綁定；

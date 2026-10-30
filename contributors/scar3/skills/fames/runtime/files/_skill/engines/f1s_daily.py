@@ -558,6 +558,14 @@ def render_live(day: str, state: dict, rows: dict, gap: dict, since: str) -> str
     if errs:
         lines.append("## Repeated tool errors (fix the cause, not the retry)")
         lines += [f"- [{seat}] x{n}: {sig[:120]}" for n, seat, sig in errs[:6]]
+    hyg = fleet_hygiene_rows(since)
+    if hyg:   # before the articles: live.md is capped at LIVE_MAX_CHARS and the first render of 2026-10-30 cut this off
+        lines.append("## Fleet hygiene (每台自己的 check/sweep 報告, fleet-hygiene.py fleet)")
+        for h in hyg:
+            act = h.get("activity") or {}
+            lines.append(f"- [{h['contributor']}] {str(h.get('at'))[5:16]} cwd {h.get('seats')} 違規 {h.get('violations')} "
+                         f"(active {act.get('ACTIVE')}/idle {act.get('IDLE')}/dormant {act.get('DORMANT')}) 搬 {h.get('moved')} "
+                         f"_delete {h.get('delete_gb')} GB" + (f" 首項 {h['findings'][0][:60]}" if h.get("findings") else ""))
     arts = [u for u in state["urls"].values() if u["status"] == "read" and str(u.get("read_at") or "") >= since]
     if arts:
         lines.append("## Articles read (24h)")
@@ -569,13 +577,6 @@ def render_live(day: str, state: dict, rows: dict, gap: dict, since: str) -> str
         lines.append("## 「需要你決定」 asked (24h): " + ", ".join(f"{s} {n}" for s, n in sorted(dec.items())))
     if gap["unregistered_seats"]:
         lines.append("## Matrix gaps: unregistered seats " + ", ".join(gap["unregistered_seats"]))
-    hyg = fleet_hygiene_rows(since)
-    if hyg:
-        lines.append("## Fleet hygiene (hosts' own check/sweep reports, fleet-hygiene.py)")
-        for h in hyg:
-            lines.append(f"- [{h['contributor']}] {str(h.get('at'))[:16]} seats {h.get('seats')} violations {h.get('violations')} "
-                         f"activity {h.get('activity')} moved {h.get('moved')} _delete {h.get('delete_gb')} GB"
-                         + (" findings: " + "; ".join(h["findings"][:5]) if h.get("findings") else ""))
     text = "\n".join(lines) + "\n"
     return text if len(text) <= LIVE_MAX_CHARS else text[:LIVE_MAX_CHARS - 40].rsplit("\n", 1)[0] + "\n(truncated)\n"
 
