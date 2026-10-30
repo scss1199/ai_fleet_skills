@@ -755,6 +755,21 @@ CMD_FAIL = re.compile(r"(?im)^\s*(?:error|fatal|exception|traceback|failed)\b|\b
 SELFTEST_CMD = re.compile(r"(?i)(?:self-?tests?|tests?_[\w-]+|[\w-]+_tests?|run_tests?)\.(?:py|js|ts|sh|ps1)\b|\bpytest\b|\bunittest\b|\bnpm\s+test\b|\bcargo\s+test\b|\bgo\s+test\b")
 TEST_FAIL = re.compile(r"(?i)\b[1-9]\d*\s+(?:failed|failures?|errors?)\b|\bFAILED\b|RESULT\s+FAIL|AssertionError|Traceback")
 TEST_OK = re.compile(r"(?i)\b[1-9]\d*\s+passed\b|\bok\b|RESULT\s+PASS|\bpass(?:ed)?\b|✓|全部通過")
+# A pytest summary line ("20 passed in 21.53s", "3 passed, 1 skipped in 0.4s") is distinctive enough to count
+# even when it reaches the transcript through a pipe, a subshell or a `tail` of the background task's output file
+# (f1s-evolve 2026-10-30, ai_trader 8bb262d4: `(cd … && pytest -q …) > file` ran in the background, the result
+# was read with `tail -4 file`, and the command of that read carried no test-runner token).
+PYTEST_SUMMARY = re.compile(r"(?i)\b[1-9]\d*\s+passed\b[^\n]{0,80}?\bin\s+\d+(?:\.\d+)?\s*s\b")
+# a command that RUNS a test runner (SELFTEST_CMD also matches a mere `sed -n 1,80p tests/test_x.py`)
+RUNNER_CMD = re.compile(r"(?i)\bpytest\b|\bunittest\b|\bnpm\s+test\b|\bcargo\s+test\b|\bgo\s+test\b|"
+                        r"(?:python[\w.]*|node|bash|sh|pwsh|powershell)(?:\.exe)?\s+(?:-\S+\s+)*\S*(?:self-?tests?|tests?_[\w-]+|[\w-]+_tests?|run_tests?)\.(?:py|js|ts|sh|ps1)\b")
+# Background-task completion rows: the client writes them as plain `user` rows WITHOUT isMeta, so until
+# 2026-10-30 each one opened a new "turn" and every Bash result before it (the test run itself) fell out of the
+# PROOF window — 20 tests_pass blocks in 7 days on ai_trader for this one cause.  They are tool output, not a
+# prompt: the turn continues and the row is read as the tool_result of the <tool-use-id> it names.
+TASK_NOTIFICATION = re.compile(r"^\s*<task-notification>")
+TASK_FIELD = re.compile(r"<(task-id|tool-use-id|output-file|status|summary)>(.*?)</\1>", re.S)
+TASK_OUTPUT_TAIL = 64 * 1024
 PATH_TOKEN = re.compile(
     r"(?:[A-Za-z]:[\\/]|~[\\/]|\.{1,2}[\\/]|/)?(?:[\w.@~-]+[\\/])*[\w@~-][\w.@~-]*\.[A-Za-z0-9]{1,8}\b"
 )
@@ -867,7 +882,43 @@ def _is_human_prompt(row: dict) -> bool:
     blocks = _blocks(row)
     if not blocks:
         return False
-    return not any(isinstance(b, dict) and b.get("type") == "tool_result" for b in blocks)
+    if any(isinstance(b, dict) and b.get("type") == "tool_result" for b in blocks):
+        return False
+    # a background task's completion row is tool output, not the operator speaking
+    return not TASK_NOTIFICATION.match(_text_of(blocks))
+
+
+def task_notification(row: dict) -> dict | None:
+    """A <task-notification> user row rewritten as the tool_result of the background tool call it names.
+    The content is the notification text plus the tail of its output file (fail-open: unreadable file =
+    notification text only).  is_error mirrors a non-`completed` status or a non-zero exit code."""
+    if row.get("type") != "user":
+        return None
+    text = _text_of(_blocks(row))
+    if not TASK_NOTIFICATION.match(text):
+        return None
+    fields = {k: v.strip() for k, v in TASK_FIELD.findall(text)}
+    parts = [text]
+    out = fields.get("output-file") or ""
+    if out:
+        try:
+            with open(out, "rb") as fh:
+                end = fh.seek(0, os.SEEK_END)
+                fh.seek(max(0, end - TASK_OUTPUT_TAIL))
+                parts.append(fh.read().decode("utf-8", "replace"))
+        except OSError:
+            pass
+    status = (fields.get("status") or "").lower()
+    summary = fields.get("summary") or ""
+    is_error = bool(status and status != "completed") or bool(re.search(r"exit code [1-9]", summary))
+    return {"type": "tool_result", "tool_use_id": fields.get("tool-use-id") or "", "content": "\n".join(parts),
+            "is_error": is_error, "task_notification": True}
+
+
+def _fact_blocks(row: dict) -> list:
+    """Blocks of a row as `facts` should see them: task-notification rows become one tool_result block."""
+    synthetic = task_notification(row)
+    return [synthetic] if synthetic else _blocks(row)
 
 
 def current_turn(path: Path) -> tuple[list[dict], dict | None, bool, str]:
@@ -955,9 +1006,29 @@ def _green_test(exec_mod, command: str, result: str, is_error) -> bool:
                 return True
         except Exception:  # noqa: BLE001
             pass
-    if is_error is not False or not SELFTEST_CMD.search(command):
+    if is_error is True:
         return False
-    return bool(TEST_OK.search(result)) and not TEST_FAIL.search(result)
+    # a runner command (pytest, python tests/test_x.py, selftest.py …); a `grep`/`sed -n`/`ls` whose only test
+    # token is a tests/test_x.py path is a read of a test file and is judged by the summary-line rule below
+    if SELFTEST_CMD.search(command) and (RUNNER_CMD.search(command) or not READ_CMD.search(command)):
+        return is_error is False and bool(TEST_OK.search(result)) and not TEST_FAIL.search(result)
+    # the runner's own summary line read back from a file / pipe (background pytest, `tail` of its output)
+    if READ_CMD.search(command) and PYTEST_SUMMARY.search(result):
+        return not TEST_FAIL.search(result)
+    return False
+
+
+def _test_scan_note(command: str, result: str, green: bool, is_error) -> str | None:
+    """One line for the tests_pass block message: which tool results were looked at as test evidence."""
+    # a `sed -n`/`grep` over tests/test_x.py is a read of a test file, not a run: only runner commands, summary
+    # lines and failed test output are worth listing (replay of ai_trader 8bb262d4 filled the list with reads)
+    looked = green or RUNNER_CMD.search(command) or PYTEST_SUMMARY.search(result) or (
+        SELFTEST_CMD.search(command) and TEST_FAIL.search(result or ""))
+    if not looked:
+        return None
+    verdict = "green" if green else ("error" if is_error is True else "not green")
+    cmd = " ".join(command.split())[:70] or "(task-notification)"
+    return f"{cmd} -> {verdict}"
 
 
 def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
@@ -972,6 +1043,8 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
         "read_result": False, "failure_observed": False, "searched": False, "scheduler_touched": False,
         "md_writes": [], "prompt_text": "", "searched_before_write": False, "first_code_write": None, "first_search": None,
         "test_after_write": False,
+        # 2026-10-30: which tool results were read as test evidence (shown in the tests_pass block message)
+        "test_scan": [],
     }
     last_write = -1
     last_read = -1
@@ -982,7 +1055,7 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
         haystack.append(f["prompt_text"])
     for row in rows:
         kind = row.get("type")
-        for b in _blocks(row):
+        for b in _fact_blocks(row):
             if not isinstance(b, dict):
                 continue
             if kind == "assistant" and b.get("type") == "tool_use":
@@ -1036,7 +1109,11 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
                 if SCHEDULER_TOUCH.search(command) or SCHEDULER_TOUCH.search(result or ""):
                     f["scheduler_touched"] = True
                 if name in BASH_TOOLS:
-                    if _green_test(exec_mod, command, result, is_error):
+                    green = _green_test(exec_mod, command, result, is_error)
+                    note = _test_scan_note(command, result, green, is_error)
+                    if note and len(f["test_scan"]) < 6:
+                        f["test_scan"].append(note)
+                    if green:
                         f["tests_pass"] = True
                         last_test = index
                     if ok and GIT_PUSH.search(command) and not GIT_FAIL.search(result):
@@ -1285,7 +1362,13 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
             else:
                 supported = bool(f.get(name))
             if not supported:
-                violations.append({"line": number, "class": name, "snippet": snippet, "need": NEEDS[name]})
+                need = NEEDS[name]
+                if name == "tests_pass":
+                    # say what was scanned, so a wrongly judged turn can be diagnosed from the block itself
+                    scan = f.get("test_scan") or []
+                    need += (f" (scanned {f.get('tool_calls', 0)} tool results since the last operator prompt; "
+                             + ("test-like: " + "; ".join(scan) if scan else "none looked like a test run") + ")")
+                violations.append({"line": number, "class": name, "snippet": snippet, "need": need})
         if classes.get("measurement", True):
             hay = f.get("haystack") or ""
             for m in MEASUREMENT.finditer(line):

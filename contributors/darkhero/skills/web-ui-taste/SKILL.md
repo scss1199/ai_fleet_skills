@@ -48,6 +48,17 @@ Playwright CLI = `microsoft/playwright-cli`（Apache-2.0）。F1S 只取做法�
    必須是 0（2026-10-16 ziyaoastro 的聊天輸入框就是這樣抓到的）。
    GAS 前端用專案自帶的 `local-gas-mock.js` 預覽；測試帳號只用專案 mock 檔裡的值。
 
+## 來回點擊驗證（反向學習自 ai_ziyaoastro 2026-10-29「來回按幾次不同功能就在那轉圈圈」）
+
+站內換頁（Astro ClientRouter／View Transitions、任何 SPA router）只在第一次整頁載入執行一次頁面腳本：
+沒有掛在 `astro:page-load`（或該 router 的 page-load 事件）上重新初始化的頁面，第二次進來載入資料的程式不會再跑，
+畫面永遠停在「載入中…」，而 API 本身 249 ms 就回了 200。所以**轉圈圈先查前端生命週期，不要先怪後端**：
+DevTools 看到 API 已回 200 但列表是 0 筆＝初始化沒再跑。規則：① 每頁的初始化不是綁 page-load 事件，就是對這頁
+取消站內換頁改整頁載入（含瀏覽器上一頁）；② 寫一個測試掃所有頁面，「有 page-load handler」必須等於「允許站內換頁」，
+新頁漏掉直接紅（`ai_ziyaoastro/tests/client_router_reload_guard_test.mjs`、`frontend/src/layouts/Base.astro`
+的 `REINIT`，b806548）；③ 宣稱前端修好前，在正式站用內建瀏覽器做至少三條來回路徑（A→B→A、A→B→上一頁→上一頁、
+A→C→A），每一站都要看到真資料，不是只截首頁；沒驗到的頁面要點名（synthesis 那輪就沒驗到）。
+
 ## 讀取速度（反向學習自 jci_taipei jci-web-fast-read，源頭 fracdigi psyncClientCache）
 
 資料多的後台頁一律「先畫、後驗、不清空」：① 先用 localStorage 裝置快取立刻畫面（帶版本 key 與 TTL）；

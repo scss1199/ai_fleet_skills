@@ -83,6 +83,22 @@ parent_skill: ztm-verify-before-done
   沒有變化的一輪也去 list／fetch，額度就這樣燒光。參考實作 ai_photo `src/ai_photo/drive_sync.py` 的
   `local_state()`／`last_full()`，測試 `tests/test_drive_sync.py::test_unchanged_folder_spends_no_rclone_call`。
   （ai_photo 2923431；2026-10-27 Cloudflare 全帳號額度耗盡事件）
+- **大多數時間是空的 outbox 不用短週期 rider 輪詢；寫入它的程式在結束時自己觸發消費者，rider 只當稀疏備援**：
+  operator 2026-10-29（ai_photo）「東西都確認傳完後就全空不用留任何資料夾 並讓 tray 不用一直像白癡偵測這裡」。
+  做法：①來源目錄唯讀（只讀、不增不減、交付時回報它的檔數沒變）；②每個會寫 outbox 的指令結束時 `kick()` 一次隱藏
+  背景 `run --until-empty`（CREATE_NO_WINDOW／pythonw，零前景），反覆上傳→逐檔比對（size+md5）→搬到確認區，直到
+  outbox 清空，連它留下的空日期資料夾也 rmdir（永遠不動 outbox 本身）；③outbox 沒檔就在任何遠端呼叫之前以 `empty`
+  結束，kick 對空 outbox 不起行程；④HubClock rider 只補中斷的上傳，週期從 10 分鐘放到 6 小時（縮短週期才需要授權）。
+  參考實作 ai_photo `src/ai_photo/drive_sync.py` `kick()`／`prune_empty()`，測試 `tests/test_drive_sync.py::
+  test_uploaded_outbox_ends_empty_with_no_folders`、`::test_kick_starts_nothing_for_an_empty_outbox`、
+  `::test_until_empty_repeats_until_the_outbox_is_empty`（ai_photo 6d28ac9，95 passed）。
+- **後端所有資料庫存取共用一把鎖時，先把「等鎖」和「用鎖」分開計時，再把持鎖期間的遠端寫入改成寫後（write-behind）**：
+  ai_ziyaoastro 2026-10-29 正式站 12 個同時請求，有的自己只用 DB 1 ms 卻排了 4–5.6 s，因為 `/fate` 持鎖 2.7 s、
+  每日第一次 `/daily` 持鎖寫遠端 Turso 2.6 s。做法：`_shared_get_conn` 量 `db_wait` 與 `db_use` 各自放進
+  Server-Timing（沒有這兩個數字就只能猜是後端慢還是排隊）；純快取表（period／ai_text cache）先寫行程內鏡像
+  （有上限）立即回傳、背景執行緒落庫、讀取先查鏡像；寫完要立刻讀回的寫入（profile refresh）保持同步，本機 sqlite
+  路徑不變。修後 12 個並發 `db_wait` 全 0 ms；剩下的慢是 CPU 計算（流年 8–16 s）而不是鎖，要分開報。
+  （ai_ziyaoastro 95a6f4f，`backend/app/storage/db.py`，`tests/db_cache_write_test.py`，全套 352 passed）
 - **git 128 先查殘留 `.git/index.lock`**：確認沒有長命 git 行程後改名成 `index.lock.stale-<時間>.MIGRATED-bak`（不刪）。
   殘鎖會讓排程備份「靜默不 commit」好幾天。（ai_trader git-index-lock-stale）
 - **把 runtime 資料移出 git 追蹤後，checkout／reset 到舊 commit 會用舊版覆寫正在用的檔案**（資料庫、kill flag）；
@@ -90,6 +106,12 @@ parent_skill: ztm-verify-before-done
 
 ## 時間與資料新鮮度
 
+- **「只在有變化才推」的通知閘，撤回也是新聞**：閘的鍵不是「今天要做的集合」，而是「上次已告訴使用者要做的集合」。
+  上次說了要做的項目，在使用者還能行動的窗口內掉出集合＝撤回，必須推送並寫明撤回原因；項目只是窗口到期而消失則不推。
+  空集合不等於沒事：前一晚說「申購」、早上條件不成立卻因「今天沒東西要做」而靜音，使用者會照舊指令行動。
+  做法：持久化上次推送的集合＋每項窗口截止；每輪算 retracted＝上次集合 − 本次集合 且 now＜窗口截止，retracted 非空就推，
+  測試要同時覆蓋「撤回有推」與「到期沒推」。適用每個 seat 的 LINE／通知閘。（ai_trader 3a6ab78cd：東森 2614 截止日早上
+  spread +10.9%→+9.0% 掉出申購名單卻無訊息；subscription_apply_list.py run() retracted／was，tests/test_subscription_apply_list.py）
 - **事件時間與收到時間比對前先確認本機時鐘已同步**（W32Time 可能幾週沒同步）；時鐘慢會讓「收到早於事件」這種檢查
   靜默拒絕所有訊號，而且被去重的記錄把痕跡吃掉。（ai_trader orb-missed-signal-clock-skew）
 - **行情／事件來源的時間戳是對方伺服器的時鐘，不是 UTC**：GoMarkets-Demo 的 MT5 `tick.time` 比 UTC 快約 3 小時，拿 UTC
