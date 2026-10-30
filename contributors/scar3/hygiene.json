@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "scar3",
-  "at": "2026-10-29T22:48:37",
+  "at": "2026-10-30T19:00:16",
   "hub": "C:\\ai_workspace",
-  "seconds": 40.9,
+  "seconds": 94.8,
   "check": {
     "seats": [
       {
@@ -28,7 +28,7 @@
         "dirty": 17,
         "unpushed": 0,
         "last_commit": "2026-10-23",
-        "newest_file": "2026-10-29",
+        "newest_file": "2026-10-30",
         "activity": "ACTIVE"
       },
       {
@@ -50,31 +50,33 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-10-29",
+        "newest_file": "2026-10-30",
         "activity": "ACTIVE"
       },
       {
         "seat": "ai_scar3",
         "missing": [],
         "findings": [
-          "dirty_files:705"
+          "dirty_files:720"
         ],
         "repo": "own",
-        "dirty": 705,
+        "dirty": 720,
         "unpushed": 0,
         "last_commit": "2026-10-28",
-        "newest_file": "2026-10-29",
+        "newest_file": "2026-10-30",
         "activity": "ACTIVE"
       },
       {
         "seat": "ai_wallpaper",
         "missing": [],
-        "findings": [],
+        "findings": [
+          "dirty_files:58"
+        ],
         "repo": "own",
-        "dirty": 49,
+        "dirty": 58,
         "unpushed": 0,
         "last_commit": "2026-10-28",
-        "newest_file": "2026-10-29",
+        "newest_file": "2026-10-30",
         "activity": "ACTIVE"
       },
       {
@@ -98,42 +100,42 @@
       "IDLE": 0,
       "DORMANT": 2
     },
-    "violations": 4
+    "violations": 5
   },
   "sweep": {
     "applied": true,
-    "planned": 8,
-    "planned_bytes": 5819234,
+    "planned": 16,
+    "planned_bytes": 29683643,
     "by_class": {
       "cache_dir": {
-        "count": 7,
-        "bytes": 2285928
+        "count": 9,
+        "bytes": 4099629
       },
       "backup": {
-        "count": 1,
-        "bytes": 3533306
+        "count": 7,
+        "bytes": 25584014
       }
     },
     "skipped": {
       "git_tracked": 5,
       "protected": 0
     },
-    "moved": 8,
+    "moved": 16,
     "engine": "fleet-residue-quarantine.py",
     "errors": []
   },
-  "delete_bytes": 7356821308,
+  "delete_bytes": 7386532374,
   "summary": {
     "seats": 7,
-    "violations": 4,
+    "violations": 5,
     "activity": {
       "ACTIVE": 5,
       "IDLE": 0,
       "DORMANT": 2
     },
     "scheduled_task_findings": 0,
-    "moved": 8,
-    "planned_bytes": 5819234,
+    "moved": 16,
+    "planned_bytes": 29683643,
     "applied": true
   }
 }
