@@ -60,6 +60,12 @@ parent_skill: ztm-verify-before-done
   （Win+Ctrl+Shift+B，**SendInput 注入不被核心接受，要實體按**）或重開機；Explorer 不用重啟，目標一死 DoDragDrop 就返回。
   預防：顯示卡顯存 ≥85% 先警告並列出佔用者。引擎 `fleet-hang-guard.py probe|run|watch`（probe 揪錯 lane 與 stabilize
   穩定 lane 平行；kill／gfx-reset 各自要 operator 旗標）。（ai_darkhero evidence/hang-dnd-20261028）
+- **Windows 判定視窗「對齊」看的是 DWM 可見框（`DWMWA_EXTENDED_FRAME_BOUNDS`），不是 `GetWindowRect`。** Win10/11 一般視窗在可見框外
+  還有一圈隱形縮放邊框（125% 下左右下各 8 px），兩個看起來貼齊的視窗 rect 其實重疊；Snap Layouts 把框邊放在工作區邊與鄰窗邊上
+  （右邊界 exclusive：鄰窗 left == 本窗 right）；自畫邊框的程式（LINE／Qt）框 == rect。所以量與搬都用框座標，搬動時再用「該視窗自己
+  的」邊框偏移換回 rect，resize 後偏移可能變、搬完讀回不符就修正一次；只碰非最小化、非最大化、未 cloaked（`DWMWA_CLOAKED`）、
+  有標題、非 tool 的他程視窗。通則：要替 OS 補一個它本來就有判定的行為（對齊、焦點、閒置），先量 OS 自己怎麼判、沿用它的模型，
+  不要自創門檻。（ai_darkhero 68c2fa21 tray/window_snap.py + tray/tests/test_window_snap.py）
 
 ## 重試、鎖、排程
 

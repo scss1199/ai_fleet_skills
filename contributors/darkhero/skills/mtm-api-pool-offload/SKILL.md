@@ -150,6 +150,10 @@ operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是�
   能開的來源，自述與未測的不得寫成事實。講者由內容判定（聲紋分群會把一個人的話標到別人頭上，疑點回原音）；先找講話者自己
   數字互相矛盾的地方。對方推薦的平台／券商／供應商另列來源表，附主管機關態度、評分網站的 pay-to-rate 報導與投訴數，結論寫在
   使用者所在地的法律保護下。之後再有人引用這段錄音，直接用帳本的 evidence_status 回答。
+  UNTESTED 而現有資料量得動的主張，用講者自己講的數字當預先登記門檻（supported_if 寫進收據、附 design_sha256）直接量：收據 JSON
+  進該 seat 的 runtime/research/，結果回寫帳本該列，不另開 .md（ai_trader 505d100c6 scripts/research_voice_claims.py；
+  runtime/research/voice_claims/report-20261030T194453Z.json：c6 台指 1 分鐘振幅中位數落 [70,80]、c23 四組外匯 D1 方向性）。
+  回報第一句講使用者的結果帳本（成交／帳戶／實際產出）動了沒，研究判決只是附註（ztm-verify-before-done 「進度」規則）。
 - 固定撈腳本的 User-Agent 用誠實的工具名（例 `ai_trader-research-pull/1.0`），不要裝成瀏覽器：只有 OS 字串、沒有其他瀏覽器
   標頭的假瀏覽器 UA 讓 FRED 讀取逾時、IMF 回 403，誠實 UA 兩者都 2 秒內回（ai_trader 2026-10-28，10 組 UA×端點）。
 
