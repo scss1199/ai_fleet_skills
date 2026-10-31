@@ -61,6 +61,7 @@ DEFAULTS = {
     "max_blocks_per_turn": 2,
     "max_blocks_per_session": 12,
     "classes": {
+        "popup_gate": True,       # 2026-10-31: visible windows / focus steal from a tool call (red line)
         "tests_pass": True, "pushed": True, "committed": True, "deployed": True,
         "verified": True, "completion": True, "measurement": True,
         # 2026-10-13 (operator: 「藉由 LEAN … 直接杜絕任何可能的說謊與假裝」): the classes that escaped
@@ -447,6 +448,102 @@ def _publish_gate(doc: dict, tool: str, ti: dict) -> dict | None:
                                    "permissionDecisionReason": reason}}
 
 
+# ── popup / focus-steal gate (2026-10-31) ─────────────────────────────────────────────────────────────────────────
+# Operator red lines RL-PERIODIC-FOREGROUND-POPUP / RL-POPUP-OAUTH-ONLY (零前景, 零彈窗: only an OAuth sign-in may pop).
+# The static auditor (zt-foreground-guard) scans rider/hook entry files after the fact and the live detector
+# (flash_watch.py) was not armed; nothing stopped an interactive turn from running `Start-Process mt5setup.exe`,
+# `AppActivate` + `SendKeys` (ai_trader 2026-10-28), a `-WindowStyle Hidden` launcher (fake hidden: conhost + focus
+# steal) or writing one into a script. This gate denies those tool calls before they run. Comment lines, grep/rg/
+# Select-String/re.compile lines and Markdown files are not matched; an OAuth/login/authorize command may open a browser.
+POPUP_RULES = (
+    ("fake-hidden", re.compile(r"(?i)-WindowStyle\s+Hidden|(?<![\w-])-w\s+hidden\b"),
+     "powershell -WindowStyle Hidden 仍會配 conhost 並在隱藏前搶焦點（假隱藏）"),
+    # call syntax only: prose that names these APIs (a memory note, a report line) is not a call
+    ("focus-steal", re.compile(r"(?i)AppActivate\s*\(|SendKeys\]::|SendKeys\s*\(|SendWait\s*\(|SetForegroundWindow\s*\(|BringWindowToTop\s*\(|SwitchToThisWindow\s*\("),
+     "AppActivate / SendKeys / SetForegroundWindow 會把別的視窗搶到前景"),
+    ("start-process-gui", re.compile(r"(?i)\bStart-Process\b(?![^\n;|]*(?:pythonw(?:\.exe)?|wscript(?:\.exe)?|-NoNewWindow))"),
+     "Start-Process 會開一個可見視窗（安裝程式、瀏覧器、主控台）；背景程式用 pythonw / CREATE_NO_WINDOW / wscript Run(...,0)"),
+    ("cmd-start", re.compile(r"(?i)(?:^|[;&|(]\s*|cmd(?:\.exe)?\s+/[ck]\s+)start\s+(?:\"\"\s*)?(?:/min\s+|/b\s+)?[\"']?(?!pythonw|wscript)[A-Za-z\\/\.]"),
+     "cmd `start` 會開新視窗"),
+    ("open-gui", re.compile(r"(?i)(?:^|[;&|\s(])(?:explorer(?:\.exe)?\s+[\"'A-Za-z/\\.]|Invoke-Item\b|os\.startfile\(|webbrowser\.open(?:_new)?\()"),
+     "explorer / Invoke-Item / os.startfile / webbrowser.open 會開可見視窗"),
+    ("messagebox", re.compile(r"(?i)\bMessageBox\w*\s*\(|Windows\.Forms\.MessageBox|\bmsg\s+\*\s|tkinter\.messagebox|ctypes\.windll\.user32\.MessageBox"),
+     "MessageBox 是搶焦點的模態對話框"),
+    ("console-flash", re.compile(r"CREATE_NEW_CONSOLE|creationflags\s*=\s*0\b"),
+     "新主控台會閃出黑窗"),
+)
+POPUP_WEB_RULE = ("browser-modal", re.compile(r"(?<![\w.])(?:alert|confirm|prompt)\s*\(|window\.open\s*\("),
+                  "前端 alert()/confirm()/prompt()/window.open() 是模態彈窗，改用頁內 toast 與兩段式按鈕")
+POPUP_CODE_EXT = (".py", ".ps1", ".psm1", ".bat", ".cmd", ".js", ".ts", ".tsx", ".jsx", ".html", ".htm", ".vbs", ".ahk")
+POPUP_WEB_EXT = (".js", ".ts", ".tsx", ".jsx", ".html", ".htm", ".vue", ".svelte")
+OAUTH_OK = re.compile(r"(?i)oauth|authorize|login|sign[- ]?in|consent|device[_ ]code|auth[_ ]url")
+POPUP_SKIP_LINE = re.compile(r"(?i)^\s*(#|//|\*|rem\b|<!--|-- )|\b(grep|rg|findstr|Select-String|re\.compile|re\.search|re\.match|re\.finditer|\.search\(|\.match\(|sed|awk|perl\s+-p)\b")
+# Test suites and scratch patch scripts legitimately quote the forbidden forms (the gate's own tests do).
+POPUP_EXEMPT_PATH = re.compile(r"(?i)[\\/](tests?|scratchpad|_delete)[\\/]|[\\/]test_[^\\/]*\.py$")
+POPUP_REASON = (
+    "PROOF POPUP GATE (operator red line 零前景／零彈窗, RL-POPUP-OAUTH-ONLY): this call would open a visible window or "
+    "steal focus — {what}. Fix: run background work with pythonw.exe or subprocess creationflags=CREATE_NO_WINDOW "
+    "(or wscript Run(...,0)); drive an app through its API/CLI instead of AppActivate+SendKeys; never Start-Process a "
+    "GUI/installer from a session; front-end confirmations are inline two-step buttons, notices are toasts. Only an "
+    "OAuth sign-in may open a browser window (name it in the command). Kill switch: _registry/proof.json "
+    "classes.popup_gate=false."
+)
+
+
+def _popup_live_text(text: str) -> str:
+    """Drop lines that only talk about the pattern (comments, searches, regex definitions)."""
+    return "\n".join(l for l in text.splitlines() if not POPUP_SKIP_LINE.search(l))
+
+
+def popup_violations(tool: str, ti: dict) -> list[tuple[str, str]]:
+    """[(rule, snippet)] for a tool call that would pop a window or steal focus; [] when clean."""
+    if tool in ("Bash", "PowerShell"):
+        text = str(ti.get("command") or "")
+        rules = list(POPUP_RULES)
+        web = False
+    elif tool in ("Write", "Edit", "MultiEdit"):
+        path = str(ti.get("file_path") or "").lower()
+        if not path.endswith(POPUP_CODE_EXT) or POPUP_EXEMPT_PATH.search(path):
+            return []
+        text = str(ti.get("content") or ti.get("new_string") or "")
+        if not text and isinstance(ti.get("edits"), list):
+            text = "\n".join(str(e.get("new_string") or "") for e in ti["edits"] if isinstance(e, dict))
+        rules = [r for r in POPUP_RULES if r[0] != "open-gui" or path.endswith((".ps1", ".bat", ".cmd"))]
+        web = path.endswith(POPUP_WEB_EXT)
+    else:
+        return []
+    live = _popup_live_text(text)
+    out = []
+    for rule, pat, why in rules:
+        m = pat.search(live)
+        if not m:
+            continue
+        if rule == "open-gui" and OAUTH_OK.search(live):
+            continue                                  # the one sanctioned popup: an OAuth / login window
+        out.append((rule, f"{why}: `{live[max(0, m.start() - 30):m.end() + 40].strip()[:110]}`"))
+    if web:
+        rule, pat, why = POPUP_WEB_RULE
+        m = pat.search(live)
+        if m:
+            out.append((rule, f"{why}: `{live[max(0, m.start() - 30):m.end() + 40].strip()[:110]}`"))
+    return out
+
+
+def _popup_gate(doc: dict, tool: str, ti: dict) -> dict | None:
+    hits = popup_violations(tool, ti)
+    if not hits:
+        return None
+    what = "; ".join(h[1] for h in hits[:3])
+    _log({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "session_id": str(doc.get("session_id") or ""),
+          "event": "PreToolUse", "tool": tool, "matched": "popup_gate", "rules": [h[0] for h in hits],
+          "what": what[:300], "verdict": "deny", "cwd": str(doc.get("cwd") or "")})
+    reason = POPUP_REASON.format(what=what[:300])
+    if "cursor_version" in doc or str(doc.get("hook_event_name") or "") == "preToolUse":
+        return {"permission": "deny", "user_message": reason, "agent_message": reason}
+    return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                   "permissionDecisionReason": reason}}
+
+
 def pre_tool_use(doc: dict, cfg: dict) -> dict | None:
     """Deny the CREATION of an unrequested .md / .json before it is written.  One gate for Claude Code
     (`PreToolUse`), Codex (`PreToolUse`, same reply shape) and Cursor (`preToolUse`, `permission` reply).
@@ -455,6 +552,10 @@ def pre_tool_use(doc: dict, cfg: dict) -> dict | None:
     ti0 = doc.get("tool_input") if isinstance(doc.get("tool_input"), dict) else {}
     if (cfg.get("classes") or {}).get("publish_gate", True):
         gated = _publish_gate(doc, tool0, ti0)
+        if gated:
+            return gated
+    if (cfg.get("classes") or {}).get("popup_gate", True):
+        gated = _popup_gate(doc, tool0, ti0)
         if gated:
             return gated
     if not (cfg.get("classes") or {}).get("unrequested_file", True):

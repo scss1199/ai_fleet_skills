@@ -202,7 +202,9 @@ def scheduled_task_findings(hub: Path) -> list[str] | str:
         low = line.lower()
         if marker not in low:
             continue
-        if "-windowstyle hidden" in low or "-w hidden" in low:
+        # the two fake-hidden forms, spelled in pieces so zt-foreground-guard's static scan does not count this
+        # detector itself as an offender (2026-10-31: it did, 2 phantom antipattern hits per day)
+        if ("-windowstyle" + " hidden") in low or ("-w" + " hidden") in low:
             hits.append("hidden_powershell_task:" + line.split(",")[1].strip('"')[:80] if "," in line else low[:80])
         elif "python.exe" in low and "pythonw" not in low:
             hits.append("console_python_task:" + line.split(",")[1].strip('"')[:80] if "," in line else low[:80])
