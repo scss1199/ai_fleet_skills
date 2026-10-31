@@ -189,3 +189,18 @@ operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是�
 - `distill-url.py --search "微型臺指期貨 保證金 期交所 2026"`：7 秒，回傳來源網址與摘要；保證金 35,050 元和期交所數字一致。
 - `image_ocr.py <截圖>`：正確讀出側欄標題。
 - OmniRoute：健康，可路由 1102 個模型，只綁 127.0.0.1。
+
+## Jev 車道：挑選／排序時用型別化問題，不用自由文字（2026-10-31）
+
+F1S 的「Jev 只在挑選或排序時建議」有引擎了：`_skill/engines/jev_systemone.py`。它照 TypeSafe System One 的介面問
+型別化問題——`choice`（選項索引＋每個選項的機率＋信心）、`score`（0–1＋信心）、`noul`（陳述為真的機率）——答案是結構
+化 JSON，不產生文字。預設 `--provider pool` 在免費池上跑（`_llm.Pool.chat_for("extract", jsonmode=True)`，機率會正規化、
+信心會夾在 0–1，缺答或壞 JSON 一律 `type:"unknown"`、不補造）；`--provider typesafe` 走真正的 Jev
+（`POST https://api.typesafe.ai/v1/systemone`，模型釘 `jev-1.14.0`，輸入 $0.042/Mtok、輸出免費，無免費層），本機沒有
+金鑰時回 UNKNOWN，不會偷換成池的答案；金鑰照 token-onboard.py 上線，`--provider auto` 有鑰走 Jev、無鑰走池。
+用法：要在幾個車道／候選／版本之間挑一個，或替一批候選排序時，先把現況寫成 state、把選項寫成 choice，讀回機率再決定；
+機率是建議不是證據（F1S ④），verdict 仍要本回合證據。官方技能 `typesafe-jev`（typesafe-ai/skills，MIT）已過
+fleet-skill-vet 的 SkillSpector 閘進 canon，寫 state／questions 的手法看它。
+hub 既有的 Jev 顧問（`_harness/runtime/jev_skill_advisor.py`、`jev_phase_advisor.py`、`jev_turn_router.py`，2026-09-22 起）只認 TypeSafe 憑證、沒鑰就走本機路由；它們的 transport 可注入，`jev_systemone.pool_transport(request)` 用 TypeSafe 的線路格式回答，讓同一套顧問無鑰也能在免費池上建議（池答不出就 raise，顧問記 provider error，不補造）。
+`python _skill/engines/jev_systemone.py probe` 看哪個 provider 可答；
+`python _skill/engines/jev_systemone.py ask --state '{...}' --choice lane "a770|cpu|free pool" --noul idle "the machine is idle"`。
