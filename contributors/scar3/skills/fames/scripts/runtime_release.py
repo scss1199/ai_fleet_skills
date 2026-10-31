@@ -234,9 +234,17 @@ def build(workspace, package_root, source_paths) -> dict:
             if _sha(_read_file(_beneath(workspace, relative))) != row['sha256']:
                 raise ReleaseError('source_changed_during_build', relative)
         if previous:
-            backup = _beneath(workspace, '_registry/fames-runtime-build-backups/' + previous['release_sha256'] + '/' + uuid.uuid4().hex)
-            backup.parent.mkdir(parents=True, exist_ok=True)
-            os.replace(runtime, backup)
+            backup = _existing_build_backup(workspace, previous)
+            if backup is None:
+                backup = _beneath(workspace, '_registry/fames-runtime-build-backups/' + previous['release_sha256'] + '/' + uuid.uuid4().hex)
+                retired = backup
+            else:
+                # The same bytes are already held by a verified backup; the retired tree is
+                # quarantined for the operator instead of growing a second registry copy.
+                retired = _beneath(workspace, '_delete/' + dt.date.today().isoformat() + '-fames-runtime-build-redundant/'
+                                   + previous['release_sha256'] + '/' + uuid.uuid4().hex)
+            retired.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(runtime, retired)
         os.replace(stage, runtime)
         final = verify(package)
         if not final['ok']:
@@ -247,6 +255,20 @@ def build(workspace, package_root, source_paths) -> dict:
     except Exception as exc:
         return {**_error(exc, 'UNKNOWN_BUILD'), 'retained_stage': str(stage) if stage else None,
                 'retained_backup': str(backup) if backup else None}
+
+
+def _existing_build_backup(workspace: Path, previous: dict) -> Path | None:
+    """A verified earlier backup of exactly this release (content-addressed release_sha256)."""
+    parent = _beneath(workspace, '_registry/fames-runtime-build-backups/' + previous['release_sha256'])
+    if not parent.is_dir():
+        return None
+    for candidate in sorted(parent.iterdir()):
+        try:
+            if candidate.is_dir() and _verify_runtime(candidate)['release_sha256'] == previous['release_sha256']:
+                return candidate
+        except Exception:
+            continue
+    return None
 
 
 @contextlib.contextmanager
@@ -376,11 +398,31 @@ def _previous(path: Path) -> dict | None:
     return doc
 
 
+def _archive_previous_receipt(workspace: Path, previous: bytes, fallback_attempt: str) -> None:
+    """One archive per attempt, named by the archived receipt's own attempt_id.
+
+    A later snapshot of the same attempt replaces its earlier one (APPLYING -> final), and
+    identical bytes are never rewritten. attempt+uuid names had grown to 5080 files by 2026-10-31.
+    """
+    attempt = fallback_attempt
+    try:
+        candidate = json.loads(previous).get('attempt_id')
+        if isinstance(candidate, str) and re.fullmatch(r'[0-9a-f]{32}', candidate):
+            attempt = candidate
+    except (ValueError, AttributeError):
+        pass
+    archive = _beneath(workspace, '_registry/fames-runtime-receipts/' + attempt + '.previous.json')
+    if archive.exists() and _sha(_read_file(archive)) == _sha(previous):
+        return
+    temporary = archive.with_name(archive.name + '.' + uuid.uuid4().hex + '.stage')
+    _write_new(temporary, previous)
+    os.replace(temporary, archive)
+
+
 def _persist_receipt(workspace: Path, receipt: dict) -> None:
     path = _beneath(workspace, '_registry/fames-runtime-release.json')
     if path.exists():
-        archive = _beneath(workspace, '_registry/fames-runtime-receipts/' + receipt['attempt_id'] + '.' + uuid.uuid4().hex + '.previous.json')
-        _write_new(archive, _read_file(path))
+        _archive_previous_receipt(workspace, _read_file(path), receipt['attempt_id'])
     _atomic_json(path, receipt)
     if json.loads(path.read_bytes()) != receipt:
         raise ReleaseError('installation_receipt_readback_failed')
