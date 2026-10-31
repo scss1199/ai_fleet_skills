@@ -67,6 +67,8 @@ TEXTS = {
     "distill_url": HUB / "_skill" / "engines" / "distill-url.py",
     "websearch_engine": HUB / "_skill" / "engines" / "websearch.py",
     "skill_preflight": HUB / "_skill" / "fleet-skills" / "token-preflight" / "SKILL.md",
+    "session_tax": HUB / "_skill" / "engines" / "audit-session-tax.py",
+    "transcript_audit": HUB / "_skill" / "engines" / "f1s-transcript-audit.py",
     "git_smart": HUB / "_skill" / "engines" / "git_smart.py",
     "llm_engine": HUB / "_skill" / "engines" / "_llm.py",
     "load_guard": HUB / "ai_darkhero" / "tray" / "scripts" / "load_guard.py",
@@ -982,6 +984,15 @@ ELEMENTS = [
     {"id": "EVO-article-relay-unified", "element": "two article pipelines never met: LINE OA cards reached seats through article_relay orders while URLs pasted into conversations only sat in f1s_daily's ledger (40 pending / 37 unreadable on 2026-10-31) and live.md", "verdict": "INFO",
      "requires": None, "detail": "engine change, no skill text: article_relay.py relays f1s_daily's ledger as a third source - one 新文章 order per seat with read articles (title, summary, related tasks) and links the pool could not read; the curator's own go inline / to the tick's headless turn; excluded: PTT sale posts, read_in_session rows, pending rows inside the 24 h SLA, noise (sign-in pages, maps, scheduling links, the fleet's own repos); folders without a seat charter get no order (no_seat) and keep their rows; state _registry/f1s-daily/relay.json; first live run issued orders to 8 seats; tests test_article_relay.py (13)",
      "check_text": ("skill_pool", "Jev 車道")},
+    # curator 2026-10-31 (f1s-evolve-tick): kyloren_bot 7fb74b3f (threads @shipped_ai; source.json holds the title only,
+    # 571 chars) — Flamerix AI split Claude Code's API requests with OpenTelemetry and put a background agent_summary
+    # call at 16.4 % (elsewhere 15.7 %) of a week's usage. The figure is unverifiable here; only the measurable part is adopted.
+    {"id": "KB-subagent-context-tax", "element": "kyloren_bot 7fb74b3f: background agents are a hidden share of Claude Code usage", "verdict": "REFINE",
+     "requires": None, "detail": "token-preflight step 3: a subagent's report is context tax (its tool_result stays in the parent conversation), a unit simple enough for the free pool goes to mtm-api-pool-offload, a subagent is briefed for the conclusion not the dumps; the 16.4 % figure itself is not claimed",
+     "check_text": ("skill_preflight", "context tax too")},
+    {"id": "KB-subagent-measured", "element": "measure, do not estimate: subagent calls and the bytes their reports put back", "verdict": "INFO",
+     "requires": None, "detail": "audit-session-tax.py per conversation / --days medians: subagents.count, result_bytes, result_tokens, child_total_tokens (toolUseResult.totalTokens); f1s-transcript-audit.py subagent_facts per transcript over measured sessions only (no forced rescan), F1S RECORD line adds subagents/turn and KB back; 40 newest ai_darkhero transcripts on 2026-10-31 held 6 Agent calls; tests _skill/tests/test_subagent_tax.py",
+     "check_text": ("transcript_audit", "def subagent_facts")},
 ]
 
 

@@ -47,6 +47,39 @@ import re
 FLIPFLOP = re.compile(r"(?:你說得對|你說的對|你是對的|你講得對|You're right|You are right|Fair point)")
 PROOF_LOG = HUB / "_registry" / "proof" / "log.jsonl"
 NW = 0x08000000 if os.name == "nt" else 0
+AGENT_TOOLS = {"Agent", "Task"}
+
+
+def subagent_facts(rows: list) -> dict:
+    """Subagent calls the main thread made and the bytes their reports put back into its context.
+
+    kyloren_bot card 7fb74b3f (2026-10-31): background agents are a hidden share of Claude Code usage. The
+    article's own figure is not reproduced here; this counts the transcript: Agent/Task tool_use blocks on the
+    main thread (sidechain rows are the children's own work and never count), the UTF-8 bytes of each matching
+    tool_result (what the parent context keeps), and the children's spend from toolUseResult.totalTokens.
+    """
+    ids: set = set()
+    count = back = child = 0
+    for row in rows:
+        if row.get("isSidechain"):
+            continue
+        content = (row.get("message") or {}).get("content")
+        if not isinstance(content, list):
+            continue
+        for b in content:
+            if not isinstance(b, dict):
+                continue
+            if row.get("type") == "assistant" and b.get("type") == "tool_use" and b.get("name") in AGENT_TOOLS:
+                ids.add(str(b.get("id")))
+                count += 1
+            elif row.get("type") == "user" and b.get("type") == "tool_result" and str(b.get("tool_use_id")) in ids:
+                c = b.get("content")
+                text = c if isinstance(c, str) else json.dumps(c, ensure_ascii=False)
+                back += len(text.encode("utf-8"))
+                tur = row.get("toolUseResult")
+                if isinstance(tur, dict):
+                    child += int(tur.get("totalTokens") or 0)
+    return {"subagents": count, "subagent_result_bytes": back, "subagent_child_tokens": child}
 
 
 def _hook():
@@ -150,7 +183,7 @@ def audit_transcript(hook, path: Path, cfg: dict) -> dict:
                                 earlier.append(ln.strip())
     return {"turns": judged, "blocked": blocked, "per_class": dict(per_class), "worst": worst,
             "first": first_ts, "last": last_ts, "decisions": len(earlier), "tool_calls": tool_calls, "flipflop": flipflop,
-            "skill_loads": dict(skills)}
+            "skill_loads": dict(skills), **subagent_facts(rows)}
 
 
 def load_state() -> dict:
@@ -207,6 +240,11 @@ def run(full: bool = False) -> dict:
         agg["flipflop"] = agg.get("flipflop", 0) + int(s.get("flipflop") or 0)
         agg.setdefault("skill_loads", collections.Counter()).update(s.get("skill_loads") or {})
         agg["skill_measured_sessions"] = agg.get("skill_measured_sessions", 0) + int("skill_loads" in s)
+        if "subagents" in s:  # measured sessions only; older state rows keep their value until the transcript changes
+            agg["subagents"] = agg.get("subagents", 0) + int(s.get("subagents") or 0)
+            agg["subagent_result_bytes"] = agg.get("subagent_result_bytes", 0) + int(s.get("subagent_result_bytes") or 0)
+            agg["subagent_child_tokens"] = agg.get("subagent_child_tokens", 0) + int(s.get("subagent_child_tokens") or 0)
+            agg["subagent_measured_turns"] = agg.get("subagent_measured_turns", 0) + int(s.get("turns") or 0)
         if len(agg["worst"]) < WORST_KEEP:
             agg["worst"].extend(s.get("worst") or [])
     for agg in seats.values():
@@ -215,6 +253,8 @@ def run(full: bool = False) -> dict:
         agg["worst"] = agg["worst"][:WORST_KEEP]
         agg["block_rate"] = round(agg["blocked"] / agg["turns"], 3) if agg["turns"] else None
         agg["tool_calls_per_turn"] = round(agg.get("tool_calls", 0) / agg["turns"], 1) if agg["turns"] else None
+        mt = agg.get("subagent_measured_turns", 0)
+        agg["subagents_per_turn"] = round(agg.get("subagents", 0) / mt, 2) if mt else None
     total_turns = sum(a["turns"] for a in seats.values())
     skill_total = sum((collections.Counter(a.get("skill_loads") or {}) for a in seats.values()), collections.Counter())
     measured = sum(a.get("skill_measured_sessions", 0) for a in seats.values())
@@ -223,6 +263,9 @@ def run(full: bool = False) -> dict:
            "elapsed_s": round(time.time() - started, 1), "scanned": scanned, "skipped_unchanged": skipped,
            "totals": {"sessions": len(sessions), "turns": total_turns, "blocked": total_blocked,
                       "block_rate": round(total_blocked / total_turns, 3) if total_turns else None,
+                      "subagents": sum(a.get("subagents", 0) for a in seats.values()),
+                      "subagent_result_bytes": sum(a.get("subagent_result_bytes", 0) for a in seats.values()),
+                      "subagent_measured_turns": sum(a.get("subagent_measured_turns", 0) for a in seats.values()),
                       "per_class": dict(sum((collections.Counter(a["per_class"]) for a in seats.values()), collections.Counter()))},
            "skill_loads": {"sessions_measured": measured, "loads": sum(skill_total.values()),
                            "per_session": round(sum(skill_total.values()) / measured, 2) if measured else None,
@@ -291,6 +334,8 @@ def record_line(seat: str) -> str:
     sk = doc.get("skill_loads") or {}
     return (f"F1S RECORD — {seat}: {agg['blocked']}/{agg['turns']} turns would block ({top or 'none'}); "
             f"{agg.get('tool_calls_per_turn')} tool calls/turn, {agg.get('flipflop', 0)} 你說得對 openers; "
+            f"{'UNKNOWN' if agg.get('subagents_per_turn') is None else agg['subagents_per_turn']} subagents/turn "
+            f"({int(agg.get('subagent_result_bytes') or 0) // 1024} KB back into context); "
             f"fleet {tot.get('blocked')}/{tot.get('turns')}; skill loads {sk.get('loads', 'UNKNOWN')} in {sk.get('sessions_measured', 0)} sessions "
             f"({sk.get('per_session', 'UNKNOWN')}/session); PROOF blocks {pr.get('blocks')} fixed-next-push {pr.get('fixed_rate')}; "
             f"lying / 推託 / unrequested .md .json / code change without search are PROOF-blocked at Stop (sweep {doc.get('generated')})")
