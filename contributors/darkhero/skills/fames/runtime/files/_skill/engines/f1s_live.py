@@ -94,6 +94,17 @@ def load_hook():
     return mod
 
 
+def upgrade_wake() -> bool:
+    """2026-11-01: a release that only changes the directive, the rules or live.md no longer wakes idle chats by default.
+    Measured over 7 days: 154 such wakes, each re-reading a 200-440K context to answer 「沒有下一步」; the next prompt
+    or tool call carries the new contract anyway. `live_wake.upgrade_wake: true` restores the old behaviour."""
+    try:
+        cfg = json.loads(CONFIG.read_text(encoding="utf-8-sig")).get("live_wake") or {}
+        return cfg.get("upgrade_wake", False) is True
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
 def enabled() -> bool:
     try:
         cfg = json.loads(CONFIG.read_text(encoding="utf-8-sig")).get("live_wake") or {}
@@ -266,6 +277,22 @@ def capture_due(session_id: str, now: float | None = None) -> str:
     return "\n".join(alerts)
 
 
+def orders_sig(hook, seat: str) -> str:
+    """This seat's curator orders alone: the part of the contract an idle conversation has work to do on."""
+    import hashlib
+    digest = hashlib.sha256()
+    try:
+        orders = list(hook._orders_files(seat)) if seat else []
+    except Exception:  # noqa: BLE001
+        orders = []
+    for path in orders:
+        try:
+            digest.update(path.read_bytes())
+        except OSError:
+            digest.update(b"-")
+    return digest.hexdigest()[:16]
+
+
 def contract_sig(hook, seat: str) -> str:
     """What an idle conversation must act on: the hot directive, the standing rules and this seat's orders. A release
     that changes none of them (engine code, a version bump) is recorded quietly instead of waking every idle
@@ -394,7 +421,8 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
              # already pending (it landed after the last tool call) the previous waiter's record, or nothing known.
              # "base" is the same without any orders: equal bases mean only the orders changed.
              "contract": (prior.get("contract") or None) if pending else contract_sig(hook, sig_seat),
-             "base": (prior.get("base") or None) if pending else contract_sig(hook, "")}
+             "base": (prior.get("base") or None) if pending else contract_sig(hook, ""),
+             "orders": (prior.get("orders") or None) if pending else orders_sig(hook, sig_seat)}
     _write(path, state)
 
     def finish(code: int, why: str, text: str = "") -> tuple[int, str]:
@@ -442,12 +470,16 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
                 if transcript.is_file() and _size(transcript) > offset and turned_active(transcript, offset):
                     return finish(0, "active")
                 contract, base = contract_sig(hook, sig_seat), contract_sig(hook, "")
+                orders = orders_sig(hook, sig_seat)
                 review_only = bool(sig_seat) and sig_seat == curator and contract != state["contract"] and base == state["base"]
+                directive_only = contract != state["contract"] and orders == state.get("orders") and not review_only
                 if contract == state["contract"] or (review_only and not claim_review(session_id, sleep=sleep)):
                     text = ""                              # nothing new, or another curator chat took this review
+                elif directive_only and not upgrade_wake():
+                    text = ""                              # an upgrade alone: the next prompt carries it, no wake
                 else:
                     text = hook.live_update(doc, event="IdleWake", watch_seat=sig_seat)
-                state["contract"], state["base"] = contract, base
+                state["contract"], state["base"], state["orders"] = contract, base, orders
                 if text:
                     return finish(2, "woke", HEAD + "\n" + text)
                 # Nothing it must act on (or nothing to say): record it, or the same change re-enters the settle loop
