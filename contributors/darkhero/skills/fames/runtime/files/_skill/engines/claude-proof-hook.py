@@ -458,7 +458,8 @@ def _publish_gate(doc: dict, tool: str, ti: dict) -> dict | None:
 POPUP_RULES = (
     ("fake-hidden", re.compile(r"(?i)-WindowStyle\s+Hidden|(?<![\w-])-w\s+hidden\b"),
      "powershell -WindowStyle Hidden 仍會配 conhost 並在隱藏前搶焦點（假隱藏）"),
-    ("focus-steal", re.compile(r"(?i)\bAppActivate\b|\bSendKeys\b|SendWait\(|SetForegroundWindow\(|BringWindowToTop\(|SwitchToThisWindow\("),
+    # call syntax only: prose that names these APIs (a memory note, a report line) is not a call
+    ("focus-steal", re.compile(r"(?i)AppActivate\s*\(|SendKeys\]::|SendKeys\s*\(|SendWait\s*\(|SetForegroundWindow\s*\(|BringWindowToTop\s*\(|SwitchToThisWindow\s*\("),
      "AppActivate / SendKeys / SetForegroundWindow 會把別的視窗搶到前景"),
     ("start-process-gui", re.compile(r"(?i)\bStart-Process\b(?![^\n;|]*(?:pythonw(?:\.exe)?|wscript(?:\.exe)?|-NoNewWindow))"),
      "Start-Process 會開一個可見視窗（安裝程式、瀏覧器、主控台）；背景程式用 pythonw / CREATE_NO_WINDOW / wscript Run(...,0)"),
