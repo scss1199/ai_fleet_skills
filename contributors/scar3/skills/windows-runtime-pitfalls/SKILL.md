@@ -60,6 +60,12 @@ parent_skill: ztm-verify-before-done
   （Win+Ctrl+Shift+B，**SendInput 注入不被核心接受，要實體按**）或重開機；Explorer 不用重啟，目標一死 DoDragDrop 就返回。
   預防：顯示卡顯存 ≥85% 先警告並列出佔用者。引擎 `fleet-hang-guard.py probe|run|watch`（probe 揪錯 lane 與 stabilize
   穩定 lane 平行；kill／gfx-reset 各自要 operator 旗標）。（ai_darkhero evidence/hang-dnd-20261028）
+- **Windows 判定視窗「對齊」看的是 DWM 可見框（`DWMWA_EXTENDED_FRAME_BOUNDS`），不是 `GetWindowRect`。** Win10/11 一般視窗在可見框外
+  還有一圈隱形縮放邊框（125% 下左右下各 8 px），兩個看起來貼齊的視窗 rect 其實重疊；Snap Layouts 把框邊放在工作區邊與鄰窗邊上
+  （右邊界 exclusive：鄰窗 left == 本窗 right）；自畫邊框的程式（LINE／Qt）框 == rect。所以量與搬都用框座標，搬動時再用「該視窗自己
+  的」邊框偏移換回 rect，resize 後偏移可能變、搬完讀回不符就修正一次；只碰非最小化、非最大化、未 cloaked（`DWMWA_CLOAKED`）、
+  有標題、非 tool 的他程視窗。通則：要替 OS 補一個它本來就有判定的行為（對齊、焦點、閒置），先量 OS 自己怎麼判、沿用它的模型，
+  不要自創門檻。（ai_darkhero 68c2fa21 tray/window_snap.py + tray/tests/test_window_snap.py）
 
 ## 重試、鎖、排程
 
@@ -119,6 +125,13 @@ parent_skill: ztm-verify-before-done
   內主動解除，並寫一列有原因的紀錄（`excluded_close`）；(c) 一個測試把狀態建立在窗口前、推進時鐘跨過邊界，斷言狀態已解除。
   「窗口內沒新動作」的測試過了不代表窗口有效。（ai_trader 956eb20c8：`seconds_to_excluded_hour()`＋`exclude_lead_s`，
   tests/test_fx_scalp_runner.py test_held_position_is_flattened_before_the_excluded_hour_starts；memory owner-fx-route-20261029）
+- **測試夾具用「now − Δ」當事件時間、被測碼用本地日曆日當鍵，午夜後 Δ 內整套測試會假失敗**：夾具把成交時間設成
+  now−5 分鐘，碼以台北日期分桶 daily_realized 再查「今天」，台北 00:00–00:05 之間成交落在昨天、觀測在今天，拿到 0；
+  同一 commit 00:05 後全綠（ai_trader 2026-10-31 2f2140f3d：test_sim_risk_book*.py 4 failed→12 passed→全套 2862 passed）。
+  規則：(a) 夾具不用牆鐘減偏移，固定一個凍結時刻（或把 now 注入被測碼）讓事件與觀測落在同一日曆日；
+  (b) 任何以本地日期分桶的邏輯要有一個「事件在前一日 23:5x、觀測在次日 00:0x」的跨日測試，明寫期望；
+  (c) 剛推完就出現與改動無關的失敗，先看牆鐘是否在日界／時段邊界，再用乾淨 worktree 跑「同一 commit」
+  （`git worktree add --detach <scratch> <sha>`）判別，比跑前一 commit 更有判別力。（ai_trader memory risk-book-tests-taipei-midnight-window）
 - **事件時間與收到時間比對前先確認本機時鐘已同步**（W32Time 可能幾週沒同步）；時鐘慢會讓「收到早於事件」這種檢查
   靜默拒絕所有訊號，而且被去重的記錄把痕跡吃掉。（ai_trader orb-missed-signal-clock-skew）
 - **行情／事件來源的時間戳是對方伺服器的時鐘，不是 UTC**：GoMarkets-Demo 的 MT5 `tick.time` 比 UTC 快約 3 小時，拿 UTC
@@ -246,3 +259,4 @@ parent_skill: ztm-verify-before-done
   Bash 產生含反斜線的原始碼，先用 Write 工具把腳本寫成檔案再執行（Write 不收反斜線），或用 `chr(92) + "x00"` 拼；落地後用
   Python `bytes([0]) in data` 檢查有沒有 NUL。（ai_trader 2026-10-29 order #14 連踩三次；ai_darkhero 同日 patch f1s-sources.py
   的 `[ \t]+` 與 PAGE_STUB 正規表示式同樣走樣；memory bash-tool-heredoc-backslash-collapse、bash-tool-quirks）
+- **閘門訊號要帶年齡，寫入者死了的「最後一筆」不得永久擋工作**：`_registry/network-signal.json` 的寫入者（ai_network）2026-09-01 停了，它最後一筆 `congested=true`（jitter 81.93ms）讓 garytalks-feed 每 6 小時 0.1 秒就跳出，連續 59 天沒 poll，zt-guard CHECK6 天天紅卻沒人看懂；acquisition_hub 也照同一筆把頻寬打七五折。做法：讀閘門訊號時先算 `generated`／`probe_ts` 的年齡，超過訊號應有的刷新週期（這裡 6 h）就當作沒有訊號（UNKNOWN 不阻擋），並在 verdict 裡寫出年齡；寫入者要有 liveness（rider 結果或 CHECK6 列），沒有就把讀取端的過期保護當成唯一防線。（ai_darkhero/brain/insight/network_polite.py `load_signal(max_age_s)`、_skill/engines/acquisition_hub.py `_signal_stale`；F1S 2026-10-31 curator audit）
