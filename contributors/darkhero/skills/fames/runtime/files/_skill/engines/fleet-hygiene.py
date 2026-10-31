@@ -58,6 +58,68 @@ KEEP_NEWEST = 3
 MAX_MOVES = 4000
 NEVER = ("_secrets", "_delete", "_registry", "_bus", os.path.join("fracdigi", "env"), os.path.join("ai_trader", "quant"),
          os.path.join("_lean", "toolchains"), os.path.join("_lean", "hubmath"))
+# Trees nothing in this engine may touch under any class (the red lines say "do not even touch").
+UNTOUCHABLE = ("_secrets", "_delete", os.path.join("fracdigi", "env"), os.path.join("ai_trader", "quant"),
+               os.path.join("_lean", "toolchains"), os.path.join("_lean", "hubmath"))
+
+# ------------------------------------------------------------------ producers (operator 2026-10-31)
+# 「根本就不會再被使用的中間檔…製造他們的機制是什麼該如何修正」: the sweep relocates residue, this check names the ENGINE
+# that keeps making it, so the fix lands in the producer and not in the broom. Two signals: a state directory with more
+# direct entries than PRODUCER_CAP (per-run / per-session files nobody retires), and entries named like a loop-generated
+# backup (*.MIGRATED-bak, *.previous.json, *.<stamp>.bak, tmp********, repo.previous). The 刪除 red line protects
+# operator data; an engine keeping copies of its own locks, queue markers and caches is the ⑥ junk it was never asked for.
+PRODUCER_CAP = 1000
+RETENTION_MIN = 100
+RETENTION_RE = re.compile(r"\.migrated-bak$|\.previous(\.[0-9a-f]{32})?\.json$|\.\d{8}_\d{6}(\.\d+)?\.bak$"
+                          r"|^tmp[a-z0-9_]{8}$|^repo\.previous$", re.I)
+STATE_ROOTS = ("_registry", "_temp", "_bus", "_logs", "_inbox")
+SEAT_STATE = ("evidence", "_registry")
+PRODUCER_DEPTH = 5
+WRITERS = (  # longest matching prefix wins; extend when a new producer is found
+    ("_registry/fames-hot", "_harness/runtime/fames_session_harness.py (hot_refresh / turn_context per-session state)"),
+    ("_registry/fames-phase", "_harness/runtime/fames_phase_runtime.py (per-session dir, retained .write.lock)"),
+    ("_registry/fames-turn", "_harness/runtime/fames_turn_binding.py (by-prompt archive)"),
+    ("_registry/fames-runtime-receipts", "_skill/fleet-skills/fames/scripts/runtime_release.py _persist_receipt"),
+    ("_registry/fames-runtime-build-backups", "_skill/fleet-skills/fames/scripts/runtime_release.py _apply"),
+    ("_registry/fleet-skill-export-backups", "_skill/engines/mtm-fleet-skill-github.py export"),
+    ("_registry/ship-queue", "_skill/engines/ship-queue.py (queue retirement + per-run logs)"),
+    ("_registry/fleet-learning-local", "ai_darkhero/fleet-learning/scripts/fleet_learning.py cmd_fetch"),
+    ("_temp/aex-loop", "_skill/engines/aex-loop-exec.py (per-job files)"),
+    ("_temp/fleet-job-dispatch", "_skill/engines/fleet-job-dispatch.py (uuid worktree/prompt staging)"),
+    ("_bus/inbox", "_skill/engines/inbox.py senders (fleet-process-guard.py alerts addressed to a non-seat)"),
+    ("_inbox/_digested", "_skill/engines/inbox digest (SUBMIT receipts auto-digested)"),
+    ("_logs", "_skill/engines/goal-field.py / seal-generation-lock.py / scf-residual.py goal backups"),
+    ("_registry/fames-phase-history", "_skill/engines/fames-immediate-apply.py (uuid history records)"),
+    ("_registry", "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"),
+    ("evidence/fames-fleet-20260924", "_lean/fames/tests/test_phase_contract.py proof_fixture (test writes into the repo)"),
+    ("evidence/jev-adoption-20260922", "static test fixtures read by _harness/tests/test_jev_skill_advisor.py (data, not residue)"),
+    ("_registry/f1s-sources", "_skill/engines/f1s-sources.py / knowledge-consolidate.py content store (data, not residue)"),
+)
+# Engine code that spells the retention antipattern; a hit is a finding for the file's owner, never an edit.
+CODE_ROOTS = ("_skill/engines", "_harness/runtime", "_lean/fames", "_skill/fleet-skills/fames/scripts",
+              "ai_darkhero/scripts", "ai_darkhero/fleet-learning/scripts", "ai_darkhero/line")
+_ANTI_CREATE = ("rename", "with_name", "replace(", "+ \"", "f\"", "f'", "+ '", "join(")
+# Expired engine state the sweep retires into _delete (class expired_state). kind: "files" = direct files older than
+# ttl days; "dirs" = direct subdirs whose newest file is older than ttl; "named" = entries whose name matches `re`
+# (RETENTION_RE by default), older than ttl when given; "newest" = everything but the newest `keep` entries.
+STATE_TTL = (
+    {"root": "_registry/fames-hot", "kind": "files", "ttl": 7,
+     "exclude": ("midturn-", "ship-state", "hw-watch", "review-claim", "capture-")},
+    {"root": "_registry/fames-phase", "kind": "dirs", "ttl": 7},
+    {"root": "_registry/fames-turn/*/by-prompt", "kind": "dirs", "ttl": 7},
+    {"root": "_registry/fames-runtime-receipts", "kind": "newest", "keep": 3},
+    {"root": "_registry/ship-queue", "kind": "named"},
+    {"root": "_registry/ship-queue/done", "kind": "files", "ttl": 7},
+    {"root": "_registry/ship-queue/failed", "kind": "files", "ttl": 7},
+    {"root": "_registry", "kind": "named", "ttl": 7},                     # tmp******** of a failed atomic write
+    {"root": "_registry/fleet-learning-local/*/sources/*", "kind": "named"},
+    {"root": "_temp/aex-loop-jobs", "kind": "files", "ttl": 2},
+    {"root": "_temp/aex-loop-done", "kind": "files", "ttl": 2},
+    {"root": "_logs", "kind": "named"},                                   # *.goal.json.<stamp>.bak
+    {"root": "*/evidence/fames-fleet-20260924", "kind": "named", "ttl": 1,
+     "re": r"^(phase-tests|base-conformance-test)-[0-9a-f]{32}$"},
+)
+ORPHAN_INBOX_TTL_D = 1          # _bus/inbox/<name> where <name> is no seat dir and no hubclock handoff
 
 
 # ------------------------------------------------------------------ small helpers
@@ -211,12 +273,89 @@ def scheduled_task_findings(hub: Path) -> list[str] | str:
     return sorted(set(hits))
 
 
+def _writer(rel: str) -> str:
+    rel = rel.replace("\\", "/")
+    best, who = "", "UNKNOWN (add the producer to fleet-hygiene.WRITERS)"
+    for prefix, name in WRITERS:
+        if (rel.startswith(prefix) or ("/" + prefix) in rel) and len(prefix) > len(best):
+            best, who = prefix, name
+    return who
+
+
+def producers(hub: Path, cap: int = PRODUCER_CAP) -> list[dict]:
+    """Directories in the state roots that an engine keeps filling: more than `cap` direct entries, or RETENTION_MIN
+    entries named like loop-generated backups. Each row names the writer so the fix goes to the producer."""
+    rows = []
+    roots = [hub / r for r in STATE_ROOTS] + [s / d for s in seats(hub) for d in SEAT_STATE]
+    for root in roots:
+        if not root.is_dir() or _is_junction(str(root)):
+            continue
+        for dp, dns, fns in os.walk(root):
+            dns[:] = [d for d in dns if d not in PRUNE and not _is_junction(os.path.join(dp, d))]
+            entries = len(dns) + len(fns)
+            retention = sum(1 for n in dns + fns if RETENTION_RE.search(n))
+            if entries > cap or retention >= RETENTION_MIN:
+                rel = str(Path(dp).relative_to(hub)).replace("\\", "/")
+                rows.append({"dir": rel, "entries": entries, "retention_named": retention, "writer": _writer(rel)})
+                dns[:] = []            # the leak is this directory; descending would report its children too
+            elif len(Path(dp).relative_to(hub).parts) >= PRODUCER_DEPTH:
+                dns[:] = []
+    rows.sort(key=lambda r: (-r["retention_named"], -r["entries"]))
+    return rows[:40]
+
+
+def retention_antipatterns(hub: Path) -> list[dict]:
+    """Engine lines that create loop backups: a `.MIGRATED-bak` rename outside a one-time migration, a uuid-named copy
+    under _registry/_temp, or a test fixture that refuses tmp cleanup. Comments, skip-lists and `endswith` checks are
+    not creation sites."""
+    hits = []
+    for rel in CODE_ROOTS:
+        root = hub / rel
+        if not root.is_dir():
+            continue
+        for dp, dns, fns in os.walk(root):
+            dns[:] = [d for d in dns if d not in PRUNE and d not in CACHE_DIRS]
+            for f in fns:
+                if not f.endswith(".py") or f in ("fleet-hygiene.py", "test_fleet_hygiene.py", "f1s_audit.py"):
+                    continue       # this detector, its test and the audit table spell the patterns on purpose
+                p = Path(dp) / f
+                try:
+                    lines = p.read_text(encoding="utf-8", errors="replace").splitlines()
+                except OSError:
+                    continue
+                in_test = "tests" in p.relative_to(hub).parts or f.startswith("test_")
+                for i, line in enumerate(lines, 1):
+                    s = line.strip()
+                    if not s or s.startswith(("#", "-", "*", '"""', "'''")) or "(" not in s:
+                        continue   # comments, docstring prose and bullet text are not creation sites
+                    kind = None
+                    if "MIGRATED-bak" in s and not in_test and any(k in s for k in _ANTI_CREATE) \
+                            and not any(k in s for k in ("endswith", "not in", "SKIP", "glob(", "in str(")):
+                        kind = "migrated_bak_loop"
+                    elif "uuid4().hex" in s and not in_test and any(k in s.lower() for k in ("backup", "previous", "export-backups", "_registry", "_temp")):
+                        kind = "uuid_named_copy"
+                    elif in_test and ("Deliberately retained" in s or "no TemporaryDirectory" in s):
+                        kind = "retained_test_fixture"
+                    if kind:
+                        hits.append({"file": str(p.relative_to(hub)).replace("\\", "/"), "line": i, "kind": kind, "text": s[:140]})
+    return hits[:60]
+
+
 def check(hub: Path, now: float | None = None) -> dict:
     now = now or _now()
     rows = [check_seat(s, now) for s in seats(hub)]
+    try:
+        leaks = producers(hub)
+    except Exception as exc:  # noqa: BLE001 — a hygiene check never takes the rider down
+        leaks = f"UNKNOWN: {type(exc).__name__}"
+    try:
+        anti = retention_antipatterns(hub)
+    except Exception as exc:  # noqa: BLE001
+        anti = f"UNKNOWN: {type(exc).__name__}"
     return {"seats": rows, "scheduled_tasks": scheduled_task_findings(hub),
             "counts": {k: sum(1 for r in rows if r["activity"] == k) for k in ("ACTIVE", "IDLE", "DORMANT")},
-            "violations": sum(len(r["findings"]) for r in rows)}
+            "violations": sum(len(r["findings"]) for r in rows),
+            "producers": leaks, "retention_antipatterns": anti}
 
 
 # ------------------------------------------------------------------ sweep
@@ -253,9 +392,14 @@ class Tracked:
         return False
 
 
-def _never(hub: Path, path: Path) -> bool:
+def _never(hub: Path, path: Path, cls: str = "") -> bool:
     rel = str(path.relative_to(hub)).lower() if str(path).lower().startswith(str(hub).lower()) else str(path).lower()
     low = path.name.lower()
+    if cls in ("expired_state", "orphan_inbox"):
+        # explicitly listed engine state: only the untouchable trees and live lock/pid files are refused
+        if low.endswith((".lock", ".pid")) and path.is_file():
+            return True
+        return any(rel == n.lower() or rel.startswith(n.lower() + os.sep) for n in UNTOUCHABLE)
     if low.endswith((".lock", ".pid")) or any(k in low for k in LIVE):
         return True
     if any(rel.startswith(b.lower() + os.sep) for b in BACKUP_ROOTS):   # the two backup roots are the only _registry trees swept
@@ -339,7 +483,63 @@ def candidates(hub: Path, now: float | None = None) -> list[tuple[str, Path, int
         entries = sorted((e for e in root.iterdir() if not _is_junction(str(e))), key=lambda x: x.stat().st_mtime, reverse=True)
         for e in entries[KEEP_NEWEST:]:
             out.append(("backup", e, _size(e)))
+    out.extend(expired_state(hub, now))
     return out[:MAX_MOVES]
+
+
+def _entries(root: Path) -> list[Path]:
+    try:
+        return [e for e in root.iterdir() if not _is_junction(str(e))]
+    except OSError:
+        return []
+
+
+def expired_state(hub: Path, now: float | None = None) -> list[tuple[str, Path, int]]:
+    """Engine state past its lifetime (STATE_TTL) and inbox folders addressed to no seat (orphan_inbox)."""
+    now = now or _now()
+    out: list[tuple[str, Path, int]] = []
+    for spec in STATE_TTL:
+        roots = [hub / spec["root"]] if "*" not in spec["root"] else list(hub.glob(spec["root"]))
+        pat = re.compile(spec["re"], re.I) if spec.get("re") else RETENTION_RE
+        cut = now - float(spec.get("ttl") or 0) * 86400
+        for root in roots:
+            if not root.is_dir() or _is_junction(str(root)):
+                continue
+            kind = spec["kind"]
+            ents = _entries(root)
+            if kind == "newest":
+                ents.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+                picked = ents[int(spec["keep"]):]
+            elif kind == "files":
+                picked = [e for e in ents if e.is_file() and not e.name.startswith(tuple(spec.get("exclude") or ()))
+                          and e.stat().st_mtime < cut]
+            elif kind == "dirs":
+                picked = [e for e in ents if e.is_dir() and _newest_mtime(e) < cut]
+            else:  # named
+                picked = [e for e in ents if pat.search(e.name) and (not spec.get("ttl") or _newest_mtime(e) < cut)]
+            for e in picked:
+                try:
+                    out.append(("expired_state", e, _size(e)))
+                except OSError:
+                    continue
+            if len(out) >= MAX_MOVES:
+                return out
+    inbox = hub / "_bus" / "inbox"
+    if inbox.is_dir():
+        seat_names = {s.name for s in seats(hub)}
+        cut = now - ORPHAN_INBOX_TTL_D * 86400
+        for d in _entries(inbox):
+            if not d.is_dir() or d.name in seat_names or d.name.startswith("hubclock") or (hub / d.name).is_dir():
+                continue
+            for e in _entries(d):
+                try:
+                    if e.is_file() and e.stat().st_mtime < cut:
+                        out.append(("orphan_inbox", e, e.stat().st_size))
+                except OSError:
+                    continue
+                if len(out) >= MAX_MOVES:
+                    return out
+    return out
 
 
 def _fallback_move(hub: Path, paths: list[Path], topic: str) -> dict:
@@ -374,7 +574,7 @@ def sweep(hub: Path, apply: bool, now: float | None = None, tracked=None) -> dic
     rows = candidates(hub, now)
     plan, skipped = [], {"git_tracked": 0, "protected": 0}
     for cls, p, size in rows:
-        if _never(hub, p):
+        if _never(hub, p, cls):
             skipped["protected"] += 1
             continue
         try:
@@ -470,6 +670,8 @@ def run(hub: Path = HUB, host: str | None = None, apply: bool = False, force: bo
                "check": chk, "sweep": sw, "delete_bytes": delete_bytes(hub),
                "summary": {"seats": len(chk["seats"]), "violations": chk["violations"], "activity": chk["counts"],
                            "scheduled_task_findings": chk["scheduled_tasks"] if isinstance(chk["scheduled_tasks"], str) else len(chk["scheduled_tasks"]),
+                           "producer_leaks": chk["producers"] if isinstance(chk["producers"], str) else len(chk["producers"]),
+                           "retention_antipatterns": chk["retention_antipatterns"] if isinstance(chk["retention_antipatterns"], str) else len(chk["retention_antipatterns"]),
                            "moved": sw["moved"], "planned_bytes": sw["planned_bytes"], "applied": apply}}
         doc["seconds"] = round(time.time() - t0, 1)
         _save(OUT / f"{host}.json", doc)
@@ -512,11 +714,19 @@ def main(argv=None) -> int:
     r.add_argument("--apply", action="store_true", help="move residue (default: plan only)")
     r.add_argument("--force", action="store_true", help="ignore the 20 h throttle")
     r.add_argument("--no-publish", action="store_true")
+    r.add_argument("--max-moves", type=int, help=f"cap on entries moved in this run (default {MAX_MOVES}); backlog runs raise it")
     sub.add_parser("status")
     sub.add_parser("fleet")
+    pr = sub.add_parser("producers", help="name the engines that keep filling state dirs (no move)")
+    pr.add_argument("--cap", type=int, default=PRODUCER_CAP)
     a = ap.parse_args(argv)
     if a.cmd == "run":
+        if a.max_moves:
+            globals()["MAX_MOVES"] = a.max_moves
         out = run(HUB, a.host, a.apply, a.force, not a.no_publish)
+    elif a.cmd == "producers":
+        out = {"producers": producers(HUB, a.cap), "retention_antipatterns": retention_antipatterns(HUB),
+               "expired_state_planned": len(expired_state(HUB))}
     elif a.cmd == "status":
         host = this_host()
         out = {"host": host, "state": _load(OUT / f"{host}.state.json", {}), "report": _load(OUT / f"{host}.json", {}).get("summary")}

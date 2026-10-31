@@ -993,6 +993,13 @@ ELEMENTS = [
     {"id": "KB-subagent-measured", "element": "measure, do not estimate: subagent calls and the bytes their reports put back", "verdict": "INFO",
      "requires": None, "detail": "audit-session-tax.py per conversation / --days medians: subagents.count, result_bytes, result_tokens, child_total_tokens (toolUseResult.totalTokens); f1s-transcript-audit.py subagent_facts per transcript over measured sessions only (no forced rescan), F1S RECORD line adds subagents/turn and KB back; 40 newest ai_darkhero transcripts on 2026-10-31 held 6 Agent calls; tests _skill/tests/test_subagent_tax.py",
      "check_text": ("transcript_audit", "def subagent_facts")},
+    # curator 2026-10-31 (operator 「根本就不會再被使用的中間檔…製造他們的機制是什麼該如何修正」): 1.88 M files walked; the
+    # producers were engines reading the 刪除 red line as "never remove my own state": ship-queue 27k .MIGRATED-bak, fleet_learning
+    # 290 repo copies (4 GB), aex-loop 57k job files, fames-phase 3,103 session dirs, 11k alerts to the non-seat ai_workspace,
+    # 4.7k goal .bak, a test fixture "deliberately retained" in evidence/ (28k files), runtime_release .previous.json x5k.
+    {"id": "EVO-engine-output-discipline", "element": "engine-owned ephemeral state (locks, queue markers, staging/previous copies, per-run logs, test fixtures) accumulated as uuid/timestamp-named files nobody read back; the migration convention (.MIGRATED-bak) was applied inside loops", "verdict": "REFINE",
+     "requires": None, "detail": "ztm-verify-before-done ⑥-引擎輸出紀律: every engine file needs a reader or a registered TTL; fixed-name overwrite / append-only ledger instead of per-run names; .MIGRATED-bak only for one-time operator-data migrations; tests write tmp_path only; alerts only to charter seats, once per pid. Mechanical: fleet-hygiene.py producers (dir >1000 entries or >=100 backup-named = named writer; code scan for MIGRATED-bak rename / uuid backup / retained fixture) rides fames-converge every 20 h and publishes in hygiene.json; expired state retires into _delete per STATE_TTL. Producers fixed 2026-10-31: ship-queue.py, fleet-process-guard.py, goal-field.py, seal-generation-lock.py, scf-residual.py, aex-loop-exec.py, fleet_learning.py cmd_fetch, runtime_release.py, mtm-fleet-skill-github.py, test_phase_contract.py",
+     "check_text": ("skill_verify", "引擎輸出紀律")},
 ]
 
 

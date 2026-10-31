@@ -42,6 +42,19 @@ parent_skill: aex-agent-evolution
   被 PROOF write gate 擋下時先判斷是不是誤判（引號內的 `>`、工具必備的 manifest、harness 指定的
   side-session-notes 資料夾），誤判就改 `claude-proof-hook.py` 加測試；不是誤判就把內容寫進回覆。
   同一個檔換副檔名（.txt）或換檔名再寫＝繞過 gate，禁止（ai_theater 2026-10-26／27 x3）。
+- ⑥-引擎輸出紀律（operator 2026-10-31「根本就不會再被使用的中間檔…製造他們的機制是什麼該如何修正」）：
+  引擎、rider、hook、測試寫出的每個檔案都要有讀回者或是使用者點名的收據，否則不准寫。每跑一次／每個 session 一個檔
+  （uuid、時間戳命名）＝沒有生命週期的中間檔：改成固定檔名覆寫（staged write＋os.replace）、append-only 的 .jsonl 帳本，
+  或在 STATE_TTL 登記期限。「刪除」紅線保護的是使用者資料；引擎自己的鎖、佇列標記、暫存副本、previous 複本不是資料——
+  把它們改名成 `.MIGRATED-bak`、uuid 備份目錄、`.<stamp>.bak` 走號、`.previous.json` 疊存，都不是守紅線，是製造垃圾
+  （2026-10-31 量到：ship-queue 27k 個 MIGRATED-bak、fleet-learning 290 份 repo 複本 4 GB、aex-loop 57k 個 job 檔、
+  fames-phase 3,103 個 session 目錄、_bus/inbox/ai_workspace 11k 封沒人收的警報、_logs 4.7k 個 goal .bak）。
+  `.MIGRATED-bak` 只用在一次性遷移使用者資料；備份整棵樹只在那棵樹不在 git 時。測試只寫 tmp_path，禁止寫進 repo 的
+  evidence/（「Deliberately retained」fixture 一天 28k 檔）。警報只送有 charter 的 seat，同一 pid 只送一次。
+  機械檢查：`fleet-hygiene.py producers`（state 目錄 >1000 個項目或 ≥100 個備份命名＝點名寫入引擎；
+  程式碼掃 `MIGRATED-bak` rename／uuid 備份／retained fixture）每 20 h 隨 fames-converge 跑並發布 hygiene.json；
+  到期的引擎狀態由同一引擎依 STATE_TTL 搬進 _delete（有 manifest）。新寫一個會重複產生檔案的功能前，先決定它的
+  讀回者與期限，再寫；找不到讀回者就不寫檔，寫進回覆或既有帳本。
 - 「進度」只算使用者看得到的成果（例：帳本有真實成交、正式網站上線、使用者可用的功能），不是 commit 數、
   文件數、告警或驗證腳本；做不到就直接說卡在哪一步（ai_trader owner 2026-09-21／10-12，f1s-reverse-learning）。
   模擬／回測的判決（NOT_QUALIFIED、乾跑通過）是資訊不是進度，也不能拿來當「沒有下一步」的理由：真路線卡在

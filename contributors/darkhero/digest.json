@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-10-31T08:03:23",
+  "generated": "2026-10-31T12:39:33",
   "required": [
     "fames",
     "independent-review",
@@ -48,6 +48,7 @@
     "pfkt-parallel-wave",
     "rea-reverse-engineering",
     "sso-browser-session",
+    "typesafe-jev",
     "web-page-atlas",
     "web-ui-taste",
     "windows-runtime-pitfalls",

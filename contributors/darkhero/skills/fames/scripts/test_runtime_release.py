@@ -18,14 +18,14 @@ SOURCE = Path(__file__).with_name('runtime_release.py')
 spec = importlib.util.spec_from_file_location('runtime_release_under_test', SOURCE)
 release = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(release)
-EVIDENCE = Path('C:/ai_workspace/ai_darkhero/evidence/fames-fleet-20260924/runtime-release-tests') if os.name == 'nt' else Path.cwd() / '.retained-runtime-release-tests'
 PATH_A = '_harness/runtime/a.py'
 PATH_B = '_lean/fames/Phase.lean'
 
 
 @pytest.fixture
-def lab():
-    root = EVIDENCE / uuid.uuid4().hex
+def lab(tmp_path_factory):
+    # 2026-10-31: fixtures under pytest's temp root; the retained EVIDENCE tree grew ~60 dirs per run (1,034 entries).
+    root = tmp_path_factory.mktemp('runtime-release-lab')
     source, package, target = (root / name for name in ('source', 'package', 'target'))
     for directory in (source, package, target):
         directory.mkdir(parents=True)
@@ -144,6 +144,61 @@ def test_managed_update_retains_exact_backups_and_build_tree(lab):
     assert row['baseline_kind'] == 'previous_installed_manifest'
     assert (target / row['backup_path']).read_bytes() == old
     assert row['backup_sha256'] == hashlib.sha256(old).hexdigest()
+
+
+def test_receipt_archive_keeps_one_file_per_attempt_and_skips_identical_bytes(lab):
+    _, source, package, target = lab
+    build(lab)
+    first = release.apply(target, package)
+    archives = target / '_registry/fames-runtime-receipts'
+    assert first['ok']
+    # The final persist of an attempt archives that attempt's own APPLYING snapshot: one file.
+    assert [p.name for p in archives.iterdir()] == [first['attempt_id'] + '.previous.json']
+    assert json.loads((archives / (first['attempt_id'] + '.previous.json')).read_bytes())['state'] == 'APPLYING'
+    put(source, PATH_A, b'new_a = 2\n')
+    build(lab)
+    second = release.apply(target, package)
+    assert second['ok']
+    assert sorted(p.name for p in archives.iterdir()) == sorted(
+        attempt + '.previous.json' for attempt in (first['attempt_id'], second['attempt_id']))
+    assert json.loads((archives / (first['attempt_id'] + '.previous.json')).read_bytes())['state'] == 'INSTALLED'
+    snapshot = archives / (second['attempt_id'] + '.previous.json')
+    assert json.loads(snapshot.read_bytes())['state'] == 'APPLYING'
+    current = json.loads((target / '_registry/fames-runtime-release.json').read_bytes())
+    release._persist_receipt(target, current)
+    assert json.loads(snapshot.read_bytes()) == current
+    stamp = snapshot.stat().st_mtime_ns
+    release._persist_receipt(target, current)
+    assert len(list(archives.iterdir())) == 2 and snapshot.stat().st_mtime_ns == stamp
+    assert not list(archives.glob('*.stage'))
+
+
+def test_identical_release_is_backed_up_once(lab):
+    root, source, package, target = lab
+    first = build(lab)
+    put(source, PATH_A, b'new_a = 2\n')
+    second = build(lab)
+    backup = Path(second['retained_backup'])
+    assert backup.parent.name == first['release_sha256']
+    pristine = root / 'retained-first-release'
+    shutil.copytree(backup, pristine)
+    # A checkout restores the older runtime tree; rebuilding must not copy it into the registry again.
+    (package / 'runtime').rename(root / 'retained-second-release')
+    shutil.copytree(pristine, package / 'runtime')
+    third = build(lab)
+    assert third['release_sha256'] == second['release_sha256']
+    assert Path(third['retained_backup']) == backup
+    assert list(backup.parent.iterdir()) == [backup]
+    redundant = [p.parent for p in (source / '_delete').rglob('manifest.json')]
+    assert len(redundant) == 1 and release._verify_runtime(redundant[0])['release_sha256'] == first['release_sha256']
+    # A corrupted backup is not trusted as the retained copy: a fresh backup is made.
+    (backup / 'files' / PATH_A).write_bytes(b'corrupted copy')
+    (package / 'runtime').rename(root / 'retained-third-release')
+    shutil.copytree(pristine, package / 'runtime')
+    fourth = build(lab)
+    assert Path(fourth['retained_backup']) != backup and Path(fourth['retained_backup']).parent == backup.parent
+    assert release._verify_runtime(Path(fourth['retained_backup']))['release_sha256'] == first['release_sha256']
+    assert len(list(backup.parent.iterdir())) == 2
 
 
 def test_changed_managed_file_is_never_overwritten(lab):
