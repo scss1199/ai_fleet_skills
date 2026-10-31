@@ -1,0 +1,466 @@
+"""Source-bound phase evidence producer; formal guards do not prove task semantics.
+
+The native intake freezes a prompt/contract snapshot. Completion requires a
+separate task verifier receipt and closed obligations. Advisory output never
+supplies facts or execution authority.
+"""
+from __future__ import annotations
+import argparse
+import datetime as dt
+import hashlib
+import importlib.util
+import json
+import math
+import re
+import sys
+from pathlib import Path
+
+PHASES = ('FP', 'MTM', 'SCF', 'AEX', 'SEAL')
+FACTS = ('goal_bound', 'authority_bound', 'acceptance_bound', 'skills_bound',
+         'result_verified', 'identity_fresh', 'evidence_fresh', 'residual_measured',
+         'residual_comparable', 'cross_cycle', 'boundaries_preserved', 'graph_closed')
+HUB = Path(__file__).resolve().parents[2]
+HEX = re.compile(r'[0-9a-f]{64}')
+
+def sha(value):
+    return hashlib.sha256(value if isinstance(value, bytes) else json.dumps(
+        value, sort_keys=True, separators=(',', ':'), ensure_ascii=True).encode()).hexdigest()
+
+def load(path):
+    spec = importlib.util.spec_from_file_location('phase_' + sha(str(path))[:12], path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    exec(compile(Path(path).read_bytes(), str(path), 'exec'), mod.__dict__)
+    return mod
+
+def write(path, data):
+    # Native legacy and managed hooks can publish the same phase concurrently.
+    # Serialize the entire stage/replace/readback transaction, including between
+    # processes; unique staging alone would still race destination readback.
+    binding = load(Path(__file__).with_name('fames_turn_binding.py'))
+    with binding.locked(path.with_suffix('.write.lock')):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        stage = path.with_suffix('.tmp')
+        stage.write_text(json.dumps(data, indent=2, ensure_ascii=True)+'\n', encoding='utf-8')
+        stage.replace(path)
+        if json.loads(path.read_text(encoding='utf-8')) != data:
+            raise ValueError('phase_receipt_readback')
+
+def ref(role, path):
+    return {'role': role, 'path': str(path), 'sha256': sha(path.read_bytes())}
+
+def goal_identity(turn):
+    return sha({k: turn.get(k) for k in ('session_identity_sha', 'prompt_identity',
+                'prompt_contract_identity', 'package_sha')})
+
+def phase_identity(goal, phase):
+    return sha({'goal_identity': goal, 'phase': phase, 'schema': 'fames-phase-input/1'})
+
+def fresh(value, seconds=86400):
+    try:
+        parsed = dt.datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+        age = (dt.datetime.now(dt.timezone.utc)-parsed).total_seconds()
+        return -5 <= age <= seconds
+    except (ValueError, TypeError):
+        return False
+
+def read_refs(request):
+    rows = {}
+    for item in request.get('receipt_refs', []):
+        path = Path(item['path']).resolve()
+        raw = path.read_bytes()
+        if sha(raw) != item['sha256'] or item['role'] in rows:
+            raise ValueError('receipt_identity_or_duplicate')
+        rows[item['role']] = json.loads(raw)
+    return rows
+
+def bound_files(rows):
+    return bool(rows) and all(isinstance(r, dict) and HEX.fullmatch(str(r.get('sha256', '')))
+                             and Path(r['path']).is_file() and sha(Path(r['path']).read_bytes()) == r['sha256']
+                             for r in rows)
+
+def replay_phase_facts(request):
+    """Re-read concrete artifacts; caller-supplied fact bits are ignored.
+
+Verification receipts establish recorded checks and byte identities. They are
+not an OS trust boundary and do not decide whether tests capture user meaning.
+"""
+    facts = dict.fromkeys(FACTS, False)
+    try:
+        rows = read_refs(request)
+        turn = rows.get('turn', {})
+        goal = goal_identity(turn)
+        native = (turn.get('state') == 'PASS' and turn.get('runtime_event_observed') is True
+                  and turn.get('activation_evidence') in {'lifecycle_hook', 'always_apply_rule_gate'}
+                  and turn.get('read_back') is True and turn.get('adapter_registration', {}).get('state') == 'PASS'
+                  and bool(turn.get('package_sha')))
+        valid = (native and goal == request.get('goal_identity') and request.get('task_id') == goal and
+                 request.get('phase_identity') == phase_identity(goal, request.get('phase')))
+        work = turn.get('work_contract', {})
+        facts['goal_bound'] = valid and bool(HEX.fullmatch(str(turn.get('prompt_identity', ''))))
+        facts['authority_bound'] = valid and request.get('authority_before') == ['within_user_request']
+        facts['acceptance_bound'] = valid and work.get('state') == 'BOUND_NOT_EXECUTION_PROOF' and bool(work.get('stop_rule'))
+        facts['identity_fresh'] = valid and fresh(turn.get('generated'))
+        route = turn.get('local_skill_route', {})
+        candidates = route.get('candidates', [])
+        catalog_module = load(Path(__file__).with_name('jev_skill_advisor.py'))
+        # An unmatched lexical hint must still permit model-led catalog discovery.
+        # Bind the actual FAMES router skill for that stage; this grants no task
+        # skill execution and leaves task-specific selection unresolved.
+        discovery = (route.get('state') == 'ABSTAIN' and not candidates
+                     and work.get('unified_entrypoint', {}).get('public_trigger') == 'FAMES')
+        catalog = catalog_module.load_catalog(HUB, allowed_skill_ids=['fames'] if discovery else [item['id'] for item in candidates])
+        skills_current = bool(candidates) and len(candidates) <= 3
+        if discovery:
+            catalog_module.resolve_registered_skill(catalog, 'fames')
+            skills_current = True
+        for item in candidates:
+            canonical = catalog_module.resolve_registered_skill(catalog, item['id'], expected_sha256=item['body_sha256'])
+            skills_current = skills_current and Path(canonical.path).resolve() == Path(item['path']).resolve()
+        facts['skills_bound'] = bool(valid and (route.get('state') == 'CANDIDATES' or discovery) and skills_current)
+        result = rows.get('result', {})
+        result_bound = (valid and result.get('schema') == 'fames-task-verification/1'
+                        and result.get('goal_identity') == goal and result.get('state') == 'PASS'
+                        and result.get('exit_code') == 0 and bool(result.get('measurement_scope'))
+                        and result.get('checks') and all(v is True for v in result['checks'].values())
+                        and bound_files(result.get('source_refs', [])) and bound_files(result.get('evidence_refs', [])))
+        facts['result_verified'] = bool(result_bound)
+        facts['evidence_fresh'] = bool(result_bound and fresh(result.get('observed_at')))
+        residual = rows.get('residual', {})
+        measured = (result_bound and residual.get('goal_identity') == goal and
+                    residual.get('state') == 'PASS' and bound_files(residual.get('measurement_refs', [])))
+        facts['residual_measured'] = bool(measured and all(type(residual.get(k)) in (int, float)
+                                         and math.isfinite(residual[k]) for k in ('before', 'after')))
+        facts['residual_comparable'] = bool(measured and residual.get('before_method_sha256')
+                  == residual.get('after_method_sha256') and HEX.fullmatch(str(residual.get('before_method_sha256', ''))))
+        facts['cross_cycle'] = bool(measured and residual.get('previous_goal_identity') != goal
+                                    and HEX.fullmatch(str(residual.get('previous_goal_identity', ''))))
+        closure = rows.get('closure', {})
+        closure_bound = result_bound and closure.get('goal_identity') == goal and closure.get('schema') == 'fames-task-closure/1'
+        obligations = closure.get('obligations', [])
+        facts['graph_closed'] = bool(closure_bound and obligations and all(
+            x.get('state') == 'VERIFIED' and bound_files(x.get('evidence_refs', [])) for x in obligations))
+        facts['boundaries_preserved'] = bool(closure_bound and closure.get('authority_after') == ['within_user_request']
+                                            and closure.get('red_line_violations') == [])
+    except (OSError, ValueError, KeyError, TypeError):
+        return dict.fromkeys(FACTS, False)
+    return facts
+
+def advance(workspace, turn_path, phase, *, previous_guard=None, extra_refs=(), mode='execute', skip_reason=''):
+    workspace, turn_path = Path(workspace), Path(turn_path)
+    turn = json.loads(turn_path.read_text(encoding='utf-8'))
+    goal = goal_identity(turn)
+    request = {'schema': 'fames-phase-input/1', 'task_id': goal, 'goal_identity': goal,
+               'phase_identity': phase_identity(goal, phase), 'phase': phase, 'mode': mode,
+               'skip_reason': skip_reason, 'authority_before': ['within_user_request'],
+               'authority_after': ['within_user_request'], 'previous_guard': previous_guard,
+               'skill_binding_kind': 'routing_entrypoint_only' if turn.get('local_skill_route', {}).get('state') == 'ABSTAIN' else 'canonical_candidates',
+               'task_skill_selection': 'UNRESOLVED_UNTIL_MODEL_JUDGMENT',
+               'receipt_refs': [ref('turn', turn_path), *extra_refs]}
+    mod = load(workspace / '_lean/fames/phase_contract.py')
+    conformance = workspace / '_registry/fames-phase-conformance.json'
+    produced = mod.produce_phase_evidence(request, producer_path=Path(__file__), conformance_path=conformance)
+    guard = mod.evaluate_phase(phase, produced, conformance_path=conformance)
+    folder = workspace / '_registry/fames-phase' / goal
+    path = folder / (phase.lower() + '.json')
+    write(path, guard)
+    # Advice is stored beside the guard, never inside its verified fact chain.
+    try:
+        advisor = load(workspace / '_harness/runtime/jev_phase_advisor.py')
+        candidates = turn.get('local_skill_route', {}).get('candidates', [])
+        constraints = turn.get('local_skill_route', {}).get('skill_constraints') or {}
+        advice = advisor.advisory_for_phase(workspace, turn.get('jev_agent') or turn.get('agent', ''), phase=phase,
+            goal_identity=goal, phase_identity=request['phase_identity'],
+            prompt_identity=turn.get('prompt_identity'), session_identity=turn.get('session_identity_sha'),
+            surface_id=turn.get('surface_id', ''), intake_state=turn.get('state'),
+            allowed_skill_ids=[c['id'] for c in candidates], local_candidates=candidates,
+            mandatory_skill_ids=constraints.get('mandatory_skill_ids', []),
+            excluded_skill_ids=constraints.get('excluded_skill_ids', []),
+            read_only_hint=turn.get('local_skill_route', {}).get('read_only_hint', False),
+            phase_guard={'state': guard.get('state', 'UNKNOWN'), 'goal_identity': goal,
+                         'phase_identity': request['phase_identity'],
+                         'contract_sha256': guard.get('contract_sha256'),
+                         'receipt_sha256': guard.get('receipt_sha256'),
+                         'observed_at': guard.get('observed_at')})
+    except Exception as exc:
+        advice = {'state': 'UNKNOWN', 'reason': type(exc).__name__, 'api_calls': 0,
+                  'phase_advance_authorized': False}
+    write(folder / (phase.lower() + '-advice.json'), advice)
+    return guard, ref('previous_guard', path)
+
+def begin_turn(workspace, turn):
+    with phase_transaction(workspace, turn):
+        return _begin_turn_unlocked(workspace, turn)
+
+def phase_transaction(workspace, turn):
+    binding = load(Path(__file__).with_name('fames_turn_binding.py'))
+    path = Path(workspace) / '_registry/fames-phase' / goal_identity(turn) / 'transaction.lock'
+    return binding.locked(path, timeout_seconds=15)
+
+def _begin_turn_unlocked(workspace, turn):
+    workspace = Path(workspace)
+    goal = goal_identity(turn)
+    folder = workspace / '_registry/fames-phase' / goal
+    snapshot = folder / 'turn.json'
+    binding = load(Path(__file__).with_name('fames_turn_binding.py'))
+    if snapshot.is_file() and binding.order(binding.read(snapshot)) > binding.order(turn):
+        return {'goal_identity': goal, 'turn_snapshot': str(snapshot), 'guards': {},
+                'state': 'UNKNOWN', 'reason': 'superseded_native_intake',
+                'completion': 'UNKNOWN_UNTIL_SCF_AEX_SEAL',
+                'scope': 'formal_phase_admission_not_business_outcome'}
+    # Freeze only the fields needed by evidence replay; no prompt text or advice.
+    keys = ('agent', 'jev_agent', 'surface_id', 'state', 'runtime_event_observed', 'activation_evidence', 'read_back', 'adapter_registration',
+            'package_sha', 'prompt_identity', 'session_identity_sha', 'prompt_contract_identity',
+            'work_contract', 'generated', 'native_intake_observed_ns', 'local_skill_route')
+    write(snapshot, {k: turn.get(k) for k in keys})
+    guards, previous = {}, None
+    for phase in ('FP', 'MTM'):
+        try:
+            guard, previous = advance(workspace, snapshot, phase, previous_guard=previous)
+        except Exception as exc:
+            guard = {'state': 'UNKNOWN', 'reasons': [type(exc).__name__], 'phase': phase,
+                     'goal_identity': goal, 'phase_identity': phase_identity(goal, phase)}
+        guards[phase] = guard
+        if guard.get('state') != 'PASS':
+            break
+    return {'goal_identity': goal, 'turn_snapshot': str(snapshot), 'guards': guards,
+            'state': 'PASS' if set(guards) == {'FP', 'MTM'} and all(g.get('state') == 'PASS' for g in guards.values()) else 'UNKNOWN',
+            'completion': 'UNKNOWN_UNTIL_SCF_AEX_SEAL', 'scope': 'formal_phase_admission_not_business_outcome'}
+
+def completion_status(workspace, turn):
+    goal = goal_identity(turn)
+    root = Path(workspace) / '_registry/fames-phase' / goal
+    try:
+        mod = load(Path(workspace) / '_lean/fames/phase_contract.py')
+        saved = json.loads((root/'seal.json').read_text(encoding='utf-8'))
+        guard = mod.evaluate_phase('SEAL', saved, conformance_path=Path(workspace)/'_registry/fames-phase-conformance.json')
+        if (guard.get('goal_identity') != goal or guard.get('task_id') != goal
+                or guard.get('phase_identity') != phase_identity(goal, 'SEAL')):
+            return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': 'completion_goal_identity_mismatch'}
+        return {'state': guard.get('state', 'UNKNOWN'), 'goal_identity': goal, 'receipt_path': str(root/'seal.json')}
+    except Exception as exc:
+        return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': type(exc).__name__}
+
+WORKSPACE_MARKER = '_registry/fames-phase-conformance.json'
+
+
+def validate_paths(workspace, turn=None, result=None, closure=None, residual=None):
+    """Refuse relative or drive-relative paths before anything is read or written.
+
+    2026-10-12: `--workspace C:\\ai_workspace` typed in a bash shell arrived as `C:ai_workspace`
+    (drive-relative, not absolute); the receipts root then resolved under the current directory,
+    the verdict read "ref_not_a_registry_receipt" and a refusal.json landed in a stray tree.
+    Every path must be absolute and resolvable, and the workspace must hold the phase
+    conformance file. Returns a list of error codes; empty means usable."""
+    errors = []
+    try:
+        root = Path(workspace)
+        if not root.is_absolute():
+            errors.append('workspace_not_absolute')
+        else:
+            root = root.resolve(strict=True)
+            if not (root / WORKSPACE_MARKER).is_file():
+                errors.append('workspace_missing_conformance')
+    except (OSError, RuntimeError, TypeError, ValueError):
+        errors.append('workspace_unresolvable')
+    for name, value in (('turn', turn), ('result', result), ('closure', closure), ('residual', residual)):
+        if value is None:
+            continue
+        try:
+            path = Path(value)
+            if not path.is_absolute():
+                errors.append(f'{name}_not_absolute')
+                continue
+            # `turn` and `residual` are inputs and must exist; `result` and `closure` are the receipts this
+            # run WRITES, so what must resolve is their parent directory (2026-10-13: a strict resolve of
+            # the not-yet-written receipt refused every first completion with `result_unresolvable`).
+            if name in ('result', 'closure'):
+                path.parent.resolve(strict=True)
+            else:
+                path.resolve(strict=True)
+        except (OSError, RuntimeError, TypeError, ValueError):
+            errors.append(f'{name}_unresolvable')
+    return errors
+
+
+def complete_turn(workspace, turn, result, closure, residual=None):
+    invalid = validate_paths(workspace, None, result, closure, residual)
+    if invalid:  # no transaction, no refusal.json: nothing on disk is touched for a path we cannot trust
+        try:
+            goal = goal_identity(turn)
+        except Exception:  # noqa: BLE001 - the turn itself may be malformed; the path error still stands
+            goal = None
+        return {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': 'invalid_paths', 'errors': invalid,
+                'workspace': str(workspace)}
+    # Completion and intake share the same goal transaction. Locking each write
+    # alone cannot protect the snapshot/previous_guard hashes between phases.
+    with phase_transaction(workspace, turn):
+        return _complete_turn_unlocked(Path(workspace), turn, result, closure, residual)
+
+RECEIPT_MAX_AGE_S = 86400
+
+def aware_timestamp(value):
+    """An ISO-8601 instant WITH a UTC offset -> epoch seconds. A naive string is unreadable (ValueError), never read as
+    local time: on a UTC+8 box a naive UTC intake would move not_before 8 h into the past (round-17 review R-D)."""
+    parsed = dt.datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError('naive_timestamp')
+    return parsed.timestamp()
+
+def exited_zero(value):
+    """The engine records an exit status as an int; `false` (a bool, which Python counts as 0) is not an exit code."""
+    return type(value) is int and value == 0
+
+def mechanical_receipt_anchor(workspace, result_path, turn=None):
+    """A seat writes result.json itself; this is the one part of it that another program must have produced.
+
+    At least one evidence_ref must be a receipt the receipt engine minted by RUNNING a command: under
+    _registry/fames-evidence/receipts, bytes equal to the ref's sha256, a JSON object with state PASS, ok true,
+    exit_status 0, a non-empty commands list whose every command exited 0, validator_identity naming fames-receipt.py,
+    an offset-carrying timestamp within 24 h AND not before this turn's intake (a receipt from an earlier turn, another
+    goal or another seat does not bind this completion; round-17 review R2). Anything else is a seat-authored assertion
+    and gets no completion (round-16 P8, audit H1; round 18: review R-A, R-C, R-D)."""
+    try:
+        result = json.loads(Path(result_path).read_text(encoding='utf-8-sig'))
+    except (OSError, ValueError, RecursionError):  # seat-written JSON may nest without bound (round-19 review R-E)
+        return {'ok': False, 'reason': 'result_unreadable'}
+    receipts_root = (Path(workspace) / '_registry/fames-evidence/receipts').resolve()
+    now = dt.datetime.now(dt.timezone.utc).timestamp()
+    not_before = -1.0
+    if isinstance(turn, dict):
+        try:
+            not_before = aware_timestamp(turn.get('generated')) - 5
+        except (ValueError, TypeError):
+            return {'ok': False, 'reason': 'turn_intake_time_unreadable'}
+    reasons = []
+    refs = result.get('evidence_refs') if isinstance(result, dict) else None
+    for item in (refs if isinstance(refs, list) else []):
+        try:
+            path = Path(item['path']).resolve()
+            path.relative_to(receipts_root)
+            raw = path.read_bytes()
+            if sha(raw) != item.get('sha256'):
+                reasons.append('ref_sha_mismatch')
+                continue
+            doc = json.loads(raw.decode('utf-8-sig'))
+        except (OSError, ValueError, KeyError, TypeError, AttributeError, RecursionError):
+            reasons.append('ref_not_a_registry_receipt')
+            continue
+        if not isinstance(doc, dict):  # a JSON list, string, number or null is not a receipt (round-17 review R-A)
+            reasons.append('ref_not_a_registry_receipt')
+            continue
+        validator = str(doc.get('validator_identity') or '').replace(chr(92), '/').lower()
+        if not validator.endswith('/fames-receipt.py'):
+            reasons.append('not_minted_by_receipt_engine')
+            continue
+        if doc.get('state') != 'PASS' or doc.get('ok') is not True or not exited_zero(doc.get('exit_status')):
+            reasons.append('receipt_not_pass')
+            continue
+        commands = doc.get('commands')
+        if not isinstance(commands, list) or not commands:
+            reasons.append('receipt_without_commands')
+            continue
+        if any(not isinstance(c, dict) or not exited_zero(c.get('exit_status')) for c in commands):  # round-17 review R-C
+            reasons.append('receipt_command_not_zero')
+            continue
+        generated = doc.get('generated_at')
+        if generated is None:  # a receipt dated only by ISO text (round-17 N4)
+            try:
+                generated = aware_timestamp(doc.get('generated_at_iso'))
+            except (ValueError, TypeError, OverflowError):
+                reasons.append('receipt_time_unreadable')
+                continue
+        elif isinstance(generated, bool) or not isinstance(generated, (int, float)) or not (0 <= generated <= 1e11):
+            # an epoch that is present must be a sane number: a bool, a string, NaN, inf, a negative or a 400-digit int is
+            # unreadable, never a fallback (round-18 review R-4, round-19 review N-7)
+            reasons.append('receipt_time_unreadable')
+            continue
+        if not (-5 <= now - generated <= RECEIPT_MAX_AGE_S):
+            reasons.append('receipt_stale')
+            continue
+        if generated < not_before:
+            reasons.append('receipt_before_turn_intake')
+            continue
+        return {'ok': True, 'receipt': str(path)}
+    return {'ok': False, 'reason': ','.join(sorted(set(reasons))) or 'no_receipt_ref'}
+
+def record_outcome(folder, outcome):
+    """Round 18 (review N-A): a non-PASS declared completion leaves its reason in <goal folder>/refusal.json so the Stop
+    worker can surface it (the child's stdout is discarded); a PASS removes an earlier refusal. Best effort: a failure
+    here never changes the verdict, and the file grants nothing (completion_status reads seal.json only)."""
+    target = Path(folder) / 'refusal.json'
+    try:
+        if outcome.get('state') == 'PASS':
+            if target.is_file():
+                target.unlink()
+            return outcome
+        target.parent.mkdir(parents=True, exist_ok=True)
+        stage = target.with_name('refusal.json.tmp')
+        try:
+            stage.write_text(json.dumps({**outcome, 'schema': 'fames-completion-refusal/1',
+                                         'observed_at': dt.datetime.now(dt.timezone.utc).isoformat()},
+                                        indent=2, ensure_ascii=True, default=str) + '\n', encoding='utf-8')  # the record's own keys win (round-19 N-5)
+            stage.replace(target)
+        except (OSError, ValueError, TypeError, RecursionError):
+            stage.unlink(missing_ok=True)  # no staging leftover (round-18 review N-3)
+            raise
+        return {**outcome, 'refusal': str(target)}
+    except (OSError, ValueError, TypeError, RecursionError):
+        return outcome
+
+def _complete_turn_unlocked(workspace, turn, result, closure, residual):
+    goal = goal_identity(turn)
+    folder = workspace/'_registry/fames-phase'/goal
+    anchor = mechanical_receipt_anchor(workspace, result, turn)
+    if not anchor.get('ok'):
+        return record_outcome(folder, {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': 'result_without_mechanical_receipt',
+                'detail': anchor.get('reason'), 'path': str(folder)})
+    begin = _begin_turn_unlocked(workspace, turn)
+    if begin['state'] != 'PASS':
+        return record_outcome(folder, {'state': 'UNKNOWN', 'goal_identity': goal, 'reason': begin.get('reason', 'intake_phase_not_pass'),
+                'phases': {p:g['state'] for p,g in begin['guards'].items()}, 'path': str(folder)})
+    snapshot = folder/'turn.json'
+    previous = ref('previous_guard', folder/'mtm.json') if (folder/'mtm.json').is_file() else None
+    extra = [ref('result', Path(result)), ref('closure', Path(closure))]
+    if residual:
+        extra.append(ref('residual', Path(residual)))
+    phases = dict(begin['guards'])
+    for phase in ('SCF', 'AEX', 'SEAL'):
+        inactive = phase == 'AEX' and not residual
+        try:
+            guard, previous = advance(workspace, snapshot, phase, previous_guard=previous, extra_refs=extra,
+                mode='skip' if inactive else 'execute', skip_reason='No comparable cross-cycle measurement exists' if inactive else '')
+        except Exception as exc:  # noqa: BLE001 - as in _begin_turn_unlocked: UNKNOWN, and the refusal records why (round-19 review R-D)
+            phases[phase] = {'state': 'UNKNOWN', 'reasons': [type(exc).__name__], 'phase': phase,
+                             'goal_identity': goal, 'phase_identity': phase_identity(goal, phase)}
+            break
+        phases[phase] = guard
+    final = {'state': phases.get('SEAL', {}).get('state', 'UNKNOWN'), 'goal_identity': goal,
+             'phases': {p:g.get('state', 'UNKNOWN') for p,g in phases.items()}, 'path': str(folder)}
+    if final['state'] != 'PASS':  # round-18 review R-6: the refusal names what did not pass
+        final['reason'] = 'seal_phase_not_pass'
+        final['detail'] = ','.join(p + '=' + str(g.get('state')) + (':' + ','.join(map(str, g['reasons'])) if g.get('reasons') else '')
+                                   for p, g in phases.items() if g.get('state') != 'PASS')
+    return record_outcome(folder, final)
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--workspace', type=Path, default=HUB)
+    parser.add_argument('--turn', type=Path, required=True)
+    parser.add_argument('--result', type=Path, required=True)
+    parser.add_argument('--closure', type=Path, required=True)
+    parser.add_argument('--residual', type=Path)
+    args = parser.parse_args()
+    invalid = validate_paths(args.workspace, args.turn, args.result, args.closure, args.residual)
+    if invalid:
+        print(json.dumps({'state': 'UNKNOWN', 'reason': 'invalid_paths', 'errors': invalid,
+                          'workspace': str(args.workspace), 'turn': str(args.turn)}))
+        return 2
+    turn = json.loads(args.turn.read_text(encoding='utf-8'))
+    outcome = complete_turn(args.workspace.resolve(), turn, args.result.resolve(), args.closure.resolve(),
+                            args.residual.resolve() if args.residual else None)
+    print(json.dumps(outcome))
+    return 0 if outcome['state'] == 'PASS' else 1
+
+if __name__ == '__main__':
+    raise SystemExit(main())

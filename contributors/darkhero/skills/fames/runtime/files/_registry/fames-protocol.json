@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.45.139",
+  "version": "1.45.141",
   "updated": "2026-09-23",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -2509,6 +2509,116 @@
       "runtime": "_harness/runtime/fames_turn_binding.py",
       "evidence_classifier": "_skill/engines/fames_execution_evidence.py",
       "evidence_rule": "Verified runner output is scoped evidence; build and local tests never establish production behavior."
+    }
+  },
+  "auto_mode_posture": {
+    "schema": 1,
+    "id": "FAMES-AUTO-MODE-POSTURE",
+    "purpose": "Claude Code auto-mode classifier posture (settings.json autoMode) carried by F1S: the T1 red lines and each seat's trust boundary become classifier rules on every host, and the same section is the model-side status line every session sees at start.",
+    "authority": "operator 2026-10-31 (ai_trader conversation): fold the /auto-mode-setup proposal into F1S so every open conversation is governed and upgraded by it; writes to ~/.claude/settings.json autoMode are authorized through this section and its writer only.",
+    "writer": "_skill/engines/sync-cursor-hooks.py write_claude_fames_hooks -> render_auto_mode (runs on every host from fames-immediate-apply.py after each package install; by hand: python _skill/engines/sync-cursor-hooks.py --claude-only)",
+    "status_line": "_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py SessionStart: AUTO-MODE POSTURE — IN_SYNC | DRIFT | UNWRITTEN | ABSENT; a change to this section reaches open conversations through the mid-turn watch on this file",
+    "scope_facts": "Claude Code reads autoMode from the user settings file or managed settings only (project .claude/settings.json and settings.local.json are ignored); arrays from several scopes are concatenated; a soft_deny array without $defaults replaces the built-in list; environment is classifier input, not model context (code.claude.com/docs/en/auto-mode-config, read 2026-10-31).",
+    "render": {
+      "tag": "[F1S]",
+      "keep_operator_rows": "untagged rows the operator wrote stay in place",
+      "replace_untagged_duplicates": "an untagged row whose text equals an F1S row is adopted (replaced by the tagged row) so a proposal folded into this section does not appear twice",
+      "soft_deny_keeps_defaults": "$defaults is kept (or added first) so F1S never replaces the built-in soft_deny list",
+      "hard_deny": "never written by F1S: posture and hooks stay fail-open; hard_deny belongs to the operator",
+      "allow": "never written by F1S: an allow row would widen authority"
+    },
+    "fleet": {
+      "environment": [
+        "### Fleet hub (F1S)",
+        "**Hub layout**: C:\\ai_workspace is the hub; every seat is a sibling ai_* folder (ai_trader, ai_darkhero, ...) with its own git repository and GitHub remote; _skill/ holds the shared engines and fleet skills, _registry/ the machine-readable SSOT, _inbox/ the seat-to-seat mail; ai_darkhero is the curator seat.",
+        "**Source control**: each seat pushes only its own repository through _skill/engines/git_smart.py and never force-pushes; the F1S package travels through the carrier repo scss1199/ai_fleet_skills; hub changes ship through _skill/engines/ship-f1s.py.",
+        "**Secrets**: _secrets/, every .env, *.pfx, cookie and token file belongs to the operator; schema and counts may be read, values are never printed, echoed into chat, logged or committed.",
+        "**Background work**: periodic work runs only as HubClock riders (_registry/hosts.json) registered with operator authorization, never as Windows scheduled tasks; hidden child processes only through pythonw, CREATE_NO_WINDOW or wscript SW_HIDE, never through the PowerShell hidden-window-style switch (a console still flashes and takes focus).",
+        "**Protected processes**: Logi Options+ (logioptionsplus*.exe, OptionsPlusUpdaterService) is protected operator input; nothing stops, disables or degrades it unless the operator names it in the same instruction.",
+        "**Deletion**: permanent deletion is the operator's act; sessions move files to _delete/ or rename them with a .MIGRATED-bak suffix and leave the final removal to the operator.",
+        "**Front ends**: every shipped UI is inline and non-blocking; no alert, confirm, prompt, window.open or focus-stealing modal (zt-popup-gate.py blocks the push).",
+        "**Global Claude settings**: ~/.claude/settings.json and ~/.claude/CLAUDE.md change only through the F1S package writer (sync-cursor-hooks.py, bootstrap_machine.py) or by the operator; _registry/rules-blueprint.json T1 and _skill/technique_output are read-only for every seat but the curator.",
+        "**Models at runtime**: seats run on free-tier APIs or CPU-only local models; paid models only for architecture upgrades; nothing adds load to the A770 GPU."
+      ],
+      "soft_deny": [
+        {
+          "t1": "no-operator-zct-waste",
+          "rule": "git push --force / -f / --force-with-lease to any hub seat repository or the ai_fleet_skills carrier"
+        },
+        {
+          "t1": "workspace-seat-contract",
+          "rule": "Registering Windows scheduled tasks (schtasks /create, Register-ScheduledTask, New-ScheduledTask*) from a hub seat; periodic work goes through HubClock register-rider"
+        },
+        {
+          "t1": "zero-foreground",
+          "rule": "Launching a background process through the PowerShell hidden-window-style switch or a Start-Process launch of a console, installer or GUI from a session (fake hiding: a console still flashes); hidden work uses pythonw, CREATE_NO_WINDOW or wscript SW_HIDE"
+        },
+        {
+          "t1": "protect-logi-options-plus",
+          "rule": "Stopping, disabling, uninstalling or lowering the priority of logioptionsplus*.exe or OptionsPlusUpdaterService (Stop-Process, taskkill, sc stop, Set-Service, Disable-ScheduledTask)"
+        },
+        {
+          "t1": "deletion",
+          "rule": "Permanent deletion of files or data outside the session's own scratch (rm -rf, Remove-Item -Recurse -Force, del /s, Clear-RecycleBin, git clean -fdx, DROP TABLE) instead of moving to _delete/ or renaming .MIGRATED-bak"
+        },
+        {
+          "t1": "secrets",
+          "rule": "Printing, cat-ing, grepping values out of, copying or committing _secrets/, any .env, *.pfx, cookie or token file; reading schema or counts is routine"
+        },
+        {
+          "t1": "operator-auth",
+          "rule": "Writing ~/.claude/settings.json, ~/.claude/CLAUDE.md, autostart entries or user/system environment variables other than through sync-cursor-hooks.py or bootstrap_machine.py"
+        },
+        {
+          "t1": "kb-readonly",
+          "rule": "Editing _registry/rules-blueprint.json or writing under _skill/technique_output from a seat other than the curator ai_darkhero"
+        },
+        {
+          "t1": "no-modal-popup",
+          "rule": "Shipping front-end code that adds alert(), confirm(), prompt(), window.open() or a focus-stealing modal"
+        },
+        {
+          "t1": "f1s",
+          "rule": "Pinning a hash or version into a hook command, or making any F1S hook block a prompt, a tool call or a stop"
+        }
+      ]
+    },
+    "seats": {
+      "ai_trader": {
+        "source": "/auto-mode-setup proposal b6dd15d8 (operator 2026-10-31, posture=mixed scope=project depth=both) folded in verbatim",
+        "environment": [
+          "### Org-wide",
+          "**Organization**: None configured",
+          "**Cloud provider(s)**: None configured",
+          "**Repository visibility**: private (scss1199/ai_trader, confirmed via gh)",
+          "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+          "**Secrets management**: local files only — .env, secrets/, *.key patterns gitignored (sinopac-trading-system/.env, sinopac-trading-system/.env.example, web/.env.local present as local config, not to be committed)",
+          "**Default / protected branches**: master is default/stable (do not commit directly per CLAUDE.md); dev is the working branch; no classic protected branches listed, no rulesets queryable — treat master as sensitive by convention",
+          "**CI/CD deploy targets**: None configured — repo docs describe staging/prod .env separation and Docker Compose but no CI/CD deploy target was corroborated by gathered evidence",
+          "**Network posture**: None configured",
+          "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine with open internet",
+          "**Source control**: The trusted repo (scss1199/ai_trader on github.com) and its remote(s) only",
+          "**Trusted internal domains**: None configured",
+          "**Trusted cloud buckets**: None configured",
+          "**Key internal services**: None configured — hosts contacted (datafeed.dukascopy.com, www.histdata.com, freeserv.dukascopy.com, fleet-line-hooks.fly.dev, ai-trader.kyloren.workers.dev, candledata.fxcorporate.com, www.taifex.com.tw, www.twse.com.tw, ai-darkhero.kyloren.workers.dev, api.finmindtrade.com, openapi.twse.com.tw, opendata.tdcc.com.tw) are routine market-data/API endpoints used by this project, not corroborated as org-internal trust anchors",
+          "**Internal package registry**: None configured",
+          "**Sensitive data locations & audiences**: sinopac-trading-system/.env, sinopac-trading-system/.env.example, web/.env.local, and any secrets/ or *.key paths — credentials for the Sinopac Shioaji trading API and other services; never commit, print values, or share outside this project's operator",
+          "**Data retention / declassification**: None configured",
+          "**Sensitive remote targets**: any namespace, host, or container whose name carries prod or production as a whole word or segment; additionally per CLAUDE.md, real-money/live order execution (SHIOAJI_SIMULATION=false, CA credentials) is explicitly reserved to the human owner and is never performed by Claude under any stated authorization",
+          "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic; note k8s namespaces seen in this project's transcripts (scripts, sinopac-trading-system, dsh, replace, report-20261009, src) are not production-named and are not elevated by that alone",
+          "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries prod or production as a whole word or segment",
+          "### User-specific",
+          "**Primary use of Claude Code**: software development — building an end-to-end Taiwan stock/futures trading system (quotes, charts, order execution) on Sinopac Shioaji, per this project's CLAUDE.md",
+          "**Trusted repo**: C:\\ai_workspace\\ai_trader (working checkout, branch master) and its worktree C:\\ai_workspace\\_worktrees\\ai_trader-dev (branch dev), remote origin https://github.com/scss1199/ai_trader.git, private",
+          "**Org-specific CLIs**: None configured — project-specific scripts/CLIs observed (sinopac-trading-system wrapper commands, dsh) are routine under this project's own tree, not corroborated as a broader org-wide toolchain",
+          "Routine under C:\\ai_workspace\\ai_trader/ and C:\\ai_workspace\\_worktrees\\ai_trader-dev/ prefixes: project scripts, Docker Compose operations, and the Makefile targets (clean, dashboard, down, format, hello, help, install, lint, logs, sync, test, up)"
+        ],
+        "soft_deny": [
+          "Bash(git push --force*) in scss1199/ai_trader — direct force-push to master or dev",
+          "Writes to sinopac-trading-system/.env, sinopac-trading-system/.env.example, or web/.env.local",
+          "Bash commands that set or imply SHIOAJI_SIMULATION=false or otherwise arm live/real-money order execution"
+        ]
+      }
     }
   }
 }

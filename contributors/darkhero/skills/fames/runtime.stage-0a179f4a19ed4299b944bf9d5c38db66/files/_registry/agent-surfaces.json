@@ -1,0 +1,139 @@
+{
+  "schema": 1,
+  "updated": "2026-08-21",
+  "concept_id": "AGENT-SURFACES",
+  "zh": "代理技能表面統一表",
+  "canonical_source": "_skill/fleet-skills",
+  "why": [
+    "Each vendor reads ONLY its own discovery path, so a skill absent from a path is invisible to that agent — the paths are not shared.",
+    "Measured 2026-08-12 on ai_darkhero before this registry existed: .cursor reached 38/40 canon skills, .claude 4/40, .agents 4/40. 36 canon skills were unreachable by the EXECUTING seat anywhere on the machine while the reviewing seat could see them. That is executor-judge starvation, not a policy.",
+    "The starvation was a cost defence, not a design: subset was hardcoded in three places in fleet-skill-sync.py and full copies would have tripled 189 physical skill folders. link_mode=junction removes the cost, so subset can be full everywhere."
+  ],
+  "surfaces": [
+    {
+      "key": "dsh",
+      "vendor": "DSH",
+      "path": [".agents", "skills"],
+      "subset": "full",
+      "aliases": false,
+      "link_mode": "junction",
+      "turn_refresh": {
+        "event": "UserPromptSubmit",
+        "mode": "same_turn_context_injection",
+        "adapter": "_harness/runtime/dsh_fames_hook.py",
+        "transport": "_harness/runtime/dsh_fames_plugin.mjs",
+        "activation_proof": "actual agent/pre-step event bound to the live session and prompt; plugin loading alone is readiness",
+        "receipt": "_registry/fames-turn/dsh/<session-sha>.json"
+      }
+    },
+    {
+      "key": "cursor",
+      "vendor": "Cursor",
+      "path": [".cursor", "skills"],
+      "subset": "full",
+      "aliases": true,
+      "link_mode": "junction",
+      "turn_refresh": {
+        "event": "beforeSubmitPrompt",
+        "adapter": "_skill/engines/cursor-fames-hot-refresh.py",
+        "mode": "always_apply_rule_with_pre_submit_read_back",
+        "rule": [".cursor", "rules", "fames-rb-ti.mdc"],
+        "activation_proof": "actual beforeSubmitPrompt event receipt",
+        "receipt": "_registry/fames-turn/cursor/<session-sha>.json"
+      }
+    },
+    {
+      "key": "claude",
+      "vendor": "Claude Code",
+      "path": [".claude", "skills"],
+      "subset": "full",
+      "aliases": false,
+      "link_mode": "junction",
+      "turn_refresh": {
+        "event": "UserPromptSubmit",
+        "mode": "same_turn_context_injection",
+        "adapter": "_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py",
+        "activation_proof": "actual UserPromptSubmit event receipt",
+        "receipt": "_registry/fames-turn/claude/<session-sha>.json"
+      }
+    },
+    {
+      "key": "open-agent-standard",
+      "vendor": "Codex and vendor-neutral agent clients",
+      "path": [".agents", "skills"],
+      "subset": "full",
+      "aliases": false,
+      "link_mode": "junction",
+      "turn_refresh": {
+        "event": "UserPromptSubmit",
+        "mode": "same_turn_context_injection",
+        "adapter": "_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py",
+        "fallback": "AGENTS.md#FAMES complete-contract trigger",
+        "hook_trust_boundary": "Non-managed changed hooks remain UNKNOWN until the host executes the exact trusted definition; configuration read-back or a synthetic probe is insufficient.",
+        "activation_proof": "actual UserPromptSubmit event receipt bound to the live session and prompt",
+        "receipt": "_registry/fames-turn/open-agent-standard/<session-sha>.json"
+      }
+    }
+  ],
+  "subset_semantics": {
+    "full": "the per-root set computed by fleet-skill-sync._skills_for_root() — REQUIRED + seat extras + path-prefix extras",
+    "entrypoints": "the cross-tool discovery entrypoints only (the pre-2026-08-12 behaviour of .claude, and of .agents while that surface existed)"
+  },
+  "entrypoints": ["fames", "token-preflight"],
+  "removed_surfaces": [],
+  "link_mode_semantics": {
+    "junction": "Windows directory junction to canonical_source/<skill>. One referent per machine, so a canon edit is live on every surface with no copy step and no drift window.",
+    "copy": "physical copy via _copy_skill_tree — the pre-2026-08-12 behaviour, kept for non-NTFS or non-Windows nodes"
+  },
+  "junction_facts_measured": {
+    "date": "2026-08-12",
+    "python": "3.12.10",
+    "api": "_winapi.CreateJunction — no admin right needed, ~0.38ms per link, no subprocess",
+    "os_path_islink": "False on junctions — any guard using islink() MISSES them; use os.path.isjunction (3.12+)",
+    "os_walk": "DOES traverse into a junction, so tree-hash and verify still see skill content through the link",
+    "delete_safety_probe": {
+      "claim": "every routine cleanup path removes the LINK and leaves canon alive",
+      "shutil.rmtree(parent)": "link gone, target alive",
+      "git clean -xdf": "link gone, target alive",
+      "rd /s /q": "link gone, target alive",
+      "Remove-Item -Recurse -Force": "link gone, target alive"
+    },
+    "git_status_traverses": "git status -uall reports files THROUGH the junction as untracked, so every seat repo carrying a surface MUST gitignore the surface dirs or the whole canon gets absorbed into that repo"
+  },
+  "gitignore_required": [".cursor/skills/", ".claude/skills/"],
+  "vendor_neutrality_proof": {
+    "claim": "onboarding a future vendor is a data-only edit to this file — zero lines of engine code",
+    "date": "2026-08-13",
+    "method": "appended a synthetic surface {key: probe, path: [.probe-vendor, skills]} plus its gitignore_required entry, changed nothing else, then ran the normal deploy/verify engines",
+    "measured": {
+      "skill_surface.SURFACES": "picked up the third surface with no code change",
+      "fleet-skill-sync deploy --agent ai_darkhero": "37/37 canon skills materialised under .probe-vendor/skills, all 37 junctions resolving to canonical_source",
+      "fleet-skill-sync verify": "FAIL missing=36 while only fames was deployed, OK after full deploy — the gate is surface-driven, not vendor-hardcoded",
+      "gitignore": "deploy wrote the new rule, so git status showed nothing for .probe-vendor — the untracking guarantee extends to a new vendor automatically",
+      "revert": "removing the surface dir left canon file count unchanged (107 before and after); lexicon-sync issues=0 and test_fames_stack passed"
+    },
+    "rule": "a new AI vendor is onboarded HERE. Never by adding a provider path literal to an engine."
+  },
+  "non_canon_rule": {
+    "rule": "a surface dir whose name is NOT in canonical_source stays physical and is never junctioned or deleted",
+    "why": "measured 2026-08-12: 29 such skills are legitimate single-seat development, each present in exactly one seat and domain-bound. They are promotion candidates, not drift.",
+    "promote_via": "_skill/engines/adus-promote.py"
+  },
+  "quarantine_on_replace": {
+    "dir": "_delete/surface-junction-20260812",
+    "rule": "before a physical canon-named dir is replaced by a junction, it is quarantined if its tree differs from canon; identical trees are removed outright",
+    "why": "reversibility — a physical surface dir may hold an un-promoted local edit, and the fleet convention is quarantine, never hard delete"
+  },
+  "engines": {
+    "deploy": "_skill/engines/fleet-skill-sync.py",
+    "verify": "_skill/engines/fleet-skill-sync.py verify"
+  },
+  "consumers": [
+    "_skill/engines/fleet-skill-sync.py — SKILL_DIRS / DISCOVERY_ENTRYPOINTS now load from here",
+    "_skill/fleet-skills/fames/scripts/fames_fleet.py — _surfaces() drives install/verify-host targets; unreadable registry yields no targets and fails closed without provider-specific fallback",
+    "_skill/tests/test_fames_stack.py — asserts deploy against sync.SKILL_DIRS instead of a literal tuple",
+    "_skill/engines/skill_surface.py — the shared resolver; every audit engine below reaches surfaces only through it",
+    "_skill/engines/{agc-converge,agc-fleet-audit,mtm-converge,mtm-token-waste-scan,asu-detect,fleet-token-ladder,lexicon-sync}.py — de-vendored 2026-08-13 (78d19521); they used to hardcode .cursor/skills as THE skill home"
+  ],
+  "aex_phase": "DISTILL"
+}
