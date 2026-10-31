@@ -35,11 +35,16 @@ def validate(data: dict) -> list[str]:
     journal = transaction.get("journal", [])
     if [item.get("state") for item in journal] != JOURNAL:
         errors.append("transaction_journal_order_invalid")
+    commit_status = next((item.get("status") for item in journal if item.get("state") == "COMMIT"), None)
     for item in journal:
         state, status = item.get("state"), item.get("status")
-        allowed = {"PASS"} if state != "RECOVER" else {"PASS", "NOT_TRIGGERED"}
+        allowed = {"PASS"} if state != "RECOVER" else {"PASS", "NOT_TRIGGERED", "NOT_APPLICABLE"}
         if status not in allowed:
             errors.append(f"journal_not_terminal:{state}")
+        if state == "RECOVER" and status == "NOT_APPLICABLE" and (
+            commit_status != "PASS" or not str(item.get("reason") or "").strip()
+        ):
+            errors.append("recover_not_applicable_without_verified_commit")
     for field in ("before_version", "new_version", "rollback_command", "read_back_version"):
         if not str(transaction.get(field, "")).strip():
             errors.append(f"transaction_field_missing:{field}")

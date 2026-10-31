@@ -29,7 +29,7 @@ def valid_receipt() -> dict:
                 {"state": "APPLY", "status": "PASS"},
                 {"state": "VERIFY", "status": "PASS"},
                 {"state": "COMMIT", "status": "PASS"},
-                {"state": "RECOVER", "status": "NOT_TRIGGERED"},
+                {"state": "RECOVER", "status": "NOT_APPLICABLE", "reason": "verified commit did not trigger recovery"},
             ],
         },
         "ship_evidence": {
@@ -61,6 +61,7 @@ cases = {
     "cpu_exceeded": lambda r: r["ship_evidence"]["cpu_probe"].update(exceeded_cpu=1),
     "cpu_over_budget": lambda r: r["ship_evidence"]["cpu_probe"].update(p99_ms=8),
     "git_mismatch": lambda r: r["ship_evidence"]["git"].update(upstream_sha="def"),
+    "recover_na_no_reason": lambda r: r["transaction"]["journal"][4].pop("reason"),
 }
 
 

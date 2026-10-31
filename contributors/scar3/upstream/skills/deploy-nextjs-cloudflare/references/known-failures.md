@@ -1759,3 +1759,10 @@ is a real finding - report it, do not escalate to another deletion API.
 - Cause: local_smoke always launched Wrangler with the default config and hid the log on startup timeout
 - Fix: accept --config, pass it to wrangler dev, and print the log tail for startup failures
 - Verify: `local_smoke.py . --config wrangler.workers-dev.jsonc --path /signin exits 0`
+
+## 2026-08-24 — versioned-preview-readiness
+
+- Symptom: A router preview that overrides a service binding to a freshly uploaded server version returns HTTP 500 Server failed to respond, although the same version later returns the expected application status.
+- Cause: The target server version was not yet observably ready as an active zero-percent deployment; a version upload or traffic command alone did not prove the service-binding override could execute it.
+- Fix: Keep both candidates in the active deployment at old@100 and new@0, read both deployment populations back, wait for an application-specific server readiness response, then run the full preview gate. Recovery restores old@100 while retaining every successfully uploaded failed candidate at new@0.
+- Verify: `Require the candidate router and server percentages to read back as 0, then require /api/me to return the expected fail-closed 404 before the exhaustive preview verifier; capture a version-scoped tail with matching version id and zero exceptions when diagnosis is needed.`

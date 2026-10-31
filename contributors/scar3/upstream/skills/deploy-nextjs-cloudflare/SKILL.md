@@ -33,6 +33,8 @@ Produce a working public URL, not a placeholder page. Preserve the application's
 - Record wall-clock time for dependency installation when needed, `cf:build`, Wrangler dry-run, and upload. On `darkhero` (i9-14900K, 96 GiB RAM, Samsung 990 Pro), the measured fracdigi baseline on 2026-08-04 was 59.67 seconds for `npm run cf:build`, 3.52 seconds for `wrangler deploy --dry-run`, and 21.31 seconds for the incremental upload/deploy.
 - Prefer CPU, RAM, and NVMe capacity. Next.js/SWC/esbuild/OpenNext builds do not normally use a discrete GPU; do not install GPU tooling or claim A770/A310 acceleration without project-specific evidence.
 - Keep hosted build quota separate from deployment/runtime limits. Local compilation avoids Cloudflare build-minute use, but it cannot bypass the compressed Worker bundle cap, startup-time cap, runtime CPU/memory limits, static-asset limits, or request limits. Wrangler still validates these during upload or dry-run.
+- Request budget before ship: every seat's Workers share one account cap (Free = 100k requests/day; binding subrequests count too). A change that adds client polling, retries or self-fetch must state its expected requests/day in the ship receipt and stay under 20% of the account cap; otherwise cut the poll rate or move the traffic off the Worker. Bulk file transport (photos, media) goes local -> Drive with rclone on HubClock, never through a Worker. (ai_photo 2026-10-27: ai-jci-taipei used 376,966 requests in one UTC day, about 90 req/s, and every seat's Worker was down until 00:00 UTC.)
+- Per-client rate gate at the Worker entry, and what it cannot do: the 376,966-request day was one built-in browser parked on the site while Next.js looped `?_rsc=` prefetches (not a rider, not a webhook). Gate every public Next.js Worker in front of the app handler with a Workers `ratelimits` binding, separate limits for RSC prefetch (`?_rsc=`, `RSC: 1`, `Next-Router-Prefetch: 1`) and other requests, answer 429 with `Retry-After` and `Cache-Control: no-store`, and fail open when the binding is missing or the limiter throws. A 429 still counts as one Worker request, so the gate only stops the loop from getting a payload and saves CPU; it does not protect the shared account cap, and workers.dev has no zone for WAF rate limiting. The structural fix is `<Link prefetch={false}>` on public pages and never leaving a built-in browser tab parked on a Next.js site. Verify by sending more prefetches than the limit in a minute and recording the index of the first 429 while a normal page still returns 200; on the next incident read `wrangler deployments status` and the invocations analytics before blaming code. (jci_taipei 2026-10-31 f5038ff rate-gate.mjs: 120 RSC / 600 other per IP per 60 s, 429 from prefetch ~121.)
 - If the compressed Worker exceeds the current plan limit, reduce or split the artifact: remove unused dependencies, tree-shake and minify, move static/binary/config data to Workers Static Assets/R2/KV/D1 as appropriate, or split functionality into separately verified Workers with service bindings. Never describe local compilation as a way around an upload-size limit.
 
 ## Workflow
@@ -43,19 +45,32 @@ This is an R2 external-write workflow. Execute FAMES in order `FP -> MTM -> SCF 
 
 1. **FP / PREPARE** — define outcome, public verification, authority, non-goals, old deployment/version, exact rollback, and Free-plan CPU budget. Run fresh FAMES status/package/parity checks.
 2. **MTM / APPLY** — use an isolated clean worktree; build on local CPU; run local workerd and Wrangler dry-run; commit and push the verified source; then upload a Worker Version with `wrangler versions upload`, never an unversioned blind deploy.
-3. **SCF / VERIFY** — first deploy old version at 100% and new version at 0%. Verify the preview URL, expected auth statuses, immutable assets, and a version-scoped tail. CPU evidence must use Wrangler's millisecond `cpuTime` value without dividing by 1000.
+3. **SCF / VERIFY** — first deploy old version at 100% and new version at 0%. Read back both candidate percentages and require an application-specific service-binding readiness response before the exhaustive preview gate. Then verify the preview URL, expected auth statuses, immutable assets, and a version-scoped tail. When the application has authentication, enter the browser verifier through the resident SSO realm adapter; do not create a parallel site-specific login path. Run authenticated verification both before and after the production CPU/tail probe; the post-CPU pass is the cold-start discriminator and is load-bearing. The verifier's atomically written JSON receipt is the outcome authority across nested process boundaries; adapter or child stdout and exit status alone are transport evidence. CPU evidence must use Wrangler's millisecond `cpuTime` value without dividing by 1000. An A/B timing against an uploaded version counts only once the version-scoped tail shows `scriptVersion.id` equal to the candidate: a version-override header is ignored unless the candidate is staged in the deployment (0%), so an unstaged "B" silently measures A (jci_taipei 2026-10-22).
 4. **AEX** — PASS only when comparable prior-run evidence changed the workflow. Otherwise record `NOT_APPLICABLE` with `activation_predicate=false`; iteration inside one deployment is not AEX.
-5. **SEAL / COMMIT** — move the new version to 100% only after VERIFY passes, read the deployment back, re-run public and CPU checks, and validate the completed receipt with `fames_ship_gate.py` plus FAMES `validate-run`.
-6. **RECOVER** — on any post-upload failure, deploy the recorded old version back to 100%, read it back, record recovery evidence, and leave the failed new version at 0%. Never call a rollback command that was not prepared before APPLY.
+5. **SEAL / COMMIT** — move the new version to 100% only after VERIFY passes, read the deployment back, re-run public, CPU, and post-CPU authenticated checks, and validate the completed receipt with `fames_ship_gate.py` plus FAMES `validate-run`.
+6. **RECOVER** — on any post-upload failure, deploy the recorded old version back to 100%, require two consecutive deployment-source read-backs that both match the prepared old pair, record recovery evidence, and leave the failed new version at 0%. Never call a rollback command that was not prepared before APPLY.
 
 Run the fleet receipt gate before reporting completion:
 
 ```powershell
-python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\fames_ship_gate.py" --input <completed-receipt.json>
-python "%AI_WORKSPACE%\_skill\fleet-skills\fames\scripts\fames_fleet.py" validate-run --workspace "%AI_WORKSPACE%" --input <completed-receipt.json> --json
+python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\fames_ship_gate.py" --input <completed-deploy-receipt.json>
+python "%AI_WORKSPACE%\_skill\fleet-skills\fames\scripts\fames_fleet.py" validate-run --workspace "%AI_WORKSPACE%" --input <completed-canonical-fames-run-ledger.json> --json
 ```
 
-The first gate verifies deploy-specific evidence; the second verifies the canonical FAMES ledger. Both must exit 0.
+The first gate verifies the compact deploy-specific receipt; the second verifies the canonical FAMES run ledger. Both must exit 0 for a FAMES completion claim. Do not pass the compact deploy receipt to `validate-run` unless it actually carries the full canonical goal, residual, complexity, R2 transaction, evidence, and live current-turn cognitive-boundary schema; a passing deploy gate is not a substitute for a current harness lifecycle receipt. A failed transaction restores old at 100% while retaining each successfully uploaded failed candidate at 0%; removing it from the active deployment can make a service-binding preview return a false `Server failed to respond` result and destroys version-scoped diagnostic continuity.
+
+Every invocation starts a new evidence cycle. Before PREPARE, clear mutable remote transaction evidence and reset `SCF`, `AEX`, and `SEAL` to `PENDING`; a prior cycle's PASS, version identity, authenticated receipt, or recovery result cannot survive into the current claim. Preserve prior receipts as immutable history under distinct paths instead of using them as the live transaction state.
+
+For a project that exposes a `ship.ps1` queue recipe, verify that the wrapper and delegated
+orchestrator form one bounded ZT transaction before running it:
+
+```powershell
+python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\verify_ztm_recipe.py" <app-root> --json
+```
+
+This gate proves recipe coverage only, including the resident-auth adapter, receipt read-back,
+and cycle-reset controls; it never substitutes for build, preview, production, CPU,
+authenticated-browser, read-back, or rollback evidence.
 
 1. Run the deterministic preflight:
 
@@ -93,7 +108,7 @@ The first gate verifies deploy-specific evidence; the second verifies the canoni
    - Inspect the redirect URI emitted by the deployed login button. For Firebase same-origin auth, register the hostname in Firebase Authentication `authorizedDomains` and add `https://<host>/__/auth/handler` to the matching Google web client. If the application also runs a server OAuth route, separately add its exact emitted callback such as `https://<host>/api/auth/google/callback`.
    - Do not trust a `prompt=none` or signed-out OAuth probe as final proof: Google may reach an account chooser and still reject the URI after account selection or while configuration propagates. Verify the exact URI is visible in the provider console, then run a secure authenticated browser flow through account selection and back to the application.
    - Reaching the account chooser proves only the initial authorization request. Claim full SSO only after the browser returns to the application with a valid application session; if secure browser authentication is unavailable, report that boundary without requesting credentials in chat.
-   - Firebase Admin remote Auth operations may fail inside workerd even when the same service-account key succeeds locally. If `setCustomUserClaims`, `createSessionCookie`, or `verifySessionCookie(..., true)` fails after the OAuth callback, keep RSA signing local and call the documented Identity Toolkit REST endpoints with a short-lived service-account access token. Preserve security by verifying the session signature and checking `disabled` plus `validSince`; never bypass verification merely to make login appear successful.
+   - Firebase Admin remote Auth operations may fail inside workerd even when the same service-account key succeeds locally. If `setCustomUserClaims`, `createSessionCookie`, or `verifySessionCookie(..., true)` fails after the OAuth callback, keep RSA signing local and call the documented Identity Toolkit REST endpoints with a short-lived service-account access token. Preserve security by verifying the session signature and checking `disabled` plus `validSince`; keep every verification step on; a login that only appears successful is not a fix.
 
 5. Run local workerd and verify real application routes. Prefer the process-safe wrapper so Windows child processes cannot retain `.open-next` locks:
 
@@ -120,6 +135,10 @@ The first gate verifies deploy-specific evidence; the second verifies the canoni
 
    Treat a URL mismatch as failure even if deployment succeeded. Declare expected `401`/`403` statuses for protected routes; never weaken application authorization to make a smoke test pass.
 
+   For browser-authenticated verification, disable service workers for the verification context, send `Cache-Control: no-cache` on the load-bearing navigation/API requests, clear only the application's scoped module cache, and navigate away before starting the causal observation window. Require either a fresh expected API response caused by that navigation or a stable terminal error observed for at least two seconds. A response or error emitted by a prior root prefetch is stale evidence and cannot pass or fail the candidate.
+
+   Retry a CPU/tail probe only when the sole failure is missing tail observation and the probe recorded zero bad HTTP outcomes. Preserve every full attempt receipt and bound the retry count. Do not retry real `5xx`, boundary, version, `exceededCpu`, or deployment-read-back failures; recover immediately. On Workers Free, a repeatable cold dynamic handler above the documented 10 ms CPU budget is not made viable by local compilation, and `limits.cpu_ms` upload rejection `100328` is a plan boundary, not a code fix. Move the workload to a verified local/hosted scheduler or obtain explicit authority for a paid-plan change; otherwise the site remains `UNKNOWN/BLOCKED`.
+
    If the site had an auth gate on Vercel, a root probe expecting `200` is the WRONG check and will
    score a missing gate as healthy — measured 2026-08-08 on `ai-darkhero`, where the Vercel Edge
    Middleware gate was never ported and `GET / -> 200` read as GREEN while the portal was public.
@@ -140,6 +159,7 @@ For every new deployment failure:
    ```powershell
    python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\quick_validate.py"
    python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\selftest_fames_ship_gate.py"
+   python "%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\scripts\selftest_verify_ztm_recipe.py"
    ```
 
    It checks the frontmatter contract AND that every `.py`/`.md` file named in a SKILL.md code
@@ -148,6 +168,8 @@ For every new deployment failure:
    line asserted a run nobody could have performed. `scripts\selftest_quick_validate.py` mutates a
    throwaway copy once per check and must stay at 8/8, otherwise a passing validator proves nothing.
 5. Retry from the failed stage and preserve before/after evidence.
+
+For an in-place canonical upgrade, `ADUS --existing` accepts either a content-addressed FAMES bundle with a bumped manifest/generation or a generic skill with a passing `scripts/quick_validate.py` and a changed `SKILL.md` identity. The verifier binds rollback to the current Git `HEAD`; promotion must fail if the canonical file changes after verification.
 
 Read `%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare\references\known-failures.md` for observed fixes. Add only reproducible facts; never store credentials.
 
@@ -164,7 +186,12 @@ For fleet-wide non-fracdigi migrations, start from `%AI_WORKSPACE%\_skill\fleet-
 - If authentication exists, a real signed-in browser returned to the application and remained signed in after reopening the root URL, and `mtm-portal-gate-parity.py` reported `PARITY_BAD=0` — a signed-in browser cannot show that the gate rejects a signed-OUT visitor.
 - `quick_validate.py` exited 0 for this skill, and `selftest_quick_validate.py` reported 8/8.
 - `fames_ship_gate.py` accepted the completed R2 receipt, and `selftest_fames_ship_gate.py` rejected every negative control.
+- `verify_ztm_recipe.py` accepted the project recipe, and `selftest_verify_ztm_recipe.py` rejected every missing-delegation, missing-rollback, and visible-shell negative control.
 - The final deployment read-back names the expected version; version-scoped tail has at least one route, zero non-ok outcomes, zero `exceededCpu`, and p99 at or below the prepared budget.
+- A distinct post-CPU authenticated receipt proves fresh load-bearing API responses after browser/prefetch quiescence; a warm pre-CPU pass alone is insufficient.
+- The authenticated verifier ran through the resident SSO realm adapter and the parent read the verifier's atomically written receipt; stdout or a zero adapter exit was not used as outcome proof.
+- The current cycle began with mutable transaction evidence and `SCF`/`AEX`/`SEAL` reset to `PENDING`; no prior-cycle PASS remained load-bearing.
+- If recovery ran, two consecutive read-backs name the prepared old router/server pair at the prepared percentages.
 - The PFKT fragment was completed with the public verification output as evidence.
 
 Do not report completion without the final working URL.
