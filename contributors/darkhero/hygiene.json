@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "dark-hero-z790",
-  "at": "2026-11-01T09:06:26",
+  "at": "2026-11-02T05:11:16",
   "hub": "C:\\ai_workspace",
-  "seconds": 239.6,
+  "seconds": 125.6,
   "check": {
     "seats": [
       {
@@ -14,7 +14,7 @@
         "dirty": 5,
         "unpushed": 0,
         "last_commit": "2026-10-27",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -22,33 +22,33 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
         "seat": "ai_career",
         "missing": [],
         "findings": [
-          "dirty_files:80"
+          "dirty_files:84"
         ],
         "repo": "own",
-        "dirty": 80,
+        "dirty": 84,
         "unpushed": 0,
         "last_commit": "2026-11-01",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
         "seat": "ai_darkhero",
         "missing": [],
         "findings": [
-          "dirty_files:1004"
+          "dirty_files:987"
         ],
         "repo": "own",
-        "dirty": 1004,
+        "dirty": 987,
         "unpushed": 0,
         "last_commit": "2026-11-01",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -59,7 +59,7 @@
         "dirty": 4,
         "unpushed": 0,
         "last_commit": "2026-10-28",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -70,7 +70,7 @@
         "dirty": 40,
         "unpushed": 0,
         "last_commit": "2026-10-27",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -78,10 +78,10 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 42,
+        "dirty": 44,
         "unpushed": 0,
         "last_commit": "2026-10-27",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -92,7 +92,7 @@
         "dirty": 4,
         "unpushed": 0,
         "last_commit": "2026-10-27",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -128,7 +128,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -139,7 +139,7 @@
         "dirty": 5,
         "unpushed": 0,
         "last_commit": "2026-10-31",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -150,7 +150,7 @@
         "dirty": 10,
         "unpushed": 0,
         "last_commit": "2026-10-27",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -160,8 +160,8 @@
         "repo": "own",
         "dirty": 1,
         "unpushed": 0,
-        "last_commit": "2026-10-31",
-        "newest_file": "2026-11-01",
+        "last_commit": "2026-11-02",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -171,8 +171,8 @@
         "repo": "own",
         "dirty": 2,
         "unpushed": "UNKNOWN",
-        "last_commit": "2026-10-31",
-        "newest_file": "2026-11-01",
+        "last_commit": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -180,7 +180,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -191,7 +191,7 @@
         "dirty": 8,
         "unpushed": 0,
         "last_commit": "2026-10-27",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -199,7 +199,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -209,8 +209,8 @@
         "repo": "own",
         "dirty": 15,
         "unpushed": 0,
-        "last_commit": "2026-10-31",
-        "newest_file": "2026-11-01",
+        "last_commit": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -221,7 +221,7 @@
         "dirty": 2,
         "unpushed": 0,
         "last_commit": "2026-10-27",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -232,20 +232,20 @@
         "dirty": 3,
         "unpushed": 0,
         "last_commit": "2026-10-27",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
         "seat": "ai_ziyaoastro",
         "missing": [],
         "findings": [
-          "dirty_files:98"
+          "dirty_files:100"
         ],
         "repo": "own",
-        "dirty": 98,
+        "dirty": 100,
         "unpushed": 0,
-        "last_commit": "2026-10-31",
-        "newest_file": "2026-11-01",
+        "last_commit": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -256,7 +256,7 @@
         "dirty": 12,
         "unpushed": 0,
         "last_commit": "2026-10-27",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -264,7 +264,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -277,7 +277,7 @@
         "dirty": 69,
         "unpushed": 0,
         "last_commit": "2026-10-31",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -285,7 +285,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-01",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       }
     ],
@@ -299,31 +299,25 @@
     "producers": [
       {
         "dir": "_registry/fames-evidence",
-        "entries": 2202,
+        "entries": 2223,
         "retention_named": 5,
         "writer": "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"
       },
       {
-        "dir": "_registry/fames-hot",
-        "entries": 13399,
-        "retention_named": 0,
-        "writer": "_harness/runtime/fames_session_harness.py (hot_refresh / turn_context per-session state)"
-      },
-      {
         "dir": "ai_darkhero/_registry/f1s-sources/consolidate/cards",
-        "entries": 4056,
+        "entries": 4144,
         "retention_named": 0,
         "writer": "_skill/engines/f1s-sources.py / knowledge-consolidate.py content store (data, not residue)"
       },
       {
         "dir": "_logs",
-        "entries": 2783,
+        "entries": 2784,
         "retention_named": 0,
         "writer": "_skill/engines/goal-field.py / seal-generation-lock.py / scf-residual.py goal backups"
       },
       {
         "dir": "ai_darkhero/_registry/f1s-sources/items",
-        "entries": 2440,
+        "entries": 2581,
         "retention_named": 0,
         "writer": "_skill/engines/f1s-sources.py / knowledge-consolidate.py content store (data, not residue)"
       },
@@ -335,7 +329,7 @@
       },
       {
         "dir": "_registry/mtm-audit",
-        "entries": 1557,
+        "entries": 1567,
         "retention_named": 0,
         "writer": "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"
       },
@@ -347,7 +341,7 @@
       },
       {
         "dir": "_registry/fames-turn/claude",
-        "entries": 1106,
+        "entries": 1126,
         "retention_named": 0,
         "writer": "_harness/runtime/fames_turn_binding.py (by-prompt archive)"
       },
@@ -359,6 +353,12 @@
       }
     ],
     "retention_antipatterns": [
+      {
+        "file": "_skill/engines/claude-proof-hook.py",
+        "line": 556,
+        "kind": "migrated_bak_loop",
+        "text": "(\"migrated-bak\", re.compile(r\"MIGRATED-bak\"), re.compile(r\"(?i)rename|replace|move|copy|with_name|with_suffix|\\+\\s*['\\\"]|f['\\\"]\"),"
+      },
       {
         "file": "_skill/engines/fames-immediate-apply.py",
         "line": 113,
@@ -390,6 +390,12 @@
         "text": "keep = Path(HUB) / \"_registry/fleet-skill-export-backups\" / uuid.uuid4().hex / \"skills\""
       },
       {
+        "file": "_skill/engines/tests/test_proof_junk_writer_gate.py",
+        "line": 71,
+        "kind": "retained_test_fixture",
+        "text": "assert _decide(\"Write\", {\"file_path\": test_py, \"content\": \"out = EVIDENCE  # Deliberately retained for review\\n\"}) == \"deny\""
+      },
+      {
         "file": "_skill/fleet-skills/fames/scripts/fames_fleet.py",
         "line": 5481,
         "kind": "uuid_named_copy",
@@ -417,43 +423,39 @@
   },
   "sweep": {
     "applied": true,
-    "planned": 1199,
-    "planned_bytes": 63640245,
+    "planned": 481,
+    "planned_bytes": 36292860,
     "by_class": {
       "cache_dir": {
-        "count": 44,
-        "bytes": 14189089
+        "count": 51,
+        "bytes": 17035250
       },
       "temp": {
-        "count": 2,
-        "bytes": 5991
-      },
-      "stale": {
         "count": 1,
-        "bytes": 14427219
+        "bytes": 0
       },
       "backup": {
-        "count": 9,
-        "bytes": 18459210
+        "count": 6,
+        "bytes": 13159690
       },
       "expired_state": {
-        "count": 945,
-        "bytes": 16517552
+        "count": 391,
+        "bytes": 6091264
       },
       "orphan_inbox": {
-        "count": 198,
-        "bytes": 41184
+        "count": 32,
+        "bytes": 6656
       }
     },
     "skipped": {
       "git_tracked": 10,
       "protected": 0
     },
-    "moved": 1199,
+    "moved": 481,
     "engine": "fleet-residue-quarantine.py",
     "errors": []
   },
-  "delete_bytes": 66455534,
+  "delete_bytes": 36845261,
   "summary": {
     "seats": 26,
     "violations": 6,
@@ -463,10 +465,10 @@
       "DORMANT": 2
     },
     "scheduled_task_findings": 0,
-    "producer_leaks": 10,
-    "retention_antipatterns": 9,
-    "moved": 1199,
-    "planned_bytes": 63640245,
+    "producer_leaks": 9,
+    "retention_antipatterns": 11,
+    "moved": 481,
+    "planned_bytes": 36292860,
     "applied": true
   }
 }
