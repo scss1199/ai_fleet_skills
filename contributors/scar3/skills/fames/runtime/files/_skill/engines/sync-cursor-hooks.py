@@ -36,6 +36,122 @@ CLAUDE_LIVE_WAKE_HOOK = os.path.join(COMMON, "_skill", "engines", "f1s_live.py")
 CLAUDE_LIVE_WAKE_TIMEOUT = 259200  # 72 h; f1s_live.LIFETIME_S (70 h) exits before the host kills it
 CLAUDE_PLAIN_COMMANDS = {CLAUDE_LIVE_WAKE_HOOK: (("wait",), {"asyncRewake": True})}
 
+# F1S auto-mode posture (operator 2026-10-31): the classifier rows Claude Code reads from ~/.claude/settings.json
+# autoMode are rendered from _registry/fames-protocol.json#auto_mode_posture, so every host carries the T1 red lines
+# and each seat's trust boundary as classifier rules. Claude Code reads autoMode from the user settings file (or
+# managed settings) only - project settings are ignored (docs read 2026-10-31) - hence this writer. Operator rows stay
+# in place; the rows F1S owns carry AUTO_MODE_TAG so a later render replaces them and nothing else.
+PROTOCOL_PATH = os.path.join(REGISTRY, "fames-protocol.json")
+AUTO_MODE_TAG = "[F1S]"
+AUTO_MODE_KEYS = ("environment", "soft_deny")
+
+
+def _am_norm(text) -> str:
+    return " ".join(str(text).split()).strip()
+
+
+def _am_untag(text) -> str:
+    t = _am_norm(text)
+    return t[len(AUTO_MODE_TAG):].strip() if t.startswith(AUTO_MODE_TAG) else t
+
+
+def auto_mode_posture(protocol_path: str = PROTOCOL_PATH) -> dict:
+    """The SSOT section; {} when the file or the section is missing or unreadable (nothing rendered, status ABSENT)."""
+    try:
+        with open(protocol_path, encoding="utf-8-sig") as fh:
+            doc = json.load(fh)
+    except (OSError, ValueError):
+        return {}
+    section = doc.get("auto_mode_posture") if isinstance(doc, dict) else None
+    return section if isinstance(section, dict) else {}
+
+
+def _am_rows(spec, key: str) -> list:
+    out = []
+    for row in (spec.get(key) or []) if isinstance(spec, dict) else []:
+        text = row.get("rule") if isinstance(row, dict) else row
+        if isinstance(text, str) and text.strip():
+            out.append(_am_norm(text))
+    return out
+
+
+def auto_mode_expected(posture: dict) -> dict:
+    """{key: [tagged rows]} in render order: the fleet rows, then every seat section sorted by seat name."""
+    fleet = posture.get("fleet") or {}
+    env = _am_rows(fleet, "environment")
+    deny = _am_rows(fleet, "soft_deny")
+    for seat, spec in sorted((posture.get("seats") or {}).items()):
+        seat_env = _am_rows(spec, "environment")
+        if seat_env:
+            env.append(f"### Seat {seat} (F1S)")
+            env += seat_env
+        deny += _am_rows(spec, "soft_deny")
+    return {"environment": [f"{AUTO_MODE_TAG} {r}" for r in env], "soft_deny": [f"{AUTO_MODE_TAG} {r}" for r in deny]}
+
+
+def render_auto_mode(doc: dict, expected: dict) -> bool:
+    """Merge the F1S rows into doc["autoMode"]; True when the document changed. Untagged operator rows stay in
+    place, an untagged duplicate of an F1S row is adopted (dropped in favour of the tagged row), $defaults is kept
+    where the operator put it (or added first) in soft_deny, and allow / hard_deny are never touched. An empty
+    expectation leaves the document alone."""
+    if not any(expected.get(k) for k in AUTO_MODE_KEYS):
+        return False
+    auto = doc.get("autoMode")
+    if not isinstance(auto, dict):
+        auto = {}
+    changed = False
+    for key in AUTO_MODE_KEYS:
+        want = list(expected.get(key) or [])
+        current = auto.get(key) if isinstance(auto.get(key), list) else []
+        wanted = {_am_untag(w) for w in want}
+        kept = [r for r in current
+                if not (isinstance(r, str) and (_am_norm(r).startswith(AUTO_MODE_TAG) or _am_untag(r) in wanted))]
+        if key == "soft_deny":
+            if "$defaults" in kept:
+                at = kept.index("$defaults") + 1
+                new = kept[:at] + want + kept[at:]
+            else:
+                new = ["$defaults"] + want + kept
+        else:
+            new = kept + want
+        if new != current:
+            auto[key] = new
+            changed = True
+    if changed:
+        doc["autoMode"] = auto
+    return changed
+
+
+def auto_mode_status(settings_path: str | None = None, protocol_path: str = PROTOCOL_PATH) -> dict:
+    """ABSENT (no SSOT section), UNWRITTEN (SSOT present, the settings carry no F1S row yet), DRIFT (rows missing
+    or stale tagged rows left behind) or IN_SYNC. Report only; never raises."""
+    settings_path = settings_path or os.path.join(os.path.expanduser("~"), ".claude", "settings.json")
+    posture = auto_mode_posture(protocol_path)
+    expected = auto_mode_expected(posture)
+    total = sum(len(v) for v in expected.values())
+    fleet = posture.get("fleet") or {}
+    base = {"expected": total, "missing": 0, "stale": 0, "seats": sorted((posture.get("seats") or {}).keys()),
+            "fleet_environment": len(fleet.get("environment") or []), "fleet_soft_deny": len(fleet.get("soft_deny") or [])}
+    if not total:
+        return {"state": "ABSENT", **base}
+    try:
+        with open(settings_path, encoding="utf-8-sig") as fh:
+            auto = (json.load(fh) or {}).get("autoMode") or {}
+    except (OSError, ValueError, AttributeError):
+        auto = {}
+    if not isinstance(auto, dict):
+        auto = {}
+    missing = stale = present = 0
+    for key in AUTO_MODE_KEYS:
+        have = [_am_norm(r) for r in (auto.get(key) or []) if isinstance(r, str)]
+        have_set, want = set(have), expected[key]
+        want_set = set(want)
+        missing += sum(1 for w in want if w not in have_set)
+        present += sum(1 for w in want if w in have_set)
+        stale += sum(1 for h in have if h.startswith(AUTO_MODE_TAG) and h not in want_set)
+    state = "UNWRITTEN" if present == 0 else ("DRIFT" if missing or stale else "IN_SYNC")
+    return {"state": state, **base, "missing": missing, "stale": stale}
+
 
 def claude_managed_hooks() -> list:
     """(event, script, timeout) rows in wiring order; a Stop hook whose script is absent on this host is
@@ -492,6 +608,10 @@ def write_claude_fames_hooks(path: str) -> dict:
             *groups,
         ]
 
+    # F1S auto-mode posture rides the same write: the classifier rows every host must carry (operator 2026-10-31).
+    expected_auto = auto_mode_expected(auto_mode_posture())
+    render_auto_mode(doc, expected_auto)
+
     target.parent.mkdir(parents=True, exist_ok=True)
     staged = target.with_name(f".{target.name}.{os.getpid()}.tmp")
     with staged.open("w", encoding="utf-8", newline="\n") as fh:
@@ -506,9 +626,15 @@ def write_claude_fames_hooks(path: str) -> dict:
         ]
         if len(installed) != 1:
             raise RuntimeError(f"Claude FAMES hook read-back mismatch: {target}: {event}")
+    auto_back = read_back.get("autoMode") or {}
+    for key in AUTO_MODE_KEYS:
+        have = {_am_norm(r) for r in (auto_back.get(key) or []) if isinstance(r, str)}
+        if any(w not in have for w in expected_auto.get(key) or []):
+            raise RuntimeError(f"Claude autoMode read-back mismatch: {target}: {key}")
     data = target.read_bytes()
     return {"path": str(target), "sha": hashlib.sha256(data).hexdigest(), "read_back": True,
-            "stop_hooks": [os.path.basename(s) for e, s, _t in wanted if e == "Stop"]}
+            "stop_hooks": [os.path.basename(s) for e, s, _t in wanted if e == "Stop"],
+            "auto_mode": {k: len(v) for k, v in expected_auto.items()}}
 
 
 def main(argv=None):

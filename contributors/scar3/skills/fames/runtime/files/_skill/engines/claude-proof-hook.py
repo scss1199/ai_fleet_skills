@@ -544,6 +544,110 @@ def _popup_gate(doc: dict, tool: str, ti: dict) -> dict | None:
                                    "permissionDecisionReason": reason}}
 
 
+# ── junk-writer gate (2026-11-01) ─────────────────────────────────────────────────────────────────────────────────
+# operator 2026-11-01 「f1s為何還是會產出一堆不必要檔案? 比如 migrated-bak .json .npy 一堆沒意義的中間檔 人不會去讀就是垃圾
+# 去f1s找到根本解決」. The write gate above only sees a .md/.json the MODEL writes; the residue comes from CODE the model
+# writes (an engine that names a file per run/session/item with a uuid or a timestamp, renames to .MIGRATED-bak, saves a
+# .npy per item, a test that keeps its fixture) and then runs on a rider for weeks. fleet-hygiene `producers` finds
+# such lines 20 h later and the STATE_TTL broom moves the output to _delete, so the operator still sees it. This gate
+# refuses the line when it is written. A line that really must keep files says who reads them or when they go:
+# `# retention: <reader or TTL>` on that line or the one above.
+JUNK_WRITER_RULES = (
+    ("migrated-bak", re.compile(r"MIGRATED-bak"), re.compile(r"(?i)rename|replace|move|copy|with_name|with_suffix|\+\s*['\"]|f['\"]"),
+     ".MIGRATED-bak 只給一次性的使用者資料遷移；引擎狀態用固定檔名覆寫（暫存檔 + os.replace）"),
+    # tempfile.mkstemp / NamedTemporaryFile are the atomic-write staging step (write, then os.replace): not residue
+    ("uuid-name", re.compile(r"uuid\.?uuid4\(\)|uuid4\(\)\.hex|randomUUID\(\)"),
+     re.compile(r"(?i)[/\\]|Path\(|path\.join|\.(json|jsonl|npy|npz|bak|txt|md|csv|log|pkl|lock)\b|_registry|_temp|runtime|evidence|backup|previous"),
+     "uuid 檔名＝每跑一次多一個檔；用固定檔名覆寫，或追加到同一個 .jsonl / sqlite"),
+    # the clock call sits INSIDE the file name (f-string field or `+` concatenation that ends in an extension);
+    # a date printed into a report line is content, not a name
+    ("stamp-name", re.compile(r"(?i)\{[^{}]*(?:strftime|isoformat|time\(\)|now\(|time_ns\(\))[^{}]*\}[^\s'\"{}]{0,40}"
+                              r"\.(?:json|npy|npz|bak|txt|md|csv|log|pkl|lock|wav|png)['\"]|"
+                              r"(?:strftime|isoformat|time_ns)\([^)]*\)\s*\+\s*f?['\"][^'\"\s]{0,40}\.(?:json|npy|npz|bak|txt|md|csv|log|pkl|lock|wav|png)['\"]"),
+     re.compile(r"."),
+     "時間戳檔名＝每跑一次多一個檔；時間寫進檔案內容，檔名固定"),
+    ("per-item-array", re.compile(r"\bnp\.(save|savez|savez_compressed|savetxt)\(|\btorch\.save\(|\bpickle\.dump\("),
+     re.compile(r"."),
+     "每項一個 .npy/.pkl 是沒人會讀的中間檔；放進同一個 sqlite / .npz 快取（以來源檔大小+mtime 為鍵），用完即覆寫"),
+    ("retained-fixture", re.compile(r"(?i)deliberately retained|no TemporaryDirectory|keep_fixture"),
+     re.compile(r"."),
+     "測試只寫 tmp_path / TemporaryDirectory，跑完不留檔"),
+)
+JUNK_WRITER_EXT = (".py", ".ps1", ".psm1", ".js", ".mjs", ".cjs", ".ts")
+JUNK_WRITER_EXEMPT = re.compile(r"(?i)[\\/](scratchpad|_delete)[\\/]|[\\/](fleet-hygiene|f1s_audit|claude-proof-hook|"
+                                r"test_fleet_hygiene|test_proof_\w+)\.py$")
+JUNK_TEST_PATH = re.compile(r"(?i)[\\/]tests?[\\/]|[\\/]test_[^\\/]*\.py$|_test\.py$")
+RETENTION_NOTE = re.compile(r"(?i)(#|//)\s*retention\s*:\s*\S.{3,}")
+JUNK_WRITER_REASON = (
+    "PROOF JUNK-WRITER GATE (operator 2026-11-01 「人不會去讀就是垃圾 … 去f1s找到根本解決」): this code would leave a "
+    "file nobody reads — {what}. Rewrite it so the run leaves no residue: one fixed-name file overwritten in place "
+    "(write tmp + os.replace), or append to one .jsonl ledger / sqlite store; intermediates live in tempfile and are "
+    "gone when the run ends; tests use tmp_path. If the files truly have a reader or a lifetime, say so on that line "
+    "or the one above: `# retention: <who reads it / TTL>`. Kill switch: _registry/proof.json classes.junk_writer_gate=false."
+)
+
+
+def _added_lines(tool: str, ti: dict) -> tuple[str, list[str]]:
+    """(path, lines this call ADDS to a code file). Edit/MultiEdit count only lines absent from old_string, so
+    touching a file that already holds an old pattern is not blocked; apply_patch counts its `+` lines."""
+    path = str(ti.get("file_path") or ti.get("path") or "")
+    if tool == "Write":
+        return path, str(ti.get("content") or "").splitlines()
+    if tool in ("Edit", "MultiEdit"):
+        pairs = [(ti.get("old_string"), ti.get("new_string"))]
+        if isinstance(ti.get("edits"), list):
+            pairs = [(e.get("old_string"), e.get("new_string")) for e in ti["edits"] if isinstance(e, dict)]
+        out = []
+        for old, new in pairs:
+            have = set(str(old or "").splitlines())
+            out.extend(l for l in str(new or "").splitlines() if l not in have)
+        return path, out
+    if tool == "apply_patch":
+        text = " ".join(map(str, ti.values()))
+        files = re.findall(r"^\*\*\* (?:Add|Update) File:\s*(.+?)\s*$", text, re.M)
+        return (files[0] if files else ""), [l[1:] for l in text.splitlines() if l.startswith("+") and not l.startswith("+++")]
+    return "", []
+
+
+def junk_writer_violations(tool: str, ti: dict) -> list[tuple[str, str]]:
+    """[(rule, snippet)] for code that would leave per-run / per-item residue; [] when clean."""
+    path, lines = _added_lines(tool, ti)
+    if not lines or not path.lower().endswith(JUNK_WRITER_EXT) or JUNK_WRITER_EXEMPT.search(path):
+        return []
+    in_test = bool(JUNK_TEST_PATH.search(path))
+    out, prev = [], ""
+    for line in lines:
+        s = line.strip()
+        note = RETENTION_NOTE.search(s) or RETENTION_NOTE.search(prev)
+        prev = s
+        if not s or note or POPUP_SKIP_LINE.search(s) or s.startswith(("*", '"""', "'''", "-")):
+            continue
+        for rule, pat, ctx, why in JUNK_WRITER_RULES:
+            if (rule == "retained-fixture") != in_test:
+                continue                          # fixture rule is for tests; the others for engines
+            if rule == "migrated-bak" and re.search(r"endswith|glob\(|not in|SKIP|in str\(|startswith", s):
+                continue                          # reading / skipping backups is not making one
+            if pat.search(s) and ctx.search(s):
+                out.append((rule, f"{why}: `{s[:110]}`"))
+                break
+    return out[:3]
+
+
+def _junk_writer_gate(doc: dict, tool: str, ti: dict) -> dict | None:
+    hits = junk_writer_violations(tool, ti)
+    if not hits:
+        return None
+    what = "; ".join(h[1] for h in hits)
+    _log({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "session_id": str(doc.get("session_id") or ""),
+          "event": "PreToolUse", "tool": tool, "matched": "junk_writer_gate", "rules": [h[0] for h in hits],
+          "what": what[:300], "verdict": "deny", "cwd": str(doc.get("cwd") or "")})
+    reason = JUNK_WRITER_REASON.format(what=what[:400])
+    if "cursor_version" in doc or str(doc.get("hook_event_name") or "") == "preToolUse":
+        return {"permission": "deny", "user_message": reason, "agent_message": reason}
+    return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                   "permissionDecisionReason": reason}}
+
+
 def pre_tool_use(doc: dict, cfg: dict) -> dict | None:
     """Deny the CREATION of an unrequested .md / .json before it is written.  One gate for Claude Code
     (`PreToolUse`), Codex (`PreToolUse`, same reply shape) and Cursor (`preToolUse`, `permission` reply).
@@ -556,6 +660,10 @@ def pre_tool_use(doc: dict, cfg: dict) -> dict | None:
             return gated
     if (cfg.get("classes") or {}).get("popup_gate", True):
         gated = _popup_gate(doc, tool0, ti0)
+        if gated:
+            return gated
+    if (cfg.get("classes") or {}).get("junk_writer_gate", True):
+        gated = _junk_writer_gate(doc, tool0, ti0)
         if gated:
             return gated
     if not (cfg.get("classes") or {}).get("unrequested_file", True):

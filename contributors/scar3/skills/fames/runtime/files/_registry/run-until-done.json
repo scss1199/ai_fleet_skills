@@ -12,6 +12,7 @@
     "enabled": true,
     "authority": "operator 2026-10-24 「一樣改 目的就是當任何對話一閒置後立刻套用」",
     "hook": "_skill/engines/f1s_live.py wait (asyncRewake Stop hook, timeout 259200 s)",
-    "note": "An idle conversation is woken when an F1S upgrade or its seat's curator order lands; at most 24 wakes per conversation per day. Set enabled=false to stop waking (waiters exit within 5 s)."
+    "note": "An idle conversation is woken when an F1S upgrade or its seat's curator order lands; at most 24 wakes per conversation per day. Set enabled=false to stop waking (waiters exit within 5 s). Since 2026-11-01 an upgrade alone (directive/rules/live.md, no order for the seat) is recorded quietly and reaches the chat at its next prompt; set upgrade_wake=true to wake on upgrades again (7-day measure: 154 upgrade-only wakes, each re-reading a 200-440K context).",
+    "upgrade_wake": false
   }
 }
