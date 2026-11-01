@@ -1040,6 +1040,18 @@ class HubClock:
                 # occupy a global slot forever. Enforce the documented bound
                 # and only release after the child is confirmed terminated.
                 try:
+                    # 2026-11-01: proc.kill() ended the rider but not its grandchildren — health_run.vbs's powershell,
+                    # a CIM query — so a WMI wedge turned every timed-out rider into a leaked powershell (129 by 18:00).
+                    # Kill the whole tree, children first.
+                    try:
+                        import psutil as _ps
+                        for _c in _ps.Process(proc.pid).children(recursive=True):
+                            try:
+                                _c.kill()
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
                     proc.kill()
                     rc = proc.wait(timeout=10)
                 except (OSError, subprocess.SubprocessError):

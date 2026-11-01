@@ -90,6 +90,7 @@ TEXTS = {
     "bus_engine": HUB / "_skill" / "engines" / "_bus.py",
     "ship_engine": HUB / "_skill" / "engines" / "ship-f1s.py",
     "jev_router": HUB / "_harness" / "runtime" / "jev_turn_router.py",
+    "popup_gate": HUB / "_skill" / "engines" / "zt-popup-gate.py",
 }
 
 # The architecture scan.  `requires` names the Lean theorem that must be PROVED for the verdict to stand;
@@ -1004,6 +1005,11 @@ ELEMENTS = [
     {"id": "EVO-engine-output-discipline", "element": "engine-owned ephemeral state (locks, queue markers, staging/previous copies, per-run logs, test fixtures) accumulated as uuid/timestamp-named files nobody read back; the migration convention (.MIGRATED-bak) was applied inside loops", "verdict": "REFINE",
      "requires": None, "detail": "ztm-verify-before-done ⑥-引擎輸出紀律: every engine file needs a reader or a registered TTL; fixed-name overwrite / append-only ledger instead of per-run names; .MIGRATED-bak only for one-time operator-data migrations; tests write tmp_path only; alerts only to charter seats, once per pid. Mechanical: fleet-hygiene.py producers (dir >1000 entries or >=100 backup-named = named writer; code scan for MIGRATED-bak rename / uuid backup / retained fixture) rides fames-converge every 20 h and publishes in hygiene.json; expired state retires into _delete per STATE_TTL. Producers fixed 2026-10-31: ship-queue.py, fleet-process-guard.py, goal-field.py, seal-generation-lock.py, scf-residual.py, aex-loop-exec.py, fleet_learning.py cmd_fetch, runtime_release.py, mtm-fleet-skill-github.py, test_phase_contract.py",
      "check_text": ("skill_verify", "引擎輸出紀律")},
+    # f1s-evolve 2026-11-01 (ai_ziyaoastro proposal, reproduced: `zt-popup-gate.py gate ai_ziyaoastro` BLOCKED on 24 hits, all
+    # the browser-modal warning sentence in claude-proof-hook.py copies under .claude/skills/fames/runtime*/ and runtime.stage-*).
+    {"id": "EVO-popup-gate-skill-mirrors", "element": "zt-popup-gate scanned synced agent skill mirrors (.claude/skills, .agents/skills, .cursor/skills) and FAMES runtime.stage-* copies of hub engines as if they were a seat's shipped frontend, blocking ship on the gate's own warning text", "verdict": "REFINE",
+     "requires": None, "detail": "zt-popup-gate.py SKIP_REL_FRAG now skips .claude/skills, .agents/skills, .cursor/skills and runtime.stage- (mirrors of hub engines, never deployed); the zero-popup red line is unchanged and the seat's live source is still scanned; test_zt_popup_gate_scope.py covers both sides",
+     "check_text": ("popup_gate", 'os.path.join(".claude", "skills"), os.path.join(".agents", "skills"), os.path.join(".cursor", "skills"), "runtime.stage-"')},
 ]
 
 
