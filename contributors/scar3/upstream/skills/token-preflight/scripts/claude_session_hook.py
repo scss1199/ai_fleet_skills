@@ -70,6 +70,32 @@ def _hard_lines(cwd: str) -> tuple[str, str]:
     return ("injected", text) if text else ("charter", "")
 
 
+def _auto_mode_line(seat: str, settings_path: str | None = None, protocol_path: str | None = None) -> str:
+    """One SessionStart status line: does this host's ~/.claude/settings.json carry the F1S auto-mode posture
+    (_registry/fames-protocol.json#auto_mode_posture)? Report only - the writer is sync-cursor-hooks.py, run by
+    fames-immediate-apply after every package install. "" when the SSOT has no section. Never raises."""
+    try:
+        path = HUB / "_skill" / "engines" / "sync-cursor-hooks.py"
+        spec = importlib.util.spec_from_file_location("fames_hook_auto_mode", path)
+        if not path.is_file() or spec is None or spec.loader is None:
+            return ""
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        st = mod.auto_mode_status(settings_path, protocol_path or str(HUB / "_registry" / "fames-protocol.json"))
+        state = st.get("state")
+        if state == "ABSENT":
+            return ""
+        seat_part = f"seat {seat} section {'present' if seat in (st.get('seats') or []) else 'none'}"
+        head = (f"AUTO-MODE POSTURE — {state} — {st.get('expected')} F1S classifier rows in settings.json autoMode "
+                f"(fleet env {st.get('fleet_environment')} / soft_deny {st.get('fleet_soft_deny')}; {seat_part})")
+        if state == "IN_SYNC":
+            return head + " — SSOT _registry/fames-protocol.json#auto_mode_posture"
+        return head + (f" — missing {st.get('missing')} / stale {st.get('stale')}; the next fames-converge renders it,"
+                       " or: python _skill/engines/sync-cursor-hooks.py --claude-only")
+    except Exception:
+        return ""
+
+
 def _f1s_record(agent: str, max_age_hours: float = 6.0) -> str:
     """The seat's own F1S record line from the transcript sweep; starts a hidden sweep when stale."""
     try:
@@ -746,6 +772,10 @@ def main():
         record=_f1s_record(agent)
         if record:
             context=(context+"\n"+record).strip()
+        # operator 2026-10-31: the auto-mode classifier posture is F1S-carried; every session sees whether this host has it.
+        posture=_auto_mode_line(agent)
+        if posture:
+            context=(context+"\n"+posture).strip()
         _everything_bg_prewarm()
     # The curator's orders go first, above this seat's own plan: they outrank its decisions (T1 f1s-governs).
     orders=_curator_orders(agent, session_id)
