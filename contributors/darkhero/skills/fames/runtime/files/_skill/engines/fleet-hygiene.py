@@ -90,6 +90,7 @@ WRITERS = (  # longest matching prefix wins; extend when a new producer is found
     ("_inbox/_digested", "_skill/engines/inbox digest (SUBMIT receipts auto-digested)"),
     ("_logs", "_skill/engines/goal-field.py / seal-generation-lock.py / scf-residual.py goal backups"),
     ("_registry/fames-phase-history", "_skill/engines/fames-immediate-apply.py (uuid history records)"),
+    ("_registry/f1s-parallel", "_skill/engines/f1s_parallel.py (one store per seat + ledger.jsonl; no per-plan files)"),
     ("_registry", "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"),
     ("evidence/fames-fleet-20260924", "_lean/fames/tests/test_phase_contract.py proof_fixture (test writes into the repo)"),
     ("evidence/jev-adoption-20260922", "static test fixtures read by _harness/tests/test_jev_skill_advisor.py (data, not residue)"),
