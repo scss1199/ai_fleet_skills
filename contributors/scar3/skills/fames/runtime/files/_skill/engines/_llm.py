@@ -473,6 +473,8 @@ class Pool:
                 except Exception:
                     pass
         return False
+    last_provider=None   # route that answered the latest chat_for (provider name) — read by f1s_parallel's ledger
+    last_model=None
     def chat_for(self,task,messages,jsonmode=False,max_tokens=1500):
         """Task-routed free call: the measured best provider for `task` first, then the next, then the generic
         cloud-first chain. Unknown task = chat(). Never raises; '__ERR__ ...' only when everything failed.
@@ -494,6 +496,7 @@ class Pool:
                     last=f"__ERR__ nvidia-nim not-json {model}: {last[:60]!r}"
                 self._budget_note("nvidia-nim",task,last,model)
                 if not last.startswith("__ERR__"):
+                    self.last_provider,self.last_model="nvidia-nim",model   # 2026-11-02: f1s_parallel ledger reads the route
                     return last
                 continue
             elif route in avail:
@@ -514,8 +517,10 @@ class Pool:
                 last=f"__ERR__ {prov} not-json {(model or prov)}: {last[:60]!r}"
             self._budget_note(prov,task,last,model)
             if not last.startswith("__ERR__"):
+                self.last_provider,self.last_model=prov,model
                 return last
         out=self.chat(messages,jsonmode=jsonmode,max_tokens=max_tokens)
+        self.last_provider,self.last_model=("chat-fallback",None) if not out.startswith("__ERR__") else (None,None)
         return out if not out.startswith("__ERR__") else last if task in self.TASK_ROUTES else out
     CAPABILITY_PARK_STREAK=3        # this many straight error rows for one (provider, task[, model]) ...
     CAPABILITY_PARK_WINDOW_S=6*3600  # ... inside this window park the route; one ok row (or the window) clears it

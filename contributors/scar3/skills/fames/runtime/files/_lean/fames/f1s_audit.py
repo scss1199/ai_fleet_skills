@@ -1010,6 +1010,11 @@ ELEMENTS = [
     {"id": "EVO-popup-gate-skill-mirrors", "element": "zt-popup-gate scanned synced agent skill mirrors (.claude/skills, .agents/skills, .cursor/skills) and FAMES runtime.stage-* copies of hub engines as if they were a seat's shipped frontend, blocking ship on the gate's own warning text", "verdict": "REFINE",
      "requires": None, "detail": "zt-popup-gate.py SKIP_REL_FRAG now skips .claude/skills, .agents/skills, .cursor/skills and runtime.stage- (mirrors of hub engines, never deployed); the zero-popup red line is unchanged and the seat's live source is still scanned; test_zt_popup_gate_scope.py covers both sides",
      "check_text": ("popup_gate", 'os.path.join(".claude", "skills"), os.path.join(".agents", "skills"), os.path.join(".cursor", "skills"), "runtime.stage-"')},
+    # curator 2026-11-01 (operator: F1S must split a conversation's work into free-model-parallel units, the main
+    # conversation merges, results feed back so F1S adapts the free/Claude split; Lean-bound; near 0 Claude tokens).
+    {"id": "EVO-parallel-lanes", "element": "f1s_parallel.py plan/run/close/merge/allocate/report; _lean/fames/F1SParallel.lean + parallel_contract.py + parallel_conformance.py; ledger _registry/f1s-parallel/ledger.jsonl fed by run and by f1s-harvest triage", "verdict": "REFINE",
+     "requires": None, "detail": "units tagged template/retrieval/transform/judgment with a mechanical verifier; free/local lanes admissible only with a verifier and never for judgment (T1), an unverified answer is never accepted (T2/T3), escalation free->local->claude_sub->main strictly upward and bounded (T4/T5), the allocator's choice is admissible (T6), free/local attempts cost 0 Claude tokens (T7), merge completes iff every unit accepted (T8); allocate picks the cheapest lane with >=80% acceptance over >=3 ledger attempts per (seat, task class, difficulty) and explores otherwise; hot_directive parallel clause and token-preflight step 3 name the engine; harvest triage records every free-pool call so the F1S upgrade pipeline trains the allocator",
+     "check_text": ("skill_preflight", "f1s_parallel.py plan")},
 ]
 
 
