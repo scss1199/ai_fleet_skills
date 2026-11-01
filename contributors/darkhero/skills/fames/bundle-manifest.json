@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.45.147",
-  "skill_gen": "2026-11-01.5",
+  "version": "1.45.148",
+  "skill_gen": "2026-11-01.6",
   "execution_order": [
     "FP",
     "MTM",
@@ -24,7 +24,7 @@
   "source_git_commit": null,
   "files": {
     ".gitattributes": "448f5307a4b4eaab3e5e0615e1b57e125c2e6419d590025c4ac3d2e2c004955e",
-    "SKILL.md": "74247724149ee87573dba44120c502ac4c133188e42e9439e8ead18a2b29a559",
+    "SKILL.md": "2d0fc4adbb20d4c66c41a72d845e23bab0395f6f785700ba0d81ba0d863f8fd9",
     "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
     "references/autonomous-knowledge.md": "b34ca6beb034909aaade75be4707c772e90155c6c12b8278c7b3964ec8238df5",
     "references/cases.json": "2ebbb062b8e58241dfd2a70ec423678c4c16e40303d436ffa6de6e5560f67a40",
@@ -35,7 +35,7 @@
     "references/minimal-context.md": "f5c24bd6cc37901d7e71187ef9d273a88676be4c1393faaedf1664ff794478da",
     "references/operator-manual.md": "ddfdafdb484c5233b59bf91d80f44a0060b161f822342db9669e7bcf63b0903c",
     "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
-    "references/protocols/fames-protocol.json": "ddafb8219202d6f1f9ad9571775933ac871ea1b7d677e6b8775cde6891168923",
+    "references/protocols/fames-protocol.json": "75b07473150edae08b171d37e9c14f0935d7e8e8fdbf30ef956099c367a92eb7",
     "references/protocols/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
     "references/protocols/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
     "references/protocols/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -73,7 +73,7 @@
     "runtime/files/_lean/leanctl.py": "2cde11126976a17c88a927375b56c5c09a2115b7b0a6708ec8f563a068c7d7a3",
     "runtime/files/_registry/agent-surfaces.json": "b36cebd6b0f912587f117bc7df19c352496bbb6bcf7c9d3293b0940e951e8f60",
     "runtime/files/_registry/claude-remote-control.json": "44f271d7e0700238d5351698be0638cb1f798669d9f30c8aa3ad1c7d2fc2cfa2",
-    "runtime/files/_registry/fames-protocol.json": "ddafb8219202d6f1f9ad9571775933ac871ea1b7d677e6b8775cde6891168923",
+    "runtime/files/_registry/fames-protocol.json": "75b07473150edae08b171d37e9c14f0935d7e8e8fdbf30ef956099c367a92eb7",
     "runtime/files/_registry/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
     "runtime/files/_registry/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
     "runtime/files/_registry/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -124,7 +124,7 @@
     "runtime/files/_skill/engines/token-onboard.py": "b36201e60c667dadc26f06f211b8b9fc7275a778035d980143f19f4721dbfb39",
     "runtime/files/_skill/engines/websearch.py": "88a615b0b9471555f82e7fa39a9900c837cb7f4cb995de6130caab1793f2bb6d",
     "runtime/files/_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py": "5b5d1bdf28cfdb8e3d1c05c55c361d10b0e5f924873f7b376457ff40e12671a1",
-    "runtime/manifest.json": "b6ad9293d4e19f553b72f9b53bb7d52e3ea5f56da688ffefecb34ca835e5c7c7",
+    "runtime/manifest.json": "da32930bf4ff79d20c0618d0edf9412fc7bc6fa6d536b4f5e47d688232bd9fa2",
     "scripts/adaptive_response_controller.py": "07a19c6e0bda90f25800617a274d5f641709676d0d71cdfae8e17dec91e0d911",
     "scripts/claude_live_ab.py": "3aaa4276c505e1eceea33207c6c4baeb190b6319b737f081fd53fbc055834261",
     "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
@@ -139,5 +139,5 @@
     "scripts/test_work_efficiency.py": "e4250ba4c05f616c79cf97182507d1ff3585487c788546151a97b2dad74f0536",
     "scripts/work_efficiency.py": "42d41b64b8075280b1212625b46a25ab32bba35d27f5c019cf79dde02552022e"
   },
-  "package_sha": "6ca6f62170cb9b5882e6af4afc621a33995c532ff8cf2c85fc6cfa48fb89ecde"
+  "package_sha": "bd236f389e08a45fcc5d88fa1f8441fceed2a07b754b1bd13c1cf0f290e6fc73"
 }
