@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "scar3",
-  "at": "2026-10-31T15:00:19",
+  "at": "2026-11-02T00:36:33",
   "hub": "C:\\ai_workspace",
-  "seconds": 119.3,
+  "seconds": 88.8,
   "check": {
     "seats": [
       {
@@ -28,7 +28,7 @@
         "dirty": 10,
         "unpushed": 0,
         "last_commit": "2026-10-31",
-        "newest_file": "2026-10-31",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -50,20 +50,20 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-10-31",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
         "seat": "ai_scar3",
         "missing": [],
         "findings": [
-          "dirty_files:141"
+          "dirty_files:168"
         ],
         "repo": "own",
-        "dirty": 141,
+        "dirty": 168,
         "unpushed": 0,
         "last_commit": "2026-10-31",
-        "newest_file": "2026-10-31",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -71,10 +71,10 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 25,
+        "dirty": 31,
         "unpushed": 0,
         "last_commit": "2026-10-31",
-        "newest_file": "2026-10-31",
+        "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
       {
@@ -102,8 +102,8 @@
     "producers": [
       {
         "dir": "_registry",
-        "entries": 408,
-        "retention_named": 257,
+        "entries": 402,
+        "retention_named": 251,
         "writer": "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"
       },
       {
@@ -111,15 +111,15 @@
         "entries": 340,
         "retention_named": 250,
         "writer": "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"
-      },
-      {
-        "dir": "_bus/inbox/ai_workspace",
-        "entries": 2126,
-        "retention_named": 0,
-        "writer": "_skill/engines/inbox.py senders (fleet-process-guard.py alerts addressed to a non-seat)"
       }
     ],
     "retention_antipatterns": [
+      {
+        "file": "_skill/engines/claude-proof-hook.py",
+        "line": 556,
+        "kind": "migrated_bak_loop",
+        "text": "(\"migrated-bak\", re.compile(r\"MIGRATED-bak\"), re.compile(r\"(?i)rename|replace|move|copy|with_name|with_suffix|\\+\\s*['\\\"]|f['\\\"]\"),"
+      },
       {
         "file": "_skill/engines/fames-immediate-apply.py",
         "line": 113,
@@ -172,35 +172,31 @@
   },
   "sweep": {
     "applied": true,
-    "planned": 3716,
-    "planned_bytes": 185245933,
+    "planned": 1033,
+    "planned_bytes": 4492137,
     "by_class": {
       "cache_dir": {
-        "count": 11,
-        "bytes": 5500005
-      },
-      "backup": {
-        "count": 25,
-        "bytes": 93749315
+        "count": 8,
+        "bytes": 3507058
       },
       "expired_state": {
-        "count": 2193,
-        "bytes": 85373751
+        "count": 16,
+        "bytes": 608032
       },
       "orphan_inbox": {
-        "count": 1487,
-        "bytes": 622862
+        "count": 1009,
+        "bytes": 377047
       }
     },
     "skipped": {
       "git_tracked": 284,
       "protected": 0
     },
-    "moved": 3716,
+    "moved": 1033,
     "engine": "fleet-residue-quarantine.py",
     "errors": []
   },
-  "delete_bytes": 7830347478,
+  "delete_bytes": 7835431848,
   "summary": {
     "seats": 7,
     "violations": 4,
@@ -210,10 +206,10 @@
       "DORMANT": 2
     },
     "scheduled_task_findings": 0,
-    "producer_leaks": 3,
-    "retention_antipatterns": 8,
-    "moved": 3716,
-    "planned_bytes": 185245933,
+    "producer_leaks": 2,
+    "retention_antipatterns": 9,
+    "moved": 1033,
+    "planned_bytes": 4492137,
     "applied": true
   }
 }
