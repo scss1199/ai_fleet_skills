@@ -45,6 +45,7 @@ ORDERS_DIR = os.path.join(REGISTRY, "curator-orders")
 CONTROL_STATE = os.path.join(REGISTRY, "f1s-control.json")
 SESSION_SCOPE = os.path.join(REGISTRY, "f1s-session-scope.json")  # {"sessions": {<id>: <the one thing it does>}}
 TECHNIQUES = os.path.join(REGISTRY, "f1s-apply.json")
+UNCLAIMED_AFTER_S = 3600
 CURATOR_FALLBACK = "ai_darkhero"
 ACTIVE = ("open", "done", "cannot")  # freeze / forbid hold until the curator closes the order
 PROTECTED = ("logioptionsplus", "optionsplusupdater")  # T1 protect-logi-options-plus: never a forbid target
@@ -306,11 +307,12 @@ def injection(seat: str, session_id: str = "") -> str:
     if seat == curator():
         queue = review_queue()
         techniques = _waiting_techniques(seat)
+        unclaimed = _unclaimed_orders()
         if not queue:
-            return techniques
+            return "\n".join(t for t in (techniques, unclaimed) if t)
         rows = "; ".join(f"{s}#{o['n']} {o['status']} {o['title']}" for s, o in queue[:6])
         return "\n".join(t for t in (f"CURATOR REVIEW — {len(queue)} answered order(s): {rows}. Check each answer, then "
-                                     f"curator_orders.py close <seat> <n> or reopen <seat> <n> --note TEXT.", techniques) if t)
+                                     f"curator_orders.py close <seat> <n> or reopen <seat> <n> --note TEXT.", techniques, unclaimed) if t)
     orders = open_orders(seat)
     if not orders:
         return ""
@@ -348,6 +350,24 @@ def _waiting_techniques(seat: str) -> str:
         return ""
     return (f"ARTICLE TECHNIQUES — {waiting} waiting for this seat: f1s_apply.py list --seat {seat}, apply and measure the worthwhile ones, "
             "f1s_apply.py close <id> applied|covered --evidence <path> or rejected --note <why>.")
+
+
+def _unclaimed_orders() -> str:
+    """An order waits for a chat in its seat, and a seat with no open chat never takes it (11-02: ai_network, ai_demo,
+    ai_career, sdnext_a770 sat unowned). Engines cannot open a conversation, so the curator is told."""
+    rows = []
+    for seat in _seats_with_orders():
+        for o in open_orders(seat):
+            try:
+                age = time.time() - time.mktime(time.strptime(o.get("issued_at", ""), "%Y-%m-%dT%H:%M:%S"))
+            except (TypeError, ValueError):
+                continue
+            if not owner_of(o) and age > UNCLAIMED_AFTER_S:
+                rows.append(f"{seat}#{o['n']} {o['title']}")
+    if not rows:
+        return ""
+    return (f"UNCLAIMED ORDERS — {len(rows)} open with no conversation: {'; '.join(rows[:6])}. Send each into that seat's main chat "
+            "(send_message, or start_session + detach, then deliver), or measure and close them yourself.")
 
 
 def _judged_by_control_loop() -> set[tuple[str, int]]:
