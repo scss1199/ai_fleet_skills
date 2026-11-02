@@ -42,6 +42,7 @@ import _projects  # noqa: E402
 from _paths import COMMON as HUB, REGISTRY  # noqa: E402
 
 ORDERS_DIR = os.path.join(REGISTRY, "curator-orders")
+CONTROL_STATE = os.path.join(REGISTRY, "f1s-control.json")
 CURATOR_FALLBACK = "ai_darkhero"
 ACTIVE = ("open", "done", "cannot")  # freeze / forbid hold until the curator closes the order
 PROTECTED = ("logioptionsplus", "optionsplusupdater")  # T1 protect-logi-options-plus: never a forbid target
@@ -306,8 +307,22 @@ def injection(seat: str, session_id: str = "") -> str:
     return "\n".join(lines)
 
 
+def _judged_by_control_loop() -> set[tuple[str, int]]:
+    """(seat, n) f1s_control still owns: it closes or reopens them from the re-measured number, days after the answer."""
+    try:
+        with open(CONTROL_STATE, encoding="utf-8") as fh:
+            doc = json.load(fh)
+    except (OSError, ValueError):
+        return set()
+    if not doc.get("enabled"):
+        return set()
+    return {(s, t["order"]) for s, t in (doc.get("seats") or {}).items() if t.get("order")}
+
+
 def review_queue() -> list[tuple[str, dict]]:
-    return [(s, o) for s in _seats_with_orders() for o in load(s)["orders"] if o.get("status") in ("done", "cannot")]
+    judged = _judged_by_control_loop()
+    return [(s, o) for s in _seats_with_orders() for o in load(s)["orders"]
+            if o.get("status") in ("done", "cannot") and (s, o.get("n")) not in judged]
 
 
 def _active() -> list[tuple[str, dict]]:
