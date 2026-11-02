@@ -74,6 +74,7 @@ TEXTS = {
     "load_guard": HUB / "ai_darkhero" / "tray" / "scripts" / "load_guard.py",
     "skill_jci_transfer": HUB / "_skill" / "fleet-skills" / "jci-drive-line-web-transfer" / "SKILL.md",
     "skill_line_ingest": HUB / "_skill" / "fleet-skills" / "line-oa-ingest" / "SKILL.md",
+    "social_session": HUB / "ai_darkhero" / "line" / "social_session.py",
     "zat_verify_gate": HUB / "_skill" / "engines" / "zat-verify-gate.py",
     "fames_fleet": HUB / "_skill" / "fleet-skills" / "fames" / "scripts" / "fames_fleet.py",
     "pickup_verify": HUB / "_skill" / "engines" / "fleet-session-pickup-verify.py",
@@ -1053,6 +1054,10 @@ ELEMENTS = [
     {"id": "EVO-CONTROL-LOOP", "element": "operator 2026-11-02「自適應動態控制所有cwd並動態拿到回饋」: f1s_control measures each seat, issues complete-prompt orders, judges by the re-measured number",
      "verdict": "REFINE", "requires": None, "detail": "f1s_control.tick: an answer closes nothing; number moved tightens the limit, not moved reopens once then holds as stuck, the budget follows the verdicts (test_an_answer_alone_closes_nothing_the_number_does)",
      "check_text": ("skill_preflight", "f1s_control.py status")},
+    # f1s-evolve 2026-11-02 (ai_trader proposal: Threads full.txt keeps the navigation and the login card).
+    {"id": "EVO-threads-login-card-cut", "element": "ai_trader 2026-11-02 (commit e861e5378): stored Threads reads keep the site menu and the signed-out login card; card 32da1096f4bbe1eb full.txt shows both", "verdict": "REFINE",
+     "requires": None, "detail": "the menu cut at the author already shipped in social_session.threads_body (hub 2607671d, after that full.txt was written 17:59); the trailing login card was still kept, so threads_body now ends the text before it, and a page that is only the card stays whole for page_access_issue (test_login_card_after_the_post_is_dropped)",
+     "check_text": ("social_session", "THREADS_LOGIN_PROMPT = \"Log in or sign up for Threads\"")},
 ]
 
 
