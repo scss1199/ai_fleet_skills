@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-11-02T18:15:42",
+  "generated": "2026-11-02T20:10:17",
   "required": [
     "fames",
     "independent-review",
@@ -47,6 +47,7 @@
     "pfkt-auto-unblock",
     "pfkt-parallel-wave",
     "rea-reverse-engineering",
+    "social-read",
     "sso-browser-session",
     "typesafe-jev",
     "web-page-atlas",

@@ -1050,6 +1050,9 @@ ELEMENTS = [
     {"id": "EVO-evolve-brief-defuse", "element": "article_relay already defuses ultra-think/ultra-code in relayed article text (hub 3d9ef4d7); the f1s-evolve brief pasted proposal text raw and the 11-02 tick ran at ultrathink effort", "verdict": "REFINE",
      "requires": None, "detail": "f1s-evolve-tick._defuse marks the keywords with U+2027 in every proposal before the brief is written (test_a_quoted_harness_keyword_cannot_raise_the_curator_turn)",
      "check_text": ("evolve_engine", "_defuse(i['text'])")},
+    {"id": "EVO-CONTROL-LOOP", "element": "operator 2026-11-02「自適應動態控制所有cwd並動態拿到回饋」: f1s_control measures each seat, issues complete-prompt orders, judges by the re-measured number",
+     "verdict": "REFINE", "requires": None, "detail": "f1s_control.tick: an answer closes nothing; number moved tightens the limit, not moved reopens once then holds as stuck, the budget follows the verdicts (test_an_answer_alone_closes_nothing_the_number_does)",
+     "check_text": ("skill_preflight", "f1s_control.py status")},
 ]
 
 

@@ -281,8 +281,13 @@ def proof_remediation() -> dict:
     _registry/proof/log.jsonl, was the next push in the same turn an allow (the model fixed it) or another block /
     budget exhaustion?  Counts only; the transcript decides what "fixed" meant."""
     out = {"blocks": 0, "fixed_next_push": 0, "reblocked": 0, "budget_exhausted": 0, "per_class": {}}
+    rows = []
     try:
-        rows = [json.loads(l) for l in PROOF_LOG.read_text(encoding="utf-8", errors="replace").splitlines() if l.strip()]
+        for line in PROOF_LOG.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                rows.append(json.loads(line))
+            except ValueError:   # one torn line stopped this whole table on 2026-10-31 and F1S RECORD went stale for days
+                continue
     except OSError:
         return out
     by_turn: dict = collections.defaultdict(list)

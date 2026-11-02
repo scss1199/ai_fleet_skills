@@ -108,6 +108,10 @@ STATE_TTL = (
      "exclude": ("midturn-", "ship-state", "hw-watch", "review-claim", "capture-")},
     {"root": "_registry/fames-phase", "kind": "dirs", "ttl": 7},
     {"root": "_registry/fames-turn/*/by-prompt", "kind": "dirs", "ttl": 7},
+    {"root": "ai_darkhero/evidence/fames-fleet-20260924/runtime-release-tests", "kind": "dirs", "ttl": 1},  # the test moved to pytest's temp root on 10-31
+    {"root": "_registry/fames-turn/claude", "kind": "files", "ttl": 7},       # per-session binding + its lock, 1,946 in 14 days
+    {"root": "_registry/fames-turn/intake-locks", "kind": "files", "ttl": 7},
+    {"root": "_registry/mtm-audit", "kind": "files", "ttl": 7, "exclude": ("latest", "waste-report", "git-ship-latest")},  # per-run copies, 1,570 nobody read
     {"root": "_registry/fames-runtime-receipts", "kind": "newest", "keep": 3},
     {"root": "_registry/ship-queue", "kind": "named"},
     {"root": "_registry/ship-queue/done", "kind": "files", "ttl": 7},
