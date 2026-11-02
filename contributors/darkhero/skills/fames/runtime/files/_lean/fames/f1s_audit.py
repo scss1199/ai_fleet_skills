@@ -165,7 +165,7 @@ ELEMENTS = [
      "check_text": ("hot_directive", "OmniRoute")},
     {"id": "OP-parallel-free-models", "element": "operator 2026-10-27: 時間最貴，能平行拆分就盡可能拆；夠簡單的子任務叫不同的免費模型去執行", "verdict": "REFINE",
      "requires": None, "detail": "hot_directive parallel clause: independent verifiable subtasks open subagents in the same turn, simple mechanical subtasks fan out to several free-pool models; results merge only after read-back (same 1399-char budget)",
-     "check_text": ("hot_directive", "夠簡單的派免費池多模型並行")},
+     "check_text": ("hot_directive", "有驗證器的單元交免費池並行")},
     {"id": "KB-claw-md", "element": "kyloren_bot 04171cf7 (IG 2026-10-14): Claw.md — think before writing, ask when unsure, simplest first, precise edits, define done + verify", "verdict": "INFO",
      "requires": None, "detail": "already ①③④⑤ (嚴禁猜, 先重用, verify before done); since 2026-10-15 the precise-edit rule is skill text in mtm-mto-first (精準修改); still no mechanical check",
      "check_text": ("skill_method", "精準修改")},
@@ -527,7 +527,7 @@ ELEMENTS = [
     # prompt already says "parallel".
     {"id": "EVO-split-and-merge", "element": "parallel split and child-result merge left to the operator", "verdict": "REFINE",
      "requires": None, "detail": "hot directive: independent units -> subagents started in the same turn, results read back and merged by the parent; token-preflight step 3 carries the merge rule",
-     "check_text": ("hot_directive", "子對話回報只是線索")},
+     "check_text": ("hot_directive", "讀回證據才併入")},
     {"id": "EVO-split-merge-skill", "element": "merge rule in the skill that the hot directive routes to", "verdict": "REFINE",
      "requires": None, "detail": "token-preflight: a report is a lead, not evidence; fold the verified part into the parent's result",
      "check_text": ("skill_preflight", "a report is a lead, not evidence")},
