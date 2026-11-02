@@ -388,6 +388,8 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
     session_id = str(doc.get("session_id") or "")
     if not session_id or doc.get("agent_id") or not enabled():
         return 0, ""
+    if session_id in (_read(HUB / "_registry" / "f1s-session-scope.json").get("sessions") or {}):
+        return 0, ""    # curator_orders.out_of_scope: a one-job conversation is not woken for F1S upgrades or the queue
     if os.environ.get("CLAUDE_CODE_SESSION_ATTENDED") == "0":
         # An unattended `claude -p` run (entrypoint sdk-cli) has nobody to wake, and the CLI waits for its async
         # hooks before it exits: on 2026-10-24 f1s-evolve's curator run (pid 51376) stayed alive behind this waiter

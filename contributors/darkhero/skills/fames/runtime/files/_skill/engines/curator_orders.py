@@ -43,6 +43,8 @@ from _paths import COMMON as HUB, REGISTRY  # noqa: E402
 
 ORDERS_DIR = os.path.join(REGISTRY, "curator-orders")
 CONTROL_STATE = os.path.join(REGISTRY, "f1s-control.json")
+SESSION_SCOPE = os.path.join(REGISTRY, "f1s-session-scope.json")  # {"sessions": {<id>: <the one thing it does>}}
+TECHNIQUES = os.path.join(REGISTRY, "f1s-apply.json")
 CURATOR_FALLBACK = "ai_darkhero"
 ACTIVE = ("open", "done", "cannot")  # freeze / forbid hold until the curator closes the order
 PROTECTED = ("logioptionsplus", "optionsplusupdater")  # T1 protect-logi-options-plus: never a forbid target
@@ -273,8 +275,23 @@ def close(seat: str, n: int, cwd: str | None = None) -> dict:
     return _curator_change(seat, n, cwd, "closed")
 
 
+def out_of_scope(session_id: str | None) -> bool:
+    """True for a conversation the operator keeps on one job: no orders, no review queue, no articles, no idle wake.
+    Operator 2026-11-02 「另一個對話保持只看商品販售的內容」: the sale chat shares the curator's cwd, so it was woken 43
+    times for the review queue and did the curator's work. An unreadable file scopes nobody."""
+    if not session_id:
+        return False
+    try:
+        with open(SESSION_SCOPE, encoding="utf-8") as fh:
+            return session_id in (json.load(fh).get("sessions") or {})
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
 def open_orders(seat: str, session_id: str | None = None) -> list[dict]:
     """The seat's open orders; with `session_id`, only those this conversation must answer (unowned or its own)."""
+    if out_of_scope(session_id):
+        return []
     orders = [o for o in load(seat)["orders"] if o.get("status") == "open"]
     if session_id is None:
         return orders
@@ -284,13 +301,16 @@ def open_orders(seat: str, session_id: str | None = None) -> list[dict]:
 def injection(seat: str, session_id: str = "") -> str:
     """Context text for a session in `seat`: its open orders, or the curator's review queue. An order another
     conversation owns is one line (read it, do not answer it); the owner and unowned orders get the full text."""
+    if out_of_scope(session_id):
+        return ""
     if seat == curator():
         queue = review_queue()
+        techniques = _waiting_techniques(seat)
         if not queue:
-            return ""
+            return techniques
         rows = "; ".join(f"{s}#{o['n']} {o['status']} {o['title']}" for s, o in queue[:6])
-        return (f"CURATOR REVIEW — {len(queue)} answered order(s): {rows}. Check each answer, then "
-                f"curator_orders.py close <seat> <n> or reopen <seat> <n> --note TEXT.")
+        return "\n".join(t for t in (f"CURATOR REVIEW — {len(queue)} answered order(s): {rows}. Check each answer, then "
+                                     f"curator_orders.py close <seat> <n> or reopen <seat> <n> --note TEXT.", techniques) if t)
     orders = open_orders(seat)
     if not orders:
         return ""
@@ -305,6 +325,20 @@ def injection(seat: str, session_id: str = "") -> str:
     lines.append(f"回報: python {HUB}/_skill/engines/curator_orders.py answer {seat} <n> --evidence <path> "
                  "| --cannot \"<原因>\"（answer 的對話成為該令的負責對話；接手前先 claim {seat} <n>）")
     return "\n".join(lines)
+
+
+def _waiting_techniques(seat: str) -> str:
+    """f1s_apply orders every other seat; the curator's own rows have no order to arrive in, so they are named here."""
+    try:
+        with open(TECHNIQUES, encoding="utf-8") as fh:
+            rows = json.load(fh).get("techniques", {}).values()
+    except (OSError, ValueError, AttributeError):
+        return ""
+    waiting = sum(1 for r in rows if r.get("seat") == seat and r.get("status") == "new")
+    if not waiting:
+        return ""
+    return (f"ARTICLE TECHNIQUES — {waiting} waiting for this seat: f1s_apply.py list --seat {seat}, apply and measure the worthwhile ones, "
+            "f1s_apply.py close <id> applied|covered --evidence <path> or rejected --note <why>.")
 
 
 def _judged_by_control_loop() -> set[tuple[str, int]]:

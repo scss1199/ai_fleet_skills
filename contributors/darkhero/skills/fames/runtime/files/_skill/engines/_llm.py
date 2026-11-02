@@ -446,6 +446,7 @@ class Pool:
         try:
             import api_budget
             low=(out or "").lower()
+            if "circuit-open" in low: return    # no call was made: neither a cost nor a verdict on this route
             if not low.startswith("__err__"): outcome="ok"
             elif "429" in low or "quota" in low or "ratelimit" in low or "rate limit" in low: outcome="ratelimited"
             else: outcome="error"
@@ -524,19 +525,27 @@ class Pool:
         return out if not out.startswith("__ERR__") else last if task in self.TASK_ROUTES else out
     CAPABILITY_PARK_STREAK=3        # this many straight error rows for one (provider, task[, model]) ...
     CAPABILITY_PARK_WINDOW_S=6*3600  # ... inside this window park the route; one ok row (or the window) clears it
+    CAPABILITY_RETRY_S=300          # a parked route earns one trial after this, doubling per further error
     def _capability_ok(self,provider,task,model=None):
         """False when the ledger's last rows for this exact route are a streak of errors (not rate limits).
         2026-10-31: gemini was first for `translate` and failed 124 times in a day on blocked replies; the circuit
         reopened every <=15 min and each ai_theater ask paid one wasted call. Rate limits stay with api_budget;
-        no ledger or any error = usable (UNKNOWN never blocks)."""
+        no ledger or any error = usable (UNKNOWN never blocks).
+        2026-11-02: a parked route wrote no more rows, so nothing could clear it: three timeouts in one burst took
+        `extract` away from the whole fleet for 6 h while the route answered in 2 s. It now earns a trial on a
+        doubling delay, at most 7 wasted calls per window against the 124 a day above."""
         try:
             import api_budget
             cap=f"chat_for.{task}"
             rows=[r for r in api_budget._rows(since=time.time()-self.CAPABILITY_PARK_WINDOW_S)
                   if r.get("provider")==provider and r.get("key")==self.METER_KEY and r.get("capability")==cap
                   and (model is None or r.get("model") in (None,model))]
-            tail=[r.get("outcome") for r in rows[-self.CAPABILITY_PARK_STREAK:]]
-            return not (len(tail)==self.CAPABILITY_PARK_STREAK and all(o in ("error","empty") for o in tail))
+            streak=0
+            for r in reversed(rows):
+                if r.get("outcome") not in ("error","empty"): break
+                streak+=1
+            if streak<self.CAPABILITY_PARK_STREAK: return True
+            return time.time()-float(rows[-1].get("ts") or 0)>=self.CAPABILITY_RETRY_S*2**(streak-self.CAPABILITY_PARK_STREAK)
         except Exception:
             return True
     def fan_out(self,jobs,task=None,jsonmode=False,max_tokens=1500,workers=4):

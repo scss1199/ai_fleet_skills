@@ -624,7 +624,7 @@ def _curator_orders(agent: str, session_id: str = "") -> str:
         return ""
 
 
-def _article_relay(agent: str, cwd: str) -> str:
+def _article_relay(agent: str, cwd: str, session_id: str = "") -> str:
     """operator 2026-10-26: on the operator's prompt to the curator, new LINE articles go to the seat they were sent
     for (kyloren_quant -> ai_trader as a curator order; the curator's own kyloren_bot articles inline). "" for every
     other seat or on any error (_skill/engines/article_relay.py). Never raises."""
@@ -635,7 +635,7 @@ def _article_relay(agent: str, cwd: str) -> str:
             return ""
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        return str(module.hook_context(agent, cwd) or "")
+        return str(module.hook_context(agent, cwd, session_id) or "")
     except Exception:
         return ""
 
@@ -748,7 +748,7 @@ def main():
         for update in (_t1_refresh(surface_id, session_id, at_start=False),
                        _charter_refresh(surface_id, session_id, cwd, at_start=False, transcript_path=transcript_path),
                        _proof_carry(session_id), "" if machine_event else _proof_recurrence(cwd),
-                       "" if machine_event else _article_relay(agent, cwd)):
+                       "" if machine_event else _article_relay(agent, cwd, session_id)):
             if update:
                 context=(context+"\n"+update).strip()
     else:
