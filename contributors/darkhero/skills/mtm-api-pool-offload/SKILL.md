@@ -30,7 +30,8 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 | 需求 | 指令 | 跑在哪 |
 |---|---|---|
 | 網路搜尋＋讀前幾名網頁＋摘要 | `python %AI_WORKSPACE%\_skill\engines\distill-url.py --search "<query>" [--n 5] --json` | DuckDuckGo 免金鑰＋免費池 |
-| 單一網址（網頁、YouTube、IG、Threads）摘要 | `python %AI_WORKSPACE%\_skill\engines\distill-url.py <url> --json` | 依網址自動選路 |
+| IG／Threads 貼文（登入讀原文、圖上字、語音）；已收文章查詢 | `python %AI_WORKSPACE%\_skill\engines\social-read.py <url>`；`--search "<主題>"` | 本機 cookie＋OCR＋ASR，0 模型呼叫（技能 social-read） |
+| 單一網址（網頁、YouTube）摘要 | `python %AI_WORKSPACE%\_skill\engines\distill-url.py <url> --json` | 依網址自動選路 |
 | 影片／音檔 → 逐字稿 | `python %AI_WORKSPACE%\_skill\engines\distill-media.py <file> --engine local [--digest]` | 本機 whisper，不外送 |
 | 圖片 → 文字（OCR） | `python %AI_WORKSPACE%\ai_darkhero\line\image_ocr.py <image>` | 免費 Gemini |
 | 大量文件分類／比對 | `_skill/engines/_llm.py` 的 `Pool().chat(...)` | 免費池（gemini、nvidia-nim…） |

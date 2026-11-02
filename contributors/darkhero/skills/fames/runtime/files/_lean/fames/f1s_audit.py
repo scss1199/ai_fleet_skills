@@ -1037,6 +1037,9 @@ ELEMENTS = [
     {"id": "EVO-pythonw-pytest-console", "element": "2026-11-02 18:10:30 WindowsTerminal -Embedding titled git.exe took the foreground during f1s-evolve: the pythonw rider ran pytest on sys.executable, so each bare git in a test opened a console window; the detector watched conhost only and the static guard does not scan tests", "verdict": "REFINE",
      "requires": None, "detail": "f1s-evolve-tick and scf_session run python children through _subproc_win.python_exe; zt-foreground-guard flags pytest on sys.executable; flash_watch watches WindowsTerminal -Embedding and names the client and launcher from the birth ring",
      "check_text": ("skill_runtime", "pythonw 不准直接跑 pytest")},
+    {"id": "EVO-social-read-any-cwd", "element": "2026-11-02 operator: IG/Threads capture worked only inside the channel riders, and seats either browsed by hand or got a logged-out shell", "verdict": "REFINE",
+     "requires": None, "detail": "social-read.py + fleet skill: any cwd reads a post signed in at zero model calls and searches the captured channels; article_relay TOPIC_SEATS routes social articles to the seat that needs them",
+     "check_text": ("skill_pool", "social-read.py")},
 ]
 
 
