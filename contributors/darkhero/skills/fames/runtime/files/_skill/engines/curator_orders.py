@@ -327,6 +327,15 @@ def injection(seat: str, session_id: str = "") -> str:
     return "\n".join(lines)
 
 
+def _brief(orders: list[dict]) -> list[dict]:
+    """What a listing needs: every active order and the closed count. 11-02: `list` printed 311 KB per call, 110 calls in 3 days."""
+    rows = [{"n": o.get("n"), "status": o.get("status"), "title": o.get("title"), "owner": (owner_of(o) or "")[:8],
+             "evidence": (o.get("answer") or {}).get("evidence") or [], "reason": (o.get("answer") or {}).get("reason") or ""}
+            for o in orders if o.get("status") in ACTIVE]
+    closed = len(orders) - len(rows)
+    return rows + ([{"closed": closed}] if closed else [])
+
+
 def _waiting_techniques(seat: str) -> str:
     """f1s_apply orders every other seat; the curator's own rows have no order to arrive in, so they are named here."""
     try:
@@ -402,6 +411,7 @@ def main(argv=None) -> int:
     s.add_argument("--forbid", action="append", default=[])
     s = sub.add_parser("list")
     s.add_argument("seat", nargs="?")
+    s.add_argument("--full", action="store_true", help="every field of every order, closed ones too")
     s = sub.add_parser("deliver")
     s.add_argument("seat")
     s.add_argument("n", type=int)
@@ -433,7 +443,7 @@ def main(argv=None) -> int:
 
         elif a.cmd == "list":
             seats = [a.seat] if a.seat else _seats_with_orders()
-            out = {s: load(s)["orders"] for s in seats}
+            out = {s: load(s)["orders"] if a.full else _brief(load(s)["orders"]) for s in seats}
         elif a.cmd == "answer":
             out = answer(a.seat, a.n, a.evidence or (), a.cannot or "")
         elif a.cmd == "claim":
@@ -445,7 +455,9 @@ def main(argv=None) -> int:
     except (PermissionError, ValueError) as exc:
         print(f"refused: {exc}")
         return 2
-    print(json.dumps(out, ensure_ascii=False, indent=2))
+    if isinstance(out, dict) and "do" in out:      # the seat already holds the order's text; this line only confirms the step
+        out = {k: out.get(k) for k in ("n", "status", "title")}
+    print(json.dumps(out, ensure_ascii=False, indent=None if a.cmd == "list" else 2))
     return 0
 
 

@@ -1,6 +1,6 @@
 ---
 name: zh-tts-narrate
-description: Zero-key Traditional Chinese narration with edge-tts (Microsoft neural voices, zh-TW-HsiaoChenNeural default) plus objective voice ranking (DNSMOS via voice-mos.py). Use for any video or audio that needs a zh-Hant voice-over without an Azure key, to regenerate a project's chapter audio in another voice, or to audition and rank candidate voices.
+description: Zero-key Traditional Chinese narration with edge-tts plus voice ranking. Use for a zh-Hant voice-over without an Azure key or to audition voices.
 metadata:
   fleet:
     lane: zero-token-mechanism
