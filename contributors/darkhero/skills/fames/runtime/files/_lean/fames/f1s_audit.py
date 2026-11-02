@@ -1034,6 +1034,9 @@ ELEMENTS = [
     {"id": "EVO-popup-create-window-gate", "element": "2026-11-02 jci_taipei scratchpad/fake_meet_window.py: a real WS_POPUP window run 5 times to test the tray's call watcher took the foreground and went Ghost; the popup gate exempted scratch paths, the live detector attributed it unknown and saw no focus change", "verdict": "REFINE",
      "requires": None, "detail": "claude-proof-hook create-window rule applies in scratch and test paths (tray and _delete exempt); flash_watch maps Temp\\claude\\C--ai-workspace-<seat> and process lineage to the seat, and a WinEvent foreground hook logs focus changes with no input for 1.5 s for any exe",
      "check_text": ("skill_runtime", "測視窗偵測不准開真視窗")},
+    {"id": "EVO-pythonw-pytest-console", "element": "2026-11-02 18:10:30 WindowsTerminal -Embedding titled git.exe took the foreground during f1s-evolve: the pythonw rider ran pytest on sys.executable, so each bare git in a test opened a console window; the detector watched conhost only and the static guard does not scan tests", "verdict": "REFINE",
+     "requires": None, "detail": "f1s-evolve-tick and scf_session run python children through _subproc_win.python_exe; zt-foreground-guard flags pytest on sys.executable; flash_watch watches WindowsTerminal -Embedding and names the client and launcher from the birth ring",
+     "check_text": ("skill_runtime", "pythonw 不准直接跑 pytest")},
 ]
 
 
