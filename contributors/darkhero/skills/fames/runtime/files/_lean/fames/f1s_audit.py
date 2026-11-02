@@ -1040,6 +1040,16 @@ ELEMENTS = [
     {"id": "EVO-social-read-any-cwd", "element": "2026-11-02 operator: IG/Threads capture worked only inside the channel riders, and seats either browsed by hand or got a logged-out shell", "verdict": "REFINE",
      "requires": None, "detail": "social-read.py + fleet skill: any cwd reads a post signed in at zero model calls and searches the captured channels; article_relay TOPIC_SEATS routes social articles to the seat that needs them",
      "check_text": ("skill_pool", "social-read.py")},
+    # f1s-evolve 2026-11-02 (ai_darkhero proposal: Claude Code 2.1.316 subagent effort + ultrathink nudge).
+    {"id": "EVO-subagent-effort-env", "element": "Claude Code 2.1.316 CLAUDE_CODE_SUBAGENT_EFFORT: subagents that name no effort run at it instead of inheriting the session's (changelog 2.1.316; npm 2.1.316, Desktop bundle 2.1.309, CLI 2.1.289 on 11-02)", "verdict": "REFINE",
+     "requires": None, "detail": "token-preflight step 3 names the lever for mechanical lanes; setting it is an environment-variable change, so it waits for operator authorization and a bundle >= 2.1.316; nothing set",
+     "check_text": ("skill_preflight", "CLAUDE_CODE_SUBAGENT_EFFORT")},
+    {"id": "KB-ultrathink-reopen-not-adopted", "element": "proposal: nudge a stuck session with a send_message starting with ultra-think instead of archive/unarchive", "verdict": "INFO",
+     "requires": None, "detail": "not adopted: reopen exists for a session that will not reload its hooks or is wedged, which a higher-effort turn does not fix; an idle session takes send_message without archiving anyway; the keyword buys a max-effort paid turn, against free-runtime; and it fires anywhere in a prompt, not only at its start (this evolve turn was raised by a quote of it)",
+     "check_text": ("evolve_engine", "matches the keyword anywhere in the prompt")},
+    {"id": "EVO-evolve-brief-defuse", "element": "article_relay already defuses ultra-think/ultra-code in relayed article text (hub 3d9ef4d7); the f1s-evolve brief pasted proposal text raw and the 11-02 tick ran at ultrathink effort", "verdict": "REFINE",
+     "requires": None, "detail": "f1s-evolve-tick._defuse marks the keywords with U+2027 in every proposal before the brief is written (test_a_quoted_harness_keyword_cannot_raise_the_curator_turn)",
+     "check_text": ("evolve_engine", "_defuse(i['text'])")},
 ]
 
 
