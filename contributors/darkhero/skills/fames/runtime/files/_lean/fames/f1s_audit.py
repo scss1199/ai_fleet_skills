@@ -1031,6 +1031,9 @@ ELEMENTS = [
     {"id": "KB-claude-mem-not-adopted", "element": "reel DfOPQvYEr8W: Claude-Mem, six lifecycle hooks, SQLite, hybrid search, three-tier recall, 'about ten times fewer tokens' per the project itself", "verdict": "INFO",
      "requires": None, "detail": "not adopted: the three-tier pattern already exists (MEMORY.md index, memory file, transcript; AGC compact), six more hooks add per-turn cost the hub measures with audit-session-tax, and the token figure is the vendor's; adoption would need a SkillSpector scan and operator approval for global settings",
      "check_text": ("skill_preflight", "context tax too")},
+    {"id": "EVO-popup-create-window-gate", "element": "2026-11-02 jci_taipei scratchpad/fake_meet_window.py: a real WS_POPUP window run 5 times to test the tray's call watcher took the foreground and went Ghost; the popup gate exempted scratch paths, the live detector attributed it unknown and saw no focus change", "verdict": "REFINE",
+     "requires": None, "detail": "claude-proof-hook create-window rule applies in scratch and test paths (tray and _delete exempt); flash_watch maps Temp\\claude\\C--ai-workspace-<seat> and process lineage to the seat, and a WinEvent foreground hook logs focus changes with no input for 1.5 s for any exe",
+     "check_text": ("skill_runtime", "測視窗偵測不准開真視窗")},
 ]
 
 

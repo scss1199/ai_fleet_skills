@@ -471,7 +471,15 @@ POPUP_RULES = (
      "MessageBox 是搶焦點的模態對話框"),
     ("console-flash", re.compile(r"CREATE_NEW_CONSOLE|creationflags\s*=\s*0\b"),
      "新主控台會閃出黑窗"),
+    # 2026-11-02 jci_taipei scratchpad/fake_meet_window.py: a real WS_POPUP|WS_VISIBLE window with no message pump, run 5
+    # times to exercise the tray's call watcher; it took the foreground and went Ghost. Scratch paths are not exempt from
+    # this rule (POPUP_ANYWHERE_RULES): a test needs fake window enumeration, never a window on the operator's desktop.
+    ("create-window", re.compile(r"\bCreateWindow(?:Ex)?[AW]?\s*\(|\bWS_VISIBLE\b|\btk(?:inter)?\.Tk\s*\(|\bQApplication\s*\("),
+     "在 operator 桌面建立真視窗（測試也一樣）；測偵測邏輯請注入假的視窗列舉資料"),
 )
+POPUP_ANYWHERE_RULES = ("create-window",)
+# The tray owns the fleet's only deliberate overlays; this gate's own test quotes the forms it denies.
+POPUP_WINDOW_OWNER_PATH = re.compile(r"(?i)[\\/]ai_darkhero[\\/]tray[\\/]|[\\/]_delete[\\/]|[\\/]test_proof_popup_gate\.py$")
 POPUP_WEB_RULE = ("browser-modal", re.compile(r"(?<![\w.])(?:alert|confirm|prompt)\s*\(|window\.open\s*\("),
                   "前端 alert()/confirm()/prompt()/window.open() 是模態彈窗，改用頁內 toast 與兩段式按鈕")
 POPUP_CODE_EXT = (".py", ".ps1", ".psm1", ".bat", ".cmd", ".js", ".ts", ".tsx", ".jsx", ".html", ".htm", ".vbs", ".ahk")
@@ -503,13 +511,20 @@ def popup_violations(tool: str, ti: dict) -> list[tuple[str, str]]:
         web = False
     elif tool in ("Write", "Edit", "MultiEdit"):
         path = str(ti.get("file_path") or "").lower()
-        if not path.endswith(POPUP_CODE_EXT) or POPUP_EXEMPT_PATH.search(path):
+        if not path.endswith(POPUP_CODE_EXT):
             return []
         text = str(ti.get("content") or ti.get("new_string") or "")
         if not text and isinstance(ti.get("edits"), list):
             text = "\n".join(str(e.get("new_string") or "") for e in ti["edits"] if isinstance(e, dict))
         rules = [r for r in POPUP_RULES if r[0] != "open-gui" or path.endswith((".ps1", ".bat", ".cmd"))]
         web = path.endswith(POPUP_WEB_EXT)
+        if POPUP_EXEMPT_PATH.search(path):
+            rules = [r for r in rules if r[0] in POPUP_ANYWHERE_RULES]
+            web = False
+        if POPUP_WINDOW_OWNER_PATH.search(path):
+            rules = [r for r in rules if r[0] not in POPUP_ANYWHERE_RULES]
+        if not rules and not web:
+            return []
     else:
         return []
     live = _popup_live_text(text)

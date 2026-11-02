@@ -33,6 +33,7 @@ parent_skill: ztm-verify-before-done
   UNKNOWN 附兩者路徑。（ai_trader 2026-10-29 mt5setup.exe /auto 約 6 分鐘無視窗；memory owner-fx-route-20261029）
 - **WMI 卡死時 `subprocess.run(capture_output=True, timeout=N)` 救不了你。** timeout 殺掉卡在 WMI RPC 的 powershell 只留下殭屍，pipe 不關，父程序在 communicate() 永遠等；2026-11-01 15:24 起全機 `Get-CimInstance` 不回，到 18:00 累積 129 個孤兒 powershell，連 import 期查開機時間的模組都卡死。做法：能不用 WMI 就不用（程序用 psutil／toolhelp、開機時間用 GetTickCount64、服務用 sc query）；非用不可就 Popen 配 stdout／stderr=DEVNULL、結果寫檔、wait(timeout) 後殺整棵程序樹。排程器 timeout 也要殺整棵樹，只殺 rider 會留下孫程序。（hub memory wmi-wedge-20261101）
 - **Playwright 不能直接在 pythonw 下啟動。** 它的 node driver 不帶 CREATE_NO_WINDOW，pythonw 沒有 console 可繼承，就會閃出視窗。放進 `python.exe` + CREATE_NO_WINDOW 的子程序跑（子孫繼承隱藏的 console），Chromium 加 `--disable-gpu` 不動 A770。（ai_darkhero line/social_session.py）
+- **測視窗偵測不准開真視窗。** 要測 call watcher、meet_watch 這類看視窗標題的邏輯，對視窗列舉函式注入假資料；真視窗就算在畫面外、在 scratchpad，也會搶前景，沒有訊息迴圈還會變成「沒有回應」的 Ghost 視窗（jci_taipei fake_meet_window.py 2026-11-02 跑 5 次）。PROOF popup gate 的 create-window 規則連 scratch 和測試路徑一起擋，只有 ai_darkhero/tray 例外；flash_watch 另外記錄 1.5 秒內沒有輸入的前景切換（`_logs/flash-watch.log` 的 FOCUS-STEAL）。
 - **背景 python 會跳「應用程式錯誤」對話框**：CPython 3.12 的 `platform.*` 走 WMI COM thread，機器忙時崩潰 → csrss
   硬錯誤框（短暫、無 Event 1000）。背景程序避免在 import 期呼叫 `platform.machine()/uname()` 這類查詢；零彈窗紅線。
   （ai_trader zero-popup-python-crash-dialog；hub memory pythonw-platform-ver-flash）
