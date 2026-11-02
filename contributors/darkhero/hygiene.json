@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "dark-hero-z790",
-  "at": "2026-11-02T05:11:16",
+  "at": "2026-11-02T20:16:11",
   "hub": "C:\\ai_workspace",
-  "seconds": 125.6,
+  "seconds": 106.6,
   "check": {
     "seats": [
       {
@@ -42,12 +42,12 @@
         "seat": "ai_darkhero",
         "missing": [],
         "findings": [
-          "dirty_files:987"
+          "dirty_files:1053"
         ],
         "repo": "own",
-        "dirty": 987,
+        "dirty": 1053,
         "unpushed": 0,
-        "last_commit": "2026-11-01",
+        "last_commit": "2026-11-02",
         "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
@@ -97,17 +97,11 @@
       },
       {
         "seat": "ai_hgame",
-        "missing": [
-          "CLAUDE.md",
-          "AGENTS.md",
-          ".cursor\\hooks.json"
-        ],
-        "findings": [
-          "charter_missing:CLAUDE.md,AGENTS.md,.cursor\\hooks.json"
-        ],
+        "missing": [],
+        "findings": [],
         "repo": "hub",
-        "newest_file": "2026-08-27",
-        "activity": "DORMANT"
+        "newest_file": "2026-11-02",
+        "activity": "ACTIVE"
       },
       {
         "seat": "ai_karaoke",
@@ -138,7 +132,7 @@
         "repo": "own",
         "dirty": 5,
         "unpushed": 0,
-        "last_commit": "2026-10-31",
+        "last_commit": "2026-11-02",
         "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
@@ -158,7 +152,7 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 1,
+        "dirty": 4,
         "unpushed": 0,
         "last_commit": "2026-11-02",
         "newest_file": "2026-11-02",
@@ -205,11 +199,13 @@
       {
         "seat": "ai_trader",
         "missing": [],
-        "findings": [],
+        "findings": [
+          "unpushed_commits:4"
+        ],
         "repo": "own",
         "dirty": 15,
-        "unpushed": 0,
-        "last_commit": "2026-11-01",
+        "unpushed": 4,
+        "last_commit": "2026-11-02",
         "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
@@ -239,12 +235,12 @@
         "seat": "ai_ziyaoastro",
         "missing": [],
         "findings": [
-          "dirty_files:100"
+          "dirty_files:128"
         ],
         "repo": "own",
-        "dirty": 100,
+        "dirty": 128,
         "unpushed": 0,
-        "last_commit": "2026-11-01",
+        "last_commit": "2026-11-02",
         "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
@@ -276,7 +272,7 @@
         "repo": "own",
         "dirty": 69,
         "unpushed": 0,
-        "last_commit": "2026-10-31",
+        "last_commit": "2026-11-02",
         "newest_file": "2026-11-02",
         "activity": "ACTIVE"
       },
@@ -291,33 +287,33 @@
     ],
     "scheduled_tasks": [],
     "counts": {
-      "ACTIVE": 24,
+      "ACTIVE": 25,
       "IDLE": 0,
-      "DORMANT": 2
+      "DORMANT": 1
     },
     "violations": 6,
     "producers": [
       {
         "dir": "_registry/fames-evidence",
-        "entries": 2223,
+        "entries": 2257,
         "retention_named": 5,
         "writer": "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"
       },
       {
         "dir": "ai_darkhero/_registry/f1s-sources/consolidate/cards",
-        "entries": 4144,
+        "entries": 4224,
         "retention_named": 0,
         "writer": "_skill/engines/f1s-sources.py / knowledge-consolidate.py content store (data, not residue)"
       },
       {
         "dir": "_logs",
-        "entries": 2784,
+        "entries": 2785,
         "retention_named": 0,
         "writer": "_skill/engines/goal-field.py / seal-generation-lock.py / scf-residual.py goal backups"
       },
       {
         "dir": "ai_darkhero/_registry/f1s-sources/items",
-        "entries": 2581,
+        "entries": 2675,
         "retention_named": 0,
         "writer": "_skill/engines/f1s-sources.py / knowledge-consolidate.py content store (data, not residue)"
       },
@@ -329,7 +325,7 @@
       },
       {
         "dir": "_registry/mtm-audit",
-        "entries": 1567,
+        "entries": 1573,
         "retention_named": 0,
         "writer": "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"
       },
@@ -341,7 +337,7 @@
       },
       {
         "dir": "_registry/fames-turn/claude",
-        "entries": 1126,
+        "entries": 1144,
         "retention_named": 0,
         "writer": "_harness/runtime/fames_turn_binding.py (by-prompt archive)"
       },
@@ -355,7 +351,7 @@
     "retention_antipatterns": [
       {
         "file": "_skill/engines/claude-proof-hook.py",
-        "line": 556,
+        "line": 571,
         "kind": "migrated_bak_loop",
         "text": "(\"migrated-bak\", re.compile(r\"MIGRATED-bak\"), re.compile(r\"(?i)rename|replace|move|copy|with_name|with_suffix|\\+\\s*['\\\"]|f['\\\"]\"),"
       },
@@ -423,52 +419,55 @@
   },
   "sweep": {
     "applied": true,
-    "planned": 481,
-    "planned_bytes": 36292860,
+    "planned": 2810,
+    "planned_bytes": 100526353,
     "by_class": {
       "cache_dir": {
-        "count": 51,
-        "bytes": 17035250
+        "count": 52,
+        "bytes": 15744207
       },
       "temp": {
-        "count": 1,
-        "bytes": 0
+        "count": 2,
+        "bytes": 188
       },
       "backup": {
-        "count": 6,
-        "bytes": 13159690
+        "count": 10,
+        "bytes": 18906267
       },
       "expired_state": {
-        "count": 391,
-        "bytes": 6091264
-      },
-      "orphan_inbox": {
-        "count": 32,
-        "bytes": 6656
+        "count": 2746,
+        "bytes": 65875691
       }
     },
     "skipped": {
-      "git_tracked": 10,
-      "protected": 0
+      "git_tracked": 488,
+      "protected": 702
     },
-    "moved": 481,
+    "moved": 2810,
     "engine": "fleet-residue-quarantine.py",
-    "errors": []
+    "errors": [
+      "None",
+      "None",
+      "None",
+      "None",
+      "None",
+      "None"
+    ]
   },
-  "delete_bytes": 36845261,
+  "delete_bytes": 2183210638,
   "summary": {
     "seats": 26,
     "violations": 6,
     "activity": {
-      "ACTIVE": 24,
+      "ACTIVE": 25,
       "IDLE": 0,
-      "DORMANT": 2
+      "DORMANT": 1
     },
     "scheduled_task_findings": 0,
     "producer_leaks": 9,
     "retention_antipatterns": 11,
-    "moved": 481,
-    "planned_bytes": 36292860,
+    "moved": 2810,
+    "planned_bytes": 100526353,
     "applied": true
   }
 }
