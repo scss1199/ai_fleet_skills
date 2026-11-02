@@ -164,8 +164,8 @@ ELEMENTS = [
      "requires": "F1SCore.f1s_satisfiable", "detail": "reused, not written: OmniRoute 3.8.51 (MIT) headless on 127.0.0.1:20128, 11 vault connections, claude-remote-exec lane=auto falls back on quota/auth failure (test_remote_exec_gateway_lane); persistence proposed in _inbox (operator arms)",
      "check_text": ("hot_directive", "OmniRoute")},
     {"id": "OP-parallel-free-models", "element": "operator 2026-10-27: 時間最貴，能平行拆分就盡可能拆；夠簡單的子任務叫不同的免費模型去執行", "verdict": "REFINE",
-     "requires": None, "detail": "hot_directive parallel clause (reworded 2026-11-02 for f1s_parallel): units with a verifier fan out to the free pool, judgment stays in the main conversation; results merge only after read-back",
-     "check_text": ("hot_directive", "有驗證器的單元交免費池並行")},
+     "requires": None, "detail": "hot_directive parallel clause: independent verifiable subtasks open subagents in the same turn, simple mechanical subtasks fan out to several free-pool models; results merge only after read-back (same 1399-char budget)",
+     "check_text": ("hot_directive", "夠簡單的派免費池多模型並行")},
     {"id": "KB-claw-md", "element": "kyloren_bot 04171cf7 (IG 2026-10-14): Claw.md — think before writing, ask when unsure, simplest first, precise edits, define done + verify", "verdict": "INFO",
      "requires": None, "detail": "already ①③④⑤ (嚴禁猜, 先重用, verify before done); since 2026-10-15 the precise-edit rule is skill text in mtm-mto-first (精準修改); still no mechanical check",
      "check_text": ("skill_method", "精準修改")},
@@ -526,8 +526,8 @@ ELEMENTS = [
     # the operator had to click; the hot directive never mentioned splitting, and pfkt-parallel-wave loads only when the
     # prompt already says "parallel".
     {"id": "EVO-split-and-merge", "element": "parallel split and child-result merge left to the operator", "verdict": "REFINE",
-     "requires": None, "detail": "hot directive: f1s_parallel plan/run/merge, the parent merges only after reading the evidence back; token-preflight step 3 carries the merge rule",
-     "check_text": ("hot_directive", "讀回證據才併入")},
+     "requires": None, "detail": "hot directive: independent units -> subagents started in the same turn, results read back and merged by the parent; token-preflight step 3 carries the merge rule",
+     "check_text": ("hot_directive", "子對話回報只是線索")},
     {"id": "EVO-split-merge-skill", "element": "merge rule in the skill that the hot directive routes to", "verdict": "REFINE",
      "requires": None, "detail": "token-preflight: a report is a lead, not evidence; fold the verified part into the parent's result",
      "check_text": ("skill_preflight", "a report is a lead, not evidence")},
@@ -1015,6 +1015,22 @@ ELEMENTS = [
     {"id": "EVO-parallel-lanes", "element": "f1s_parallel.py plan/run/close/merge/allocate/report; _lean/fames/F1SParallel.lean + parallel_contract.py + parallel_conformance.py; ledger _registry/f1s-parallel/ledger.jsonl fed by run and by f1s-harvest triage", "verdict": "REFINE",
      "requires": None, "detail": "units tagged template/retrieval/transform/judgment with a mechanical verifier; free/local lanes admissible only with a verifier and never for judgment (T1), an unverified answer is never accepted (T2/T3), escalation free->local->claude_sub->main strictly upward and bounded (T4/T5), the allocator's choice is admissible (T6), free/local attempts cost 0 Claude tokens (T7), merge completes iff every unit accepted (T8); allocate picks the cheapest lane with >=80% acceptance over >=3 ledger attempts per (seat, task class, difficulty) and explores otherwise; hot_directive parallel clause and token-preflight step 3 name the engine; harvest triage records every free-pool call so the F1S upgrade pipeline trains the allocator",
      "check_text": ("skill_preflight", "f1s_parallel.py plan")},
+    # curator 2026-11-02 (operator: IG/Threads becomes the main article channel; parse today's articles and upgrade F1S).
+    {"id": "EVO-social-channel-shares-parsers", "element": "IG/Threads DMs (sssc1219, from scss1199) as a third knowledge root; logged-in reads for IG/Threads links on every root", "verdict": "REFINE",
+     "requires": None, "detail": "ai_darkhero/line/social_session.py DmSource feeds the same Queue, acquisition, cards and relay as LINE; LINE-delivered IG links read through the session with OCR; only the owner's messages become events; line-oa-ingest documents it",
+     "check_text": ("skill_line_ingest", "kyloren-knowledge-social")},
+    {"id": "EVO-free-lane-quote-verifier", "element": "f1s_parallel json_schema verifier with quote_key: every extracted item must quote its own source", "verdict": "REFINE",
+     "requires": None, "detail": "a shape check cannot see an invented fact; first run on today's articles kept 20 of 20 points with quotes mechanically found in the source; token-preflight names it",
+     "check_text": ("skill_preflight", "quote_key")},
+    {"id": "EVO-wmi-wedge-playwright-window", "element": "2026-11-01 WMI wedge: zombie powershell holds the pipe open past a subprocess timeout; Playwright's node driver flashes a console under pythonw", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls: avoid WMI (psutil, GetTickCount64, sc query), otherwise DEVNULL stdio + result file + tree kill; browser only inside a hidden console-python child with --disable-gpu",
+     "check_text": ("skill_runtime", "WMI 卡死時")},
+    {"id": "KB-felix-outcome-prompting-covered", "element": "threads @7ktool.ugt DfNljrFE8Ns, secondhand summary of Felix Rieseberg: state the result not the steps, give raw material with an external check, aim at the purpose not the document", "verdict": "INFO",
+     "requires": None, "detail": "already covered: f1s-intake binds do/acceptance to the user's words, ztm-verify-before-done rejects a generator grading itself, F1S rule 6 refuses documents as the deliverable; no text added",
+     "check_text": ("skill_verify", "生成者不得是自己產出的唯一裁判")},
+    {"id": "KB-claude-mem-not-adopted", "element": "reel DfOPQvYEr8W: Claude-Mem, six lifecycle hooks, SQLite, hybrid search, three-tier recall, 'about ten times fewer tokens' per the project itself", "verdict": "INFO",
+     "requires": None, "detail": "not adopted: the three-tier pattern already exists (MEMORY.md index, memory file, transcript; AGC compact), six more hooks add per-turn cost the hub measures with audit-session-tax, and the token figure is the vendor's; adoption would need a SkillSpector scan and operator approval for global settings",
+     "check_text": ("skill_preflight", "context tax too")},
 ]
 
 
