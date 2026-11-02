@@ -23,5 +23,5 @@ python "$E" --search "blender" --limit 5                           # 查三個�
 ## 主動收到的文章
 
 操作者傳到 IG DM（scss1199 ← sssc1219）、kyloren_bot、kyloren_quant 的文章，`article-relay` rider 每 30 分鐘依主題轉成校正令
-（`_skill/engines/article_relay.py` 的 `TOPIC_SEATS`）：量化→ai_trader、青商→jci_taipei、3D／模組→ai_nuwa、遊戲開發→ai_hgame，
+（`_skill/engines/article_relay.py` 的 `TOPIC_SEATS`）：量化→ai_trader、青商→jci_taipei、3D／模組→ai_nuwa，
 其餘留 ai_darkhero。新增主題改 `TOPIC_SEATS` 並補測試，不用另寫抓取程式。
