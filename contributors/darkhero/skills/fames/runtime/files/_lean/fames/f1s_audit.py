@@ -88,6 +88,7 @@ TEXTS = {
     "asu_verify": HUB / "_skill" / "engines" / "asu-verify.py",
     "skill_deploy_cf": HUB / "_skill" / "fleet-skills" / "deploy-nextjs-cloudflare" / "SKILL.md",
     "skill_sync_engine": HUB / "_skill" / "engines" / "fleet-skill-sync.py",
+    "skill_subtitle": HUB / "_skill" / "fleet-skills" / "mtm-subtitle-two-phase" / "SKILL.md",
     "bus_engine": HUB / "_skill" / "engines" / "_bus.py",
     "ship_engine": HUB / "_skill" / "engines" / "ship-f1s.py",
     "jev_router": HUB / "_harness" / "runtime" / "jev_turn_router.py",
@@ -1058,6 +1059,13 @@ ELEMENTS = [
     {"id": "EVO-threads-login-card-cut", "element": "ai_trader 2026-11-02 (commit e861e5378): stored Threads reads keep the site menu and the signed-out login card; card 32da1096f4bbe1eb full.txt shows both", "verdict": "REFINE",
      "requires": None, "detail": "the menu cut at the author already shipped in social_session.threads_body (hub 2607671d, after that full.txt was written 17:59); the trailing login card was still kept, so threads_body now ends the text before it, and a page that is only the card stays whole for page_access_issue (test_login_card_after_the_post_is_dropped)",
      "check_text": ("social_session", "THREADS_LOGIN_PROMPT = \"Log in or sign up for Threads\"")},
+    # f1s-evolve 2026-11-02 (ai_theater reverse-learn: corrections 3e45039ff946 + effcb75a38a7).
+    {"id": "EVO-subtitle-operator-corrections", "element": "ai_theater operator 2026-10-31: pink-only subtitles at the top, address terms by register (not only 女王), golden SALO-008/016/024, compilation lines reused from source films", "verdict": "REFINE",
+     "requires": None, "detail": "mtm-subtitle-two-phase gains the corrections section pointing at ai_theater's engines (subtitle_pink_all, zh_enhance, subtitle_compilation_reuse; 59 tests green 11-02); top placement found in no ai_theater code, left open in the skill rather than claimed",
+     "check_text": ("skill_subtitle", "Reuse before translating")},
+    {"id": "EVO-reencode-bitrate-cap", "element": "ai_theater operator 2026-10-31: cleaned SALO-014 larger than the original, SALO-009 corners/top blurred, IPPA logo kept", "verdict": "REFINE",
+     "requires": None, "detail": "skill rule: cap bitrate at the source, inpaint text pixels only, studio logo is not an ad (video_cleanup.py already does it; test_video_cleanup green)",
+     "check_text": ("skill_subtitle", "Re-encode never inflates or blurs")},
 ]
 
 
