@@ -29,7 +29,3 @@ python "$E" --search "blender" --limit 5                           # 查三個�
 技巧分發與不重讀（2026-11-03）：`f1s_apply.py` 把每篇文章抽出的技巧先比對已判定的技巧（`settle`，門檻由 `train` 用留一法從過去判定學），
 剩下的由免費池依各 seat 的 charter 判歸屬（`route`，理由必須引用該 seat 自己的文字），湊滿 4 條或等滿 48 小時才派校正令。
 貼上看過的連結時 prompt hook 會注入 `ARTICLE SEEN`（`f1s_apply.py seen <url>`）：不用重讀，只貼文字不含連結不算。
-
-技巧分發與不重讀（2026-11-03）：`f1s_apply.py` 把每篇文章抽出的技巧先比對已判定的技巧（`settle`，門檻由 `train` 用留一法從過去判定學），
-剩下的由免費池依各 seat 的 charter 判歸屬（`route`，理由必須引用該 seat 自己的文字），湊滿 4 條或等滿 48 小時才派校正令。
-貼上看過的連結時 prompt hook 會注入 `ARTICLE SEEN`（`f1s_apply.py seen <url>`）：不用重讀，只貼文字不含連結不算。
