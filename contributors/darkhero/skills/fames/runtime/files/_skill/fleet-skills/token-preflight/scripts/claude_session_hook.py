@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -524,10 +525,64 @@ def live_update(doc, *, event: str="PostToolUse", watch_seat: str | None=None) -
     return _contract_dedup(surface_id,session_id,"\n".join(p for p in parts if p).strip(),agent_id=agent_id)
 
 
+MAP_STREAK=8
+MAP_TAIL_BYTES=96*1024
+_READ_ONLY_SHELL=re.compile(r"^\s*(cd\s+[^;&|]+(&&|;)\s*)*(cat|grep|rg|sed\s+-n|head|tail|ls|find|wc|git\s+(log|show|diff|status|grep))\b")
+
+
+def _read_only_call(block: dict) -> bool:
+    name=str(block.get("name") or "")
+    if name in {"Read","Grep","Glob"}:
+        return True
+    return name in {"Bash","PowerShell"} and bool(_READ_ONLY_SHELL.match(str((block.get("input") or {}).get("command") or "")))
+
+
+def _read_streak(transcript: str) -> int:
+    """Read-only calls in a row at the end of this conversation; the operator's prompt or any other tool ends the run."""
+    path=Path(transcript)
+    with path.open("rb") as fh:
+        fh.seek(max(0,path.stat().st_size-MAP_TAIL_BYTES))
+        lines=fh.read().decode("utf-8","replace").splitlines()[1:]
+    count=0
+    for line in reversed(lines):
+        try:
+            row=json.loads(line)
+        except ValueError:
+            continue
+        if row.get("isSidechain"):
+            continue
+        content=(row.get("message") or {}).get("content")
+        if row.get("type")=="user":
+            if isinstance(content,str) or any(isinstance(b,dict) and b.get("type")=="text" for b in content or []):
+                return count
+        elif row.get("type")=="assistant":
+            for block in reversed(content or []):
+                if isinstance(block,dict) and block.get("type")=="tool_use":
+                    if not _read_only_call(block):
+                        return count
+                    count+=1
+    return count
+
+
+def _map_nudge(doc) -> str:
+    """One line, once per run of reads, and never a block: reading many files is the work the free pool can take."""
+    try:
+        if _read_streak(str(doc.get("transcript_path") or ""))!=MAP_STREAK:
+            return ""
+    except (OSError,ValueError):
+        return ""
+    seat=_seat_for_cwd(str(doc.get("cwd") or os.getcwd()))
+    return (f"F1S MAP: {MAP_STREAK} reads in a row. If you are looking for a fact across files, this returns checked file:line quotes at 0 Claude tokens: "
+            f"python %AI_WORKSPACE%\\_skill\\engines\\f1s_map.py --seat {seat} --question \"...\" <paths>")
+
+
 def _midturn(doc) -> int:
     """PostToolUse fast path: print {} unless F1S or this seat's curator orders changed since this session last saw them."""
     context=live_update(doc)
-    if context:
+    nudge=_map_nudge(doc)
+    if nudge and not context:
+        print(json.dumps({"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":nudge}},ensure_ascii=True))
+    elif context:
         print(json.dumps({"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":MIDTURN_HEAD+"\n"+context}},ensure_ascii=True))
     else:
         print("{}")
