@@ -171,11 +171,14 @@ def audit_transcript(hook, path: Path, cfg: dict) -> dict:
     last_ts = str((turns[-1][0].get("timestamp") if turns else "") or "")[:19]
     # F1S wave 2 item 5 (measure, do not cut): how often a session loads a skill at all
     skills: collections.Counter = collections.Counter()
+    compact_thrash = 0  # Claude Code's own stop; a session that hit it waits for a person (ai_metadata 2026-11-02, 11-03)
     for row in rows:
         if row.get("type") == "assistant":
             for b in hook._blocks(row):
                 if isinstance(b, dict) and b.get("type") == "tool_use" and b.get("name") == "Skill":
                     skills[str((b.get("input") or {}).get("skill") or "?")] += 1
+                elif isinstance(b, dict) and b.get("type") == "text" and str(b.get("text") or "").startswith("Autocompact is thrashing"):
+                    compact_thrash += 1
     for prompt, body in turns:
         text = hook.closing_text(body)
         if text.strip():
@@ -204,7 +207,7 @@ def audit_transcript(hook, path: Path, cfg: dict) -> dict:
                                 earlier.append(ln.strip())
     return {"turns": judged, "blocked": blocked, "per_class": dict(per_class), "worst": worst,
             "first": first_ts, "last": last_ts, "decisions": len(earlier), "tool_calls": tool_calls, "flipflop": flipflop,
-            "skill_loads": dict(skills), "anger": anger_facts(hook, turns), **subagent_facts(rows)}
+            "skill_loads": dict(skills), "anger": anger_facts(hook, turns), "compact_thrash": compact_thrash, **subagent_facts(rows)}
 
 
 def load_state() -> dict:
@@ -259,6 +262,7 @@ def run(full: bool = False) -> dict:
         agg["per_class"].update(s.get("per_class") or {})
         agg["tool_calls"] = agg.get("tool_calls", 0) + int(s.get("tool_calls") or 0)
         agg["flipflop"] = agg.get("flipflop", 0) + int(s.get("flipflop") or 0)
+        agg["compact_thrash"] = agg.get("compact_thrash", 0) + int(s.get("compact_thrash") or 0)
         agg.setdefault("skill_loads", collections.Counter()).update(s.get("skill_loads") or {})
         agg["skill_measured_sessions"] = agg.get("skill_measured_sessions", 0) + int("skill_loads" in s)
         if "subagents" in s:  # measured sessions only; older state rows keep their value until the transcript changes
@@ -366,6 +370,7 @@ def record_line(seat: str) -> str:
     return (f"F1S RECORD — {seat}: {agg['blocked']}/{agg['turns']} turns would block ({top or 'none'}); "
             f"{agg.get('tool_calls_per_turn')} tool calls/turn, {agg.get('flipflop', 0)} 你說得對 openers; "
             f"anger came back {new[1]}/{new[0]} since f1s-intake §5 (before {old[1]}/{old[0]}); "
+            f"autocompact thrash stops {agg.get('compact_thrash', 0)} (fleet {sum(int(a.get('compact_thrash') or 0) for a in (doc.get('seats') or {}).values())}); "
             f"{'UNKNOWN' if agg.get('subagents_per_turn') is None else agg['subagents_per_turn']} subagents/turn "
             f"({int(agg.get('subagent_result_bytes') or 0) // 1024} KB back into context); "
             f"fleet {tot.get('blocked')}/{tot.get('turns')}; skill loads {sk.get('loads', 'UNKNOWN')} in {sk.get('sessions_measured', 0)} sessions "
