@@ -624,6 +624,23 @@ def _curator_orders(agent: str, session_id: str = "") -> str:
         return ""
 
 
+def _article_seen(prompt: str) -> str:
+    """operator 2026-11-03: a link pasted into any seat answers what already happened to it, so nothing is read twice.
+    "" without a link, for an unknown link or on any error (_skill/engines/f1s_apply.py). Never raises."""
+    path = HUB / "_skill" / "engines" / "f1s_apply.py"
+    try:
+        if "http" not in (prompt or ""):
+            return ""
+        spec = importlib.util.spec_from_file_location("fames_hook_f1s_apply", path)
+        if not path.is_file() or spec is None or spec.loader is None:
+            return ""
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return str(module.seen_context(prompt) or "")
+    except Exception:
+        return ""
+
+
 def _article_relay(agent: str, cwd: str, session_id: str = "") -> str:
     """operator 2026-10-26: on the operator's prompt to the curator, new LINE articles go to the seat they were sent
     for (kyloren_quant -> ai_trader as a curator order; the curator's own kyloren_bot articles inline). "" for every
@@ -748,7 +765,8 @@ def main():
         for update in (_t1_refresh(surface_id, session_id, at_start=False),
                        _charter_refresh(surface_id, session_id, cwd, at_start=False, transcript_path=transcript_path),
                        _proof_carry(session_id), "" if machine_event else _proof_recurrence(cwd),
-                       "" if machine_event else _article_relay(agent, cwd, session_id)):
+                       "" if machine_event else _article_relay(agent, cwd, session_id),
+                       "" if machine_event else _article_seen(prompt)):
             if update:
                 context=(context+"\n"+update).strip()
     else:

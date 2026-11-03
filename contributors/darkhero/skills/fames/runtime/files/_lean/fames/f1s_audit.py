@@ -89,6 +89,7 @@ TEXTS = {
     "skill_deploy_cf": HUB / "_skill" / "fleet-skills" / "deploy-nextjs-cloudflare" / "SKILL.md",
     "skill_sync_engine": HUB / "_skill" / "engines" / "fleet-skill-sync.py",
     "skill_subtitle": HUB / "_skill" / "fleet-skills" / "mtm-subtitle-two-phase" / "SKILL.md",
+    "skill_zh_tts": HUB / "_skill" / "fleet-skills" / "zh-tts-narrate" / "SKILL.md",
     "bus_engine": HUB / "_skill" / "engines" / "_bus.py",
     "ship_engine": HUB / "_skill" / "engines" / "ship-f1s.py",
     "jev_router": HUB / "_harness" / "runtime" / "jev_turn_router.py",
@@ -1070,9 +1071,22 @@ ELEMENTS = [
     {"id": "EVO-subtitle-operator-corrections", "element": "ai_theater operator 2026-10-31: pink-only subtitles at the top, address terms by register (not only 女王), golden SALO-008/016/024, compilation lines reused from source films", "verdict": "REFINE",
      "requires": None, "detail": "mtm-subtitle-two-phase gains the corrections section pointing at ai_theater's engines (subtitle_pink_all, zh_enhance, subtitle_compilation_reuse; 59 tests green 11-02); top placement found in no ai_theater code, left open in the skill rather than claimed",
      "check_text": ("skill_subtitle", "Reuse before translating")},
+    {"id": "EVO-theater-self-address-dup", "element": "ai_theater correction 87e46e957ae0 (ledger 38d3e50f39fd): pick zh self-address (姐姐, not only 女王) from the Japanese register", "verdict": "INFO",
+     "requires": None, "detail": "already integrated 11-02 by EVO-subtitle-operator-corrections; no new text, bound to the existing rule",
+     "check_text": ("skill_subtitle", "姐姐 for the 姉-disciplines-弟 register")},
+    {"id": "EVO-trader-numeric-claim-recompute", "element": "ai_trader correction 7154fea9988d (ledger 0db89ff4d861): 34 article claims sorted by check status; stronger math tools; free-pool formulas", "verdict": "REFINE",
+     "requires": None, "detail": "lean-math-prover gains the recompute-every-number section (Lean #eval exact Rat = CHECKED, sympy/scipy probed 11-03, pool formulas are drafts); site reference marking stays ai_trader's own work",
+     "check_text": ("skill_lean", "Checking the numbers in an article or advice")},
     {"id": "EVO-reencode-bitrate-cap", "element": "ai_theater operator 2026-10-31: cleaned SALO-014 larger than the original, SALO-009 corners/top blurred, IPPA logo kept", "verdict": "REFINE",
      "requires": None, "detail": "skill rule: cap bitrate at the source, inpaint text pixels only, studio logo is not an ad (video_cleanup.py already does it; test_video_cleanup green)",
      "check_text": ("skill_subtitle", "Re-encode never inflates or blurs")},
+    # f1s-evolve 2026-11-03 (ai_theater 3e45039ff946 / effcb75a38a7 and ai_trader 7154fea9988d re-sent; zh-tts fallback).
+    {"id": "EVO-theater-trader-resend-20261103", "element": "ai_theater corrections 3e45039ff946 + effcb75a38a7 and ai_trader correction 7154fea9988d re-sent 2026-11-03", "verdict": "INFO",
+     "requires": None, "detail": "already integrated 11-02/11-03 by EVO-subtitle-operator-corrections, EVO-reencode-bitrate-cap and EVO-trader-numeric-claim-recompute; no new text",
+     "check_text": ("skill_subtitle", "No intermediate files")},
+    {"id": "EVO-zh-tts-offline-fallback", "element": "ai_darkhero proposal: zh-tts-narrate depends only on network edge-tts; article 271ce877e97514d9 (VoiceStudio) suggests a local CPU fallback", "verdict": "REFINE",
+     "requires": None, "detail": "VoiceStudio is debpalash/VoiceStudio AGPL-3.0, Electron + irm|iex installer + model downloads: not adopted; the built-in SAPI zh-TW voice Microsoft Hanhan Desktop passed a CPU-only probe 2026-11-03 (5.48 s audio, RMS 2339, 45 ms, no install, no A770); skill gains the offline fallback line, cloning stays consent-only",
+     "check_text": ("skill_zh_tts", "Offline fallback (endpoint down or no network)")},
 ]
 
 

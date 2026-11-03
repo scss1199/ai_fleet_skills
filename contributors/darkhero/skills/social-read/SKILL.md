@@ -25,3 +25,11 @@ python "$E" --search "blender" --limit 5                           # 查三個�
 操作者傳到 IG DM（scss1199 ← sssc1219）、kyloren_bot、kyloren_quant 的文章，`article-relay` rider 每 30 分鐘依主題轉成校正令
 （`_skill/engines/article_relay.py` 的 `TOPIC_SEATS`）：量化→ai_trader、青商→jci_taipei、3D／模組→ai_nuwa，
 其餘留 ai_darkhero。新增主題改 `TOPIC_SEATS` 並補測試，不用另寫抓取程式。
+
+技巧分發與不重讀（2026-11-03）：`f1s_apply.py` 把每篇文章抽出的技巧先比對已判定的技巧（`settle`，門檻由 `train` 用留一法從過去判定學），
+剩下的由免費池依各 seat 的 charter 判歸屬（`route`，理由必須引用該 seat 自己的文字），湊滿 4 條或等滿 48 小時才派校正令。
+貼上看過的連結時 prompt hook 會注入 `ARTICLE SEEN`（`f1s_apply.py seen <url>`）：不用重讀，只貼文字不含連結不算。
+
+技巧分發與不重讀（2026-11-03）：`f1s_apply.py` 把每篇文章抽出的技巧先比對已判定的技巧（`settle`，門檻由 `train` 用留一法從過去判定學），
+剩下的由免費池依各 seat 的 charter 判歸屬（`route`，理由必須引用該 seat 自己的文字），湊滿 4 條或等滿 48 小時才派校正令。
+貼上看過的連結時 prompt hook 會注入 `ARTICLE SEEN`（`f1s_apply.py seen <url>`）：不用重讀，只貼文字不含連結不算。
