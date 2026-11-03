@@ -345,7 +345,7 @@ def _waiting_techniques(seat: str) -> str:
             rows = json.load(fh).get("techniques", {}).values()
     except (OSError, ValueError, AttributeError):
         return ""
-    waiting = sum(1 for r in rows if r.get("seat") == seat and r.get("status") == "new")
+    waiting = sum(1 for r in rows if r.get("seat") == seat and r.get("status") == "new" and not r.get("held"))
     if not waiting:
         return ""
     return (f"ARTICLE TECHNIQUES — {waiting} waiting for this seat: f1s_apply.py list --seat {seat}, apply and measure the worthwhile ones, "
