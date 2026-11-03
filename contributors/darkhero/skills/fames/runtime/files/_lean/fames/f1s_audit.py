@@ -792,7 +792,7 @@ ELEMENTS = [
      "check_text": ("sources_engine", "then backfills least-recently-listed first (round robin")},
     {"id": "EVO-sources-bookmark-channel-deferred", "element": "ai_metadata A+B: Edge folder P/ai_feeds/<ai|invest>/<source> as subscription + probe-unknowns audit", "verdict": "INFO",
      "requires": None, "detail": "rejected for now: no ai_feeds folder exists in the Edge Default Bookmarks (grep count 0 on 2026-10-28), so the reader would be code without input; B already exists as listing: unsupported reported by status; revisit when the operator creates the folder",
-     "check_text": ("sources_engine", "reported, never faked")},
+     "check_text": ("sources_engine", '"unsupported_listing": sorted(')},
     {"id": "EVO-sources-dedupe-render-feeds-rejected", "element": "ai_metadata C+E+F: logical-key dedupe/permanent block, static library page, arXiv/HF papers/SEC EDGAR feeds", "verdict": "INFO",
      "requires": None, "detail": "C already covered (item_hash of canonical URL + read set skip duplicates across feeds; errors back off 6h; no permanently dead source measured); E rejected: new page/artifact nobody asked for, cards + BRIEF already are the browse surface; F rejected this tick: arXiv lists hundreds/day with no relevance filter on curated feeds, SEC EDGAR needs a contact address in the User-Agent and investment data is ai_trader's lane; re-evaluate after the round-robin fix shows the existing feeds fresh",
      "check_text": ("sources_engine", "drop what is already read")},
