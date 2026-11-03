@@ -48,6 +48,27 @@ FLIPFLOP = re.compile(r"(?:你說得對|你說的對|你是對的|你講得對|Y
 PROOF_LOG = HUB / "_registry" / "proof" / "log.jsonl"
 NW = 0x08000000 if os.name == "nt" else 0
 AGENT_TOOLS = {"Agent", "Task"}
+# Operator 2026-11-03 (泛科學院 on scolding AI): "reply and result quality" is what removes the reason for the tone, so
+# the tone is never judged; this counts whether anger comes back. Baseline 11-03 from the transcripts: 38/117 after an
+# angry prompt vs 86/1629 after a calm one. Counts only, the prompt text is never stored. Prompts over ANGER_MAX_CHARS
+# are pasted material, not the operator's own reaction.
+ANGER = re.compile(r"廢物|智障|白癡|白痴|腦殘|靠北|媽的|他媽|幹你|屁話|屁用|起訴|法律途徑|垃圾模型|耍我|你到底|到底要|講幾次|說幾次|有沒有搞懂")
+ANGER_MAX_CHARS = 1500
+ANGER_RULE_SINCE = "2026-11-03T10:00"  # UTC, transcript timestamps; f1s-intake §5 took effect here
+
+
+def anger_facts(hook, turns: list) -> dict:
+    """Per era, [angry prompts, of those followed by another angry prompt, calm prompts, of those followed by anger]."""
+    out = {"before": [0, 0, 0, 0], "since": [0, 0, 0, 0]}
+    flags = []
+    for prompt, _ in turns:
+        text = hook._text_of((prompt.get("message") or {}).get("content"))
+        flags.append(len(text) <= ANGER_MAX_CHARS and bool(ANGER.search(text)))
+    for (prompt, _), angry, next_angry in zip(turns, flags, flags[1:]):
+        era = out["since" if str(prompt.get("timestamp") or "") >= ANGER_RULE_SINCE else "before"]
+        era[0 if angry else 2] += 1
+        era[1 if angry else 3] += int(next_angry)
+    return out
 
 
 def subagent_facts(rows: list) -> dict:
@@ -183,7 +204,7 @@ def audit_transcript(hook, path: Path, cfg: dict) -> dict:
                                 earlier.append(ln.strip())
     return {"turns": judged, "blocked": blocked, "per_class": dict(per_class), "worst": worst,
             "first": first_ts, "last": last_ts, "decisions": len(earlier), "tool_calls": tool_calls, "flipflop": flipflop,
-            "skill_loads": dict(skills), **subagent_facts(rows)}
+            "skill_loads": dict(skills), "anger": anger_facts(hook, turns), **subagent_facts(rows)}
 
 
 def load_state() -> dict:
@@ -245,6 +266,9 @@ def run(full: bool = False) -> dict:
             agg["subagent_result_bytes"] = agg.get("subagent_result_bytes", 0) + int(s.get("subagent_result_bytes") or 0)
             agg["subagent_child_tokens"] = agg.get("subagent_child_tokens", 0) + int(s.get("subagent_child_tokens") or 0)
             agg["subagent_measured_turns"] = agg.get("subagent_measured_turns", 0) + int(s.get("turns") or 0)
+        for era, counts in (s.get("anger") or {}).items():
+            total = agg.setdefault("anger", {}).setdefault(era, [0, 0, 0, 0])
+            agg["anger"][era] = [a + b for a, b in zip(total, counts)]
         if len(agg["worst"]) < WORST_KEEP:
             agg["worst"].extend(s.get("worst") or [])
     for agg in seats.values():
@@ -337,8 +361,11 @@ def record_line(seat: str) -> str:
     top = ", ".join(f"{k} {v}" for k, v in sorted((agg.get("per_class") or {}).items(), key=lambda kv: -kv[1])[:4])
     pr = doc.get("proof_remediation") or {}
     sk = doc.get("skill_loads") or {}
+    anger = agg.get("anger") or {}
+    old, new = anger.get("before") or [0, 0, 0, 0], anger.get("since") or [0, 0, 0, 0]
     return (f"F1S RECORD — {seat}: {agg['blocked']}/{agg['turns']} turns would block ({top or 'none'}); "
             f"{agg.get('tool_calls_per_turn')} tool calls/turn, {agg.get('flipflop', 0)} 你說得對 openers; "
+            f"anger came back {new[1]}/{new[0]} since f1s-intake §5 (before {old[1]}/{old[0]}); "
             f"{'UNKNOWN' if agg.get('subagents_per_turn') is None else agg['subagents_per_turn']} subagents/turn "
             f"({int(agg.get('subagent_result_bytes') or 0) // 1024} KB back into context); "
             f"fleet {tot.get('blocked')}/{tot.get('turns')}; skill loads {sk.get('loads', 'UNKNOWN')} in {sk.get('sessions_measured', 0)} sessions "

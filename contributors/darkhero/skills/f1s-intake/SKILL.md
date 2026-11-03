@@ -4,7 +4,7 @@ description: >-
   F1S rule ① (不准曲解) as a procedure: bind the user's own words to do / not-do / limits / acceptance
   before any work, pick the reading closest to the words, never re-ask a decided matter, and report in
   Traditional Chinese conclusion-first in two sentences. Use at the start of every non-trivial request,
-  when a request has two readings, or before asking the user anything.
+  when a request has two readings, before asking the user anything, or when the user is angry or repeats themself.
 metadata:
   fleet:
     lane: zero-token-mechanism
@@ -63,6 +63,21 @@ rider 授權、全域設定、金鑰、資金、硬體、資料遺失。其餘�
 
 繁體中文、結論先行、兩句講完；細節放回覆或既有收據，不新開 .md/.json（Lean：
 `F1SCore.rule1_old_vs_rule6_unsat`）。使用者單說「FAMES」＝列出各階段狀態。
+
+## 5 使用者發火＝失敗紀錄（operator 2026-11-03，ai_hgame 對話 435ab01c）
+
+語氣不是要修的對象，回覆與結果的品質才是。不評論語氣、不要求換說法，也不用道歉開場：哪裡錯、為什麼錯由模型自己補。
+
+1. 重讀本對話使用者前面的原話，找出給過卻沒用的輸入，再對照上一輪的輸出。使用者點名的輸入就是驗收項，交付前逐項對
+   （ai_hgame：一開始就說模組來自 ai_nuwa，第一版沒用；身高用錯公式，修了一處還有兩處沒改）。
+2. 先重現或重跑驗證，修好再回；一段解釋不算回應，只有查不到才寫 UNKNOWN。
+3. 能不能做先查再動工，做不到就在第一則講清楚。ai_hgame 跑了 474 次工具呼叫才說出做不到，這才是要修的浪費；
+   發火不會改變界線，改標籤也不會，拒絕本身不算品質缺陷，不得繞路。
+
+量測（2026-11-03，283 個對話的使用者訊息，關鍵字判定、事後比較，不是因果）：發火後下一則又發火 38/117，平靜後 86/1629。
+道歉開場 7/20、沒道歉 31/97（p 0.80，沒差）。回覆少於 10 次工具 18/40、50 次以上 5/33（p 0.011），但長回合時使用者也隔得比較久；
+平靜訊息後同樣比較只有 6.0% 對 4.5%。上一輪宣稱完成、工具次數多寡與發火無關；對話越長也沒有越常發火，所以這裡不規定「開新對話」。
+之後看 F1S RECORD 的 `anger came back`：§5 生效後的數字要低於基準才算有效。
 
 ## 配對
 
