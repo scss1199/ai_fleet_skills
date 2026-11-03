@@ -341,8 +341,9 @@ def _resolve_seat(cwd: str) -> str:
         if projects_path.is_file() and spec is not None and spec.loader is not None:
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            name = module.whoami(cwd)[0]
-            if name and name != "unknown":
+            name, registered = module.whoami(cwd)[:2]
+            # whoami answers an unregistered cwd with its basename: a chat that cd'd into _skill/engines was seat `engines` (2026-11-04)
+            if name and name != "unknown" and (registered or name != base):
                 return str(name)
     except Exception:
         pass
@@ -576,14 +577,28 @@ def _map_nudge(doc) -> str:
             f"python %AI_WORKSPACE%\\_skill\\engines\\f1s_map.py --seat {seat} --question \"...\" <paths>")
 
 
+def _audit(doc,nudge: str) -> str:
+    """Every step is reviewed by rules at no model cost (f1s_audit.py); loaded per call, so a running chat gets the next version at its next tool."""
+    try:
+        import importlib.util
+        spec=importlib.util.spec_from_file_location("f1s_audit_step",HUB/"_skill"/"engines"/"f1s_audit.py")
+        mod=importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.step(doc,_seat_for_cwd(str(doc.get("cwd") or "")),("free.read_streak",) if nudge else ())
+    except Exception:
+        return ""
+
+
 def _midturn(doc) -> int:
-    """PostToolUse fast path: print {} unless F1S or this seat's curator orders changed since this session last saw them."""
+    """PostToolUse fast path: print {} unless F1S or this seat's curator orders changed since this session last saw them, or the step broke an audit rule."""
     context=live_update(doc)
     nudge=_map_nudge(doc)
-    if nudge and not context:
-        print(json.dumps({"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":nudge}},ensure_ascii=True))
+    audit=_audit(doc,nudge)
+    notes="\n".join(x for x in (nudge,audit) if x)
+    if notes and not context:
+        print(json.dumps({"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":notes}},ensure_ascii=True))
     elif context:
-        print(json.dumps({"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":MIDTURN_HEAD+"\n"+context}},ensure_ascii=True))
+        print(json.dumps({"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":MIDTURN_HEAD+"\n"+context+("\n"+audit if audit else "")}},ensure_ascii=True))
     else:
         print("{}")
     return 0
