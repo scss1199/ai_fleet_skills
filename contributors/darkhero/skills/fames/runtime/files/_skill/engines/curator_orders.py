@@ -47,6 +47,8 @@ SESSION_SCOPE = os.path.join(REGISTRY, "f1s-session-scope.json")  # {"sessions":
 TECHNIQUES = os.path.join(REGISTRY, "f1s-apply.json")
 UNCLAIMED_AFTER_S = 3600
 CURATOR_FALLBACK = "ai_darkhero"
+REVIEW_SAMPLE = 8       # one routine order in this many still gets the curator's review
+MECHANICAL = "mechanical"
 ACTIVE = ("open", "done", "cannot")  # freeze / forbid hold until the curator closes the order
 PROTECTED = ("logioptionsplus", "optionsplusupdater")  # T1 protect-logi-options-plus: never a forbid target
 MIN_FORBID_CHARS = 8  # "python" would stop half the box
@@ -154,7 +156,7 @@ def _hub_rel(path: str) -> str:
     return rel
 
 
-def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None = None) -> dict:
+def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None = None, routine: bool = False) -> dict:
     cwd = cwd or os.getcwd()
     if not (do or "").strip():
         raise ValueError("an order needs its full prompt text (--do or --prompt-file)")
@@ -173,6 +175,8 @@ def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None 
     order = {"n": max((o.get("n", 0) for o in doc["orders"]), default=0) + 1, "issued_at": _now(),
              "issued_from": os.path.abspath(cwd), "title": title, "do": do,
              "freeze": [_hub_rel(p) for p in freeze], "forbid": list(forbid), "status": "open"}
+    if routine and not freeze and not forbid:
+        order["routine"] = True
     doc["orders"].append(order)
     _save(seat, doc)
     return order
@@ -206,6 +210,25 @@ def owned_by_other(order: dict, session_id: str) -> bool:
     return bool(owner) and bool(session_id) and owner != session_id
 
 
+def _accepted_mechanically(order: dict) -> bool:
+    """A machine-issued order answered with evidence written after it was issued closes without waking the curator: 68 such
+    reviews cost 0.2M each and reopened 4, two of them for stale evidence, which this checks (2026-11-03). Every REVIEW_SAMPLE-th
+    order and any reopened one still go to review, so the other kinds of defect keep being seen."""
+    if not order.get("routine") or order.get("reopened_at") or order.get("n", 0) % REVIEW_SAMPLE == 0:
+        return False
+    try:
+        issued = time.mktime(time.strptime(order.get("issued_at", ""), "%Y-%m-%dT%H:%M:%S"))
+    except ValueError:
+        return False
+    for path in order["answer"]["evidence"]:
+        try:
+            if os.path.getmtime(path) >= issued:
+                return True
+        except OSError:
+            continue
+    return False
+
+
 def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = None,
            session: str | None = None) -> dict:
     cwd = cwd or os.getcwd()
@@ -226,6 +249,8 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
         # The answering conversation owns the order from now on: when the curator reopens it, only that
         # conversation is pushed to finish it (jci_taipei 2026-10-28: #5 reopened pushed every jci_taipei session).
         order["owner"] = {"session": sid, "from": os.path.abspath(cwd), "at": _now(), "by": "answer"}
+    if _accepted_mechanically(order):
+        order.update(status="closed", closed_at=_now(), closed_from=MECHANICAL)
     _save(seat, doc)
     return order
 

@@ -45,6 +45,10 @@ Two habits, mechanised by `_skill/engines/session-consolidate.py`:
    "<milestone>"`, then `archive_session` the ones classified `archive:*` / `merge:absorb-recap`. `keep:pending-operator`
    sessions stay open; `noise:automated` (1-turn probes) are ignored. The engine never archives anything itself.
 
+## Every wake is a full cache read (F1S 2026-11-03, f1s_waste.py)
+
+A background command's notification, an order and a Stop hook each re-read the whole conversation (0.15 to 0.2M weighted on a long chat). Run a command in the background only when it takes over about 2 minutes, wait for several with one waiter, and never wait on a rider's result: read it when you next need it. Subagents default to Sonnet; pass opus only for judgment. `python f1s_waste.py status --seat <seat>` shows what your cwd spends by cause.
+
 ## Resident context audit (kyloren_bot 7b4adc46, 003a6bd3)
 
 When auditing token usage, measure what is loaded on every turn before trimming anything: the app's usage tool (context categories: system tools, MCP tools, memory files, skills) or `/context`, and `/doctor` / `/skill-doctor` when the user runs them. Join the skill list with `_registry/skill-audit/*.jsonl` (actual Skill invocations) and propose dropping always-loaded items that are never invoked. Turning off the 1M window (`CLAUDE_CODE_DISABLE_1M_CONTEXT`) or editing `~/.claude/settings.json` is a global-settings change: operator authorization first.
