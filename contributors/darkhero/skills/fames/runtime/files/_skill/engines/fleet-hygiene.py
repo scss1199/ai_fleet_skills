@@ -46,6 +46,7 @@ NW = 0x08000000 if os.name == "nt" else 0
 THROTTLE_S = 20 * 3600
 STALE_S = 7 * 86400
 ACTIVE_D, IDLE_D = 7, 30
+WORKTREE_MAX = 3            # extra worktrees per repo before it is a finding (each is a full working-tree copy)
 SEAT_RE = re.compile(r"^(ai_[a-z0-9_]+|jci_[a-z0-9_]+|sdnext_[a-z0-9_]+|fracdigi)$")
 CHARTER = ("CLAUDE.md", "AGENTS.md", os.path.join(".cursor", "hooks.json"))
 PRUNE = {".git", "node_modules", ".venv", "venv", "env", "_secrets", ".claude"}
@@ -239,6 +240,19 @@ def check_seat(seat: Path, now: float) -> dict:
         row["unpushed"] = int(ahead.stdout.strip() or 0) if ahead.returncode == 0 else "UNKNOWN"
         last = _git(seat, "log", "-1", "--format=%ci")
         row["last_commit"] = last.stdout.strip()[:10] if last.returncode == 0 and last.stdout.strip() else None
+        # agent worktrees (Claude .claude/worktrees, Codex ~/.codex/worktrees) are full copies that nobody removes;
+        # the 11-04 article found 37 of them holding 585 GB. Count them; `prunable` = directory already gone.
+        wt = _git(seat, "worktree", "list", "--porcelain")
+        if wt.returncode == 0:
+            blocks = [b for b in wt.stdout.split("\n\n") if b.strip()]
+            row["worktrees"] = max(len(blocks) - 1, 0)
+            row["worktrees_prunable"] = sum(1 for b in blocks if "\nprunable" in b)
+            known = {os.path.normcase(os.path.normpath(b.split("\n", 1)[0][len("worktree "):])) for b in blocks}
+            wt_dir = seat / ".claude" / "worktrees"
+            row["worktrees_orphan"] = sum(1 for d in (wt_dir.iterdir() if wt_dir.is_dir() else ())
+                                          if d.is_dir() and os.path.normcase(os.path.normpath(str(d))) not in known)
+        else:
+            row["worktrees"] = "UNKNOWN"
     newest = newest_file(seat)
     row["newest_file"] = time.strftime("%Y-%m-%d", time.localtime(newest)) if newest else None
     days = (now - newest) / 86400 if newest else 9999
@@ -249,6 +263,12 @@ def check_seat(seat: Path, now: float) -> dict:
         row["findings"].append(f"unpushed_commits:{row['unpushed']}")
     if isinstance(row.get("dirty"), int) and row["dirty"] > 50:
         row["findings"].append(f"dirty_files:{row['dirty']}")
+    if row.get("worktrees_prunable"):
+        row["findings"].append(f"prunable_worktrees:{row['worktrees_prunable']}")
+    if row.get("worktrees_orphan"):
+        row["findings"].append(f"orphan_worktree_dirs:{row['worktrees_orphan']}")
+    if isinstance(row.get("worktrees"), int) and row["worktrees"] >= WORKTREE_MAX:
+        row["findings"].append(f"worktrees:{row['worktrees']}")
     return row
 
 
