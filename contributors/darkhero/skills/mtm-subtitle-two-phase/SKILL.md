@@ -53,6 +53,7 @@ python %AI_WORKSPACE%\_skill\engines\register-rider.py add HubClock metadata-sub
 - **Reuse before translating** — compilations (BEST / 総集編 / re-cut films) get their lines from the source films by audio cross-correlation (`ai_theater/scripts/subtitle_compilation_reuse.py map|merge|scan`); only uncovered spans are translated.
 - **Re-encode never inflates or blurs** — cap video bitrate at the source's (CRF alone grew SALO-014 4.0 -> 4.65 Mbps), inpaint only text pixels in corner boxes (delogo smears), edge marquees become black strips; the studio's own logo (IPPA …) is not an ad and stays (`ai_theater/src/ai_theater/video_cleanup.py`).
 - **No intermediate files** — only the final video + its subtitle exist in the library folder; no MIGRATED-bak, no work copies beside it.
+- **Clean on P:, subtitle on Q:** (operator 2026-11-03 「在 P:\ 先搞定在移到 Q:\ 翻譯字幕」) — a download is renamed first (trailing 「的副本」 dropped), its ads and corner watermarks cut in place on P: with work files on the same volume (`P:\ai_download\_cleanup_work`, so the swap is a rename), and only the clean file moves to Q: for the subtitle phases; the two disks work in parallel and the work folder is removed whatever the result (`ai_theater/scripts/video_cleanup_lane.py`).
 
 ## Docs
 

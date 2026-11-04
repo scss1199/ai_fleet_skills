@@ -1100,6 +1100,15 @@ ELEMENTS = [
     {"id": "EVO-wait-within-cache-ttl", "element": "ai_metadata proposal 2026-11-05: background waits past ~55 min return to a cold prompt cache (7 days: >65 min cold 18/warm 0; 11 late notifications rebuilt 795k, all login/Chrome-close/multi-hour pulls)", "verdict": "REFINE",
      "requires": None, "detail": "token-preflight 'Every wake is a full cache read' said when to background but not how long to wait; adds: slice jobs expected over 55 min into batches that report inside the window or hand them to the tick and end the turn, never a waiter on an event with no end time; stated as a window limit on run-until-no-next-step (T1 unchanged, the tick-owned step is not handed to the operator); evidence C:/Users/sc/.claude/projects/C--ai-workspace-ai-metadata/memory/cache-ttl-wait-rule.md",
      "check_text": ("skill_preflight", "背景等待不超過快取壽命")},
+    {"id": "OP-perishable-source-cadence", "element": "ai_metadata 37976db28eca (operator 2026-11-03): __queen 系列在 x.com 極易被禁，要更抓緊頻率抓 x.com 並頻繁更新同步的官網內容", "verdict": "REFINE",
+     "requires": None, "detail": "already built in ai_metadata configs/acquisition_refresh.json section_hours __queen (twitter 3 h, person_page 3 h); library-bookmark-coverage Scheduling now states the general rule: cadence follows source mortality, mirror source at the same cadence, no new rider",
+     "check_text": ("skill_library", "Cadence follows how fast a source dies")},
+    {"id": "OP-clean-on-p-subtitle-on-q", "element": "ai_theater 1d153ea53c3d (operator 2026-11-03): P: 先切廣告與浮水印再移到 Q: 翻譯字幕，善用兩顆磁碟 I/O，不要垃圾中間檔", "verdict": "REFINE",
+     "requires": None, "detail": "already built in ai_theater video_cleanup_lane.py (rename 的副本 first, P: same-volume scratch, swap by rename, work folder removed); mtm-subtitle-two-phase operator-corrections list now carries the stage split",
+     "check_text": ("skill_subtitle", "Clean on P:, subtitle on Q:")},
+    {"id": "OP-decompose-free-models-dup", "element": "ai_darkhero 144bd28b070c (operator): f1s 把問題拆成免費小模型能立刻解的小問題、合併提交、f1s 驗收；RC 之後再討論", "verdict": "INFO",
+     "requires": None, "detail": "duplicate of OP-parallel-free-models: hot_directive already routes multi-unit work to f1s_parallel.py plan→run→merge with verifier-bearing units on the free pool; RC part is a deferred discussion, nothing to integrate",
+     "check_text": ("hot_directive", "f1s_parallel.py plan→run→merge")},
 ]
 
 
