@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-11-04T08:41:22Z",
-  "manifest_sha": "7202bdab654cd925",
+  "generated_at": "2026-11-04T11:08:06Z",
+  "manifest_sha": "79dccbc41a9e21dd",
   "required": [
     "fames",
     "independent-review",
@@ -523,12 +523,12 @@
     },
     {
       "name": "rea-reverse-engineering",
-      "sha": "d48f027fe4a24d66",
+      "sha": "aea9a5c6be62e3bf",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "551a076c8d89e36920bc33392d3397c41f6b1969ef0a773063147ffde9ebe252",
+      "package_sha": "97bf5979beb517f15cfd8d9e123e8b663b25e71a4bf18185c0763640d38431c7",
       "files": {
-        "SKILL.md": "d48f027fe4a24d6660b36596cf0873962e1f5a5e5dafd2ac1914a337dd86ced5"
+        "SKILL.md": "aea9a5c6be62e3bf1c30161310a7027ea9fffb4c7f6ec87d88be266b93a4d7a7"
       }
     },
     {
