@@ -168,7 +168,7 @@ ELEMENTS = [
      "check_text": ("hot_directive", "OmniRoute")},
     {"id": "OP-parallel-free-models", "element": "operator 2026-10-27: 時間最貴，能平行拆分就盡可能拆；夠簡單的子任務叫不同的免費模型去執行", "verdict": "REFINE",
      "requires": None, "detail": "hot_directive parallel clause: independent verifiable subtasks open subagents in the same turn, simple mechanical subtasks fan out to several free-pool models; results merge only after read-back (same 1399-char budget)",
-     "check_text": ("hot_directive", "有驗證器的單元交免費池並行")},
+     "check_text": ("hot_directive", "有驗證器交免費池")},
     {"id": "KB-claw-md", "element": "kyloren_bot 04171cf7 (IG 2026-10-14): Claw.md — think before writing, ask when unsure, simplest first, precise edits, define done + verify", "verdict": "INFO",
      "requires": None, "detail": "already ①③④⑤ (嚴禁猜, 先重用, verify before done); since 2026-10-15 the precise-edit rule is skill text in mtm-mto-first (精準修改); still no mechanical check",
      "check_text": ("skill_method", "精準修改")},
@@ -1091,6 +1091,9 @@ ELEMENTS = [
     {"id": "EVO-subtitle-top-placement-20261104", "element": "ai_theater correction 3e45039ff946 re-sent 2026-11-04: subtitles at the top of the window (open item of EVO-subtitle-operator-corrections)", "verdict": "REFINE",
      "requires": None, "detail": "grep 11-04: subtitle_polish.write_ass and subtitle_speakers use Alignment=8, delivered pink .srt (subtitle_pink_all.py) has no an8 tag, femdom_gender_subtitle.py writes Alignment=2 gender styles; skill names all three and keeps top open; effcb75a38a7 and 7154fea9988d already integrated (EVO-reencode-bitrate-cap, EVO-trader-numeric-claim-recompute), no new text",
      "check_text": ("skill_subtitle", "Top placement, checked 11-04")},
+    {"id": "EVO-scaffold-sunset-model-change", "element": "ai_darkhero proposal 2026-11-04: Threads @justin_hsieh_ (re-test one task set per model generation; delete the reminder once the model does it unprompted); no sunset step in fames-protocol/proof/run-until-done/f1s_control", "verdict": "REFINE",
+     "requires": None, "detail": "mtm-mto-first step 2 gains the scaffold sunset procedure on top of the existing sweeps (proof sweep, f1s_audit sweep, audit-session-tax --replay): exposure floor 20, ~0 with the reminder on is a candidate only, time-boxed off-trial by the rule's own switch with re-enable on rise; T1 red lines and PROOF excluded, PROOF class retirement stays the operator's; no new engine",
+     "check_text": ("skill_method", "鷹架退場（模型換代時")},
 ]
 
 

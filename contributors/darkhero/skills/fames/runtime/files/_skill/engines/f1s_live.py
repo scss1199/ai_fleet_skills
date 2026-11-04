@@ -64,6 +64,8 @@ THRASH_STATE = HUB / "_registry" / "fames-hot" / "thrash-watch.json"
 THRASH_TAIL_BYTES = 65536
 THRASH_WINDOW_S = 24 * 3600
 THRASH_ALERT_EVERY_S = 6 * 3600
+ARTICLE_LOOP = HUB / "_registry" / "article-loop.json"
+ARTICLE_LOOP_PIN_S = 24 * 3600     # the named conversation has this long; then any idle curator chat takes the batch
 HW_RING = Path(r"D:\__hwlog")
 HW_STATE = HUB / "_registry" / "fames-hot" / "hw-watch.json"
 HW_STALE_S = 300.0
@@ -376,6 +378,23 @@ def thrash_due(seat: str, curator: str, now: float | None = None) -> str:
             "its remaining steps. Read back a later compaction's preTokens near 270K and tell the operator.")
 
 
+def article_loop_due(seat: str, curator: str, session_id: str, now: float | None = None) -> str:
+    """For the curator seat: the batch f1s_apply.loop_tick prepared, handed to one conversation once."""
+    if not seat or seat != curator:
+        return ""
+    state = _read(ARTICLE_LOOP)
+    due = state.get("due")
+    if not isinstance(due, dict) or not due.get("text") or due.get("delivered_at"):
+        return ""
+    now = now if now is not None else _now()
+    pin = str(state.get("session") or "")
+    if pin and pin != session_id and now - float(due.get("at") or now) < ARTICLE_LOOP_PIN_S:
+        return ""
+    due.update(delivered_at=now, session=session_id)
+    _write(ARTICLE_LOOP, state)
+    return due["text"]
+
+
 def hardware_due(seat: str, curator: str, now: float | None = None) -> str:
     """For the curator seat only: the alert text when the newest sensor-log segment is older than HW_STALE_S
     (at most once per HW_ALERT_EVERY_S across curator conversations); "" otherwise."""
@@ -519,6 +538,9 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
         alert = thrash_due(seat, curator)
         if alert:
             return finish(2, "thrash", alert)
+        alert = article_loop_due(seat, curator, session_id)
+        if alert:
+            return finish(2, "article_loop", alert)
         if hook._midturn_pending(surface_id, session_id, seat=sig_seat) and not shipping():
             settled, last, ready = _now(), hook._midturn_sig(sig_seat), True
             while True:
