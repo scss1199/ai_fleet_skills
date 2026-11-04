@@ -49,6 +49,8 @@ Two habits, mechanised by `_skill/engines/session-consolidate.py`:
 
 A background command's notification, an order and a Stop hook each re-read the whole conversation (0.15 to 0.2M weighted on a long chat). Run a command in the background only when it takes over about 2 minutes, wait for several with one waiter, and never wait on a rider's result: read it when you next need it. Subagents default to Sonnet; pass opus only for judgment. `python f1s_waste.py status --seat <seat>` shows what your cwd spends by cause.
 
+背景等待不超過快取壽命（ai_metadata 2026-11-05，7 天量測：距上則回覆 >65 分鐘 cold 18／warm 0，5–55 分鐘幾乎全 warm；背景通知逾 60 分鐘回來 11 次重建 795k）：預期超過 55 分鐘的工作切成每批 55 分鐘內回報，或啟動後交給 tick／rider 接手並結束本回合；沒有結束時間的事件（等登入、等 Chrome 關）不開 waiter，由 tick 接。這是 run-until-no-next-step 的窗口限制，不是把下一步交回使用者：交給 tick 的那一步不寫成「下一步是 X」。證據：C:/Users/sc/.claude/projects/C--ai-workspace-ai-metadata/memory/cache-ttl-wait-rule.md
+
 ## Resident context audit (kyloren_bot 7b4adc46, 003a6bd3)
 
 When auditing token usage, measure what is loaded on every turn before trimming anything: the app's usage tool (context categories: system tools, MCP tools, memory files, skills) or `/context`, and `/doctor` / `/skill-doctor` when the user runs them. Join the skill list with `_registry/skill-audit/*.jsonl` (actual Skill invocations) and propose dropping always-loaded items that are never invoked. Turning off the 1M window (`CLAUDE_CODE_DISABLE_1M_CONTEXT`) or editing `~/.claude/settings.json` is a global-settings change: operator authorization first.

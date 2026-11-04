@@ -1097,6 +1097,9 @@ ELEMENTS = [
     {"id": "EVO-ui-new-beside-existing", "element": "ai_darkhero proposal 2026-11-04: kubai087/kubai-icons self-check renders a few existing icons beside the new ones (sheet at 3x) and compares sizes, outlines, layers and colours until the checklist passes", "verdict": "REFINE",
      "requires": None, "detail": "web-ui-taste step 3 had only reference-image and phone+desktop checks, nothing comparing a new component against the existing ones in one image; step 3 now starts from the closest existing component and verifies new + existing side by side at 2-3x (size, outline/stroke, layers, existing accent colours) until all pass, with the side-by-side screenshot attached; evidence ai_darkhero/_registry/kyloren-knowledge-social/consolidate/cards/589a1ba3d1e7f2ce.json (quote at offset 3341, re-read in full.txt)",
      "check_text": ("skill_ui", "新素材與既有素材並排驗證")},
+    {"id": "EVO-wait-within-cache-ttl", "element": "ai_metadata proposal 2026-11-05: background waits past ~55 min return to a cold prompt cache (7 days: >65 min cold 18/warm 0; 11 late notifications rebuilt 795k, all login/Chrome-close/multi-hour pulls)", "verdict": "REFINE",
+     "requires": None, "detail": "token-preflight 'Every wake is a full cache read' said when to background but not how long to wait; adds: slice jobs expected over 55 min into batches that report inside the window or hand them to the tick and end the turn, never a waiter on an event with no end time; stated as a window limit on run-until-no-next-step (T1 unchanged, the tick-owned step is not handed to the operator); evidence C:/Users/sc/.claude/projects/C--ai-workspace-ai-metadata/memory/cache-ttl-wait-rule.md",
+     "check_text": ("skill_preflight", "背景等待不超過快取壽命")},
 ]
 
 
