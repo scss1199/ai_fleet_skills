@@ -35,6 +35,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -390,8 +391,8 @@ def relate(pool, article: str, tasks: list[dict]) -> list[dict]:
     listing = "\n".join(json.dumps({"session": t["id"][:8], "seat": t["seat"], "state": t["state"],
                                     "title": t["title"]}, ensure_ascii=False) for t in tasks)
     try:
-        raw = pool.chat_for("extract", [{"role": "user", "content": RELATE_PROMPT % (article[:2500], listing)}],
-                            jsonmode=True, max_tokens=600)
+        msgs = [{"role": "user", "content": RELATE_PROMPT % (article[:2500], listing)}]
+        raw = _within(lambda: pool.chat_for("extract", msgs, jsonmode=True, max_tokens=600), 45)
         m = re.search(r"\{[\s\S]*\}", str(raw or ""))
         picks = json.loads(m.group(0)).get("related") or [] if m else []
     except Exception:  # noqa: BLE001 — a pool failure relates nothing; it never stops the batch
@@ -418,6 +419,25 @@ def task_list(state: dict, opened: set[str], n: int = 60) -> list[dict]:
     return (opened_rows + archived)[:n]
 
 
+def _within(fn, seconds: float):
+    """Run fn in a daemon thread; a free-pool call that blocks past the budget is abandoned, not waited for (rc 124 on 11-04)."""
+    box: dict = {}
+
+    def run():
+        try:
+            box["v"] = fn()
+        except BaseException as exc:  # noqa: BLE001 - handed back to the caller's except
+            box["e"] = exc
+    th = threading.Thread(target=run, daemon=True)
+    th.start()
+    th.join(seconds)
+    if th.is_alive():
+        raise TimeoutError(f"article fetch exceeded {int(seconds)}s")
+    if "e" in box:
+        raise box["e"]
+    return box.get("v")
+
+
 def read_articles(state: dict, now: float, opened: set[str], limit: int = ARTICLES_PER_TICK,
                   budget_s: float = ARTICLE_BUDGET_S) -> dict:
     for u in state["urls"].values():                   # SLA: every pending URL past 24h is late, read or not
@@ -441,8 +461,9 @@ def read_articles(state: dict, now: float, opened: set[str], limit: int = ARTICL
         if (done or failed) and time.time() - t0 >= budget_s:
             budget_hit = True                     # the rest stays pending for the next tick (SLA still tracked)
             break
-        try:
-            res = distill.distill_one(u["url"])
+        try:        # one youtube/sider delegate may run 600 s = the whole rider (rc 124 on 11-02..11-04): cap it to the budget left
+            os.environ["DISTILL_DELEGATE_TIMEOUT_S"] = str(max(30, int(min(240, budget_s - (time.time() - t0)))))
+            res = _within(lambda: distill.distill_one(u["url"]), max(15.0, min(90.0, budget_s - (time.time() - t0))))
             res = res if isinstance(res, dict) else {}
         except Exception as exc:  # noqa: BLE001 — one bad URL never stops the batch
             res = {"error": f"{type(exc).__name__}: {exc}"[:200]}
@@ -613,8 +634,10 @@ def daily(state: dict, now: float, opened: set[str]) -> dict:
               "line_cards": [], "live": str(LIVE), "project_matrix": write_matrix(rows, gap, day)}
     pool = _pool()
     tasks = task_list(state, opened)
-    for card in line_cards(now - 86400):
-        card["related"] = relate(pool, card["title"] + "\n" + card["summary"], tasks)
+    t_rel = time.time()
+    for card in line_cards(now - 86400):     # relating is a bonus: past 120 s cards go out unrelated (rider limit 600 s)
+        card["related"] = (relate(pool, card["title"] + "\n" + card["summary"], tasks)
+                           if time.time() - t_rel < 120 else [])
         digest["line_cards"].append(card)
     _write(OUT / f"digest-{day}.json", digest)
     state["last_daily"] = day

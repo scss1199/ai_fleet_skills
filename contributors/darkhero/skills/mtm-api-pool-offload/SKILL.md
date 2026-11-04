@@ -22,6 +22,8 @@ parent_skill: aex-agent-evolution
 
 # 免費池背景查資料（POOL）
 
+**四層優先序（operator 2026-11-04，`pool_tiers.py`，所有 `_llm.Pool` 呼叫都經過）：** ①自己 cwd 的任務 ②跨 cwd 重要程度（`_registry/pool-tiers.json` 的 `seat_rank`）③資料蒐集 ④剩餘流量測試。自己的任務不用改任何東西，也不會被拒絕。大量蒐集的腳本要宣告第 3 層：`pool.tier = 3` 或 `F1S_POOL_TIER=3`，並把 `__ERR__ tier-hold` 當「晚點再做」，不算失敗。`python pool_tiers.py status` 看用量與實測上限。
+
 operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋、語音辨識、光學辨識…靠 f1s 技能化然後全自動綁定」。
 免費模型較笨、較慢，所以只交給它「量大、固定、不需頂級推理」的工作；判斷與決策留給本對話的模型。
 

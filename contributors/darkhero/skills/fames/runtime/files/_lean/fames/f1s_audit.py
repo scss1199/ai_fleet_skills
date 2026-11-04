@@ -1087,6 +1087,10 @@ ELEMENTS = [
     {"id": "EVO-zh-tts-offline-fallback", "element": "ai_darkhero proposal: zh-tts-narrate depends only on network edge-tts; article 271ce877e97514d9 (VoiceStudio) suggests a local CPU fallback", "verdict": "REFINE",
      "requires": None, "detail": "VoiceStudio is debpalash/VoiceStudio AGPL-3.0, Electron + irm|iex installer + model downloads: not adopted; the built-in SAPI zh-TW voice Microsoft Hanhan Desktop passed a CPU-only probe 2026-11-03 (5.48 s audio, RMS 2339, 45 ms, no install, no A770); skill gains the offline fallback line, cloning stays consent-only",
      "check_text": ("skill_zh_tts", "Offline fallback (endpoint down or no network)")},
+    # f1s-evolve 2026-11-04 (ai_theater 3e45039ff946 / effcb75a38a7 and ai_trader 7154fea9988d re-sent again).
+    {"id": "EVO-subtitle-top-placement-20261104", "element": "ai_theater correction 3e45039ff946 re-sent 2026-11-04: subtitles at the top of the window (open item of EVO-subtitle-operator-corrections)", "verdict": "REFINE",
+     "requires": None, "detail": "grep 11-04: subtitle_polish.write_ass and subtitle_speakers use Alignment=8, delivered pink .srt (subtitle_pink_all.py) has no an8 tag, femdom_gender_subtitle.py writes Alignment=2 gender styles; skill names all three and keeps top open; effcb75a38a7 and 7154fea9988d already integrated (EVO-reencode-bitrate-cap, EVO-trader-numeric-claim-recompute), no new text",
+     "check_text": ("skill_subtitle", "Top placement, checked 11-04")},
 ]
 
 
