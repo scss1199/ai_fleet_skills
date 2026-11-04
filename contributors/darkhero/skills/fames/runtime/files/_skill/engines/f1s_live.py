@@ -65,6 +65,7 @@ THRASH_TAIL_BYTES = 65536
 THRASH_WINDOW_S = 24 * 3600
 THRASH_ALERT_EVERY_S = 6 * 3600
 ARTICLE_LOOP = HUB / "_registry" / "article-loop.json"
+ARTICLE_STORE = HUB / "_registry" / "f1s-apply.json"
 ARTICLE_LOOP_PIN_S = 24 * 3600     # the named conversation has this long; then any idle curator chat takes the batch
 HW_RING = Path(r"D:\__hwlog")
 HW_STATE = HUB / "_registry" / "fames-hot" / "hw-watch.json"
@@ -389,6 +390,11 @@ def article_loop_due(seat: str, curator: str, session_id: str, now: float | None
     now = now if now is not None else _now()
     pin = str(state.get("session") or "")
     if pin and pin != session_id and now - float(due.get("at") or now) < ARTICLE_LOOP_PIN_S:
+        return ""
+    rows = _read(ARTICLE_STORE).get("techniques") or {}
+    if due.get("rows") and all(r in rows and (rows[r].get("seat") != curator or rows[r].get("status") != "new") for r in due["rows"]):
+        state["due"] = None   # closed while it waited (2026-11-04: 8 rows closed four minutes before the wake): not a turn, and no verdict on its yield
+        _write(ARTICLE_LOOP, state)
         return ""
     due.update(delivered_at=now, session=session_id)
     _write(ARTICLE_LOOP, state)
