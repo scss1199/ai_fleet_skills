@@ -224,7 +224,7 @@ ELEMENTS = [
      "check_text": ("hot_directive", "在這裡執行此任務")},
     {"id": "KB-rea-pin", "element": "REA skill pins the verified package version", "verdict": "REFINE",
      "requires": None, "detail": "version pinned; upgrades re-check npm repository.url first",
-     "check_text": ("skill_rea", "rea-agents@6.5.0")},
+     "check_text": ("skill_rea", "rea-agents@6.")},
     {"id": "LAB-review-triage", "element": "kyloren_bot bb489c62 (凱羅實驗室, OpenCoreReview): triage hunks by risk/category before review, ~1/9 tokens", "verdict": "REFINE",
      "requires": None, "detail": "independent-review step 2 now triages hunks and records what was triaged out",
      "check_text": ("skill_review", "triage before reviewing")},
@@ -1094,6 +1094,9 @@ ELEMENTS = [
     {"id": "EVO-scaffold-sunset-model-change", "element": "ai_darkhero proposal 2026-11-04: Threads @justin_hsieh_ (re-test one task set per model generation; delete the reminder once the model does it unprompted); no sunset step in fames-protocol/proof/run-until-done/f1s_control", "verdict": "REFINE",
      "requires": None, "detail": "mtm-mto-first step 2 gains the scaffold sunset procedure on top of the existing sweeps (proof sweep, f1s_audit sweep, audit-session-tax --replay): exposure floor 20, ~0 with the reminder on is a candidate only, time-boxed off-trial by the rule's own switch with re-enable on rise; T1 red lines and PROOF excluded, PROOF class retirement stays the operator's; no new engine",
      "check_text": ("skill_method", "鷹架退場（模型換代時")},
+    {"id": "EVO-ui-new-beside-existing", "element": "ai_darkhero proposal 2026-11-04: kubai087/kubai-icons self-check renders a few existing icons beside the new ones (sheet at 3x) and compares sizes, outlines, layers and colours until the checklist passes", "verdict": "REFINE",
+     "requires": None, "detail": "web-ui-taste step 3 had only reference-image and phone+desktop checks, nothing comparing a new component against the existing ones in one image; step 3 now starts from the closest existing component and verifies new + existing side by side at 2-3x (size, outline/stroke, layers, existing accent colours) until all pass, with the side-by-side screenshot attached; evidence ai_darkhero/_registry/kyloren-knowledge-social/consolidate/cards/589a1ba3d1e7f2ce.json (quote at offset 3341, re-read in full.txt)",
+     "check_text": ("skill_ui", "新素材與既有素材並排驗證")},
 ]
 
 

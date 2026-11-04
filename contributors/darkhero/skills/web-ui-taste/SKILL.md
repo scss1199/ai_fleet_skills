@@ -31,6 +31,10 @@ Playwright CLI = `microsoft/playwright-cli`（Apache-2.0）。F1S 只取做法�
 2. **品味／方向**：先寫三句 art direction（用途、氣氛、一個參考），再動手；避免預設灰底卡片＋藍按鈕的通用樣子。
    Taste Skill 的原則：明確層級、留白一致、只用一到兩個強調色、互動要有狀態。
 3. **參考圖轉程式**：使用者給截圖或設計圖時，先用視覺讀出版面區塊與尺寸，再寫程式；完成後對照同尺寸截圖。
+   **新素材與既有素材並排驗證**：新增圖示、按鈕、卡片等會跟既有元件並存的素材時，從最接近的既有元件起手，
+   完成後把幾個既有元件和新元件放在同一張圖（同一頁）上，放大 2–3 倍截圖，逐項比對尺寸、輪廓／線寬、圖層、
+   顏色（只用既有強調色）；任何一項不一致就改到全過才停，結案附那張並排截圖（做法來自 kubai087/kubai-icons 的自檢：
+   幾個既有圖示放在新圖示旁、整張 sheet 3× 渲染比對）。
 4. **機械規範檢查（0 token）**：
    ```bash
    python %AI_WORKSPACE%\_skill\engines\ui-guideline-lint.py <changed files or app dir> --summary
