@@ -119,9 +119,16 @@ python -m unittest discover -s scripts -p "test_*.py"
 python C:\ai_workspace\_skill\engines\fleet-skill-sync.py verify
 ```
 
-<!-- 2026-08-13: the second line used to be the skill-creator front-matter validator at
-     C:\Users\sc\.codex\skills\.system\skill-creator\scripts\quick_validate.py. It lived inside the
-     Codex user profile, which operator instruction removed from this machine; the only copy is now
-     _delete/2026-08-13-codex-purge/userprofile/.codex/skills/.system/skill-creator/scripts/quick_validate.py.
-     fleet-skill-sync.py verify checks that this skill still resolves on every surface, which is the
-     part that can actually break. -->
+Note (2026-08-13): `fleet-skill-sync.py verify` replaced the skill-creator front-matter validator that
+lived in the Codex user profile, which operator instruction removed from this machine (quarantined copy:
+`_delete/2026-08-13-codex-purge/userprofile/.codex/skills/.system/skill-creator/scripts/quick_validate.py`).
+The sync verify checks that this skill still resolves on every surface, which is the part that can break.
+
+## IG / Threads：主要傳文章的通道（operator 2026-11-02）
+
+操作者從 scss1199 轉傳到 sssc1219（顯示名 seth1199），帳號固定。第三個 root `ai_darkhero/_registry/kyloren-knowledge-social/`，由 `ai_darkhero/line/social_session.py` 的 `DmSource` 讀 IG 與 Threads 私訊，走與 LINE 相同的 Queue、讀取、卡片與 article_relay；curate-tick 每 10 分鐘一次，沒有新 rider。
+- 只收設定中 owner 傳的訊息；其他人的對話不解析、不存。唯讀，不送訊息。
+- 任何通道來的 Instagram 連結都用登入 session 讀（說明文字＋圖上文字 OCR＋語音），Threads 公開頁被擋時用登入瀏覽器讀；其他網站維持公開、不帶 cookie。
+- 瀏覽器一律在 `python.exe` + CREATE_NO_WINDOW 的子程序裡跑，`--disable-gpu`；不要在 pythonw 下直接啟動 Playwright（node driver 會閃 console）。
+- 主題分流：`article_relay.social_seat` 把量化／交易內容交 ai_trader，其他交 ai_darkhero。
+- session 失效時看 ledger meta 的 `source_error`、`channel_errors`；更新 cookie 走 ai_metadata 的 `cm cookies-import`。

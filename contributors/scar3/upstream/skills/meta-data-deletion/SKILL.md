@@ -1,12 +1,6 @@
 ---
 name: meta-data-deletion
-description: >-
-  Handle a Meta "用戶資料刪除要求 / User Data Deletion Request" email for a fleet Meta app, and
-  build or audit a site's Meta Data Deletion Callback. Map the app ID to its seat and repo,
-  probe the live callback, get the app-scoped ID list from App Settings > Advanced, match it
-  against every store that holds app-scoped IDs (counts only, never echo IDs), and hand the
-  permanent delete to the operator. Use when a developers.facebook.com deletion email arrives,
-  when Meta App Review asks for a data deletion URL, or when a site needs /api/meta/data-deletion.
+description: Handle a Meta 用戶資料刪除要求 / User Data Deletion Request email and build or audit a site's Meta Data Deletion Callback; the permanent delete stays the operator's. Use on a developers.facebook.com deletion email or App Review asking for the URL.
 metadata:
   fleet:
     lane: zero-token-mechanism
