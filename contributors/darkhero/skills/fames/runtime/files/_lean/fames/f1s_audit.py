@@ -1113,6 +1113,9 @@ ELEMENTS = [
     {"id": "EVO-xerj-code-search-trial", "element": "ai_darkhero proposal 2026-11-05: trial XERJ (xerj-org/xerj, Apache-2.0, Rust MCP code search; README claims 2.7x fewer output tokens than grep on 8 tasks, only on unmemorized code) beside f1s_map/Everything", "verdict": "REFINE",
      "requires": None, "detail": "not installed, no MCP wiring (operator authorization); the proposed measure audit-session-tax.py --replay replays hook injections only (window() -> _after), so it cannot compare search outputs; token-preflight states the adoption bar: tool_result bytes of the same recorded questions via Grep/Read vs the tool's CLI, lexical CPU-only, localhost dev mode",
      "check_text": ("skill_preflight", "Code-search tool trial (XERJ")},
+    {"id": "EVO-codegraph-call-graph-trial", "element": "ai_darkhero proposal 2026-11-05: CodeGraph (colbymchenry/codegraph call-graph index, IG a81897161291929c) joins the XERJ code-search trial", "verdict": "REFINE",
+     "requires": None, "detail": "who-calls-whom is the one lookup shape f1s_map/Grep lack; README 62% / reads 12->0 are vendor numbers, so same bar as XERJ: measured tool_result-bytes gap on recorded questions, CPU only, no MCP entry without operator authorization, not installed",
+     "check_text": ("skill_preflight", "CodeGraph (colbymchenry/codegraph call-graph index")},
 ]
 
 
