@@ -1109,6 +1109,10 @@ ELEMENTS = [
     {"id": "OP-decompose-free-models-dup", "element": "ai_darkhero 144bd28b070c (operator): f1s 把問題拆成免費小模型能立刻解的小問題、合併提交、f1s 驗收；RC 之後再討論", "verdict": "INFO",
      "requires": None, "detail": "duplicate of OP-parallel-free-models: hot_directive already routes multi-unit work to f1s_parallel.py plan→run→merge with verifier-bearing units on the free pool; RC part is a deferred discussion, nothing to integrate",
      "check_text": ("hot_directive", "f1s_parallel.py plan→run→merge")},
+    # f1s-evolve 2026-11-05 (ai_darkhero XERJ proposal).
+    {"id": "EVO-xerj-code-search-trial", "element": "ai_darkhero proposal 2026-11-05: trial XERJ (xerj-org/xerj, Apache-2.0, Rust MCP code search; README claims 2.7x fewer output tokens than grep on 8 tasks, only on unmemorized code) beside f1s_map/Everything", "verdict": "REFINE",
+     "requires": None, "detail": "not installed, no MCP wiring (operator authorization); the proposed measure audit-session-tax.py --replay replays hook injections only (window() -> _after), so it cannot compare search outputs; token-preflight states the adoption bar: tool_result bytes of the same recorded questions via Grep/Read vs the tool's CLI, lexical CPU-only, localhost dev mode",
+     "check_text": ("skill_preflight", "Code-search tool trial (XERJ")},
 ]
 
 
