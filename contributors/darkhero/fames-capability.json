@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "f76a85873e8257cdf9256c7db117a1567c681b5ab3f27e04b7b35f0094048d34",
+  "package_sha": "9017900da71e2cff6e19e613ef2d5b9326ab2dc602a71995009963dcecdbb5ad",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "3c59e8217350a4eb766d7010da225be137c9aea86d61c1ff62a41a4b5d0ebee6",
   "runner_state": "armed",
-  "observed_at": "2026-11-05T10:39:12.585331+00:00",
+  "observed_at": "2026-11-05T11:25:39.304157+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -355,7 +355,7 @@
     "base_proof_state": "PASS",
     "native_state": "UNKNOWN",
     "native_events": [],
-    "runtime_release_sha256": "fd02c48df35a644f17ae99a1af6648d430b28398308aeea01073934c805da53e"
+    "runtime_release_sha256": "bce7d8bff85f5768e137844866674f2bc6e8510b747abd4c7bb2a3952a7e1a80"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
