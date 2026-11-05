@@ -1120,6 +1120,10 @@ ELEMENTS = [
     {"id": "EVO-injection-line-retirement-rejected", "element": "ai_darkhero proposal 2026-11-05: tag every per-turn injection line (hot_directive, recurrence, relay, phase-gate) with a rule family; f1s_control retires a line after 14 days of 0 PROOF blocks, re-measures 7 days absent, restores on return (card f29be43250605cfb)", "verdict": "INFO",
      "requires": None, "detail": "rejected: hot_directive carries the red-line pointers (紅線優先, popup/HubClock/git_smart) and its text is bound by check_text rows and the release-pinned package, and the phase-gate line is the SEAL completion gate, so dropping them on a quiet PROOF count weakens red lines; relay is event-driven with no PROOF family; recurrence already retires itself (shown only while a class has >= RECURRENCE_MIN blocks in RECURRENCE_DAYS); the baseline totals (96652 tok/359 prompts) are not attributed per line, so no measurable gap",
      "check_text": ("session_hook", "if n < RECURRENCE_MIN:")},
+    # f1s-evolve 2026-11-05 (ai_darkhero knowledge-work-plugins proposal).
+    {"id": "EVO-knowledge-work-plugins-source", "element": "ai_darkhero proposal 2026-11-05: harvest anthropics/knowledge-work-plugins role packs as an f1s-reverse-learning source, import only gaps via the SkillSpector gate, plugin install operator-authorized", "verdict": "REFINE",
+     "requires": None, "detail": "GitHub API read back: Apache-2.0, pushed 2026-11-04T07:26:14Z, role dirs incl. finance/legal/engineering/design/data/productivity plus third-party partner-built/; cited card fb4555289fb63c35.md not found under _registry (digested), so the repo listing is the evidence; nothing imported or installed this tick, the route lives in the find-skills section",
+     "check_text": ("skill_reverse", "外部角色包來源 anthropics/knowledge-work-plugins")},
 ]
 
 
