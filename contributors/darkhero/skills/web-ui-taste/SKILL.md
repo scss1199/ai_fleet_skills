@@ -95,3 +95,8 @@ API 端加 `Cache-Control: private, stale-while-revalidate=<秒>`。範例：`jc
 - 結果（前→後）：ai_metadata 32→0、ai_ziyaoastro 50→0、jci_taipei_website 31→0、ai_accountancy 68→0、
   入口網頁 ai_darkhero.html／ai_master.html 68→0、ai_heartlink 10→0、ai_theater 10→0、ai_eatery 7→0、ai_demo 1→0。
   驗證：ziyaoastro astro build 12 頁、jci／heartlink tsc 0、ai_metadata pytest 73 passed、各頁 inline JS `node --check` 通過。
+
+## 圖示與架構圖（2026-11-05）
+
+- 一組風格一致的動態圖示：`C:/ai_workspace/_harness/tools/kubai-icons/SKILL.md`，靜態 SVG 用 `node scripts/export.mjs --accent #hex --state rest --out <dir>`。授權：可商用產出，不可把內附圖示當圖示集散布，也不可散布修改過的 SKILL.md，所以工具本體不進 repo。
+- 架構圖、流程圖、時間軸：`C:/ai_workspace/_harness/tools/diagram-design/SKILL.md`，輸出單檔 HTML＋SVG，加 `--system-fonts` 就不連 Google Fonts；不存 `~/.diagram-design` profile。
