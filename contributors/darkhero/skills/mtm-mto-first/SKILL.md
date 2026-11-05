@@ -160,6 +160,6 @@ python %AI_WORKSPACE%\_skill\engines\mtm-token-waste-scan.py --agent <seat> --br
 ## 查呼叫關係：CodeGraph（2026-11-05 實測）
 
 `C:/ai_workspace/_harness/tools/codegraph/node_modules/.bin/codegraph.cmd`（0.6 s 一問、不用模型）。在 repo 跑一次 `init`，之後 `callers <fn>`、`callees <fn>`；改碼後 `sync`。設 `CODEGRAPH_TELEMETRY=0`。
-- 直接函式呼叫準，輸出約 150 bytes，不必為了找呼叫者讀整個檔。
-- `_skill/engines` 實測：用檔名跑 subprocess、importlib 載入、預設參數引用都查不到（recall 0）。所以「No callers」不是證據，要刪或改名前照舊 rg 全域搜尋。
+- 只拿來分辨同名函式各被誰呼叫（ai_trader `prepare`、`launch` 分得出定義）。輸出和 rg 差不多大，又不印呼叫那行，省不到 token；ai_trader、ai_ziyaoastro 試完都留 rg 當預設（#78、#14）。
+- 漏答會回「0 個呼叫者」而不是報錯：用檔名跑 subprocess、importlib 載入、預設參數引用（`_skill/engines`、ai_trader）；跨檔 `db.set_ai_text_cache(...)` 也漏（ai_ziyaoastro，同樣寫法的 `L.prepare` 在 ai_trader 又查得到）。所以「No callers」不是證據，要刪或改名前照舊 rg 全域搜尋。
 - 不跑 `codegraph install`（會改全域設定），也不加 `alwaysLoad` 的 MCP（每回合都付工具 schema）。
