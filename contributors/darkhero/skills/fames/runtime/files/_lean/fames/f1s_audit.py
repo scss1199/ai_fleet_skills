@@ -1124,6 +1124,16 @@ ELEMENTS = [
     {"id": "EVO-knowledge-work-plugins-source", "element": "ai_darkhero proposal 2026-11-05: harvest anthropics/knowledge-work-plugins role packs as an f1s-reverse-learning source, import only gaps via the SkillSpector gate, plugin install operator-authorized", "verdict": "REFINE",
      "requires": None, "detail": "GitHub API read back: Apache-2.0, pushed 2026-11-04T07:26:14Z, role dirs incl. finance/legal/engineering/design/data/productivity plus third-party partner-built/; cited card fb4555289fb63c35.md not found under _registry (digested), so the repo listing is the evidence; nothing imported or installed this tick, the route lives in the find-skills section",
      "check_text": ("skill_reverse", "外部角色包來源 anthropics/knowledge-work-plugins")},
+    # f1s-evolve 2026-11-06 (harvest proposals 5021df92425a, b6b98b77ccf1, 54d2ef9e0a05).
+    {"id": "OP-context-full-thrash-restart", "element": "ai_darkhero 98be2dbe7ce5 (operator 2026-11-04): ai_metadata還是卡在context full 立刻修理f1s的問題 修理完就去疏通它讓他繼續跑", "verdict": "REFINE",
+     "requires": None, "detail": "engine fix already shipped (f1s_live.py thrash_due, test_f1s_live.py, FAMES 1.45.185 commit 1e1e3ca6); the AGC skill only described compaction, not the stuck-process case, so it now states why a running process keeps its old trigger and the archive/unarchive/send_message restart with a preTokens read-back",
+     "check_text": ("skill_agc", "壓縮迴圈卡死（反向學習自 ai_metadata 2026-11-04")},
+    {"id": "EVO-diagram-design-covered", "element": "ai_demo skill diagram-design (harvest 3.635): architecture diagrams, flowcharts and timelines as self-contained HTML + SVG", "verdict": "INFO",
+     "requires": None, "detail": "already covered: web-ui-taste 圖示與架構圖 (2026-11-05) routes every cwd to _harness/tools/diagram-design/SKILL.md with --system-fonts and no ~/.diagram-design profile; the ai_demo skill is a thin pointer to the same tool",
+     "check_text": ("skill_ui", "架構圖、流程圖、時間軸：`C:/ai_workspace/_harness/tools/diagram-design/SKILL.md`")},
+    {"id": "OP-trader-fx-route-seat-local", "element": "ai_trader memory owner-fx-route-20261029: 現在不碰台指帳戶，去依照錄音操盤手推薦的外匯帳戶入場（50 美金）；回測判決不被接受為進度", "verdict": "INFO",
+     "requires": None, "detail": "rejected for F1S: a seat-specific trading decision that already lives in ai_trader memory; the general part (the owner's decided route is not re-asked or replaced) is f1s-intake's existing rule, and a fleet-wide 'backtests are not progress' line would wrongly bind non-trading seats",
+     "check_text": ("skill_intake", "使用者已決定的事不再問；已給過的值不再要。")},
 ]
 
 
