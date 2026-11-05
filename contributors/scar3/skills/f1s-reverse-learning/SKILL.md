@@ -31,6 +31,7 @@ operator 2026-10-16：「把他們各自用到的所有技能 經驗 系統 api 
 | 目標 | `_registry/f1s-harvest/goals.json`：coverage＝已結案／總數，`next`＝依分數排序的下一批目標（同服務、同名工具跨座位合併成一個目標） | `goals` |
 | API | 全艦外部服務目錄（服務→類別、用到的座位、變數名、程式出處、是否已在免費池） | `catalog`、`api <service>` |
 | 工具 | 全艦工具與技能查詢：寫新東西前查哪個座位已經做過（名稱＋docstring＋triage 規則排序） | `tools "<關鍵字>"` |
+| 外部 | 艦內查不到時再查公開 skills.sh 目錄（find-skills，0 token，只搜尋）；要引入一律走上面 GATE（SkillSpector）＋fleet-import，禁止 `npx skills add` 直接裝進 ~/.claude | `npx -y skills find "<關鍵字>"` |
 
 `cycle` 一次跑完收→比→分→API 目錄→重算目標。
 
@@ -97,3 +98,9 @@ SkillSpector 在 Windows 不能用 `--output`（Safe file output unsupported）�
   ztm-verify-before-done、web-ui-taste、mtm-mto-first；API 目錄 130 個服務；工具目錄 681 項。
 - 引擎自己的教訓：比對要用「單一文件最佳包含率」（聯集會讓什麼都像已覆蓋）、同一座位技能的多份部署副本要去重、
   hot directive 上限 1400 字（f1s_audit 現在會先擋）。
+
+## 找外部現成技能（find-skills，2026-11-05）
+
+動手寫新技能前先查：`DISABLE_TELEMETRY=1 npx --yes skills find <關鍵字>`（只搜尋，安裝數當線索不當品質證明）。
+不跑 `skills add`（會裝到全域、跳過閘門）。候選先 clone 到空目錄，`fleet-skill-vet.py scan <dir>` 掃過。AE1 是掃描器解析上限、不是偵測到問題，HIGH 要讀被引用的那行才判斷。
+分到對的 cwd：只有一兩個 seat 用得上的，工具放 `_harness/tools/<name>/`，在該 seat 的 `.claude/skills/<name>/SKILL.md` 放一張指向它的短卡；全 fleet 都會用才進 `_skill/fleet-skills`，因為每個技能都佔每個對話的清單額度。

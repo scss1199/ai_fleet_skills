@@ -31,6 +31,10 @@ Playwright CLI = `microsoft/playwright-cli`（Apache-2.0）。F1S 只取做法�
 2. **品味／方向**：先寫三句 art direction（用途、氣氛、一個參考），再動手；避免預設灰底卡片＋藍按鈕的通用樣子。
    Taste Skill 的原則：明確層級、留白一致、只用一到兩個強調色、互動要有狀態。
 3. **參考圖轉程式**：使用者給截圖或設計圖時，先用視覺讀出版面區塊與尺寸，再寫程式；完成後對照同尺寸截圖。
+   **新素材與既有素材並排驗證**：新增圖示、按鈕、卡片等會跟既有元件並存的素材時，從最接近的既有元件起手，
+   完成後把幾個既有元件和新元件放在同一張圖（同一頁）上，放大 2–3 倍截圖，逐項比對尺寸、輪廓／線寬、圖層、
+   顏色（只用既有強調色）；任何一項不一致就改到全過才停，結案附那張並排截圖（做法來自 kubai087/kubai-icons 的自檢：
+   幾個既有圖示放在新圖示旁、整張 sheet 3× 渲染比對）。
 4. **機械規範檢查（0 token）**：
    ```bash
    python %AI_WORKSPACE%\_skill\engines\ui-guideline-lint.py <changed files or app dir> --summary
@@ -91,3 +95,13 @@ API 端加 `Cache-Control: private, stale-while-revalidate=<秒>`。範例：`jc
 - 結果（前→後）：ai_metadata 32→0、ai_ziyaoastro 50→0、jci_taipei_website 31→0、ai_accountancy 68→0、
   入口網頁 ai_darkhero.html／ai_master.html 68→0、ai_heartlink 10→0、ai_theater 10→0、ai_eatery 7→0、ai_demo 1→0。
   驗證：ziyaoastro astro build 12 頁、jci／heartlink tsc 0、ai_metadata pytest 73 passed、各頁 inline JS `node --check` 通過。
+
+## 圖示與架構圖（2026-11-05）
+
+- 公司形象站、行銷頁蓋好後的瀏覽器檢查：`node C:/ai_workspace/_harness/tools/taste-skill/scripts/consistency.mjs <本機檔或 127.0.0.1 網址> --page service`（TasteSkill 2.5.0，MIT；kinds：software、gaming、tech、product、service、place）。在 1440、1024、768、390 四種寬度逐條判 PASS／WARN／FAIL，CPU 跑（`--disable-gpu`），一次約 75 秒，至少給 2 核，單核 80 秒內跑不完（2026-11-05 實測）。
+  - **只對本機建置跑，絕不對正式站跑**：它會自動填表並送出（`consistency.mjs:6371`）。輸出 `.taste*` 放暫存目錄，不留在 repo。
+  - 規則假設一屏一區塊的形象站：管理介面、入口頁會大量 FAIL（portal 去掉 script 後 31 FAIL，多數是版型規則），這類頁面不適用。FAIL 要讀內容再判斷，不是全部都要修。
+  - 只用檢查器，不跑 `npx skills add`。SkillSpector 掃描 150 秒逾時（held、未通過），所以留在 `_harness/tools`，不進 canon。
+- 一組風格一致的動態圖示：`C:/ai_workspace/_harness/tools/kubai-icons/SKILL.md`，靜態 SVG 用 `node scripts/export.mjs --accent #hex --state rest --out <dir>`。授權：可商用產出，不可把內附圖示當圖示集散布，也不可散布修改過的 SKILL.md，所以工具本體不進 repo。
+  - 小圓鈕不適用：jci_taipei #15 試 22px，細節糊掉，色彩圖形放在彩色鈕上對比只有 1.10–2.93（白色圖形 3.87–10.35），官網沒換。
+- 架構圖、流程圖、時間軸：`C:/ai_workspace/_harness/tools/diagram-design/SKILL.md`，輸出單檔 HTML＋SVG，加 `--system-fonts` 就不連 Google Fonts；不存 `~/.diagram-design` profile。

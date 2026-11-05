@@ -1,6 +1,6 @@
 ---
 name: zh-tts-narrate
-description: Zero-key Traditional Chinese narration with edge-tts (Microsoft neural voices, zh-TW-HsiaoChenNeural default) plus objective voice ranking (DNSMOS via voice-mos.py). Use for any video or audio that needs a zh-Hant voice-over without an Azure key, to regenerate a project's chapter audio in another voice, or to audition and rank candidate voices.
+description: Zero-key Traditional Chinese narration with edge-tts plus voice ranking. Use for a zh-Hant voice-over without an Azure key or to audition voices.
 metadata:
   fleet:
     lane: zero-token-mechanism
@@ -43,6 +43,16 @@ List all: `python -m edge_tts --list-voices | findstr zh-`.
 - The endpoint sometimes returns `NoAudioReceived` for one request, and a resend of the same text can succeed.
   For multi-line scripts send one request per sentence, retry each up to about 8 times with backoff, and check
   that every mp3 is larger than 0 bytes before concatenating (seen on the 2026-10-28 Recco test clips).
+
+## Offline fallback (endpoint down or no network)
+Windows' built-in SAPI voice `Microsoft Hanhan Desktop` (zh-TW) runs on the CPU with nothing to install and no
+key: `System.Speech.Synthesis.SpeechSynthesizer`, `SelectVoice('Microsoft Hanhan Desktop')`, `SetOutputToWaveFile`.
+2026-11-03 probe: one zh-TW sentence gave 5.48 s of 16 kHz audio (RMS 2339) in 45 ms. It sounds more robotic
+than edge-tts, so use it only when edge-tts fails after its retries. Windows PowerShell 5.1 reads a script without
+a BOM as ANSI, so pass the Chinese text as UTF-8 base64 or from a file, not inline.
+VoiceStudio (debpalash/VoiceStudio, AGPL-3.0, from the 10-31 GitHub trending article) was not adopted: it is an
+Electron app with an `irm | iex` installer and model downloads, which is far heavier than the built-in voice.
+Voice cloning of any kind needs the speaker's consent first.
 
 ## Evidence
 `ai_darkhero/evidence/ai-demo-pivot-20261011/` (render self-test 2026-10-11: 3 chapters narrated, 10.1 s MP4).

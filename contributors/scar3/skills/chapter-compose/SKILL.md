@@ -1,6 +1,6 @@
 ---
 name: chapter-compose
-description: Compose a narrated, captioned, branded MP4 from a chapter YAML with ffmpeg — ai_demo's render layer for the "prompts + assets -> video" pipeline (video-brief/3). Chapter types card / still / clip / t2i / i2v / screen; brand packs (jci_taipei, psync); content-addressed assets with consent gating; every render leaves an evidence JSON. Use when any seat needs a video from a brief (jci_taipei 2027 marketing, product tours, explainers).
+description: Compose a narrated, captioned, branded MP4 from a chapter YAML with ffmpeg (ai_demo render layer). Use when a seat needs a video from a brief.
 metadata:
   fleet:
     lane: zero-token-mechanism

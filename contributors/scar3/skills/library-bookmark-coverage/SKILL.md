@@ -111,6 +111,13 @@ failure so a broken sweep cannot become a 15m request storm, and it is non-fatal
 Do **not** register a second rider for it: arming a new rider is operator-gated, and a second
 rider would duplicate the cookie refresh this one already performs. Never `schtasks`.
 
+**Cadence follows how fast a source dies** (operator 2026-11-03: `__queen` accounts get banned on x.com
+so fast that a slow sweep leaves no stock at all). A section whose accounts are at ban risk gets its
+own shorter interval in `ai_metadata/configs/acquisition_refresh.json` `section_hours` (`__queen`:
+twitter 3 h, person_page 3 h), re-evaluated every tick, and its mirror source — the person's own
+site / diary page, which usually carries the same posts until the ban — is refreshed at the same
+cadence so the content survives the account. Raise a section there; never add a rider for it.
+
 ## Idempotency
 
 `mission_zct.enqueue_task` is idempotent through a per-lane `.enqueued.json` ledger (leading dot

@@ -61,6 +61,14 @@ parent_skill: aex-agent-evolution
   MANIFEST（不刪），同一個 commit 拿掉它們的測試、保持「每個動作都有呼叫端」稽核綠燈，殘留檔先加 .gitignore 免得被
   idle sweeper commit。（ai_darkhero tray 2026-10-23：動作 42→25、-3924 行、PowerShell 子程序 13→0／120 s；
   `_delete/2026-10-23-tray-retired/MANIFEST.jsonl`）
+- 鷹架退場（模型換代時，例 Opus 5.5）：提醒類規則（hot_directive 片段、技能 nudge、f1s_audit 通知、PROOF 類別）是補
+  舊模型的鷹架，模型自己會做就該刪。①在新模型的對話上重跑既有量測：`claude-proof-hook.py sweep`、`f1s_audit.py
+  sweep`、`audit-session-tax.py --replay`，逐規則數「觸發情境出現次數」與「違規次數」；②提醒還在時違規≈0 不代表模型
+  自己會做，觸發情境出現太少（<20 次）也不算數，只列為候選；③候選用規則自己的開關（如 `_registry/proof.json`
+  classes）做限期關閉試驗，同一批情境比關前關後違規率，回升就立刻開回；④T1 紅線（零彈窗、零前景、刪除、密鑰、
+  Logi Options+）與 PROOF 本身不是鷹架，不列候選；PROOF 類別或 hook 退場是使用者決定，只交試驗數字。
+  （Threads @justin_hsieh_：同一題每代模型重測、模型會了就刪提醒；
+  `ai_darkhero/_registry/kyloren-knowledge-social/artifacts/875f1c26…/full.txt`）
 - 「最後才自動化」的門檻：同一件手工操作做到第三次才寫成腳本或技能；寫之前先查別的座位做過沒：
   `python %AI_WORKSPACE%\_skill\engines\f1s-harvest.py tools "<關鍵字>"`（全艦工具與技能）、`api <service>`（外部 API）
   （反向學習自 ai_metadata aex-mtm-loop-metadata）。
@@ -148,3 +156,10 @@ python %AI_WORKSPACE%\_skill\engines\mtm-token-waste-scan.py --agent <seat> --br
 ## CITE
 
 `_registry/mtm-protocol.json` · `prework.py` · `ztm-task-router.py`
+
+## 查呼叫關係：CodeGraph（2026-11-05 實測）
+
+`C:/ai_workspace/_harness/tools/codegraph/node_modules/.bin/codegraph.cmd`（0.6 s 一問、不用模型）。在 repo 跑一次 `init`，之後 `callers <fn>`、`callees <fn>`；改碼後 `sync`。設 `CODEGRAPH_TELEMETRY=0`。
+- 只拿來分辨同名函式各被誰呼叫（ai_trader `prepare`、`launch` 分得出定義）。輸出和 rg 差不多大，又不印呼叫那行，省不到 token；ai_trader、ai_ziyaoastro 試完都留 rg 當預設（#78、#14）。
+- 漏答會回「0 個呼叫者」而不是報錯：用檔名跑 subprocess、importlib 載入、預設參數引用（`_skill/engines`、ai_trader）；跨檔 `db.set_ai_text_cache(...)` 也漏（ai_ziyaoastro，同樣寫法的 `L.prepare` 在 ai_trader 又查得到）。所以「No callers」不是證據，要刪或改名前照舊 rg 全域搜尋。
+- 不跑 `codegraph install`（會改全域設定），也不加 `alwaysLoad` 的 MCP（每回合都付工具 schema）。
