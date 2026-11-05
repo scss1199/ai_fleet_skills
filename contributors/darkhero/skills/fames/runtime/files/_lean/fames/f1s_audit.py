@@ -1116,6 +1116,10 @@ ELEMENTS = [
     {"id": "EVO-codegraph-call-graph-trial", "element": "ai_darkhero proposal 2026-11-05: CodeGraph (colbymchenry/codegraph call-graph index, IG a81897161291929c) joins the XERJ code-search trial", "verdict": "REFINE",
      "requires": None, "detail": "who-calls-whom is the one lookup shape f1s_map/Grep lack; README 62% / reads 12->0 are vendor numbers, so same bar as XERJ: measured tool_result-bytes gap on recorded questions, CPU only, no MCP entry without operator authorization, not installed",
      "check_text": ("skill_preflight", "CodeGraph (colbymchenry/codegraph call-graph index")},
+    # f1s-evolve 2026-11-05 (ai_darkhero reminder-retirement proposal).
+    {"id": "EVO-injection-line-retirement-rejected", "element": "ai_darkhero proposal 2026-11-05: tag every per-turn injection line (hot_directive, recurrence, relay, phase-gate) with a rule family; f1s_control retires a line after 14 days of 0 PROOF blocks, re-measures 7 days absent, restores on return (card f29be43250605cfb)", "verdict": "INFO",
+     "requires": None, "detail": "rejected: hot_directive carries the red-line pointers (紅線優先, popup/HubClock/git_smart) and its text is bound by check_text rows and the release-pinned package, and the phase-gate line is the SEAL completion gate, so dropping them on a quiet PROOF count weakens red lines; relay is event-driven with no PROOF family; recurrence already retires itself (shown only while a class has >= RECURRENCE_MIN blocks in RECURRENCE_DAYS); the baseline totals (96652 tok/359 prompts) are not attributed per line, so no measurable gap",
+     "check_text": ("session_hook", "if n < RECURRENCE_MIN:")},
 ]
 
 
