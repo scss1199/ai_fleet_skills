@@ -103,4 +103,5 @@ SkillSpector 在 Windows 不能用 `--output`（Safe file output unsupported）�
 
 動手寫新技能前先查：`DISABLE_TELEMETRY=1 npx --yes skills find <關鍵字>`（只搜尋，安裝數當線索不當品質證明）。
 不跑 `skills add`（會裝到全域、跳過閘門）。候選先 clone 到空目錄，`fleet-skill-vet.py scan <dir>` 掃過。AE1 是掃描器解析上限、不是偵測到問題，HIGH 要讀被引用的那行才判斷。
+外部角色包來源 anthropics/knowledge-work-plugins（Apache-2.0，2026-11-04 推送；finance／legal／engineering／design／data／productivity 等目錄，`partner-built/` 是第三方內容）：逐個角色技能對照已有的（finance→ai_trader 的技能、design→web-ui-taste、data→mtm-api-pool-offload），重疊的不收，只有缺口才 clone 到空目錄過 `fleet-skill-vet.py scan` 再 fleet-import；`/plugin install` 或任何寫進 ~/.claude 的安裝要 operator 授權。
 分到對的 cwd：只有一兩個 seat 用得上的，工具放 `_harness/tools/<name>/`，在該 seat 的 `.claude/skills/<name>/SKILL.md` 放一張指向它的短卡；全 fleet 都會用才進 `_skill/fleet-skills`，因為每個技能都佔每個對話的清單額度。
