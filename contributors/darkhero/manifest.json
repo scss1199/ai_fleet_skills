@@ -5,8 +5,8 @@
   "role": "upstream_curator",
   "machine": "darkhero",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-11-05T11:26:01Z",
-  "manifest_sha": "44449436b8686e76",
+  "generated_at": "2026-11-05T20:13:47Z",
+  "manifest_sha": "0b8d3822a234b7c8",
   "required": [
     "fames",
     "independent-review",
@@ -56,12 +56,12 @@
     },
     {
       "name": "agc-auto-goal-compact",
-      "sha": "f49fb34cbe0696b3",
+      "sha": "7672ee88293047c0",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "ed90da9571e7622f186034390003aa62210d79942ed741e4a91b829425267517",
+      "package_sha": "d755e6ca7bc7e11653b1ded5d2cf704aa62ba1491cabd4cc976656879808ef7d",
       "files": {
-        "SKILL.md": "f49fb34cbe0696b3daf6e0701f24efa4d378671e26ff4713b308420adf13ca18"
+        "SKILL.md": "7672ee88293047c02c754970d1276c070c13312df5e118facd13efa2d5878724"
       }
     },
     {
