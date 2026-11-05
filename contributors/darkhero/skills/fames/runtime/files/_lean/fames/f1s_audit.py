@@ -1134,6 +1134,13 @@ ELEMENTS = [
     {"id": "OP-trader-fx-route-seat-local", "element": "ai_trader memory owner-fx-route-20261029: 現在不碰台指帳戶，去依照錄音操盤手推薦的外匯帳戶入場（50 美金）；回測判決不被接受為進度", "verdict": "INFO",
      "requires": None, "detail": "rejected for F1S: a seat-specific trading decision that already lives in ai_trader memory; the general part (the owner's decided route is not re-asked or replaced) is f1s-intake's existing rule, and a fleet-wide 'backtests are not progress' line would wrongly bind non-trading seats",
      "check_text": ("skill_intake", "使用者已決定的事不再問；已給過的值不再要。")},
+    # f1s-evolve 2026-11-06 (ai_trader d9df0fc59a99, jci_taipei 30662cfdec12).
+    {"id": "EVO-official-table-key-cell-traps", "element": "ai_trader memory subscription-lottery-v28-20261023 (harvest 2.172): TWSE publicForm field names with trailing spaces, comma names split into two cells, past rows edited after the fact", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls 時間與資料新鮮度 had name-not-position and silent-default traps but not key whitespace, delimiter-split cells or retroactive row edits; one bullet added; the lottery EV/fee/DSR content is seat-local research and stays in ai_trader memory; the withdraw-push lesson was already integrated (撤回也是新聞)",
+     "check_text": ("skill_runtime", "官方表格的鍵與格子都不可信，過去的列也會被改")},
+    {"id": "EVO-kubai-icons-covered", "element": "jci_taipei skill kubai-icons (harvest 2.454): style-consistent animated icon set, static SVG export in chosen colours", "verdict": "INFO",
+     "requires": None, "detail": "already covered: web-ui-taste routes every cwd to _harness/tools/kubai-icons/SKILL.md with the export command and licence limit, and its self-check is EVO-ui-new-beside-existing; the jci_taipei skill is a thin pointer to the same tool",
+     "check_text": ("skill_ui", "一組風格一致的動態圖示：`C:/ai_workspace/_harness/tools/kubai-icons/SKILL.md`")},
 ]
 
 
