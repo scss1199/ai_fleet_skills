@@ -98,5 +98,10 @@ API 端加 `Cache-Control: private, stale-while-revalidate=<秒>`。範例：`jc
 
 ## 圖示與架構圖（2026-11-05）
 
+- 公司形象站、行銷頁蓋好後的瀏覽器檢查：`node C:/ai_workspace/_harness/tools/taste-skill/scripts/consistency.mjs <本機檔或 127.0.0.1 網址> --page service`（TasteSkill 2.5.0，MIT；kinds：software、gaming、tech、product、service、place）。在 1440、1024、768、390 四種寬度逐條判 PASS／WARN／FAIL，CPU 跑（`--disable-gpu`），一次約 75 秒，至少給 2 核，單核 80 秒內跑不完（2026-11-05 實測）。
+  - **只對本機建置跑，絕不對正式站跑**：它會自動填表並送出（`consistency.mjs:6371`）。輸出 `.taste*` 放暫存目錄，不留在 repo。
+  - 規則假設一屏一區塊的形象站：管理介面、入口頁會大量 FAIL（portal 去掉 script 後 31 FAIL，多數是版型規則），這類頁面不適用。FAIL 要讀內容再判斷，不是全部都要修。
+  - 只用檢查器，不跑 `npx skills add`。SkillSpector 掃描 150 秒逾時（held、未通過），所以留在 `_harness/tools`，不進 canon。
 - 一組風格一致的動態圖示：`C:/ai_workspace/_harness/tools/kubai-icons/SKILL.md`，靜態 SVG 用 `node scripts/export.mjs --accent #hex --state rest --out <dir>`。授權：可商用產出，不可把內附圖示當圖示集散布，也不可散布修改過的 SKILL.md，所以工具本體不進 repo。
+  - 小圓鈕不適用：jci_taipei #15 試 22px，細節糊掉，色彩圖形放在彩色鈕上對比只有 1.10–2.93（白色圖形 3.87–10.35），官網沒換。
 - 架構圖、流程圖、時間軸：`C:/ai_workspace/_harness/tools/diagram-design/SKILL.md`，輸出單檔 HTML＋SVG，加 `--system-fonts` 就不連 Google Fonts；不存 `~/.diagram-design` profile。
