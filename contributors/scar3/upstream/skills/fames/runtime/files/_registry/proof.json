@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "id": "proof",
+  "authority": "operator 2026-10-11 「更新 harness 架構…解決 claude 模型會說謊的問題」",
+  "hook": "_skill/engines/claude-proof-hook.py",
+  "events": [
+    "Stop",
+    "SubagentStop"
+  ],
+  "enabled": true,
+  "max_blocks_per_turn": 2,
+  "max_blocks_per_session": 12,
+  "classes": {
+    "tests_pass": true,
+    "pushed": true,
+    "committed": true,
+    "deployed": true,
+    "verified": true,
+    "completion": true,
+    "measurement": true,
+    "read": true,
+    "progress": true,
+    "automated": true,
+    "blocker": true,
+    "decision": true,
+    "ask_value": true,
+    "unrequested_file": true,
+    "handback": true
+  },
+  "note": "Set enabled=false to park; set a class to false to make it advisory-free. Omitted keys use the hook's defaults. State/log: _registry/proof/.",
+  "contract": "【operator 2026-10-11「解決 claude 模型會說謊」】PROOF Stop hook（claude-proof-hook.py，Stop+SubagentStop）：回報裡的完成／測試通過／已推送／已提交／已部署／已驗證／帶單位的數字，必須對應本回合 transcript 真的跑過的工具結果、現存的引用路徑或 git 查得到的 commit，否則該行寫 UNKNOWN／未驗證；寫過程式檔後要再讀回或再跑一次才算完成。每 prompt 最多擋 2 次、每 session 12 次；壞掉 fail-open；開關 _registry/proof.json。 【operator 2026-10-13「f1s 藉由 LEAN … 直接杜絕任何可能的說謊與假裝」】新增七類（ai_trader 稽核）：已讀/已抓取須有本回合對該目標的讀取結果；推進/進展該行須指向現存路徑、commit 或工具印出的數字；已自動化須指向 hosts.json rider、Run 值或現存路徑；做不到/會被拉回 須有本回合失敗的工具結果；「需要你決定」同一件事不得重問；要你提供數值前須先 grep；未被要求的 .md（evidence/_logs/memory 等以外）一律擋。准入規則 Lean 已證（ClaimContract.lean 11 定理），claim_conformance.py 逐格綁定 hook。 【operator 2026-10-13「說謊與推託嚴格禁止；嚴格禁止隨意產出 .md 和 .json」】新增 handback（推託）：把步驟推給 operator 的句子，除非該行點名 operator 專屬紅線（登入/OAuth、永久刪除、rider 授權、全域設定、金鑰、資金、硬體）或本回合真有工具失敗，否則擋；unrequested_file：.md/.json 只准機制必需（_registry/receipts/charter）或使用者點名，其餘一律擋；f1s-transcript-audit.py 掃全部對話並在 SessionStart 注入各 seat 的紀錄。",
+  "md_allowed_dirs": [
+    "_registry",
+    "_logs",
+    "_inbox",
+    "_delete",
+    "scratchpad",
+    "Temp",
+    "_drop",
+    ".claude",
+    "node_modules",
+    "runtime",
+    "references"
+  ],
+  "md_allowed_names": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "README.md",
+    "SKILL.md",
+    "CHANGELOG.md",
+    "MEMORY.md",
+    "result.json",
+    "closure.json",
+    "residual.json",
+    "turn.json",
+    "package.json",
+    "tsconfig.json",
+    "settings.json",
+    "hooks.json",
+    "launch.json",
+    "manifest.json"
+  ],
+  "lean": {
+    "contract": "_lean/fames/ClaimContract.lean",
+    "binding": "_lean/fames/claim_conformance.py",
+    "receipt": "_lean/fames/evidence/claim-conformance.json",
+    "test": "_lean/fames/tests/test_claim_contract.py",
+    "replay": "_lean/fames/tests/replay_proof.py",
+    "audit": "_skill/engines/f1s-transcript-audit.py"
+  }
+}

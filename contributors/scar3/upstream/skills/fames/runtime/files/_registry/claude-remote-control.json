@@ -1,0 +1,100 @@
+{
+  "schema": 1,
+  "updated": "2026-08-12",
+  "_doc": "SSOT for LOCAL Claude remote control (phone -> Drive job -> HubClock rider -> this machine's Claude CLI). The transport is line-cursor-agent.json's and is NOT duplicated here: this file only describes the local terminal that transport was missing. forbid_local_sdk in line-cursor-agent.json is a CURSOR OOM constraint (local Cursor SDK Bridge.launch OOMs the IDE) and says nothing about the Claude CLI, so claude_local is a separately gated runtime and never changes the cloud_rest default.",
+  "enabled": true,
+  "trigger": {
+    "_doc": "claude_local is OPT-IN per job. Default runtime stays cloud_rest so an existing phone habit cannot silently change terminal.",
+    "prefixes": [
+      "/cc ",
+      "/cc",
+      "claude:",
+      "claude：",
+      "本機claude:",
+      "本機claude："
+    ],
+    "job_field": "runtime",
+    "job_field_value": "claude_local"
+  },
+  "cli": {
+    "name": "claude",
+    "fallbacks": [
+      "%APPDATA%\\npm\\claude.CMD",
+      "%APPDATA%\\npm\\claude.cmd"
+    ],
+    "_doc": "Resolved with shutil.which so PATHEXT finds claude.CMD; a bare ['claude', ...] argv fails under CreateProcess because CreateProcess only appends .exe."
+  },
+  "auth": {
+    "_doc": "Values are read straight into a child process environment and never printed, logged, or placed in argv (Windows argv is readable by any same-user process).",
+    "_three_state_doc": "Auth is THREE-state, not two: absent / present_unverified / verified. The env-var, vault and credentials_file scans below prove PRESENCE only — an empty, expired or revoked store still satisfies 'the file exists' and then dies with Not logged in. readiness requires verified, which only check --probe can produce, so the beacon can never promise the phone a machine that will answer Not logged in.",
+    "env": [
+      "CLAUDE_CODE_OAUTH_TOKEN",
+      "ANTHROPIC_API_KEY",
+      "ANTHROPIC_AUTH_TOKEN"
+    ],
+    "vault_paths": [
+      "anthropic.claude_code_oauth_token",
+      "anthropic.api_key"
+    ],
+    "credentials_file": "%USERPROFILE%\\.claude\\.credentials.json",
+    "probe_stamp": "_registry/claude-remote-probe.json",
+    "probe_ttl_sec": 43200,
+    "_probe_doc": "A probe spends one real call, so the verdict is cached in probe_stamp and reused for probe_ttl_sec: that is what lets a @5m rider read 'verified' without spending quota every tick. 12h is long enough that no rider ever probes and short enough that a revoked token stops reading as verified within a day. The stamp holds auth-state only — no token, no prompt, no result — and a FAILED probe is written too, so a revoked credential loses verified status instead of coasting on a stale success. The stamp is bound to the auth_source label it was minted against; changing credential source invalidates it.",
+    "onboard_provider": "claude_code",
+    "mint_command": "claude setup-token",
+    "operator_only": true,
+    "operator_only_reason": "Minting the token is an interactive browser OAuth. The agent is prohibited from performing logins, so this is the one step that cannot be automated; the token then travels through token-onboard.py and never through chat."
+  },
+  "exec": {
+    "timeout_sec": 900,
+    "permission_mode": "bypassPermissions",
+    "output_format": "text",
+    "max_prompt_chars": 12000,
+    "max_result_chars": 20000,
+    "cwd_root": "C:\\ai_workspace",
+    "_cwd_root_doc": "A job's seat decides cwd, and job text arrives from a LINE DM. Even with the owner allowlist the resolved cwd is asserted to sit under cwd_root, so a malformed seat can never aim the CLI outside the hub.",
+    "prompt_via": "stdin",
+    "_prompt_via_doc": "stdin, not argv: argv is world-readable per-user on Windows and caps near 32k chars."
+  },
+  "beacon": {
+    "path": "_registry/claude-remote-ready.json",
+    "stale_sec": 900,
+    "_doc": "Written by claude-remote-ready.py at boot and on every rider tick. ready=false with a named blocker is the correct output when auth is missing; UNKNOWN is never reported as ready (same invariant as tray/claude_app_health.py)."
+  },
+  "boot": {
+    "_doc": "The boot guarantee is the EXISTING chain, not a new one: HKCU Run ai_darkhero_hub_tray + Startup VBS backup -> tray/logon_autostart.py -> ensure_hub_tray.py -> hub_tray -> supervisor/lifecycle.py _ensure_hubclock() -> hubclock.py, with rider ai-darkhero-hub-tray-ensure@1m reviving the tray from the other direction. logon_autostart.py additionally fires claude-remote-ready.py once so readiness is asserted at logon rather than at first phone job.",
+    "entry": "ai_darkhero/tray/logon_autostart.py",
+    "ready_engine": "_skill/engines/claude-remote-ready.py",
+    "ready_args": [
+      "--once",
+      "--quiet",
+      "--probe-if-stale"
+    ],
+    "_ready_args_doc": "--probe-if-stale, not --probe: link 4 must read VERIFIED rather than merely present, but a bare --probe would buy the same verdict again on every reboot. It spends one real call only when probe_stamp is not already a fresh success. logon_autostart.py caps the call at 120s while exec.timeout_sec is 900s; a cut-off probe leaves the stamp unwritten and the terminal reads present_unverified, i.e. fail-closed, retried next boot. Never fails the boot: run_claude_ready's rc is logged, not propagated.",
+    "dispatch_rider": "line-cursor-agent-bridge",
+    "dispatch_cadence": "1m"
+  },
+  "rider": {
+    "host": "HubClock",
+    "id": "claude-remote-ready",
+    "cadence": "5m",
+    "armed": false,
+    "_armed_doc": "register-rider add = new recurring out-of-turn execution = arming, which is the operator's call (register-rider.py AUTHORIZATION). The boot-time run plus the already-armed line-cursor-agent-bridge@1m are enough for the guarantee; this rider is hardening. Proposal: _inbox/from_projects/ai_darkhero/claude-remote-ready-rider.md",
+    "command": "pythonw %AI_WORKSPACE%\\_skill\\engines\\claude-remote-ready.py --quiet"
+  },
+  "engine": "_skill/engines/claude-remote-exec.py",
+  "cite": [
+    "_registry/line-cursor-agent.json",
+    "_skill/engines/line-cursor-agent-bridge.py",
+    "ai_darkhero/tray/logon_autostart.py",
+    "ai_darkhero/supervisor/lifecycle.py"
+  ],
+  "gateway": {
+    "_doc": "Free-provider gateway lane (OmniRoute, MIT): used by run_local(lane=auto) when the Anthropic credential is absent/unverified or a run hits a quota marker. Token lives in the vault only (dotted path). Start/inspect with _skill/engines/omniroute-gateway.py.",
+    "enabled": true,
+    "base_url": "http://127.0.0.1:20128",
+    "token_vault_path": "omniroute.access_token",
+    "model": "auto/coding",
+    "health_timeout": 4.0
+  }
+}

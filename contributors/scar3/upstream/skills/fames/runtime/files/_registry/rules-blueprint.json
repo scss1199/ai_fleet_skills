@@ -1,0 +1,371 @@
+{
+  "schema": 1,
+  "updated": "2026-10-24",
+  "purpose": "The standing ruleset EVERY agent loads and obeys EVERY turn. Single machine-readable source; claude.html 'rules' tab renders this for humans.",
+  "load_hint": "Agents: this file is small - read whole at session start / after compaction. Each rule carries its authority source; a curated source overrides your default behavior.",
+  "authored_by": "ai_wallpaper compliance audit 2026-06-12, operator-directed; content = master/hub standing directives + global CLAUDE.md; 2026-06-13 master +automation(HubClock/auto-ship)+portal-authority",
+  "tiers": [
+    {
+      "id": "T1",
+      "name": "紅線 hard lines（違反即停）",
+      "rules": [
+        {
+          "id": "lang",
+          "rule": "回覆一律繁體中文;code/檔名/technique_output 文件用英文;嚴禁日文。",
+          "source": [
+            "~/.claude/CLAUDE.md",
+            "C:/ai_workspace/CLAUDE.md"
+          ]
+        },
+        {
+          "id": "no-guess",
+          "rule": "嚴禁猜(猜=幻覺):每個 load-bearing 主張要有引用來源或剛跑過的驗證,否則明說 unknown+查法。",
+          "source": [
+            "C:/ai_workspace/CLAUDE.md",
+            "_skill/technique_output/10-foundations/evidence-gate-no-guess.md"
+          ]
+        },
+        {
+          "id": "protect-logi-options-plus",
+          "rule": "【operator 2026-08-29】Logi Options+ 是滑鼠自定義快捷鍵來源，屬受保護輸入裝置功能。任何預設或批次關閉、資源清理、RGB 衝突處理、啟動裁剪均不得終止、停用或降級 logioptionsplus.exe、logioptionsplus_agent.exe、logioptionsplus_appbroker.exe、logioptionsplus_updater.exe 或 OptionsPlusUpdaterService；只有 operator 在同次指令中明確點名 Logi Options+ 才可變更。",
+          "source": [
+            "operator 2026-08-29",
+            "_registry/fleet-process-registry.json#protected_process_names"
+          ]
+        },
+        {
+          "id": "free-runtime",
+          "rule": "【operator 2026-10-27】模型分級:各 cwd 執行期只用免費模型(免費額度 API 或確認走 CPU 的本機模型);付費模型只用於架構升級或跨 cwd 整合升級。任何本機模型不得增加 A770 負載(斷電=目前最大紅線)。檢查:f1s-mesh.py tiers。",
+          "source": [
+            "_skill/engines/f1s-mesh.py",
+            "_registry/f1s-mesh/tiers.json",
+            "operator 2026-10-27"
+          ]
+        },
+        {
+          "id": "no-operator-zct-waste",
+          "rule": "【operator 2026-06-24 鐵律】禁止問 operator 機械活:git commit/push、部署、編譯、套件升級、要不要設排程、權限/oauth。一律 ZCT 自己跑:git→git_smart.py commit-push .;deploy→ship-queue.py request <repo>或fleet-ztm-ship.py(背景HubClock ship-dispatch@2m兜底);build→py_compile/npm build;週期/高頻→HubClock register-rider 提案寫SUBMIT(arming=operator);憑證→auth_check.py+vault(互動式 OAuth 登入=operator)。問=浪費 operator 時間=P=0。路由表:_registry/ztm-task-routes.json;python ztm-task-router.py。",
+          "source": [
+            "operator 2026-06-24",
+            "_registry/ztm-task-routes.json",
+            "_skill/engines/ztm-task-router.py",
+            "rules-blueprint#fleet-git-push",
+            "rules-blueprint#automation"
+          ]
+        },
+        {
+          "id": "fleet-accountability",
+          "rule": "【operator 2026-06-25】禁止廢物行為:①說謊交付(reports>0但P/evidence不達標)②推託(inbox不ack、等operator開口才pickup)③假自動化(CLAUDE宣稱HubClock/auto但hosts.json無可cite rider)④提醒才動。probation見_registry/fleet-accountability.json。每session:goal-field mint+result-field evidence+goal_compact park;違規=P=0合規紅。",
+          "source": [
+            "operator 2026-06-25",
+            "_registry/fleet-accountability.json",
+            "_skill/engines/fleet-accountability-sweep.py",
+            "scf-protocol"
+          ]
+        },
+        {
+          "id": "workspace-seat-contract",
+          "rule": "【operator 2026-06-25】凡 AI_WORKSPACE 下 ai_* / 新 seat 強制遵守 _registry/workspace-seat-contract.json:必備 CLAUDE.md+AGENTS.md(bootstrap)+.cursor/hooks.json(sync);週期工作僅 HubClock rider(禁止 schtasks/Register-ScheduledTask);背景僅 pythonw+CREATE_NO_WINDOW/wscript SW_HIDE(禁止 -WindowStyle Hidden);agent cwd 必須是自家 ai_* 資料夾。違規=合規紅+probation。掃描:fleet-rogue-scheduler-sweep.py·zt-foreground-guard.py。",
+          "source": [
+            "operator 2026-06-25",
+            "_registry/workspace-seat-contract.json",
+            "_skill/engines/fleet-rogue-scheduler-sweep.py",
+            "rules-blueprint#automation",
+            "rules-blueprint#zero-foreground"
+          ]
+        },
+        {
+          "id": "secrets",
+          "rule": "永不捏造;永不印出 secret/key/cookie 的值;_secrets 只看 schema/counts。fracdigi 的 env/ 金鑰區與 quant 的 .env/.pfx 連碰都不碰。",
+          "source": [
+            "C:/ai_workspace/CLAUDE.md",
+            "_registry/workspace-seat-contract.json"
+          ]
+        },
+        {
+          "id": "deletion",
+          "rule": "永久刪除一律 operator 親手執行,session 永不自刪;遷移=copy→fix→verify→改名 .MIGRATED-bak→soak→operator 砍。",
+          "source": [
+            "C:/ai_workspace/CLAUDE.md",
+            "_registry/room-self-heal-protocol.md §4"
+          ]
+        },
+        {
+          "id": "operator-auth",
+          "rule": "新排程任務/~/.claude 全域設定/autostart/環境變數變更,需 operator 明確授權。(F1S hook 接線已授權 2026-10-13)",
+          "source": [
+            "C:/ai_workspace/CLAUDE.md"
+          ]
+        },
+        {
+          "id": "zero-foreground",
+          "rule": "零前景(claude.html 鐵則):背景子程序不得閃出可見 cmd/PowerShell 視窗。合法隱藏三選一:CREATE_NO_WINDOW(0x08000000)、wscript Run(...,0)/SW_HIDE、pythonw(GUI 子系統)。【嚴禁】powershell/Start-Process -WindowStyle Hidden(及 -w hidden)——仍配 conhost 且隱藏前搶前景焦點,是假隱藏(operator「短暫 cmd 彈窗」的真兇)。機器強制:zt-foreground-guard.py(每日掃 rider/hook 入口)。operator 2026-06-12/06-14 重申。",
+          "source": [
+            "_skill/technique_output/50-techniques/zero-foreground-execution.md",
+            "_skill/engines/zt-foreground-guard.py",
+            "_skill/engines/_launch_hidden.py"
+          ]
+        },
+        {
+          "id": "no-modal-popup",
+          "rule": "前端零彈窗(總禁令,operator 2026-06-16,全 fleet,非僅 claude.html):任何 agent 出貨的前端 UI 一律 inline、非阻塞——嚴禁 alert()/confirm()/prompt() 與 window.open() 及任何搶焦點的模態或彈出視窗。確認動作用就地兩段式按鈕(arm→再點 confirm),圖片用頁內 lightbox 而非 window.open,通知用非阻塞 inline toast(pointer-events 關閉、自動淡出)。同一條「不搶使用者焦點」紅線:背景不彈 cmd、前端不彈模態。機器強制:zt-popup-gate.py(已接 ship-queue.py,違規 exit 1 擋 push);各 agent 另須把同道閘加進自家 ship 流程。違反即停。",
+          "source": [
+            "_registry/rules-blueprint.json#zero-foreground",
+            "_skill/engines/zt-popup-gate.py",
+            "_skill/engines/ship-queue.py",
+            "operator 2026-06-16"
+          ]
+        },
+        {
+          "id": "kb-readonly",
+          "rule": "_skill/technique_output 對 curator 以外唯讀(hook 強制);要交東西寫 _inbox/from_projects/<proj>/。",
+          "source": [
+            "C:/ai_workspace/CLAUDE.md"
+          ]
+        },
+        {
+          "id": "pfkt-work-graph",
+          "rule": "【PFKT v4 2026-09-30,取代 07-04 全艦硬阻擋】PFKT=FAMES 可選的 MTM work graph:不逐 prompt deny,也不再 mint fragment 解鎖。多個可獨立驗證的交付或明確平行工作:pfkt_work_graph.py open(--plan 或 --from-fragments)→status 取可派 wave(singleton 見 parallel-gates.json)→close-node 綁 evidence(sha256)→closure 交 SEAL。硬線:graph OPEN/UNKNOWN 時 SEAL 擋完成宣稱;dispatch、process exit、建議不算 close;UNKNOWN 或 OPEN 逾 24h=pfkt-graph-unknown/stale 合規 flag。SSOT:_registry/pfkt-protocol.json(pfkt-v4)。",
+          "source": [
+            "operator 2026-07-04",
+            "operator 2026-09-30 依照最新的FAMES LEAN JEV 的架構來升級PFKT",
+            "_registry/pfkt-protocol.json",
+            "_registry/parallel-gates.json",
+            "_skill/engines/pfkt_work_graph.py",
+            "_lean/pfkt/PfktWorkGraph.lean",
+            "_skill/engines/seal-session-ledger.py"
+          ]
+        },
+        {
+          "id": "f1s",
+          "rule": "【operator 2026-10-08】F1S＝FAMES 一套系統，每次對話預設、只提示不阻擋；做法看每回合注入的 hot_directive（fames-protocol.json）與技能 f1s-intake／mtm-mto-first／ztm-verify-before-done。紅線照舊：HubClock 只放週期工作且需授權；GitHub 用 git_smart、不 force push；任何 hook 不得擋 prompt、工具或 Stop（例外：run-until-no-next-step、proof hook），不釘 hash/版本，缺檔壞掉 fail-open。⑤不准說謊／推託、⑥嚴禁隨意產出 .md/.json（PROOF 擋）。",
+          "source": [
+            "operator 2026-10-08",
+            "_harness/docs/fames-host-enforcement.md"
+          ]
+        },
+        {
+          "id": "run-until-no-next-step",
+          "rule": "【operator 2026-10-10，2026-10-11 授權 A+B】一直跑到沒有下一步為止：回合結束時若仍有自己能做的下一步（等排程或背景工作跑完、驗證、續跑），就在同一回合用背景 waiter 做完再動，嚴禁回「下一步是 X」留給 operator 按 tab；只有資料遺失或需 operator 權限的決定才停，停時寫「沒有下一步」或「需要你決定：…」一行。機器強制：claude-run-until-done-hook.py（Stop hook，結尾仍列下一步即回 block 續跑；每 prompt 上限 2 次、每 session 12 次；壞掉 fail-open；開關 _registry/run-until-done.json）。",
+          "source": [
+            "operator 2026-10-10 「現在一直跑到沒有下一步為止 一直按tab建議有夠智障」",
+            "operator 2026-10-11 「A和B都做」",
+            "_skill/engines/claude-run-until-done-hook.py",
+            "_registry/run-until-done.json"
+          ]
+        },
+        {
+          "id": "proof",
+          "rule": "【operator 2026-10-11】PROOF Stop hook：回報主張須有本回合工具結果或現存路徑，否則寫 UNKNOWN。詳 _registry/proof.json。",
+          "source": [
+            "operator 2026-10-11 「現在去更新harness架構(換短名不要用fames)解決claude模型會說謊的問題」",
+            "_skill/engines/claude-proof-hook.py",
+            "_registry/proof.json"
+          ]
+        },
+        {
+          "id": "close-when-done",
+          "rule": "【operator 2026-10-11】對話任務完成就自己關閉：全部收尾且沒有下一步時，最後寫「沒有下一步」並 archive_session(\"self\")；還有背景工作或待決就不關；下次由派送方取消封存續用。",
+          "source": [
+            "operator 2026-10-11 「對話任務完成就自己關閉」"
+          ]
+        },
+        {
+          "id": "f1s-governs",
+          "rule": "【operator 2026-10-24】F1S 統御各 cwd：ai_darkhero 的校正令（_registry/curator-orders/<seat>.json，每回合注入）優先於該 cwd 自己的決定；紅線與 operator 本人指令仍在其上。收到先做完附證據，或答「不能做＋原因」；令凍結的檔不得 commit、令禁跑的程序會被停。",
+          "source": [
+            "operator 2026-10-24 「你來想一個好辦法解決 ai_darkhero 的對話擁有最高權限來校正除了你以外的cwd內容」",
+            "operator 2026-10-24 「優先於 然後馬上實作疊代f1s (f1s就是會優先於其他cwd的意思 你構造f1s 用f1s統御其他cwd)」",
+            "_skill/engines/curator_orders.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T2",
+      "name": "每輪節奏 per-turn protocol",
+      "rules": [
+        {
+          "id": "portal-authority",
+          "rule": "portal(claude.html)=你營運參數(W*/goal_compact_mode/model/五段 spec)與合規燈號的權威源;rules 分頁渲染本 blueprint。session 開始/壓縮後對齊它;master 有升級先看 portal,別等舊 bus 指令堆積。",
+          "source": [
+            "claude.html portal",
+            "master directive 2026-06-13"
+          ]
+        },
+        {
+          "id": "readout",
+          "rule": "非小任務開工:(a)讀 bus 兩頻道——inbox 用全名 claude_<room>、questions 用短名(鍵名錯=靜默0=漏指令) (b)一行任務+最有價值下一步+理由 (c)outcome-delta 預估,不變=做白功就跳過 (d)PPTT 路由:腳本>權威比對>單次LLM>fan-out。",
+          "source": [
+            "_skill/technique_output/50-techniques/agent-task-start-readout.md",
+            "bus directive 2026-06-08"
+          ]
+        },
+        {
+          "id": "five-element",
+          "rule": "非小任務以五段落 spec 開場:Outcome/Verification/Constraints/Iteration/ErrorHandling;P=Outcome,由 Verification 量測。",
+          "source": [
+            "_skill/technique_output/50-techniques/five-element-working-mode.md",
+            "master directive 2026-06-10"
+          ]
+        },
+        {
+          "id": "goal-compact",
+          "rule": "goal-compact 5 規則:(1)PARK 用完即蒸餾≤5行+指標→<proj>/brain/stash.md (2)PICKUP 指標先行窄讀 (3)里程碑 PARK(goal_compact.py park <agent>;壓縮由 per-project W* 自動觸發,永不叫 operator /compact) (4)懶載入:grep INDEX 不整讀、deferred tools、前綴穩定 (5)判斷以外下放 subagent/Groq/engines。",
+          "source": [
+            "_registry/goal-compact-protocol.md",
+            "_skill/technique_output/50-techniques/goal-compact-distillation.md"
+          ]
+        },
+        {
+          "id": "consume-submit-cite",
+          "rule": "CONSUME:動工前 grep INDEX.md 關鍵字,只開命中文件,curated doc 蓋過預設直覺。SUBMIT:每個里程碑(win/fix/dead-end)寫 _inbox。CITE:引用 path+KB 版本。",
+          "source": [
+            "_skill/engines/mandate-protocol.md"
+          ]
+        },
+        {
+          "id": "effort",
+          "rule": "effort 紀律:預設 high;xhigh 留關鍵段;max 幾乎不用;機械活下放 haiku/sonnet。輸出 token 成本 5 倍於輸入——結論先行、砍複述。",
+          "source": [
+            "_registry/goal-compact-protocol.md effort discipline"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T3",
+      "name": "收尾義務 session-end duties",
+      "rules": [
+        {
+          "id": "pptt-report",
+          "rule": "每 session 結束報 PPTT:model+功勞(p_verified=1|0 對五段落 Verification+一行成果)+tokens+用時 → _logs/pptt/<agent>.jsonl(指令見 pptt-version.json)。",
+          "source": [
+            "_registry/goal-compact-protocol.md logging duty",
+            "master directive 2026-06-11"
+          ]
+        },
+        {
+          "id": "bus-close",
+          "rule": "里程碑上 bus log(actor=短名);有人問你的 questions 要答;答應的 thread 要關。",
+          "source": [
+            "C:/ai_workspace/CLAUDE.md A2A"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T4",
+      "name": "共用資源規約 shared-resource rules",
+      "rules": [
+        {
+          "id": "zt-north-star",
+          "rule": "ZT 北極星:0-token 本地計算優先;token 只花在判斷與新開發;維運(RUN/MAINTAIN/PUSH)全腳本化。",
+          "source": [
+            "_skill/technique_output/10-foundations/zt-ztm-mtd-multiagent.md",
+            "50-techniques/zero-token-operations-baseline.md"
+          ]
+        },
+        {
+          "id": "operator-time-pptt",
+          "rule": "operator 時間是 PPTT 最稀缺資源,遠貴於 token(operator-time ≫ token > 本地算力):能用 token/算力做完就別推給 operator。【沒登入=performance 沒完成】需登入/授權的任務未完成該 auth = P=0 失敗(不論省多少 token),不得記成 0-token 勝利。動 operator 一秒前先跑 auth_check.py check <service>;窮盡才上呈:①查 _registry/auth-inventory.json + _secrets vault(已授權就直接用,絕不再問)②browser-free API(clasp/OAuth token、urllib、gallery-dl cookies)③web-perms-handoff 的 agent 側全做完只留一鍵;真不可約才 auth_check.py debt(只問一次→resolve→存進 inventory,永不重問已有憑證)。記 PPTT 用 skill_pptt.py --op=<operator秒> --authneed/--authdone。",
+          "source": [
+            "operator 2026-06-14",
+            "_skill/engines/skill_pptt.py",
+            "_skill/engines/auth_check.py",
+            "_skill/technique_output/50-techniques/pptt-operator-time-and-auth-gate.md",
+            "skill web-perms-handoff"
+          ]
+        },
+        {
+          "id": "automation",
+          "rule": "任何在時鐘上的(週期/高頻/watchdog/feed/清理/@HH:MM)=HubClock rider(skill hubclock),絕不新開 OS 排程/schtasks/HKCU Run/FileSystemWatcher/while-sleep;想背景推不阻塞=auto-ship(ship-queue.py request <repo>);EVENT(session/turn/Write)=對應 hook。arming rider 為 operator-gated。",
+          "source": [
+            "_skill/technique_output/50-techniques/hub-time-automation-map.md",
+            "master directive 2026-06-13"
+          ]
+        },
+        {
+          "id": "download",
+          "rule": "下載一律走 /download 統一下載腦(去重 manifest+bus 記錄),勿各自重造 yt-dlp 輪子。",
+          "source": [
+            "bus broadcast 2026-06-05",
+            "/download skill"
+          ]
+        },
+        {
+          "id": "git-smart",
+          "rule": "git 一律 /git-smart 或有界輸出;嚴禁裸 git diff/show/log -p(整包 patch 灌進 context=頭號 token 爆點)。",
+          "source": [
+            "_skill/technique_output/50-techniques/zero-token-git-and-ci.md",
+            "hook-enforced"
+          ]
+        },
+        {
+          "id": "cli-first-hub-ops",
+          "rule": "hub 對外 I/O 一律 ZCT engine/CLI,不為 hub 內任務掛 MCP server(工具 schema=K_MAINTAIN 稅)。GitHub→gh+git_status.py/git_smart.py/gh_ci.py;網搜/抓頁→websearch.py/distill-url.py;字幕→fetch-youtube-transcript.py;檔案搜→local-find.py/prework.py;下載→download.py。動工前先 GREP CAPABILITIES.md。寬泛探索才用 subagent(MTD);登入牆/SSO 才用 Chrome MCP(最後手段,同 web-ops 階梯)。",
+          "source": [
+            "_registry/mtd-ztm-contract.json",
+            "_skill/technique_output/CAPABILITIES.md",
+            "operator 2026-06-24 MCP-vs-CLI fleet mint"
+          ]
+        },
+        {
+          "id": "fleet-git-push",
+          "rule": "里程碑可交付後同一 turn 執行 python %AI_WORKSPACE%\\_skill\\engines\\git_smart.py commit-push .；禁止問「要不要 commit/push」。有 live site 的 agent 另跑 ship.ps1 或 fleet-ztm-ship.py scan→ship（見 fleet-ztm-ship-mandate）。git-only agent 只 commit-push。",
+          "source": [
+            "bus directive fleet-git-push-20260623",
+            "_skill/engines/git_smart.py"
+          ]
+        },
+        {
+          "id": "piggyback-announce",
+          "rule": "piggyback 宿主(如 wallpaper 的 5min health 任務載著 hub curate pump):改其排程/腳本前【先】上 bus 公告,事後補記不合規。",
+          "source": [
+            "bus directive 2026-06-06",
+            "00-meta/ZT-PIGGYBACK-MAP.md"
+          ]
+        },
+        {
+          "id": "web-ops",
+          "rule": "非小 web 操作先過 /web-ops-router 階梯(本地 HTTP→免費 LLM→Claude 判斷→chrome 最後手段)。",
+          "source": [
+            "/web-ops-router skill"
+          ]
+        },
+        {
+          "id": "no-local-llm",
+          "rule": "不拿本地 ollama 推理當產能(拖垮整機);閒置 daemon 可留。產能缺口找雲端免費池(key pool)。",
+          "source": [
+            "operator 2026-06-10/2026-06-12",
+            "memory: no-local-llm-on-this-machine"
+          ]
+        },
+        {
+          "id": "parallel-decompose-default",
+          "rule": "【PFKT/PKT/SCF 2026-07-05;PFKT v4 2026-09-30】無 singleton 依賴的 ZTM/ZAT 葉預設並行(同 wave 全開);singleton 見 parallel-gates.json。多個可獨立驗證的交付→pfkt_work_graph.py open 宣告 wave 與 accountable merge(取代 goal-field --with-pfkt→pfkt-scf-bridge bind→pfkt-fragment split/wave 的逐任務 mint)。禁止 reflex-serial。MTD 僅在拆法不明或葉需 judgment 時。",
+          "source": [
+            "_registry/pfkt-protocol.json",
+            "_registry/parallel-gates.json",
+            "_registry/scf-protocol.json",
+            "_skill/engines/pfkt_work_graph.py",
+            "_skill/engines/pfkt-scf-bridge.py",
+            "50-techniques/zero-token-mechanism-pfkt-mtd.md"
+          ]
+        },
+        {
+          "id": "pkt-scf-session",
+          "rule": "開工:goal-field.py mint <agent> [--with-pfkt];PFKT:pfkt-scf-bridge bind+fragment/wave。收工:result-field sync-pfkt→pfkt-scf-bridge close→SCF roll。goal_compact park 僅沿 g。PKT P≠PFKT P_par。SSOT:scf-protocol v2·pfkt-parameters.json。",
+          "source": [
+            "_registry/scf-protocol.json",
+            "_registry/pfkt-parameters.json",
+            "_skill/engines/goal-field.py",
+            "_skill/engines/result-field.py",
+            "_skill/engines/pfkt-scf-bridge.py",
+            "_skill/engines/scf-residual.py"
+          ]
+        }
+      ]
+    }
+  ]
+}

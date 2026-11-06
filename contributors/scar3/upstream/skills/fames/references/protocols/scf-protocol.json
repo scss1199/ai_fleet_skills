@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "version": "scf-v2",
-  "updated": "2026-07-05",
+  "version": "scf-v2.1",
+  "updated": "2026-09-15",
   "purpose": "Self-Consistent Field (SCF) over the hub: ψ, g, r, R, κ. PFKT is upper-level orchestration before full PKT tuning. AEX closed cycle (EXEC…GUARD) drives ψ updates with Krylov CG/BiCGStab/GMRES acceleration — see fleet-token-ladder.json (fleet-aex). ZTM/ZAT/MTD glossary: fleet-skill-lanes.json.",
   "aex_ref": "_registry/fleet-token-ladder.json",
   "aex_engine": "_skill/engines/fleet-token-ladder.py aex iterate",
@@ -13,15 +13,15 @@
     "P_par": "PFKT parallel score — see pfkt-protocol.json",
     "ψ": "Field state: spec + rules hash + KB version + promoted canon snapshot",
     "g": "Goal vector; mint via goal-field.py (MTD or ZTM)",
-    "r": "Result vector; ZAT-verified dims at session end via result-field.py",
-    "R": "Residual g − proj_g(r); evolution metric, not optional",
+    "r": "Realized result r=g*c; result-field dims store unitless completion c in [0,1].",
+    "R": "Residual g-r; a numeric diagnostic after verified results, not delivery proof.",
     "ZTM": "zero-token-mechanism layer (whole)",
     "ZAT": "zero-agent-token atomic deliverable per fragment"
   },
   "pkt": {
     "canon_formula": "PKT = P / (K_billable_ktok · T_total_min)",
     "pptt_alias": true,
-    "p_formula": "P = P_align · P_compact; P_align = 100·dot(g,r)/dot(g,g); P_compact ∈ [0,1] from goal-compact orthogonality",
+    "p_formula": "P=P_align*P_compact; P_align=100*sum(g_k^2*c_k)/sum(g_k^2); r=g*c, finite c in [0,1], positive finite g. Normalize weights before squaring. Any required c<1 forces P_align=0; invalid data is UNKNOWN.",
     "t_formula": "T_total_s = T_agent_s + w_op·T_operator_wait_s; T_pkt_min = T_total_s/60",
     "w_op": 10,
     "metric_ref": "_registry/goal-vector-protocol.json",
@@ -30,16 +30,66 @@
   },
   "scf_loop": {
     "steps": [
-      {"id": "goal_mint", "lane": "MTD|ZTM", "engine": "goal-field.py", "output": "<stamp>.goal.json"},
-      {"id": "pfkt_bind", "layer": "PFKT", "engine": "pfkt-scf-bridge.py bind", "output": "pfkt-session-<stamp>.json", "requires": "goal_mint"},
-      {"id": "pfkt_split", "layer": "PFKT", "engine": "pfkt-fragment.py", "output": "fragments-<stamp>.json", "note": "MTD if split strategy ambiguous"},
-      {"id": "pfkt_wave", "layer": "PFKT", "engine": "pfkt-wave.py", "output": "pf-wave-<stamp>.json", "when": "parallel fan-out"},
-      {"id": "ztm_execute", "lane": "ZTM", "unit": "ZAT", "ref": "_registry/parallel-gates.json"},
-      {"id": "result_verify", "lane": "ZTM", "engine": "result-field.py + zat-verify-gate.py", "output": "<stamp>.result.json"},
-      {"id": "pfkt_close", "layer": "PFKT", "engine": "pfkt-scf-bridge.py close", "when": "F=100 and P_par=100 or operator lift"},
-      {"id": "residual", "lane": "ZTM", "engine": "scf-residual.py"},
-      {"id": "field_update", "lane": "ZTM|MTD", "output": "ψ bump via promote/spec_set/SUBMIT"},
-      {"id": "pkt_ledger", "lane": "ZTM", "engine": "token-ledger.py"}
+      {
+        "id": "goal_mint",
+        "lane": "MTD|ZTM",
+        "engine": "goal-field.py",
+        "output": "<stamp>.goal.json"
+      },
+      {
+        "id": "pfkt_bind",
+        "layer": "PFKT",
+        "engine": "pfkt-scf-bridge.py bind",
+        "output": "pfkt-session-<stamp>.json",
+        "requires": "goal_mint"
+      },
+      {
+        "id": "pfkt_split",
+        "layer": "PFKT",
+        "engine": "pfkt-fragment.py",
+        "output": "fragments-<stamp>.json",
+        "note": "MTD if split strategy ambiguous"
+      },
+      {
+        "id": "pfkt_wave",
+        "layer": "PFKT",
+        "engine": "pfkt-wave.py",
+        "output": "pf-wave-<stamp>.json",
+        "when": "parallel fan-out"
+      },
+      {
+        "id": "ztm_execute",
+        "lane": "ZTM",
+        "unit": "ZAT",
+        "ref": "_registry/parallel-gates.json"
+      },
+      {
+        "id": "result_verify",
+        "lane": "ZTM",
+        "engine": "result-field.py + zat-verify-gate.py",
+        "output": "<stamp>.result.json"
+      },
+      {
+        "id": "pfkt_close",
+        "layer": "PFKT",
+        "engine": "pfkt-scf-bridge.py close",
+        "when": "F=100 and P_par=100 or operator lift"
+      },
+      {
+        "id": "residual",
+        "lane": "ZTM",
+        "engine": "scf-residual.py"
+      },
+      {
+        "id": "field_update",
+        "lane": "ZTM|MTD",
+        "output": "ψ bump via promote/spec_set/SUBMIT"
+      },
+      {
+        "id": "pkt_ledger",
+        "lane": "ZTM",
+        "engine": "token-ledger.py"
+      }
     ],
     "converged_when": {
       "R_norm_lt": 0.05,
@@ -89,7 +139,10 @@
       },
       "relaxed_fixed_point": {
         "formula": "R_relaxed = omega*R_n + (1-omega)*R_{n-1}; omega adapts from kappa",
-        "omega_range": [0.3, 1.0],
+        "omega_range": [
+          0.3,
+          1.0
+        ],
         "ref": "Damped fixed-point for goal↔result coupling"
       },
       "kappa_anderson": {

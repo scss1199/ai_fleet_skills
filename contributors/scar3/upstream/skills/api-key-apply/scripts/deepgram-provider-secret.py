@@ -113,6 +113,11 @@ def _matrix_tokens(path: Path) -> list[str]:
     ]
 
 
+# The Deepgram key is piped into this CLI: pin it (same version as line-provider-token.py) so `npx --yes`
+# can never fetch an unreviewed latest wrangler (SkillSpector RP1 review 2026-10-27).
+WRANGLER_PKG = "wrangler@4.143.1"
+
+
 def _wrangler() -> str:
     command = shutil.which("npx.cmd") or shutil.which("npx")
     if not command:
@@ -122,7 +127,7 @@ def _wrangler() -> str:
 
 def _secret_names(worker: str, cwd: Path) -> set[str]:
     proc = subprocess.run(
-        [_wrangler(), "-y", "wrangler", "secret", "list", "--name", worker],
+        [_wrangler(), "--yes", WRANGLER_PKG, "secret", "list", "--name", worker],
         cwd=cwd,
         capture_output=True,
         text=True,
@@ -142,7 +147,7 @@ def _secret_names(worker: str, cwd: Path) -> set[str]:
 
 def _put_secret(worker: str, binding: str, value: str, cwd: Path) -> bool:
     proc = subprocess.run(
-        [_wrangler(), "-y", "wrangler", "secret", "put", binding, "--name", worker],
+        [_wrangler(), "--yes", WRANGLER_PKG, "secret", "put", binding, "--name", worker],
         cwd=cwd,
         input=value + "\n",
         capture_output=True,
