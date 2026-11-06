@@ -72,6 +72,9 @@ TEXTS = {
     "git_smart": HUB / "_skill" / "engines" / "git_smart.py",
     "f1s_apply": HUB / "_skill" / "engines" / "f1s_apply.py",
     "fg_guard": HUB / "_skill" / "engines" / "zt-foreground-guard.py",
+    "skill_hubpulse": HUB / "_skill" / "fleet-skills" / "hubpulse-ops" / "SKILL.md",
+    "f1s_control": HUB / "_skill" / "engines" / "f1s_control.py",
+    "register_rider": HUB / "_skill" / "engines" / "register-rider.py",
     "skill_compose": HUB / "_skill" / "fleet-skills" / "chapter-compose" / "SKILL.md",
     "llm_engine": HUB / "_skill" / "engines" / "_llm.py",
     "load_guard": HUB / "ai_darkhero" / "tray" / "scripts" / "load_guard.py",
@@ -1159,7 +1162,15 @@ ELEMENTS = [
      "check_text": ("fg_guard", "--scan-dir PATH: CHECK 1 over a whole seat folder")},
     {"id": "EVO-git-smart-scope-errors", "element": "sdnext_a770: --files paths relative to a seat nested in the hub repo gave an opaque ls-files exit=1; ai_demo: add exit=1 with CRLF warnings, cause UNKNOWN", "verdict": "REFINE",
      "requires": None, "detail": "a path missing at the repo top but present in the current folder is taken from the current folder; a missing untracked path names both bases; add/ls-files failures now print git's own reason (no remote URL lines). CRLF warnings do not fail git add; an ignored path does (exit 1), now shown",
-     "check_text": ("git_smart", "A seat nested in the hub repo (sdnext_a770) names files from its own folder")},
+     "check_text": ("git_smart", "A seat nested in the hub repo (sdnext_a770) names files from its own folder")},    {"id": "EVO-hubclock-task-riders", "element": "ai_darkhero (operator 2026-11-06 「hubclock的排程有分固定型與任務型」): a task rider carries done_when + task_session and is unregistered when done_when holds", "verdict": "REFINE",
+     "requires": None, "detail": "f1s_control status lists task_riders with an open done_when and flags stale (session archived itself, rider still armed); test_f1s_control.py. An archive done from another chat is not seen (own transcript only)",
+     "check_text": ("f1s_control", "its session already archived itself while the rider stays armed")},
+    {"id": "EVO-register-rider-default-fixed", "element": "ai_darkhero 2026-11-06: new riders default to fixed unless they name a done_when", "verdict": "REFINE",
+     "requires": None, "detail": "register-rider.py add --done-when/--task-session writes schedule_type task, otherwise fixed; test_register_rider.py; hubpulse-ops SKILL.md documents the split",
+     "check_text": ("register_rider", "task rider; without --done-when it is fixed")},
+    {"id": "EVO-hubpulse-task-rider-doc", "element": "hubpulse-ops skill: how a task rider ends (rm + archive + f1s-reverse-learning harvest)", "verdict": "INFO",
+     "requires": None, "detail": "the skill names the stale flag and the order: unregister first",
+     "check_text": ("skill_hubpulse", "`stale: true` = session 已自行 archive 但 rider 仍掛著")},
 ]
 
 
