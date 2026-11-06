@@ -35,6 +35,8 @@ Claude writes the brief and the prompts; the pipeline does the work (0 model tok
 4. `render-brief.mjs video.yaml` — refuses while t2i/i2v chapters are pending; `--allow-pending` renders a draft
    with placeholder cards for review.
 5. Look at frames (`ffmpeg -ss t -i out.mp4 -frames:v 1 f.png`) — ffprobe proves streams, not layout.
+   One PNG for the operator at 0 tokens: `ffmpeg -i out.mp4 -vf "fps=5/<seconds>,scale=640:-1,tile=3x2" -frames:v 1 contact.png`
+   (fps=5/<seconds> spreads the frames over the whole video; ai_demo 2026-11-06 teaser-01 draft).
 6. Deliverable = `ai_demo/output/finals/<output>.mp4` + `.evidence.json` (brief sha, input shas, ffprobe, commands).
 
 ## Rules

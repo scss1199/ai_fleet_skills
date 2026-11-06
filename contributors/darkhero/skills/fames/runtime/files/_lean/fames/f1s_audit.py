@@ -70,6 +70,9 @@ TEXTS = {
     "session_tax": HUB / "_skill" / "engines" / "audit-session-tax.py",
     "transcript_audit": HUB / "_skill" / "engines" / "f1s-transcript-audit.py",
     "git_smart": HUB / "_skill" / "engines" / "git_smart.py",
+    "f1s_apply": HUB / "_skill" / "engines" / "f1s_apply.py",
+    "fg_guard": HUB / "_skill" / "engines" / "zt-foreground-guard.py",
+    "skill_compose": HUB / "_skill" / "fleet-skills" / "chapter-compose" / "SKILL.md",
     "llm_engine": HUB / "_skill" / "engines" / "_llm.py",
     "load_guard": HUB / "ai_darkhero" / "tray" / "scripts" / "load_guard.py",
     "skill_jci_transfer": HUB / "_skill" / "fleet-skills" / "jci-drive-line-web-transfer" / "SKILL.md",
@@ -1141,6 +1144,22 @@ ELEMENTS = [
     {"id": "EVO-kubai-icons-covered", "element": "jci_taipei skill kubai-icons (harvest 2.454): style-consistent animated icon set, static SVG export in chosen colours", "verdict": "INFO",
      "requires": None, "detail": "already covered: web-ui-taste routes every cwd to _harness/tools/kubai-icons/SKILL.md with the export command and licence limit, and its self-check is EVO-ui-new-beside-existing; the jci_taipei skill is a thin pointer to the same tool",
      "check_text": ("skill_ui", "一組風格一致的動態圖示：`C:/ai_workspace/_harness/tools/kubai-icons/SKILL.md`")},
+    # f1s-evolve 2026-11-06 (ai_demo, ai_zonghe, jci_taipei, sdnext_a770 x2).
+    {"id": "EVO-video-contact-sheet", "element": "ai_demo: ffmpeg fps=5/<seconds>,scale,tile=3x2 one-PNG contact sheet of a render for the operator (evidence _quick_output/jci-2027-teaser-01-draft-contact-20261106.png)", "verdict": "REFINE",
+     "requires": None, "detail": "chapter-compose step 5 only showed single-frame grabs; the one-line contact sheet is added there",
+     "check_text": ("skill_compose", "One PNG for the operator at 0 tokens")},
+    {"id": "EVO-ocr-inverted-heading-crop", "element": "ai_zonghe: vision caption misses white-on-grey headings; crop the column + invert + autocontrast on a scratch copy, blind test 3/5 -> 5/5 (caption_blind_test_v2.json, commit a9738b7)", "verdict": "REFINE",
+     "requires": None, "detail": "added to the OCR row of mtm-api-pool-offload; the side note about ai_zonghe's own verify failing on uncommitted changes is seat-local and not taken",
+     "check_text": ("skill_pool", "裁出該欄＋反相＋autocontrast 的暫存副本再讀一次")},
+    {"id": "EVO-f1s-apply-close-seat-guard", "element": "jci_taipei: close on a row with `also` returns it status=new under the next seat; a retry closed ai_eatery's turn with jci_taipei's evidence (78dcaaf79a)", "verdict": "REFINE",
+     "requires": None, "detail": "close() takes the caller seat (CLI: --seat, default the seat owning cwd) and refuses another seat's row (curator exempt); the CLI prints 'handed to <seat>'; test_f1s_apply.py",
+     "check_text": ("f1s_apply", "if you closed it already it was handed on; do not close it again")},
+    {"id": "EVO-fg-guard-scan-dir", "element": "sdnext_a770: bare subprocess spawns in a seat's own scripts/ are outside zt-foreground-guard's rider/hook-derived scan (9 found, commit e285abf5)", "verdict": "REFINE",
+     "requires": None, "detail": "the existing CHECK 1 scanner already handles **kwargs flag providers (the AST idea's false-positive case), so no second scanner: --scan-dir PATH runs it over a whole seat folder on demand, outside the daily rc because a terminal-run script inherits its console",
+     "check_text": ("fg_guard", "--scan-dir PATH: CHECK 1 over a whole seat folder")},
+    {"id": "EVO-git-smart-scope-errors", "element": "sdnext_a770: --files paths relative to a seat nested in the hub repo gave an opaque ls-files exit=1; ai_demo: add exit=1 with CRLF warnings, cause UNKNOWN", "verdict": "REFINE",
+     "requires": None, "detail": "a path missing at the repo top but present in the current folder is taken from the current folder; a missing untracked path names both bases; add/ls-files failures now print git's own reason (no remote URL lines). CRLF warnings do not fail git add; an ignored path does (exit 1), now shown",
+     "check_text": ("git_smart", "A seat nested in the hub repo (sdnext_a770) names files from its own folder")},
 ]
 
 
