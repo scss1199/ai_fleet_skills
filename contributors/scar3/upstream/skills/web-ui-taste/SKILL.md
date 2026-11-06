@@ -62,6 +62,10 @@ DevTools 看到 API 已回 200 但列表是 0 筆＝初始化沒再跑。規則�
 新頁漏掉直接紅（`ai_ziyaoastro/tests/client_router_reload_guard_test.mjs`、`frontend/src/layouts/Base.astro`
 的 `REINIT`，b806548）；③ 宣稱前端修好前，在正式站用內建瀏覽器做至少三條來回路徑（A→B→A、A→B→上一頁→上一頁、
 A→C→A），每一站都要看到真資料，不是只截首頁；沒驗到的頁面要點名（synthesis 那輪就沒驗到）。
+④ 線上資產幾分鐘內就會被同步成新版、量不出前後差時，用「線上頁 A/B 換資產」驗證：headless Playwright 開線上頁，
+`page.route('**/<asset>.js*')` 分別 fulfill HEAD 版（`git show HEAD:path` 存到 scratchpad）和工作樹版，各量一個 DOM 指標。
+route handler 只能用單參數 lambda；寫成兩個參數時 Playwright 會把 request 塞進第二個參數，goto 卡到逾時。
+（ai_metadata 0ef6ba3c cluster_engine.js：canvas 3→1，頁面錯誤 0）
 
 ## 讀取速度（反向學習自 jci_taipei jci-web-fast-read，源頭 fracdigi psyncClientCache）
 
@@ -104,4 +108,6 @@ API 端加 `Cache-Control: private, stale-while-revalidate=<秒>`。範例：`jc
   - 只用檢查器，不跑 `npx skills add`。SkillSpector 掃描 150 秒逾時（held、未通過），所以留在 `_harness/tools`，不進 canon。
 - 一組風格一致的動態圖示：`C:/ai_workspace/_harness/tools/kubai-icons/SKILL.md`，靜態 SVG 用 `node scripts/export.mjs --accent #hex --state rest --out <dir>`。授權：可商用產出，不可把內附圖示當圖示集散布，也不可散布修改過的 SKILL.md，所以工具本體不進 repo。
   - 小圓鈕不適用：jci_taipei #15 試 22px，細節糊掉，色彩圖形放在彩色鈕上對比只有 1.10–2.93（白色圖形 3.87–10.35），官網沒換。
+  - 換圖示前先算 accent 對按鈕底色的 WCAG 對比，低於 3:1 就不必試；用 Playwright 截 Workers 站時，用 route abort
+    掉含 `_rsc=` 的請求，免得又觸發 RSC 預取風暴（jci_taipei 2026-11-06，`_inbox/from_projects/jci_taipei/kubai-icons-trial-comparison.png`）。
 - 架構圖、流程圖、時間軸：`C:/ai_workspace/_harness/tools/diagram-design/SKILL.md`，輸出單檔 HTML＋SVG，加 `--system-fonts` 就不連 Google Fonts；不存 `~/.diagram-design` profile。

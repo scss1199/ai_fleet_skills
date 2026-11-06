@@ -162,6 +162,14 @@ parent_skill: ztm-verify-before-done
   優先修「檔案已存在就跳過」的只寫一次存檔（斷電留下的全零檔永遠不會被重寫，來源只給當期就永久遺失），
   每個 tick 重寫的狀態檔下一次寫入就自癒，熱路徑可不加 fsync 省延遲。
   （ai_trader v30：3,238 檔壞 2；commit ee5e6e523 matrix_data_pull._save；8b234c3ac 再修同 seat 三個複本）
+- **改名但不得覆寫既有檔用 `os.rename`，不用 `os.replace`**：Windows 上 `os.rename` 遇到目標已存在會丟 FileExistsError
+  （原子且不覆寫，只改大小寫也行）；`os.replace` 會默默蓋掉。檔案被佔用會丟 PermissionError，跳過，下一輪再試。
+  （ai_theater 7dbb5d36 video_cleanup_lane.tidy_name，tests/test_video_cleanup.py）
+- **rider 產出要給線上用的資料，由 rider 自己在全綠測試後用 git_smart 推送**，否則會一直停在工作樹裡：ziyaoastro 的
+  refresh 每天都編譯資料，但 10-31 到 11-05 一個 commit 也沒有，線上一直是舊資料。測試裡的牆鐘門檻
+  （「X 秒內完成」）要設在被測阻塞時間以下、但遠大於排程抖動；0.1 秒這種門檻在機器忙時會誤失敗，擋掉自動推送。
+  （ai_ziyaoastro 2384b82 ship_compiled、91088d4 放寬門檻並在 24 程序壓 CPU 下連跑 3 次、881c88e rider 自動推送，
+  /api/version 的 commit_full 讀回相同）
   只寫一次的存放區出貨規範（ai_trader 44ce255ef，F1S 2026-10-29 吸收）：就地寫目標的 writer（`np.savez_compressed(目標)`、
   `Path.write_bytes`）沒有 rename，靜態掃「寫＋rename 的函數」看不到它，斷電一樣留全零檔——只寫一次的存放區一律走同一個
   tmp→fsync→replace helper；同一支 CLI 附 `verify` 子命令：journal 每列記 sha256，verify 全檔重算、列 mismatch／missing／unjournaled、
@@ -181,6 +189,10 @@ parent_skill: ztm-verify-before-done
   休市才記完成；官方行事曆說開盤但兩個來源都沒資料＝臨時休市，正確答案是空。數字欄出現文字（除息／除權、`---`）記
   NaN（未知），不是 0。規劃多年回測前先查 API 的合約列舉範圍：shioaji `Contracts` 只列目前掛牌的 TXO，到期合約不在裡面，
   選擇權多年盤中歷史在券商 API 不存在，只能前瞻收集——先 1 次登入＋2 次 kbars 探測再排計畫。（ai_trader v30 2026-10-24）
+- **官方表格的鍵與格子都不可信，過去的列也會被改**：欄位名可能帶尾端空白（TWSE `'取消公開抽籤 '`、TPEx `'收盤 '`），
+  查欄位前先 strip 鍵；值裡含分隔符（公司名 `TPK Holding Co., Ltd.`）會裂成兩格，用「哪一格是代號」判定再接回，
+  別按格數取值。來源事後改舊列（8021 截止日 10-23 改成 10-27）：原始年度檔只寫一次留證，前瞻規則每次更新都照表格
+  當下的樣子重讀，不沿用上次解析的結果。（ai_trader v28 公開申購抽籤 2026-10-23）
 - **看守長任務要盯「每段都會長的檔」**（逐段 JSONL、心跳檔），不要盯「整塊完成才寫一行」的 run_log：ai_trader
   2026-10-29 長錄音轉文字 run_log 25 分鐘沒新行，其實 8 個程序都在寫，盯 run_log 就是 stale 誤報。
 - **兩個來源互相同步，逐項以最新狀態與時間戳判定，兩個方向都要寫，衍生檔跟著來源的刪除走。** 判定順序

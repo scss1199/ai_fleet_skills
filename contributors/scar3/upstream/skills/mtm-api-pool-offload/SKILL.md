@@ -49,7 +49,7 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 | `reasoning` 計算／推理 | OmniRoute `auto/reasoning` | gemini | 2 輪全對、2–4 秒 |
 | `bulk` 大量分類比對 | gemini | OmniRoute `ddgw/gpt-5.4-mini` → `auto/coding` | ai_trader 2026-10-18 40 則標題純 JSON 標註：ddgw 2.0／1.6／2.3 秒每次可解析、與 gemini 一致 88/120；`auto/coding`、`auto/reasoning` 回散文、閘道 gemini-2.5-flash 截斷、`cfp/zai-org/glm-5.2` 54 秒。ddgw 上游免金鑰、會 503「Failed to acquire VQD token」（curator 同夜實測），所以 `auto/coding` 留作末位（同夜 chat/completions 4.2 秒回合法 JSON） |
 | `translate` 翻譯（日→繁中等） | gemini | `auto/reasoning` → `ddgw/gpt-5.4-mini` → `cfp/zai-org/glm-5.2` → nvidia `glm-5.3-flash` | 全部譯對；1.1／1.8／1.8／11–49／42 秒 |
-| OCR 圖片讀字 | gemini 視覺（`image_ocr.py`） | — | 合成簽到圖逐字正確、2.7 秒 |
+| OCR 圖片讀字 | gemini 視覺（`image_ocr.py`） | 反白／低對比標題（白字灰底）：裁出該欄＋反相＋autocontrast 的暫存副本再讀一次，原檔不動 | 合成簽到圖逐字正確、2.7 秒；整頁圖述漏讀反白標題首字（「林國仲」讀成「國仲」），裁欄反相後盲測 3/5→5/5（ai_zonghe 2026-11-06 `images/_tools/caption.py`） |
 | 語音轉文字 日／中 | 本機 faster-whisper（`distill-media.py --engine local --lang ja`） | Deepgram（`--engine deepgram`，音檔會外送）、`medium` 重試 | 日文合成音逐字正確、30 秒 |
 | 網路搜尋 | gemini Google 搜尋（`distill-url.py --search`，每把 key 輪 `GEMINI_MODELS`） | Google News RSS（免 key，連結是 news.google.com 轉址）→ DuckDuckGo／Bing；全失敗看 `websearch.LAST_ERRORS`／stderr（429＝額度用完，不是查無結果） | 期交所官網排第一；2026-10-16 gemini 全 429 時 News RSS 仍回 96/96 |
 | embeddings 向量 | OmniRoute `gemini/gemini-embedding-001`（`/v1/embeddings`） | — | 3072 維、0.5 秒 |
