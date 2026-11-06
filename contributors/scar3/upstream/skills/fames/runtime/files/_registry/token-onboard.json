@@ -1,0 +1,342 @@
+{
+  "_doc": "Operator back door for token-onboard.py. Re-read on every run — edit freely, no restart, no code change. Adding a provider here is how this flow covers 'any site with a free token'.",
+  "_fields": {
+    "kind": "cli = hand the token to the tool's own credential store (we stop holding it) | env = keep it in the vault and inject it per-command | llm = add it to the free-API pool matrix",
+    "install": "argv; the token is fed on STDIN, never interpolated into this list",
+    "verify_http": "preferred proof: an in-process request to the provider's identity endpoint. Works for services that ship no CLI, and keeps the secret out of argv.",
+    "verify": "fallback proof: argv for the tool's own status command. rc 0 = OK, rc 127 = tool not installed (reported as NO-TOOL, not as a missing token).",
+    "vault_path": "_secrets path for kind=env. Never a literal value.",
+    "service_key": "key written into _registry/auth-inventory.json on success, so auth_check.py stops reporting UNKNOWN"
+  },
+  "providers": {
+    "github": {
+      "kind": "cli",
+      "token_url": "https://github.com/settings/tokens?type=beta",
+      "scopes": [
+        "repo",
+        "read:org",
+        "workflow"
+      ],
+      "expiry_note": "Fine-grained tokens cap at 1 year; classic tokens allow 'No expiration'.",
+      "install": [
+        "gh",
+        "auth",
+        "login",
+        "--with-token"
+      ],
+      "verify_http": {
+        "url": "https://api.github.com/user",
+        "headers": {
+          "Authorization": "Bearer {token}",
+          "User-Agent": "token-onboard"
+        },
+        "expect_status": 200
+      },
+      "verify": [
+        "gh",
+        "auth",
+        "status"
+      ],
+      "install_tool_hint": "winget install GitHub.cli",
+      "service_key": "github.com",
+      "note": "gh reads the token from stdin until EOF. Doing this interactively on Windows needs Ctrl+Z then Enter, which is exactly the trap that made this look hung; the engine closes stdin for you. Two verifiers on purpose: during ingest the token is still in hand, so verify_http asks GitHub about THAT token; afterwards it is only in gh's keyring, so `gh auth status` can report authenticated without saying which credential is active — the engine labels that weaker answer rather than passing it off as the same proof.",
+      "vault_path": "github/gh_token",
+      "vault_note": "2026-10-06: gh's own OAuth token (read:org) mirrored here by ai_darkhero/scripts/gh_auth_sync.py so the gh-auth-sync rider can re-login gh without the operator when gh's keyring entry is lost"
+    },
+    "cloudflare": {
+      "kind": "env",
+      "token_url": "https://dash.cloudflare.com/profile/api-tokens",
+      "scopes": [
+        "Workers Scripts:Edit",
+        "Workers KV Storage:Edit",
+        "D1:Edit",
+        "Account Settings:Read",
+        "Workers AI:Read"
+      ],
+      "expiry_note": "Leave TTL blank for no expiry.",
+      "needs_account_id": true,
+      "env": "CLOUDFLARE_API_TOKEN",
+      "vault_path": "cloudflare.api_token",
+      "account_env": "CLOUDFLARE_ACCOUNT_ID",
+      "account_vault_path": "cloudflare.account_id",
+      "verify_http": {
+        "url": "https://api.cloudflare.com/client/v4/user/tokens/verify",
+        "expect_status": 200,
+        "expect_body": "\"success\":true"
+      },
+      "install_tool_hint": "no install needed; use `token-onboard.py exec cloudflare -- npx -y wrangler ...`",
+      "service_key": "dash.cloudflare.com",
+      "note": "Stored in the vault rather than exported to the machine: a permanent env-var change needs operator authorization, and process-scoped injection achieves the same for the one command that needs it. Account id is on the dash overview page, right sidebar."
+    },
+    "vercel": {
+      "kind": "env",
+      "token_url": "https://vercel.com/account/settings/tokens",
+      "scopes": [
+        "Full Account"
+      ],
+      "env": "VERCEL_TOKEN",
+      "vault_path": "vercel.api_token",
+      "verify_http": {
+        "url": "https://api.vercel.com/v2/user",
+        "expect_status": 200
+      },
+      "service_key": "vercel.com",
+      "note": "Read-only use for now: the account is paused at 300% of the Fluid Active CPU allowance, and a token lets us read per-project usage to attribute it without the dashboard."
+    },
+    "fly": {
+      "kind": "env",
+      "token_url": "https://fly.io/user/personal_access_tokens",
+      "scopes": [
+        "deploy"
+      ],
+      "env": "FLY_API_TOKEN",
+      "vault_path": "fly.api_token",
+      "verify": [
+        "flyctl",
+        "auth",
+        "whoami"
+      ],
+      "install_tool_hint": "already installed at ~/.fly/bin/fly",
+      "service_key": "fly.io",
+      "note": "Billed 1.01 USD on 7/2 and 5.04 on 8/2. Token is for reading usage and for tearing machines down after the Cloudflare migration, not for new deploys."
+    },
+    "claude_code": {
+      "kind": "env",
+      "token_url": "(no dashboard page — run `claude setup-token` in a terminal; it opens the browser OAuth and prints the token)",
+      "scopes": [],
+      "expiry_note": "setup-token issues a long-lived token; re-run the same command to mint a fresh one.",
+      "env": "CLAUDE_CODE_OAUTH_TOKEN",
+      "vault_path": "anthropic.claude_code_oauth_token",
+      "verify": [
+        "python",
+        "C:\\ai_workspace\\_skill\\engines\\claude-remote-exec.py",
+        "check",
+        "--probe"
+      ],
+      "verify_timeout": 240,
+      "install_tool_hint": "already installed: claude 2.1.220 at %APPDATA%\\npm\\claude.CMD",
+      "service_key": "claude-code-cli",
+      "note": "This is the credential the phone->machine path is waiting on: everything else in _registry/claude-remote-ready.json is measured green and the only blocker is claude_not_authenticated. kind=env rather than cli because `claude` has no `auth login --with-token` verb — the CLI's own store is written by the interactive OAuth alone, so the token stays in the vault and is injected per command. Verified through claude-remote-exec.py check --probe rather than a raw argv: that engine resolves claude.CMD via PATHEXT (a bare ['claude'] argv fails under CreateProcess) and its probe spends one real call to prove the token WORKS instead of merely existing. There is no HTTP identity endpoint for a setup-token credential, which is why verify_http is absent here."
+    },
+    "openrouter": {
+      "kind": "llm",
+      "token_url": "https://openrouter.ai/settings/keys",
+      "scopes": [],
+      "verify_http": {
+        "url": "https://openrouter.ai/api/v1/key",
+        "expect_status": 200
+      },
+      "service_key": "openrouter.ai"
+    },
+    "groq": {
+      "kind": "llm",
+      "token_url": "https://console.groq.com/keys",
+      "scopes": [],
+      "verify_http": {
+        "url": "https://api.groq.com/openai/v1/models",
+        "expect_status": 200
+      },
+      "service_key": "console.groq.com",
+      "note": "All 5 existing keys return organization_restricted. A new key from a clean org is the only fix; re-adding the same one will not help."
+    },
+    "cerebras": {
+      "kind": "llm",
+      "token_url": "https://cloud.cerebras.ai/platform/apikeys",
+      "scopes": [],
+      "verify_http": {
+        "url": "https://api.cerebras.ai/v1/models",
+        "expect_status": 200
+      },
+      "service_key": "cloud.cerebras.ai"
+    },
+    "mistral": {
+      "kind": "llm",
+      "token_url": "https://console.mistral.ai/api-keys",
+      "scopes": [],
+      "verify_http": {
+        "url": "https://api.mistral.ai/v1/models",
+        "expect_status": 200
+      },
+      "service_key": "console.mistral.ai"
+    },
+    "sambanova": {
+      "kind": "llm",
+      "token_url": "https://cloud.sambanova.ai/apis",
+      "scopes": [],
+      "verify_http": {
+        "url": "https://api.sambanova.ai/v1/models",
+        "expect_status": 200
+      },
+      "service_key": "cloud.sambanova.ai"
+    },
+    "nvidia-nim": {
+      "kind": "llm",
+      "token_url": "https://build.nvidia.com/settings/api-keys",
+      "scopes": [],
+      "verify_http": {
+        "url": "https://integrate.api.nvidia.com/v1/models",
+        "expect_status": 200
+      },
+      "service_key": "build.nvidia.com"
+    },
+    "gemini": {
+      "kind": "llm",
+      "token_url": "https://aistudio.google.com/apikey",
+      "scopes": [],
+      "verify_http": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models",
+        "headers": {
+          "x-goog-api-key": "{token}"
+        },
+        "expect_status": 200
+      },
+      "service_key": "aistudio.google.com",
+      "note": "Header auth, not ?key= — a credential in a query string is logged by every proxy and by Google's own access logs."
+    },
+    "cf_ai": {
+      "kind": "llm",
+      "token_url": "https://dash.cloudflare.com/profile/api-tokens",
+      "scopes": [
+        "Workers AI:Read"
+      ],
+      "needs_account_id": true,
+      "verify_http": {
+        "url": "https://api.cloudflare.com/client/v4/user/tokens/verify",
+        "expect_status": 200,
+        "expect_body": "\"success\":true"
+      },
+      "service_key": "cf-ai",
+      "note": "verify_http proves the TOKEN is live, not that Workers AI is bound to it — the AI endpoint needs the account id in the URL path. Treat OK here as necessary, not sufficient; key-health.py is what actually probes inference."
+    },
+    "xai": {
+      "kind": "llm",
+      "token_url": "https://console.x.ai/team/default/api-keys",
+      "scopes": [],
+      "verify_http": {
+        "url": "https://api.x.ai/v1/models",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        },
+        "expect_status": 200
+      },
+      "service_key": "console.x.ai",
+      "note": "grok-2-vision — 簽到表 OCR 的第二票。挑不同廠商是為了讓錯誤去相關，同一家讀兩次不算交叉驗證。"
+    },
+    "deepseek": {
+      "kind": "llm",
+      "token_url": "https://platform.deepseek.com/api_keys",
+      "scopes": [],
+      "verify_http": {
+        "url": "https://api.deepseek.com/models",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        },
+        "expect_status": 200
+      },
+      "service_key": "platform.deepseek.com",
+      "note": "Console mints the key once and never re-shows it: press 创建 API key -> name -> 复制, then `token-onboard.py capture deepseek` (clipboard read in-process). Endpoint verified 2026-09-03: GET /models, /v1/models and POST /chat/completions all answer HTTP 401 \"Authentication Fails\" without a key, so a 200 from /models proves the token. Pay-as-you-go account (no permanent free tier); key-health probes inference via api-matrix endpoint deepseek (model deepseek-chat)."
+    },
+    "anthropic": {
+      "kind": "llm",
+      "token_url": "https://console.anthropic.com/settings/keys",
+      "scopes": [],
+      "verify_http": {
+        "url": "https://api.anthropic.com/v1/models",
+        "headers": {
+          "x-api-key": "{token}",
+          "anthropic-version": "2023-06-01"
+        },
+        "expect_status": 200
+      },
+      "service_key": "console.anthropic.com",
+      "note": "Consumer: dsh (http://127.0.0.1:3080) provider anthropic, whose managed credential ref is ANTHROPIC_API_KEY (deriveKeyRef in dsh-client-ui-settings-models/lib/client.js). Endpoint verified 2026-09-03 without a key: GET /v1/models -> 401 \"x-api-key header is required\"; POST /v1/chat/completions -> 401 \"Invalid Anthropic API Key\" (OpenAI-compatible chat endpoint, which key-health probes with schema openai). The Claude Pro/Max OAuth grant in ~/.claude/.credentials.json is a subscription token, not an API key, and is never copied here. After ingest: `dsh-credentials-bridge.py push anthropic`."
+    },
+    "openai": {
+      "kind": "llm",
+      "token_url": "https://platform.openai.com/api-keys",
+      "scopes": [],
+      "verify_http": {
+        "url": "https://api.openai.com/v1/models",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        },
+        "expect_status": 200
+      },
+      "service_key": "platform.openai.com",
+      "note": "Consumer: dsh provider openai (managed ref OPENAI_API_KEY). Endpoint verified 2026-09-03 without a key: GET /v1/models -> 401 \"Missing bearer authentication in header\". ~/.codex/auth.json is auth_mode chatgpt with OPENAI_API_KEY null: Codex CLI runs on the ChatGPT subscription OAuth, which is not an API key and is never copied here; dsh's own `openai-codex` provider is OAuth-only (pi-ai loadOpenAICodexOAuth). key-health model gpt-4o-mini must be confirmed at the first probe. After ingest: `dsh-credentials-bridge.py push openai`."
+    },
+    "deepgram": {
+      "kind": "stt",
+      "token_url": "https://console.deepgram.com/",
+      "scopes": [],
+      "verify_http": {
+        "url": "https://api.deepgram.com/v1/projects",
+        "headers": {
+          "Authorization": "Token {token}"
+        },
+        "expect_status": 200
+      },
+      "service_key": "console.deepgram.com",
+      "note": "Authorization: Token（不是 Bearer）。只在 runner 沒有 GPU 又趕時間時用；本機 whisper 品質更好且不外送會議內容。"
+    },
+    "opencode-zen": {
+      "kind": "llm",
+      "token_url": "https://opencode.ai/auth",
+      "scopes": [],
+      "verify_http": {
+        "url": "https://opencode.ai/zen/v1/models",
+        "expect_status": 200
+      },
+      "service_key": "opencode.ai",
+      "note": "OpenCode Zen gateway; free models carry the -free suffix (muse-spark-1.3-contributor-free, big-pickle, nemotron-3.5-lightning-free); quota refills ~08:00 next day (Threads @ccckmit 2026-10-01)"
+    },
+    "typesafe": {
+      "kind": "llm",
+      "token_url": "https://console.typesafe.ai/keys",
+      "scopes": [],
+      "verify_http": {
+        "url": "https://api.typesafe.ai/v1/models",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        },
+        "expect_status": 200
+      },
+      "service_key": "typesafe.ai",
+      "note": "Jev (FAMES skill advisor, _harness/runtime/jev_turn_router.py). Paid: jev-1.13.0 $0.042 per M input tokens, output free; keys only from the console (docs.typesafe.ai/introduction/quickstart). Operator authorized Jev 2026-10-15."
+    },
+    "render": {
+      "kind": "env",
+      "token_url": "https://dashboard.render.com/u/settings#api-keys",
+      "scopes": [
+        "full account (Render API keys have one scope)"
+      ],
+      "env": "RENDER_API_KEY",
+      "vault_path": "render.api_key",
+      "verify": [
+        "python",
+        "-c",
+        "import os,urllib.request;r=urllib.request.urlopen(urllib.request.Request('https://api.render.com/v1/owners?limit=1',headers={'Authorization':'Bearer '+os.environ['RENDER_API_KEY'],'Accept':'application/json'}),timeout=30);print(r.status)"
+      ],
+      "install_tool_hint": "no CLI needed; render-env-sync.py uses the REST API",
+      "service_key": "render.com",
+      "note": "ADDED 2026-10-21: ziyaoastro backend moves Fly -> Render Free; the key lets render-env-sync.py push env vars from the vault without any value reaching chat."
+    },
+    "turso": {
+      "kind": "env",
+      "token_url": "https://app.turso.tech/ -> account settings -> API Tokens -> Create",
+      "scopes": [
+        "platform API (org-level)"
+      ],
+      "env": "TURSO_PLATFORM_TOKEN",
+      "vault_path": "turso.platform_token",
+      "verify": [
+        "python",
+        "-c",
+        "import os,urllib.request;r=urllib.request.urlopen(urllib.request.Request('https://api.turso.tech/v1/organizations',headers={'Authorization':'Bearer '+os.environ['TURSO_PLATFORM_TOKEN']}),timeout=30);print(r.status)"
+      ],
+      "install_tool_hint": "no CLI (no Windows build); turso-db-setup.py uses the Platform REST API",
+      "service_key": "turso.tech",
+      "note": "ADDED 2026-10-21: hosted SQLite for ziyaoastro on Render Free; the platform token lets a script create the DB and its auth token straight into the vault."
+    }
+  }
+}
