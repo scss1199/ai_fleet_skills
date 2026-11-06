@@ -134,6 +134,54 @@ def _everything_bg_prewarm() -> None:
         return
 
 
+REVIVE_STALE_S = 300.0
+REVIVE_GAP_S = 600.0
+
+
+def _fleet_revive(hub: Path = HUB, now: float | None = None, spawn=None) -> str:
+    """operator 2026-11-06: a shutdown that Windows cancels (an app blocked it) kills every user-level background
+    process (tray, HubClock, ai_trader) but no logon follows, so the HKCU Run value never fires again.  The next
+    prompt in any chat sees a dead HubClock heartbeat and starts the same logon_autostart.py, hidden and detached.
+    Never raises, never blocks; at most once per REVIVE_GAP_S."""
+    try:
+        import time
+        now = time.time() if now is None else now
+        boot = hub / "ai_darkhero" / "tray" / "logon_autostart.py"
+        if not boot.is_file():
+            return ""
+        try:
+            beat = json.loads((hub / "_registry" / "hubclock-heartbeat.json").read_text(encoding="utf-8"))
+            age = now - datetime.fromisoformat(str(beat.get("last_tick"))).timestamp()
+        except (OSError, ValueError, TypeError):
+            age = float("inf")
+        if 0 <= age <= REVIVE_STALE_S:
+            return ""
+        stamp = hub / "_temp" / "fleet-revive.stamp"
+        try:
+            if 0 <= now - float(stamp.read_text(encoding="utf-8").strip()) < REVIVE_GAP_S:
+                return ""
+        except (OSError, ValueError):
+            pass
+        stamp.parent.mkdir(parents=True, exist_ok=True)
+        stamp.write_text(f"{now:.0f}\n", encoding="utf-8")
+        if spawn is None:
+            import subprocess
+            pyw = Path(sys.executable).with_name("pythonw.exe")
+            exe = str(pyw) if pyw.is_file() else r"C:\Python312\pythonw.exe"
+            def spawn(argv):
+                subprocess.Popen(argv, creationflags=0x08000000 | 0x00000008, close_fds=True,
+                                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            argv = [exe, str(boot)]
+        else:
+            argv = ["pythonw", str(boot)]
+        spawn(argv)
+        shown = "missing" if age == float("inf") else f"{age:.0f}s old"
+        return (f"FLEET REVIVE — HubClock heartbeat {shown}: started tray/logon_autostart.py hidden "
+                "(a cancelled shutdown leaves the tray, HubClock and ai_trader dead with no logon to restart them).")
+    except Exception:  # noqa: BLE001 — advisory only
+        return ""
+
+
 def _t1_refresh(surface_id: str, session_id: str, *, at_start: bool) -> str:
     """Return the current T1 text when it differs from what this conversation last received.
 
@@ -865,6 +913,10 @@ def main():
         if posture:
             context=(context+"\n"+posture).strip()
         _everything_bg_prewarm()
+    if not machine_event:
+        revive=_fleet_revive()
+        if revive:
+            context=(context+"\n"+revive).strip()
     # The curator's orders go first, above this seat's own plan: they outrank its decisions (T1 f1s-governs).
     orders=_curator_orders(agent, session_id)
     if orders:
