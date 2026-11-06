@@ -104,4 +104,6 @@ API 端加 `Cache-Control: private, stale-while-revalidate=<秒>`。範例：`jc
   - 只用檢查器，不跑 `npx skills add`。SkillSpector 掃描 150 秒逾時（held、未通過），所以留在 `_harness/tools`，不進 canon。
 - 一組風格一致的動態圖示：`C:/ai_workspace/_harness/tools/kubai-icons/SKILL.md`，靜態 SVG 用 `node scripts/export.mjs --accent #hex --state rest --out <dir>`。授權：可商用產出，不可把內附圖示當圖示集散布，也不可散布修改過的 SKILL.md，所以工具本體不進 repo。
   - 小圓鈕不適用：jci_taipei #15 試 22px，細節糊掉，色彩圖形放在彩色鈕上對比只有 1.10–2.93（白色圖形 3.87–10.35），官網沒換。
+  - 換圖示前先算 accent 對按鈕底色的 WCAG 對比，低於 3:1 就不必試；用 Playwright 截 Workers 站時，用 route abort
+    掉含 `_rsc=` 的請求，免得又觸發 RSC 預取風暴（jci_taipei 2026-11-06，`_inbox/from_projects/jci_taipei/kubai-icons-trial-comparison.png`）。
 - 架構圖、流程圖、時間軸：`C:/ai_workspace/_harness/tools/diagram-design/SKILL.md`，輸出單檔 HTML＋SVG，加 `--system-fonts` 就不連 Google Fonts；不存 `~/.diagram-design` profile。

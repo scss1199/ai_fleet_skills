@@ -116,6 +116,9 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 
 - 綠測試要測到真實成果，不是測到容易過的替身。改碼後說「修好」的那個測試，必須會因為這個 bug 變紅（修 bug 段），
   否則它證明不了任何事——一個對不上目標的檢查，過了也是 UNKNOWN。
+- 驗證要包含消費端實際用的 loader 或它的 log，不能只靠自家的離線解析器：東西被回報「空」或「壞」時，先讀使用端自己的
+  執行 log，再掃檔案（ai_nuwa #12：Q05 離線 UnityPy 與渲染全過，但遊戲 BepInEx/LogOutput.log 顯示 Unity 拒載；
+  根因是重壓後 UnityFS 檔頭總大小沒更新，離線讀取器不看這欄，全庫掃出 103 個；commit 0a6c243、tests/test_empty_item_check.py）。
 - 生成者不得是自己產出的唯一裁判（程式審查段已成規則）：同一個 agent 既做事又替自己打分，分數會向可規避處漂移。
 - 「進度」只算使用者看得到的真實成果，不是通過了多少自家檢查；report／alert／驗證腳本的數量不是進度（本段已有）。
 - 未經外部查核的基準分數是指標不是事實（F1S ④）：自評「金牌／全綠」在外部裁判看過前只是待證，寫法對照

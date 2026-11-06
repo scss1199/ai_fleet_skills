@@ -162,6 +162,14 @@ parent_skill: ztm-verify-before-done
   優先修「檔案已存在就跳過」的只寫一次存檔（斷電留下的全零檔永遠不會被重寫，來源只給當期就永久遺失），
   每個 tick 重寫的狀態檔下一次寫入就自癒，熱路徑可不加 fsync 省延遲。
   （ai_trader v30：3,238 檔壞 2；commit ee5e6e523 matrix_data_pull._save；8b234c3ac 再修同 seat 三個複本）
+- **改名但不得覆寫既有檔用 `os.rename`，不用 `os.replace`**：Windows 上 `os.rename` 遇到目標已存在會丟 FileExistsError
+  （原子且不覆寫，只改大小寫也行）；`os.replace` 會默默蓋掉。檔案被佔用會丟 PermissionError，跳過，下一輪再試。
+  （ai_theater 7dbb5d36 video_cleanup_lane.tidy_name，tests/test_video_cleanup.py）
+- **rider 產出要給線上用的資料，由 rider 自己在全綠測試後用 git_smart 推送**，否則會一直停在工作樹裡：ziyaoastro 的
+  refresh 每天都編譯資料，但 10-31 到 11-05 一個 commit 也沒有，線上一直是舊資料。測試裡的牆鐘門檻
+  （「X 秒內完成」）要設在被測阻塞時間以下、但遠大於排程抖動；0.1 秒這種門檻在機器忙時會誤失敗，擋掉自動推送。
+  （ai_ziyaoastro 2384b82 ship_compiled、91088d4 放寬門檻並在 24 程序壓 CPU 下連跑 3 次、881c88e rider 自動推送，
+  /api/version 的 commit_full 讀回相同）
   只寫一次的存放區出貨規範（ai_trader 44ce255ef，F1S 2026-10-29 吸收）：就地寫目標的 writer（`np.savez_compressed(目標)`、
   `Path.write_bytes`）沒有 rename，靜態掃「寫＋rename 的函數」看不到它，斷電一樣留全零檔——只寫一次的存放區一律走同一個
   tmp→fsync→replace helper；同一支 CLI 附 `verify` 子命令：journal 每列記 sha256，verify 全檔重算、列 mismatch／missing／unjournaled、
