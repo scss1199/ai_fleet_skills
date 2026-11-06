@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "desktop-rsniapr",
-  "at": "2026-10-29T22:54:01",
+  "at": "2026-11-06T11:07:19",
   "hub": "C:\\ai_workspace",
-  "seconds": 9.9,
+  "seconds": 27.2,
   "check": {
     "seats": [
       {
@@ -14,7 +14,7 @@
         "dirty": 5,
         "unpushed": 0,
         "last_commit": "2026-10-18",
-        "newest_file": "2026-10-29",
+        "newest_file": "2026-11-06",
         "activity": "ACTIVE"
       },
       {
@@ -26,7 +26,7 @@
         "unpushed": 0,
         "last_commit": "2026-10-29",
         "newest_file": "2026-10-29",
-        "activity": "ACTIVE"
+        "activity": "IDLE"
       },
       {
         "seat": "ai_roas",
@@ -104,46 +104,50 @@
     ],
     "scheduled_tasks": [],
     "counts": {
-      "ACTIVE": 2,
-      "IDLE": 1,
+      "ACTIVE": 1,
+      "IDLE": 2,
       "DORMANT": 4
     },
     "violations": 5
   },
   "sweep": {
     "applied": true,
-    "planned": 5,
-    "planned_bytes": 5061114,
+    "planned": 6,
+    "planned_bytes": 4556057,
     "by_class": {
       "cache_dir": {
         "count": 4,
-        "bytes": 1573490
+        "bytes": 921848
+      },
+      "stale": {
+        "count": 1,
+        "bytes": 1187
       },
       "backup": {
         "count": 1,
-        "bytes": 3487624
+        "bytes": 3633022
       }
     },
     "skipped": {
       "git_tracked": 0,
       "protected": 0
     },
-    "moved": 5,
+    "moved": 6,
     "engine": "fleet-residue-quarantine.py",
     "errors": []
   },
-  "delete_bytes": 287736169,
+  "delete_bytes": 292312959,
   "summary": {
     "seats": 7,
     "violations": 5,
     "activity": {
-      "ACTIVE": 2,
-      "IDLE": 1,
+      "ACTIVE": 1,
+      "IDLE": 2,
       "DORMANT": 4
     },
     "scheduled_task_findings": 0,
-    "moved": 5,
-    "planned_bytes": 5061114,
+    "moved": 6,
+    "planned_bytes": 4556057,
     "applied": true
   }
 }
