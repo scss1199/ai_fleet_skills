@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Persistent, secret-free circuit state for shared free API providers."""
-import argparse,json,os,tempfile,threading,time
+import argparse,json,os,re,tempfile,threading,time
 from pathlib import Path
 DEFAULT=Path(os.environ.get("AI_WORKSPACE",r"C:\ai_workspace"))/"_registry"/"free-api-health.json"
+BILLING=re.compile(r"402|budget exhausted|insufficient[_ ]quota|credit balance|payment required",re.I)
 class CircuitStore:
- def __init__(self,path=DEFAULT,threshold=2,cooldown=900,base=60): self.path=Path(path); self.threshold=threshold; self.cooldown=cooldown; self.base=base; self.data=self._load()
+ def __init__(self,path=DEFAULT,threshold=2,cooldown=900,base=60,billing_cooldown=86400): self.path=Path(path); self.threshold=threshold; self.cooldown=cooldown; self.base=base; self.billing_cooldown=billing_cooldown; self.data=self._load()
  def _load(self):
   try:
    x=json.loads(self.path.read_text(encoding="utf-8")); return x if isinstance(x,dict) else {"version":1,"providers":{}}
@@ -27,6 +28,9 @@ class CircuitStore:
     # 2026-10-27: a flat 900 s window shut gemini (the one steady provider) for 15 min after two 503 "high demand"
     # replies that cleared within seconds. Back off exponentially instead: 60 s, 120 s, ... capped at `cooldown`.
     if e["failures"]>=self.threshold: e["open_until"]=int(now+min(self.cooldown,self.base*2**(e["failures"]-self.threshold)))
+    # 2026-11-01: mistral answered 402 "API budget exhausted" 380 times at the 15-min cap. An account budget does not
+    # clear in minutes, so billing-class refusals hold the circuit open for a day instead of re-probing ~96x/day.
+    if BILLING.search(detail or ""): e["open_until"]=int(now+self.billing_cooldown)
    self.save()
  def note(self,p,result,detail="",now=None):
   """Record a state that is not a call failure (e.g. `no-credentials`): never counts toward the threshold and

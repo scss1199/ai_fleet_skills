@@ -42,7 +42,13 @@ import _projects  # noqa: E402
 from _paths import COMMON as HUB, REGISTRY  # noqa: E402
 
 ORDERS_DIR = os.path.join(REGISTRY, "curator-orders")
+CONTROL_STATE = os.path.join(REGISTRY, "f1s-control.json")
+SESSION_SCOPE = os.path.join(REGISTRY, "f1s-session-scope.json")  # {"sessions": {<id>: <the one thing it does>}}
+TECHNIQUES = os.path.join(REGISTRY, "f1s-apply.json")
+UNCLAIMED_AFTER_S = 3600
 CURATOR_FALLBACK = "ai_darkhero"
+REVIEW_SAMPLE = 8       # one routine order in this many still gets the curator's review
+MECHANICAL = "mechanical"
 ACTIVE = ("open", "done", "cannot")  # freeze / forbid hold until the curator closes the order
 PROTECTED = ("logioptionsplus", "optionsplusupdater")  # T1 protect-logi-options-plus: never a forbid target
 MIN_FORBID_CHARS = 8  # "python" would stop half the box
@@ -150,7 +156,7 @@ def _hub_rel(path: str) -> str:
     return rel
 
 
-def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None = None) -> dict:
+def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None = None, routine: bool = False) -> dict:
     cwd = cwd or os.getcwd()
     if not (do or "").strip():
         raise ValueError("an order needs its full prompt text (--do or --prompt-file)")
@@ -169,6 +175,8 @@ def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None 
     order = {"n": max((o.get("n", 0) for o in doc["orders"]), default=0) + 1, "issued_at": _now(),
              "issued_from": os.path.abspath(cwd), "title": title, "do": do,
              "freeze": [_hub_rel(p) for p in freeze], "forbid": list(forbid), "status": "open"}
+    if routine and not freeze and not forbid:
+        order["routine"] = True
     doc["orders"].append(order)
     _save(seat, doc)
     return order
@@ -202,6 +210,25 @@ def owned_by_other(order: dict, session_id: str) -> bool:
     return bool(owner) and bool(session_id) and owner != session_id
 
 
+def _accepted_mechanically(order: dict) -> bool:
+    """A machine-issued order answered with evidence written after it was issued closes without waking the curator: 68 such
+    reviews cost 0.2M each and reopened 4, two of them for stale evidence, which this checks (2026-11-03). Every REVIEW_SAMPLE-th
+    order and any reopened one still go to review, so the other kinds of defect keep being seen."""
+    if not order.get("routine") or order.get("reopened_at") or order.get("n", 0) % REVIEW_SAMPLE == 0:
+        return False
+    try:
+        issued = time.mktime(time.strptime(order.get("issued_at", ""), "%Y-%m-%dT%H:%M:%S"))
+    except ValueError:
+        return False
+    for path in order["answer"]["evidence"]:
+        try:
+            if os.path.getmtime(path) >= issued:
+                return True
+        except OSError:
+            continue
+    return False
+
+
 def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = None,
            session: str | None = None) -> dict:
     cwd = cwd or os.getcwd()
@@ -222,6 +249,8 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
         # The answering conversation owns the order from now on: when the curator reopens it, only that
         # conversation is pushed to finish it (jci_taipei 2026-10-28: #5 reopened pushed every jci_taipei session).
         order["owner"] = {"session": sid, "from": os.path.abspath(cwd), "at": _now(), "by": "answer"}
+    if _accepted_mechanically(order):
+        order.update(status="closed", closed_at=_now(), closed_from=MECHANICAL)
     _save(seat, doc)
     return order
 
@@ -272,8 +301,23 @@ def close(seat: str, n: int, cwd: str | None = None) -> dict:
     return _curator_change(seat, n, cwd, "closed")
 
 
+def out_of_scope(session_id: str | None) -> bool:
+    """True for a conversation the operator keeps on one job: no orders, no review queue, no articles, no idle wake.
+    Operator 2026-11-02 「另一個對話保持只看商品販售的內容」: the sale chat shares the curator's cwd, so it was woken 43
+    times for the review queue and did the curator's work. An unreadable file scopes nobody."""
+    if not session_id:
+        return False
+    try:
+        with open(SESSION_SCOPE, encoding="utf-8") as fh:
+            return session_id in (json.load(fh).get("sessions") or {})
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
 def open_orders(seat: str, session_id: str | None = None) -> list[dict]:
     """The seat's open orders; with `session_id`, only those this conversation must answer (unowned or its own)."""
+    if out_of_scope(session_id):
+        return []
     orders = [o for o in load(seat)["orders"] if o.get("status") == "open"]
     if session_id is None:
         return orders
@@ -283,13 +327,17 @@ def open_orders(seat: str, session_id: str | None = None) -> list[dict]:
 def injection(seat: str, session_id: str = "") -> str:
     """Context text for a session in `seat`: its open orders, or the curator's review queue. An order another
     conversation owns is one line (read it, do not answer it); the owner and unowned orders get the full text."""
+    if out_of_scope(session_id):
+        return ""
     if seat == curator():
         queue = review_queue()
+        techniques = _waiting_techniques(seat)
+        unclaimed = _unclaimed_orders()
         if not queue:
-            return ""
+            return "\n".join(t for t in (techniques, unclaimed) if t)
         rows = "; ".join(f"{s}#{o['n']} {o['status']} {o['title']}" for s, o in queue[:6])
-        return (f"CURATOR REVIEW — {len(queue)} answered order(s): {rows}. Check each answer, then "
-                f"curator_orders.py close <seat> <n> or reopen <seat> <n> --note TEXT.")
+        return "\n".join(t for t in (f"CURATOR REVIEW — {len(queue)} answered order(s): {rows}. Check each answer, then "
+                                     f"curator_orders.py close <seat> <n> or reopen <seat> <n> --note TEXT.", techniques, unclaimed) if t)
     orders = open_orders(seat)
     if not orders:
         return ""
@@ -306,8 +354,63 @@ def injection(seat: str, session_id: str = "") -> str:
     return "\n".join(lines)
 
 
+def _brief(orders: list[dict]) -> list[dict]:
+    """What a listing needs: every active order and the closed count. 11-02: `list` printed 311 KB per call, 110 calls in 3 days."""
+    rows = [{"n": o.get("n"), "status": o.get("status"), "title": o.get("title"), "owner": (owner_of(o) or "")[:8],
+             "evidence": (o.get("answer") or {}).get("evidence") or [], "reason": (o.get("answer") or {}).get("reason") or ""}
+            for o in orders if o.get("status") in ACTIVE]
+    closed = len(orders) - len(rows)
+    return rows + ([{"closed": closed}] if closed else [])
+
+
+def _waiting_techniques(seat: str) -> str:
+    """f1s_apply orders every other seat; the curator's own rows have no order to arrive in, so they are named here."""
+    try:
+        with open(TECHNIQUES, encoding="utf-8") as fh:
+            rows = json.load(fh).get("techniques", {}).values()
+    except (OSError, ValueError, AttributeError):
+        return ""
+    waiting = sum(1 for r in rows if r.get("seat") == seat and r.get("status") == "new" and not r.get("held"))
+    if not waiting:
+        return ""
+    return (f"ARTICLE TECHNIQUES — {waiting} waiting for this seat: f1s_apply.py list --seat {seat}, apply and measure the worthwhile ones, "
+            "f1s_apply.py close <id> applied|covered --evidence <path> or rejected --note <why>.")
+
+
+def _unclaimed_orders() -> str:
+    """An order waits for a chat in its seat, and a seat with no open chat never takes it (11-02: ai_network, ai_demo,
+    ai_career, sdnext_a770 sat unowned). Engines cannot open a conversation, so the curator is told."""
+    rows = []
+    for seat in _seats_with_orders():
+        for o in open_orders(seat):
+            try:
+                age = time.time() - time.mktime(time.strptime(o.get("issued_at", ""), "%Y-%m-%dT%H:%M:%S"))
+            except (TypeError, ValueError):
+                continue
+            if not owner_of(o) and age > UNCLAIMED_AFTER_S:
+                rows.append(f"{seat}#{o['n']} {o['title']}")
+    if not rows:
+        return ""
+    return (f"UNCLAIMED ORDERS — {len(rows)} open with no conversation: {'; '.join(rows[:6])}. Send each into that seat's main chat "
+            "(send_message, or start_session + detach, then deliver), or measure and close them yourself.")
+
+
+def _judged_by_control_loop() -> set[tuple[str, int]]:
+    """(seat, n) f1s_control still owns: it closes or reopens them from the re-measured number, days after the answer."""
+    try:
+        with open(CONTROL_STATE, encoding="utf-8") as fh:
+            doc = json.load(fh)
+    except (OSError, ValueError):
+        return set()
+    if not doc.get("enabled"):
+        return set()
+    return {(s, t["order"]) for s, t in (doc.get("seats") or {}).items() if t.get("order")}
+
+
 def review_queue() -> list[tuple[str, dict]]:
-    return [(s, o) for s in _seats_with_orders() for o in load(s)["orders"] if o.get("status") in ("done", "cannot")]
+    judged = _judged_by_control_loop()
+    return [(s, o) for s in _seats_with_orders() for o in load(s)["orders"]
+            if o.get("status") in ("done", "cannot") and (s, o.get("n")) not in judged]
 
 
 def _active() -> list[tuple[str, dict]]:
@@ -353,6 +456,7 @@ def main(argv=None) -> int:
     s.add_argument("--forbid", action="append", default=[])
     s = sub.add_parser("list")
     s.add_argument("seat", nargs="?")
+    s.add_argument("--full", action="store_true", help="every field of every order, closed ones too")
     s = sub.add_parser("deliver")
     s.add_argument("seat")
     s.add_argument("n", type=int)
@@ -384,7 +488,7 @@ def main(argv=None) -> int:
 
         elif a.cmd == "list":
             seats = [a.seat] if a.seat else _seats_with_orders()
-            out = {s: load(s)["orders"] for s in seats}
+            out = {s: load(s)["orders"] if a.full else _brief(load(s)["orders"]) for s in seats}
         elif a.cmd == "answer":
             out = answer(a.seat, a.n, a.evidence or (), a.cannot or "")
         elif a.cmd == "claim":
@@ -396,7 +500,9 @@ def main(argv=None) -> int:
     except (PermissionError, ValueError) as exc:
         print(f"refused: {exc}")
         return 2
-    print(json.dumps(out, ensure_ascii=False, indent=2))
+    if isinstance(out, dict) and "do" in out:      # the seat already holds the order's text; this line only confirms the step
+        out = {k: out.get(k) for k in ("n", "status", "title")}
+    print(json.dumps(out, ensure_ascii=False, indent=None if a.cmd == "list" else 2))
     return 0
 
 

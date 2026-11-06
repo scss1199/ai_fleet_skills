@@ -144,6 +144,16 @@ Rules this adds to the skill:
 - An unreviewed benchmark claim is a pointer, not a fact (F1S ④): the OpenAI 2025 episode is the template
   for what a self-graded "gold" is worth before an external grader has looked.
 
+## Checking the numbers in an article or advice (reverse-learned from ai_trader, 2026-11-02)
+
+When a seat fact-checks a speaker's numbers (lot size × point value, stop-loss × loss count, fees), recompute
+each figure exactly instead of re-reading it: `#eval ((1:Rat)/100 * 100000 / 100000)` in a UTF-8 file
+through `leanctl.py check` returns the exact rational with verdict `CHECKED` (computed, not proved);
+the hub Python also has sympy 1.14 / scipy 1.18 for symbolic and numeric work (probed 2026-11-03).
+Formulas and default parameters fetched by the free pool (`mtm-api-pool-offload`) are drafts: cite the
+source page, then recompute before using them. Sort each claim into fact OK / number corrected /
+refuted by backtest / untested / self-report only; a claim with no recomputation or test stays untested.
+
 ## Tactics worth trying first
 
 `decide` (small decidable facts) · `omega` (linear ℕ/ℤ arithmetic) · `norm_num` (numerals) ·

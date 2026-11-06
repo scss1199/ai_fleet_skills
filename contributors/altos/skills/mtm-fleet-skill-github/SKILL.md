@@ -69,6 +69,10 @@ HubClock 本身要開機自啟（pythonw 或 wscript，禁止 -WindowStyle Hidde
 
 **驗收**：darkhero 出貨新版後，用 `fleet-job-dispatch.py submit --target-host <host> --kind probe` 派一份探測；
 沒有人工介入就自動回應、且回報的 fames 版本等於新版，才算這台已同步。scar3 在 1.45.30 的實測是 251 秒。
+新功能送到從機 = 檔案到位、不啟動：tray／rider／daemon 在那台的啟用是那台 operator 的決定（2026-10-29 「tray 先不用開」），
+送過去不等於開起來。「推過去並檢查是否成功」要讀從機自己的結果列（`fleet-job-dispatch.py status --json` 的 result／ok／blocker、
+follower receipt 的版本），不是 submit 回傳；從機關機時狀態寫 UNKNOWN 附 staged job id，等它開機再讀回。2026-10-29 兩筆同內容
+的 job：altos 42bf560f ok、scar3 e6cfed50 ok=false blocker claude_remote_exec_check_unreadable，只看 push 會把兩台都報成功。
 
 ## 本機 SSOT
 

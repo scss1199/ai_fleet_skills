@@ -31,6 +31,10 @@ parent_skill: ztm-verify-before-done
   UAC `ConsentPromptBehaviorAdmin=0`，安裝程式的 `/auto`／`/S` 直接提權不彈窗（零彈窗紅線下這是預期），於是「沒視窗」不等於
   沒在裝、「殺不掉」不等於當機：完成判定用目標目錄出現主程式＋版本檔、或 `%APPDATA%` 下的 profile 資料夾，逾時再回報
   UNKNOWN 附兩者路徑。（ai_trader 2026-10-29 mt5setup.exe /auto 約 6 分鐘無視窗；memory owner-fx-route-20261029）
+- **WMI 卡死時 `subprocess.run(capture_output=True, timeout=N)` 救不了你。** timeout 殺掉卡在 WMI RPC 的 powershell 只留下殭屍，pipe 不關，父程序在 communicate() 永遠等；2026-11-01 15:24 起全機 `Get-CimInstance` 不回，到 18:00 累積 129 個孤兒 powershell，連 import 期查開機時間的模組都卡死。做法：能不用 WMI 就不用（程序用 psutil／toolhelp、開機時間用 GetTickCount64、服務用 sc query）；非用不可就 Popen 配 stdout／stderr=DEVNULL、結果寫檔、wait(timeout) 後殺整棵程序樹。排程器 timeout 也要殺整棵樹，只殺 rider 會留下孫程序。（hub memory wmi-wedge-20261101）
+- **Playwright 不能直接在 pythonw 下啟動。** 它的 node driver 不帶 CREATE_NO_WINDOW，pythonw 沒有 console 可繼承，就會閃出視窗。放進 `python.exe` + CREATE_NO_WINDOW 的子程序跑（子孫繼承隱藏的 console），Chromium 加 `--disable-gpu` 不動 A770。（ai_darkhero line/social_session.py）
+- **pythonw 不准直接跑 pytest。** 在 pythonw rider 裡 `sys.executable` 就是 pythonw：GUI 程式沒有 console 給子孫繼承，CREATE_NO_WINDOW 也救不了，測試裡每個裸跑的 `git` 都各開一個可見視窗。這台新主控台委派給 Windows Terminal，所以看到的是 `WindowsTerminal.exe -Embedding`、標題是 `git.exe`（f1s-evolve 每次跑測試，2026-11-02 18:10:30 抓到）。子程序一律 `_subproc_win.python_exe()` + CREATE_NO_WINDOW；zt-foreground-guard 會抓 pytest 接 sys.executable。
+- **測視窗偵測不准開真視窗。** 要測 call watcher、meet_watch 這類看視窗標題的邏輯，對視窗列舉函式注入假資料；真視窗就算在畫面外、在 scratchpad，也會搶前景，沒有訊息迴圈還會變成「沒有回應」的 Ghost 視窗（jci_taipei fake_meet_window.py 2026-11-02 跑 5 次）。PROOF popup gate 的 create-window 規則連 scratch 和測試路徑一起擋，只有 ai_darkhero/tray 例外；flash_watch 另外記錄 1.5 秒內沒有輸入的前景切換（`_logs/flash-watch.log` 的 FOCUS-STEAL）。
 - **背景 python 會跳「應用程式錯誤」對話框**：CPython 3.12 的 `platform.*` 走 WMI COM thread，機器忙時崩潰 → csrss
   硬錯誤框（短暫、無 Event 1000）。背景程序避免在 import 期呼叫 `platform.machine()/uname()` 這類查詢；零彈窗紅線。
   （ai_trader zero-popup-python-crash-dialog；hub memory pythonw-platform-ver-flash）
@@ -60,6 +64,12 @@ parent_skill: ztm-verify-before-done
   （Win+Ctrl+Shift+B，**SendInput 注入不被核心接受，要實體按**）或重開機；Explorer 不用重啟，目標一死 DoDragDrop 就返回。
   預防：顯示卡顯存 ≥85% 先警告並列出佔用者。引擎 `fleet-hang-guard.py probe|run|watch`（probe 揪錯 lane 與 stabilize
   穩定 lane 平行；kill／gfx-reset 各自要 operator 旗標）。（ai_darkhero evidence/hang-dnd-20261028）
+- **Windows 判定視窗「對齊」看的是 DWM 可見框（`DWMWA_EXTENDED_FRAME_BOUNDS`），不是 `GetWindowRect`。** Win10/11 一般視窗在可見框外
+  還有一圈隱形縮放邊框（125% 下左右下各 8 px），兩個看起來貼齊的視窗 rect 其實重疊；Snap Layouts 把框邊放在工作區邊與鄰窗邊上
+  （右邊界 exclusive：鄰窗 left == 本窗 right）；自畫邊框的程式（LINE／Qt）框 == rect。所以量與搬都用框座標，搬動時再用「該視窗自己
+  的」邊框偏移換回 rect，resize 後偏移可能變、搬完讀回不符就修正一次；只碰非最小化、非最大化、未 cloaked（`DWMWA_CLOAKED`）、
+  有標題、非 tool 的他程視窗。通則：要替 OS 補一個它本來就有判定的行為（對齊、焦點、閒置），先量 OS 自己怎麼判、沿用它的模型，
+  不要自創門檻。（ai_darkhero 68c2fa21 tray/window_snap.py + tray/tests/test_window_snap.py）
 
 ## 重試、鎖、排程
 
@@ -83,6 +93,22 @@ parent_skill: ztm-verify-before-done
   沒有變化的一輪也去 list／fetch，額度就這樣燒光。參考實作 ai_photo `src/ai_photo/drive_sync.py` 的
   `local_state()`／`last_full()`，測試 `tests/test_drive_sync.py::test_unchanged_folder_spends_no_rclone_call`。
   （ai_photo 2923431；2026-10-27 Cloudflare 全帳號額度耗盡事件）
+- **大多數時間是空的 outbox 不用短週期 rider 輪詢；寫入它的程式在結束時自己觸發消費者，rider 只當稀疏備援**：
+  operator 2026-10-29（ai_photo）「東西都確認傳完後就全空不用留任何資料夾 並讓 tray 不用一直像白癡偵測這裡」。
+  做法：①來源目錄唯讀（只讀、不增不減、交付時回報它的檔數沒變）；②每個會寫 outbox 的指令結束時 `kick()` 一次隱藏
+  背景 `run --until-empty`（CREATE_NO_WINDOW／pythonw，零前景），反覆上傳→逐檔比對（size+md5）→搬到確認區，直到
+  outbox 清空，連它留下的空日期資料夾也 rmdir（永遠不動 outbox 本身）；③outbox 沒檔就在任何遠端呼叫之前以 `empty`
+  結束，kick 對空 outbox 不起行程；④HubClock rider 只補中斷的上傳，週期從 10 分鐘放到 6 小時（縮短週期才需要授權）。
+  參考實作 ai_photo `src/ai_photo/drive_sync.py` `kick()`／`prune_empty()`，測試 `tests/test_drive_sync.py::
+  test_uploaded_outbox_ends_empty_with_no_folders`、`::test_kick_starts_nothing_for_an_empty_outbox`、
+  `::test_until_empty_repeats_until_the_outbox_is_empty`（ai_photo 6d28ac9，95 passed）。
+- **後端所有資料庫存取共用一把鎖時，先把「等鎖」和「用鎖」分開計時，再把持鎖期間的遠端寫入改成寫後（write-behind）**：
+  ai_ziyaoastro 2026-10-29 正式站 12 個同時請求，有的自己只用 DB 1 ms 卻排了 4–5.6 s，因為 `/fate` 持鎖 2.7 s、
+  每日第一次 `/daily` 持鎖寫遠端 Turso 2.6 s。做法：`_shared_get_conn` 量 `db_wait` 與 `db_use` 各自放進
+  Server-Timing（沒有這兩個數字就只能猜是後端慢還是排隊）；純快取表（period／ai_text cache）先寫行程內鏡像
+  （有上限）立即回傳、背景執行緒落庫、讀取先查鏡像；寫完要立刻讀回的寫入（profile refresh）保持同步，本機 sqlite
+  路徑不變。修後 12 個並發 `db_wait` 全 0 ms；剩下的慢是 CPU 計算（流年 8–16 s）而不是鎖，要分開報。
+  （ai_ziyaoastro 95a6f4f，`backend/app/storage/db.py`，`tests/db_cache_write_test.py`，全套 352 passed）
 - **git 128 先查殘留 `.git/index.lock`**：確認沒有長命 git 行程後改名成 `index.lock.stale-<時間>.MIGRATED-bak`（不刪）。
   殘鎖會讓排程備份「靜默不 commit」好幾天。（ai_trader git-index-lock-stale）
 - **把 runtime 資料移出 git 追蹤後，checkout／reset 到舊 commit 會用舊版覆寫正在用的檔案**（資料庫、kill flag）；
@@ -90,6 +116,26 @@ parent_skill: ztm-verify-before-done
 
 ## 時間與資料新鮮度
 
+- **「只在有變化才推」的通知閘，撤回也是新聞**：閘的鍵不是「今天要做的集合」，而是「上次已告訴使用者要做的集合」。
+  上次說了要做的項目，在使用者還能行動的窗口內掉出集合＝撤回，必須推送並寫明撤回原因；項目只是窗口到期而消失則不推。
+  空集合不等於沒事：前一晚說「申購」、早上條件不成立卻因「今天沒東西要做」而靜音，使用者會照舊指令行動。
+  做法：持久化上次推送的集合＋每項窗口截止；每輪算 retracted＝上次集合 − 本次集合 且 now＜窗口截止，retracted 非空就推，
+  測試要同時覆蓋「撤回有推」與「到期沒推」。適用每個 seat 的 LINE／通知閘。（ai_trader 3a6ab78cd：東森 2614 截止日早上
+  spread +10.9%→+9.0% 掉出申購名單卻無訊息；subscription_apply_list.py run() retracted／was，tests/test_subscription_apply_list.py）
+- **時間窗口／黑名單時段要管「已持有的狀態」，不只擋新動作**：閘放在「有沒有持倉」判斷之後，只會擋進場，
+  窗口前最後一刻進的單會被抱著跨過窗口（ai_trader fx_scalp_runner 排除 21、0 UTC 的 rollover，20:30 UTC 進場抱到 21:00 後：
+  付了 swap、連吃 3 次 60 s 報價停滯，excluded_hour 計數仍是 0）。規則：設定了任何時間窗口（排除時段、休市、維護、黑名單）
+  就要三件都做——(a) 窗口內不開新動作；(b) 行程自己擁有的狀態（持倉、鎖、租約、未完成批次）在窗口開始前一段 lead time
+  內主動解除，並寫一列有原因的紀錄（`excluded_close`）；(c) 一個測試把狀態建立在窗口前、推進時鐘跨過邊界，斷言狀態已解除。
+  「窗口內沒新動作」的測試過了不代表窗口有效。（ai_trader 956eb20c8：`seconds_to_excluded_hour()`＋`exclude_lead_s`，
+  tests/test_fx_scalp_runner.py test_held_position_is_flattened_before_the_excluded_hour_starts；memory owner-fx-route-20261029）
+- **測試夾具用「now − Δ」當事件時間、被測碼用本地日曆日當鍵，午夜後 Δ 內整套測試會假失敗**：夾具把成交時間設成
+  now−5 分鐘，碼以台北日期分桶 daily_realized 再查「今天」，台北 00:00–00:05 之間成交落在昨天、觀測在今天，拿到 0；
+  同一 commit 00:05 後全綠（ai_trader 2026-10-31 2f2140f3d：test_sim_risk_book*.py 4 failed→12 passed→全套 2862 passed）。
+  規則：(a) 夾具不用牆鐘減偏移，固定一個凍結時刻（或把 now 注入被測碼）讓事件與觀測落在同一日曆日；
+  (b) 任何以本地日期分桶的邏輯要有一個「事件在前一日 23:5x、觀測在次日 00:0x」的跨日測試，明寫期望；
+  (c) 剛推完就出現與改動無關的失敗，先看牆鐘是否在日界／時段邊界，再用乾淨 worktree 跑「同一 commit」
+  （`git worktree add --detach <scratch> <sha>`）判別，比跑前一 commit 更有判別力。（ai_trader memory risk-book-tests-taipei-midnight-window）
 - **事件時間與收到時間比對前先確認本機時鐘已同步**（W32Time 可能幾週沒同步）；時鐘慢會讓「收到早於事件」這種檢查
   靜默拒絕所有訊號，而且被去重的記錄把痕跡吃掉。（ai_trader orb-missed-signal-clock-skew）
 - **行情／事件來源的時間戳是對方伺服器的時鐘，不是 UTC**：GoMarkets-Demo 的 MT5 `tick.time` 比 UTC 快約 3 小時，拿 UTC
@@ -116,6 +162,14 @@ parent_skill: ztm-verify-before-done
   優先修「檔案已存在就跳過」的只寫一次存檔（斷電留下的全零檔永遠不會被重寫，來源只給當期就永久遺失），
   每個 tick 重寫的狀態檔下一次寫入就自癒，熱路徑可不加 fsync 省延遲。
   （ai_trader v30：3,238 檔壞 2；commit ee5e6e523 matrix_data_pull._save；8b234c3ac 再修同 seat 三個複本）
+- **改名但不得覆寫既有檔用 `os.rename`，不用 `os.replace`**：Windows 上 `os.rename` 遇到目標已存在會丟 FileExistsError
+  （原子且不覆寫，只改大小寫也行）；`os.replace` 會默默蓋掉。檔案被佔用會丟 PermissionError，跳過，下一輪再試。
+  （ai_theater 7dbb5d36 video_cleanup_lane.tidy_name，tests/test_video_cleanup.py）
+- **rider 產出要給線上用的資料，由 rider 自己在全綠測試後用 git_smart 推送**，否則會一直停在工作樹裡：ziyaoastro 的
+  refresh 每天都編譯資料，但 10-31 到 11-05 一個 commit 也沒有，線上一直是舊資料。測試裡的牆鐘門檻
+  （「X 秒內完成」）要設在被測阻塞時間以下、但遠大於排程抖動；0.1 秒這種門檻在機器忙時會誤失敗，擋掉自動推送。
+  （ai_ziyaoastro 2384b82 ship_compiled、91088d4 放寬門檻並在 24 程序壓 CPU 下連跑 3 次、881c88e rider 自動推送，
+  /api/version 的 commit_full 讀回相同）
   只寫一次的存放區出貨規範（ai_trader 44ce255ef，F1S 2026-10-29 吸收）：就地寫目標的 writer（`np.savez_compressed(目標)`、
   `Path.write_bytes`）沒有 rename，靜態掃「寫＋rename 的函數」看不到它，斷電一樣留全零檔——只寫一次的存放區一律走同一個
   tmp→fsync→replace helper；同一支 CLI 附 `verify` 子命令：journal 每列記 sha256，verify 全檔重算、列 mismatch／missing／unjournaled、
@@ -135,6 +189,10 @@ parent_skill: ztm-verify-before-done
   休市才記完成；官方行事曆說開盤但兩個來源都沒資料＝臨時休市，正確答案是空。數字欄出現文字（除息／除權、`---`）記
   NaN（未知），不是 0。規劃多年回測前先查 API 的合約列舉範圍：shioaji `Contracts` 只列目前掛牌的 TXO，到期合約不在裡面，
   選擇權多年盤中歷史在券商 API 不存在，只能前瞻收集——先 1 次登入＋2 次 kbars 探測再排計畫。（ai_trader v30 2026-10-24）
+- **官方表格的鍵與格子都不可信，過去的列也會被改**：欄位名可能帶尾端空白（TWSE `'取消公開抽籤 '`、TPEx `'收盤 '`），
+  查欄位前先 strip 鍵；值裡含分隔符（公司名 `TPK Holding Co., Ltd.`）會裂成兩格，用「哪一格是代號」判定再接回，
+  別按格數取值。來源事後改舊列（8021 截止日 10-23 改成 10-27）：原始年度檔只寫一次留證，前瞻規則每次更新都照表格
+  當下的樣子重讀，不沿用上次解析的結果。（ai_trader v28 公開申購抽籤 2026-10-23）
 - **看守長任務要盯「每段都會長的檔」**（逐段 JSONL、心跳檔），不要盯「整塊完成才寫一行」的 run_log：ai_trader
   2026-10-29 長錄音轉文字 run_log 25 分鐘沒新行，其實 8 個程序都在寫，盯 run_log 就是 stale 誤報。
 - **兩個來源互相同步，逐項以最新狀態與時間戳判定，兩個方向都要寫，衍生檔跟著來源的刪除走。** 判定順序
@@ -217,3 +275,4 @@ parent_skill: ztm-verify-before-done
   Bash 產生含反斜線的原始碼，先用 Write 工具把腳本寫成檔案再執行（Write 不收反斜線），或用 `chr(92) + "x00"` 拼；落地後用
   Python `bytes([0]) in data` 檢查有沒有 NUL。（ai_trader 2026-10-29 order #14 連踩三次；ai_darkhero 同日 patch f1s-sources.py
   的 `[ \t]+` 與 PAGE_STUB 正規表示式同樣走樣；memory bash-tool-heredoc-backslash-collapse、bash-tool-quirks）
+- **閘門訊號要帶年齡，寫入者死了的「最後一筆」不得永久擋工作**：`_registry/network-signal.json` 的寫入者（ai_network）2026-09-01 停了，它最後一筆 `congested=true`（jitter 81.93ms）讓 garytalks-feed 每 6 小時 0.1 秒就跳出，連續 59 天沒 poll，zt-guard CHECK6 天天紅卻沒人看懂；acquisition_hub 也照同一筆把頻寬打七五折。做法：讀閘門訊號時先算 `generated`／`probe_ts` 的年齡，超過訊號應有的刷新週期（這裡 6 h）就當作沒有訊號（UNKNOWN 不阻擋），並在 verdict 裡寫出年齡；寫入者要有 liveness（rider 結果或 CHECK6 列），沒有就把讀取端的過期保護當成唯一防線。（ai_darkhero/brain/insight/network_polite.py `load_signal(max_age_s)`、_skill/engines/acquisition_hub.py `_signal_stale`；F1S 2026-10-31 curator audit）

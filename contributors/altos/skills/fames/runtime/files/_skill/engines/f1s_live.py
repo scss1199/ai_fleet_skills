@@ -58,6 +58,15 @@ SHIP_MAX_S = 3600.0
 # Hardware watch for the curator seat (operator standing mandate 2026-10-24: darkhero's hardware stability is the
 # curator's job). The sensor log was empty 2026-10-21 04:03 .. 10-24 01:00 and nobody noticed: the 00:58 power loss
 # has no record, and load_grant refuses every grant while the log is stale.
+CLAUDE_PROJECTS = Path.home() / ".claude" / "projects"
+THRASH_TEXT = "Autocompact is thrashing"    # ai_metadata stopped on it 2026-11-02, 11-03 and 11-04 on a 136K trigger
+THRASH_STATE = HUB / "_registry" / "fames-hot" / "thrash-watch.json"
+THRASH_TAIL_BYTES = 65536
+THRASH_WINDOW_S = 24 * 3600
+THRASH_ALERT_EVERY_S = 6 * 3600
+ARTICLE_LOOP = HUB / "_registry" / "article-loop.json"
+ARTICLE_STORE = HUB / "_registry" / "f1s-apply.json"
+ARTICLE_LOOP_PIN_S = 24 * 3600     # the named conversation has this long; then any idle curator chat takes the batch
 HW_RING = Path(r"D:\__hwlog")
 HW_STATE = HUB / "_registry" / "fames-hot" / "hw-watch.json"
 HW_STALE_S = 300.0
@@ -92,6 +101,17 @@ def load_hook():
     spec.loader.exec_module(mod)
     mod.HUB = HUB
     return mod
+
+
+def upgrade_wake() -> bool:
+    """2026-11-01: a release that only changes the directive, the rules or live.md no longer wakes idle chats by default.
+    Measured over 7 days: 154 such wakes, each re-reading a 200-440K context to answer 「沒有下一步」; the next prompt
+    or tool call carries the new contract anyway. `live_wake.upgrade_wake: true` restores the old behaviour."""
+    try:
+        cfg = json.loads(CONFIG.read_text(encoding="utf-8-sig")).get("live_wake") or {}
+        return cfg.get("upgrade_wake", False) is True
+    except (OSError, ValueError, AttributeError):
+        return False
 
 
 def enabled() -> bool:
@@ -266,6 +286,22 @@ def capture_due(session_id: str, now: float | None = None) -> str:
     return "\n".join(alerts)
 
 
+def orders_sig(hook, seat: str) -> str:
+    """This seat's curator orders alone: the part of the contract an idle conversation has work to do on."""
+    import hashlib
+    digest = hashlib.sha256()
+    try:
+        orders = list(hook._orders_files(seat)) if seat else []
+    except Exception:  # noqa: BLE001
+        orders = []
+    for path in orders:
+        try:
+            digest.update(path.read_bytes())
+        except OSError:
+            digest.update(b"-")
+    return digest.hexdigest()[:16]
+
+
 def contract_sig(hook, seat: str) -> str:
     """What an idle conversation must act on: the hot directive, the standing rules and this seat's orders. A release
     that changes none of them (engine code, a version bump) is recorded quietly instead of waking every idle
@@ -288,6 +324,81 @@ def contract_sig(hook, seat: str) -> str:
         except OSError:
             digest.update(b"-")
     return digest.hexdigest()[:16]
+
+
+def _thrash_tail(path: Path) -> bool:
+    """True when the transcript's last real turn ended on Claude Code's own autocompact-thrash stop."""
+    try:
+        with path.open("rb") as fh:
+            fh.seek(0, 2)
+            fh.seek(max(0, fh.tell() - THRASH_TAIL_BYTES))
+            lines = fh.read().decode("utf-8", "replace").splitlines()
+    except OSError:
+        return False
+    for line in reversed(lines):
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        kind = row.get("type")
+        if kind == "user" and not row.get("isMeta"):
+            return False
+        if kind == "assistant":
+            content = (row.get("message") or {}).get("content")
+            first = content[0] if isinstance(content, list) and content else {}
+            return isinstance(first, dict) and str(first.get("text") or "").startswith(THRASH_TEXT)
+    return False
+
+
+def thrash_stuck(now: float | None = None) -> list[str]:
+    """Transcripts of the last day stopped by the thrash guard. They wait for a person until the process restarts."""
+    now = now if now is not None else _now()
+    found = []
+    try:
+        for path in CLAUDE_PROJECTS.glob("*/*.jsonl"):
+            if now - path.stat().st_mtime <= THRASH_WINDOW_S and _thrash_tail(path):
+                found.append(path.stem)
+    except OSError:
+        pass
+    return sorted(found)
+
+
+def thrash_due(seat: str, curator: str, now: float | None = None) -> str:
+    """For the curator seat: the reopen instruction for a stopped session, per session at most once per THRASH_ALERT_EVERY_S."""
+    if not seat or seat != curator:
+        return ""
+    now = now if now is not None else _now()
+    state = _read(THRASH_STATE)
+    due = [s for s in thrash_stuck(now) if now - float(state.get(s) or 0) >= THRASH_ALERT_EVERY_S]
+    if not due:
+        return ""
+    _write(THRASH_STATE, {**{k: v for k, v in state.items() if now - float(v or 0) < THRASH_WINDOW_S}, **{s: now for s in due}})
+    return ("F1S SESSION STUCK — autocompact thrash stopped transcript " + ", ".join(due) + " (under ~/.claude/projects). A "
+            "running process keeps the compaction trigger it started with, and only a new process reads the current one. "
+            "Restart it now: find the local_ id in list_sessions, archive_session, unarchive_session, then send_message with "
+            "its remaining steps. Read back a later compaction's preTokens near 270K and tell the operator.")
+
+
+def article_loop_due(seat: str, curator: str, session_id: str, now: float | None = None) -> str:
+    """For the curator seat: the batch f1s_apply.loop_tick prepared, handed to one conversation once."""
+    if not seat or seat != curator:
+        return ""
+    state = _read(ARTICLE_LOOP)
+    due = state.get("due")
+    if not isinstance(due, dict) or not due.get("text") or due.get("delivered_at"):
+        return ""
+    now = now if now is not None else _now()
+    pin = str(state.get("session") or "")
+    if pin and pin != session_id and now - float(due.get("at") or now) < ARTICLE_LOOP_PIN_S:
+        return ""
+    rows = _read(ARTICLE_STORE).get("techniques") or {}
+    if due.get("rows") and all(r in rows and (rows[r].get("seat") != curator or rows[r].get("status") != "new") for r in due["rows"]):
+        state["due"] = None   # closed while it waited (2026-11-04: 8 rows closed four minutes before the wake): not a turn, and no verdict on its yield
+        _write(ARTICLE_LOOP, state)
+        return ""
+    due.update(delivered_at=now, session=session_id)
+    _write(ARTICLE_LOOP, state)
+    return due["text"]
 
 
 def hardware_due(seat: str, curator: str, now: float | None = None) -> str:
@@ -361,6 +472,8 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
     session_id = str(doc.get("session_id") or "")
     if not session_id or doc.get("agent_id") or not enabled():
         return 0, ""
+    if session_id in (_read(HUB / "_registry" / "f1s-session-scope.json").get("sessions") or {}):
+        return 0, ""    # curator_orders.out_of_scope: a one-job conversation is not woken for F1S upgrades or the queue
     if os.environ.get("CLAUDE_CODE_SESSION_ATTENDED") == "0":
         # An unattended `claude -p` run (entrypoint sdk-cli) has nobody to wake, and the CLI waits for its async
         # hooks before it exits: on 2026-10-24 f1s-evolve's curator run (pid 51376) stayed alive behind this waiter
@@ -394,7 +507,8 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
              # already pending (it landed after the last tool call) the previous waiter's record, or nothing known.
              # "base" is the same without any orders: equal bases mean only the orders changed.
              "contract": (prior.get("contract") or None) if pending else contract_sig(hook, sig_seat),
-             "base": (prior.get("base") or None) if pending else contract_sig(hook, "")}
+             "base": (prior.get("base") or None) if pending else contract_sig(hook, ""),
+             "orders": (prior.get("orders") or None) if pending else orders_sig(hook, sig_seat)}
     _write(path, state)
 
     def finish(code: int, why: str, text: str = "") -> tuple[int, str]:
@@ -427,6 +541,12 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
         alert = hardware_due(seat, curator)
         if alert:
             return finish(2, "hardware", alert)
+        alert = thrash_due(seat, curator)
+        if alert:
+            return finish(2, "thrash", alert)
+        alert = article_loop_due(seat, curator, session_id)
+        if alert:
+            return finish(2, "article_loop", alert)
         if hook._midturn_pending(surface_id, session_id, seat=sig_seat) and not shipping():
             settled, last, ready = _now(), hook._midturn_sig(sig_seat), True
             while True:
@@ -442,12 +562,16 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
                 if transcript.is_file() and _size(transcript) > offset and turned_active(transcript, offset):
                     return finish(0, "active")
                 contract, base = contract_sig(hook, sig_seat), contract_sig(hook, "")
+                orders = orders_sig(hook, sig_seat)
                 review_only = bool(sig_seat) and sig_seat == curator and contract != state["contract"] and base == state["base"]
+                directive_only = contract != state["contract"] and orders == state.get("orders") and not review_only
                 if contract == state["contract"] or (review_only and not claim_review(session_id, sleep=sleep)):
                     text = ""                              # nothing new, or another curator chat took this review
+                elif directive_only and not upgrade_wake():
+                    text = ""                              # an upgrade alone: the next prompt carries it, no wake
                 else:
                     text = hook.live_update(doc, event="IdleWake", watch_seat=sig_seat)
-                state["contract"], state["base"] = contract, base
+                state["contract"], state["base"], state["orders"] = contract, base, orders
                 if text:
                     return finish(2, "woke", HEAD + "\n" + text)
                 # Nothing it must act on (or nothing to say): record it, or the same change re-enters the settle loop

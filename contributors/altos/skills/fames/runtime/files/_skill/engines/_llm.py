@@ -8,7 +8,7 @@ promotion. Imported by ext-digest.py / fetch-links.py / auto-curate.py.
 
 Keys: $CLAUDE_SHARED\_secrets\api-matrix.json (gitignored).
 """
-import os,sys,json,re,socket,urllib.request,urllib.error,time
+import os,sys,json,re,socket,threading,urllib.request,urllib.error,time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # co-located engines (_paths)
 from _paths import SKILL, INBOX, TECHNIQUE_OUTPUT, API_MATRIX, ENGINES
 from _free_api_supervisor import CircuitStore
@@ -46,6 +46,8 @@ def redact(text):
 def load_matrix():
     if not os.path.exists(MATRIX): return None
     return json.loads(open(MATRIX,encoding="utf-8-sig").read())
+
+_TIER_LOCAL=threading.local()
 
 class Pool:
     """Rotating Groq key pool + Gemini fallback. All calls send a browser UA."""
@@ -150,12 +152,38 @@ class Pool:
             data={"contents":[{"parts":[{"text":text}]}],"generationConfig":{"temperature":0.1}}
             try:
                 r=urllib.request.urlopen(req,data=json.dumps(data).encode(),timeout=120)
-                return json.loads(r.read())["candidates"][0]["content"]["parts"][0]["text"]
+                doc=json.loads(r.read())
             except urllib.error.HTTPError as e:
                 last="%s %s"%(e.code,e.read()[:120]); continue   # 2026-10-27: 503 high-demand on one key -> next key
             except Exception as e:
                 last=type(e).__name__; continue
+            text=self._gemini_text(doc)
+            if text is not None:
+                return text
+            # 2026-10-31: 124 'gemini-failed (KeyError)' rows in one day were safety-blocked replies with no parts
+            # (ai_theater subtitle text). The reason is now named, and a block repeats on every key: stop here.
+            last="blocked:"+self._gemini_block_reason(doc); break
         return "__ERR__ gemini-failed (%s)"%redact(last)
+    @staticmethod
+    def _gemini_text(doc):
+        """The first candidate's text, or None when the reply carries no parts (blocked / empty)."""
+        try:
+            cands=doc.get("candidates") or []
+            parts=((cands[0].get("content") or {}).get("parts") or []) if cands else []
+            text="".join(str(p.get("text","")) for p in parts if isinstance(p,dict))
+            return text if text.strip() else None
+        except (AttributeError,IndexError,TypeError):
+            return None
+    @staticmethod
+    def _gemini_block_reason(doc):
+        try:
+            fb=(doc.get("promptFeedback") or {}).get("blockReason")
+            if fb: return str(fb)
+            cands=doc.get("candidates") or []
+            if cands: return str(cands[0].get("finishReason") or "no-parts")
+            return "no-candidates"
+        except (AttributeError,TypeError):
+            return "unparseable"
     def _hf(self,messages,jsonmode,max_tokens=3000):
         """HuggingFace Inference Providers router — OpenAI-compatible text fallback."""
         if not self.hfkeys: return "__ERR__ no-hf"
@@ -292,8 +320,35 @@ class Pool:
                 return raw, "ollama"
         return "__ERR__ cloud-fallback-exhausted", ""
 
+    # 2026-11-04 operator: the four tiers of pool_tiers.py. `tier` None = this seat's own task; background work sets 3.
+    # A chat() inside chat_for is one call, not two. Any error in the scheduler lets the call through.
+    tier=None
+    seat=None
+    last_served=None     # the provider that really answered, also inside chat()'s fallback chain: tier 4 must not spend it
+    def _tier(self,name,*args):
+        if getattr(_TIER_LOCAL,"depth",0): return None
+        try:
+            here=os.path.dirname(os.path.abspath(__file__))
+            if here not in sys.path: sys.path.insert(0,here)
+            import pool_tiers
+            return getattr(pool_tiers,name)(self,*args)
+        except Exception:
+            return None
+    def _tiered(self,task,call):
+        held=self._tier("gate",task)
+        if held: return held
+        if not getattr(_TIER_LOCAL,"depth",0): self.last_served=None
+        _TIER_LOCAL.depth=getattr(_TIER_LOCAL,"depth",0)+1
+        try:
+            out=call()
+        finally:
+            _TIER_LOCAL.depth-=1
+        self._tier("note",task,out)
+        return out
     def chat(self,messages,jsonmode=False,max_tokens=3000):
         """Cloud-first fallback with persistent per-provider circuit breaking."""
+        return self._tiered("chat",lambda: self._chat(messages,jsonmode,max_tokens))
+    def _chat(self,messages,jsonmode=False,max_tokens=3000):
         last="__ERR__ no-provider"
         for prov in ("groq","cerebras","openrouter","cf_ai","hf","gemini",
                      "mistral","nvidia-nim","sambanova","together","fireworks"):
@@ -301,6 +356,7 @@ class Pool:
                 continue
             last=self.chat_via(prov,messages,jsonmode=jsonmode,max_tokens=max_tokens)
             if not last.startswith("__ERR__"):
+                self.last_served=prov
                 return last
         if self._ollama_up():
             return self.chat_via("ollama",messages,jsonmode=jsonmode,max_tokens=max_tokens)
@@ -420,6 +476,7 @@ class Pool:
         try:
             import api_budget
             low=(out or "").lower()
+            if "circuit-open" in low: return    # no call was made: neither a cost nor a verdict on this route
             if not low.startswith("__err__"): outcome="ok"
             elif "429" in low or "quota" in low or "ratelimit" in low or "rate limit" in low: outcome="ratelimited"
             else: outcome="error"
@@ -447,7 +504,11 @@ class Pool:
                 except Exception:
                     pass
         return False
+    last_provider=None   # route that answered the latest chat_for (provider name) — read by f1s_parallel's ledger
+    last_model=None
     def chat_for(self,task,messages,jsonmode=False,max_tokens=1500):
+        return self._tiered(task,lambda: self._chat_for(task,messages,jsonmode,max_tokens))
+    def _chat_for(self,task,messages,jsonmode=False,max_tokens=1500):
         """Task-routed free call: the measured best provider for `task` first, then the next, then the generic
         cloud-first chain. Unknown task = chat(). Never raises; '__ERR__ ...' only when everything failed.
         Every routed call is metered (see _budget_note); a parked / spent provider is skipped, not bought.
@@ -468,11 +529,15 @@ class Pool:
                     last=f"__ERR__ nvidia-nim not-json {model}: {last[:60]!r}"
                 self._budget_note("nvidia-nim",task,last,model)
                 if not last.startswith("__ERR__"):
+                    self.last_provider,self.last_model="nvidia-nim",model   # 2026-11-02: f1s_parallel ledger reads the route
                     return last
                 continue
             elif route in avail:
                 prov,model=route,None
             else:
+                continue
+            if not self._capability_ok(prov,task,model):
+                last=f"__ERR__ {prov} capability-parked ({task})"
                 continue
             if not self._budget_ok(prov):
                 last=f"__ERR__ {prov} budget-parked"
@@ -485,9 +550,36 @@ class Pool:
                 last=f"__ERR__ {prov} not-json {(model or prov)}: {last[:60]!r}"
             self._budget_note(prov,task,last,model)
             if not last.startswith("__ERR__"):
+                self.last_provider,self.last_model=prov,model
                 return last
         out=self.chat(messages,jsonmode=jsonmode,max_tokens=max_tokens)
+        self.last_provider,self.last_model=("chat-fallback",None) if not out.startswith("__ERR__") else (None,None)
         return out if not out.startswith("__ERR__") else last if task in self.TASK_ROUTES else out
+    CAPABILITY_PARK_STREAK=3        # this many straight error rows for one (provider, task[, model]) ...
+    CAPABILITY_PARK_WINDOW_S=6*3600  # ... inside this window park the route; one ok row (or the window) clears it
+    CAPABILITY_RETRY_S=300          # a parked route earns one trial after this, doubling per further error
+    def _capability_ok(self,provider,task,model=None):
+        """False when the ledger's last rows for this exact route are a streak of errors (not rate limits).
+        2026-10-31: gemini was first for `translate` and failed 124 times in a day on blocked replies; the circuit
+        reopened every <=15 min and each ai_theater ask paid one wasted call. Rate limits stay with api_budget;
+        no ledger or any error = usable (UNKNOWN never blocks).
+        2026-11-02: a parked route wrote no more rows, so nothing could clear it: three timeouts in one burst took
+        `extract` away from the whole fleet for 6 h while the route answered in 2 s. It now earns a trial on a
+        doubling delay, at most 7 wasted calls per window against the 124 a day above."""
+        try:
+            import api_budget
+            cap=f"chat_for.{task}"
+            rows=[r for r in api_budget._rows(since=time.time()-self.CAPABILITY_PARK_WINDOW_S)
+                  if r.get("provider")==provider and r.get("key")==self.METER_KEY and r.get("capability")==cap
+                  and (model is None or r.get("model") in (None,model))]
+            streak=0
+            for r in reversed(rows):
+                if r.get("outcome") not in ("error","empty"): break
+                streak+=1
+            if streak<self.CAPABILITY_PARK_STREAK: return True
+            return time.time()-float(rows[-1].get("ts") or 0)>=self.CAPABILITY_RETRY_S*2**(streak-self.CAPABILITY_PARK_STREAK)
+        except Exception:
+            return True
     def fan_out(self,jobs,task=None,jsonmode=False,max_tokens=1500,workers=4):
         """operator 2026-10-27 「時間最貴…叫不同的免費模型去執行可以被免費模型執行的足夠簡單任務」: run independent
         jobs (each a messages list) at the same time, one free provider per job round-robin, so separate free quotas

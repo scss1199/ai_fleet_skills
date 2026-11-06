@@ -22,6 +22,8 @@ parent_skill: aex-agent-evolution
 
 # 免費池背景查資料（POOL）
 
+**四層優先序（operator 2026-11-04，`pool_tiers.py`，所有 `_llm.Pool` 呼叫都經過）：** ①自己 cwd 的任務 ②跨 cwd 重要程度（`_registry/pool-tiers.json` 的 `seat_rank`）③資料蒐集 ④剩餘流量測試。自己的任務不用改任何東西，也不會被拒絕。大量蒐集的腳本要宣告第 3 層：`pool.tier = 3` 或 `F1S_POOL_TIER=3`，並把 `__ERR__ tier-hold` 當「晚點再做」，不算失敗。`python pool_tiers.py status` 看用量與實測上限。
+
 operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋、語音辨識、光學辨識…靠 f1s 技能化然後全自動綁定」。
 免費模型較笨、較慢，所以只交給它「量大、固定、不需頂級推理」的工作；判斷與決策留給本對話的模型。
 
@@ -30,7 +32,8 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 | 需求 | 指令 | 跑在哪 |
 |---|---|---|
 | 網路搜尋＋讀前幾名網頁＋摘要 | `python %AI_WORKSPACE%\_skill\engines\distill-url.py --search "<query>" [--n 5] --json` | DuckDuckGo 免金鑰＋免費池 |
-| 單一網址（網頁、YouTube、IG、Threads）摘要 | `python %AI_WORKSPACE%\_skill\engines\distill-url.py <url> --json` | 依網址自動選路 |
+| IG／Threads 貼文（登入讀原文、圖上字、語音）；已收文章查詢 | `python %AI_WORKSPACE%\_skill\engines\social-read.py <url>`；`--search "<主題>"` | 本機 cookie＋OCR＋ASR，0 模型呼叫（技能 social-read） |
+| 單一網址（網頁、YouTube）摘要 | `python %AI_WORKSPACE%\_skill\engines\distill-url.py <url> --json` | 依網址自動選路 |
 | 影片／音檔 → 逐字稿 | `python %AI_WORKSPACE%\_skill\engines\distill-media.py <file> --engine local [--digest]` | 本機 whisper，不外送 |
 | 圖片 → 文字（OCR） | `python %AI_WORKSPACE%\ai_darkhero\line\image_ocr.py <image>` | 免費 Gemini |
 | 大量文件分類／比對 | `_skill/engines/_llm.py` 的 `Pool().chat(...)` | 免費池（gemini、nvidia-nim…） |
@@ -46,7 +49,7 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 | `reasoning` 計算／推理 | OmniRoute `auto/reasoning` | gemini | 2 輪全對、2–4 秒 |
 | `bulk` 大量分類比對 | gemini | OmniRoute `ddgw/gpt-5.4-mini` → `auto/coding` | ai_trader 2026-10-18 40 則標題純 JSON 標註：ddgw 2.0／1.6／2.3 秒每次可解析、與 gemini 一致 88/120；`auto/coding`、`auto/reasoning` 回散文、閘道 gemini-2.5-flash 截斷、`cfp/zai-org/glm-5.2` 54 秒。ddgw 上游免金鑰、會 503「Failed to acquire VQD token」（curator 同夜實測），所以 `auto/coding` 留作末位（同夜 chat/completions 4.2 秒回合法 JSON） |
 | `translate` 翻譯（日→繁中等） | gemini | `auto/reasoning` → `ddgw/gpt-5.4-mini` → `cfp/zai-org/glm-5.2` → nvidia `glm-5.3-flash` | 全部譯對；1.1／1.8／1.8／11–49／42 秒 |
-| OCR 圖片讀字 | gemini 視覺（`image_ocr.py`） | — | 合成簽到圖逐字正確、2.7 秒 |
+| OCR 圖片讀字 | gemini 視覺（`image_ocr.py`） | 反白／低對比標題（白字灰底）：裁出該欄＋反相＋autocontrast 的暫存副本再讀一次，原檔不動 | 合成簽到圖逐字正確、2.7 秒；整頁圖述漏讀反白標題首字（「林國仲」讀成「國仲」），裁欄反相後盲測 3/5→5/5（ai_zonghe 2026-11-06 `images/_tools/caption.py`） |
 | 語音轉文字 日／中 | 本機 faster-whisper（`distill-media.py --engine local --lang ja`） | Deepgram（`--engine deepgram`，音檔會外送）、`medium` 重試 | 日文合成音逐字正確、30 秒 |
 | 網路搜尋 | gemini Google 搜尋（`distill-url.py --search`，每把 key 輪 `GEMINI_MODELS`） | Google News RSS（免 key，連結是 news.google.com 轉址）→ DuckDuckGo／Bing；全失敗看 `websearch.LAST_ERRORS`／stderr（429＝額度用完，不是查無結果） | 期交所官網排第一；2026-10-16 gemini 全 429 時 News RSS 仍回 96/96 |
 | embeddings 向量 | OmniRoute `gemini/gemini-embedding-001`（`/v1/embeddings`） | — | 3072 維、0.5 秒 |
@@ -144,6 +147,20 @@ operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是�
   windows-runtime-pitfalls 先拿 load grant。講者分群：pyannote 管線要 HF token 不能離線，但快取的 `wespeaker-voxceleb-resnet34-LM`
   可離線在 CPU 載入；whisper 段落取 embedding 後 `AgglomerativeClustering` 用 cosine/average 會把約 90% 併成一群，
   `linkage="ward"`、`n_clusters=人數` 才分得開；基頻中位數猜性別（>165 Hz 女）只能標「推定」。
+- 錄音／逐字稿要「統整、琢磨」別人說的話（操盤手、顧問、會議發言）時，交付物是逐條主張帳本，不是再一份摘要
+  （ai_trader 2026-10-29：34 條，6 條被本 seat 已登記的回測否定、11 條事實成立、3 條純自述）：每條標講者、原句時間戳與
+  evidence_status ∈ TESTED_POS／TESTED_NEG／FACT_OK／UNTESTED／SELF_REPORT／UNKNOWN；TESTED 要指向本 seat 的測試或收據，FACT 要指向
+  能開的來源，自述與未測的不得寫成事實。講者由內容判定（聲紋分群會把一個人的話標到別人頭上，疑點回原音）；先找講話者自己
+  數字互相矛盾的地方。對方推薦的平台／券商／供應商另列來源表，附主管機關態度、評分網站的 pay-to-rate 報導與投訴數，結論寫在
+  使用者所在地的法律保護下。之後再有人引用這段錄音，直接用帳本的 evidence_status 回答。
+  UNTESTED 而現有資料量得動的主張，用講者自己講的數字當預先登記門檻（supported_if 寫進收據、附 design_sha256）直接量：收據 JSON
+  進該 seat 的 runtime/research/，結果回寫帳本該列，不另開 .md（ai_trader 505d100c6 scripts/research_voice_claims.py；
+  runtime/research/voice_claims/report-20261030T194453Z.json：c6 台指 1 分鐘振幅中位數落 [70,80]、c23 四組外匯 D1 方向性）。
+  同一套做法適用任何進來的語音訊息、會議錄音、聊天建議。先用 seat 手上已有的檔案結清，不為一條主張新拉資料；講者的數字要
+  掃 seat 有的每個解析度（1／5／15／30／60 分）再判：判決只看他說的單位，但數字真正吻合的解析度寫進該列（ai_trader order #22：
+  70–80 點是 60 分鐘中位數 78，不是 1 分鐘的 9，c6 仍 TESTED_NEG）。結清後仍 UNTESTED 的每列要寫「還缺什麼資料」（帳本 note 欄，
+  例「需要 owner 實際標點位的資料集；目前沒有」），下次資料到了直接量，不必重讀錄音。
+  回報第一句講使用者的結果帳本（成交／帳戶／實際產出）動了沒，研究判決只是附註（ztm-verify-before-done 「進度」規則）。
 - 固定撈腳本的 User-Agent 用誠實的工具名（例 `ai_trader-research-pull/1.0`），不要裝成瀏覽器：只有 OS 字串、沒有其他瀏覽器
   標頭的假瀏覽器 UA 讓 FRED 讀取逾時、IMF 回 403，誠實 UA 兩者都 2 秒內回（ai_trader 2026-10-28，10 組 UA×端點）。
 
@@ -175,3 +192,18 @@ operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是�
 - `distill-url.py --search "微型臺指期貨 保證金 期交所 2026"`：7 秒，回傳來源網址與摘要；保證金 35,050 元和期交所數字一致。
 - `image_ocr.py <截圖>`：正確讀出側欄標題。
 - OmniRoute：健康，可路由 1102 個模型，只綁 127.0.0.1。
+
+## Jev 車道：挑選／排序時用型別化問題，不用自由文字（2026-10-31）
+
+F1S 的「Jev 只在挑選或排序時建議」有引擎了：`_skill/engines/jev_systemone.py`。它照 TypeSafe System One 的介面問
+型別化問題——`choice`（選項索引＋每個選項的機率＋信心）、`score`（0–1＋信心）、`noul`（陳述為真的機率）——答案是結構
+化 JSON，不產生文字。預設 `--provider pool` 在免費池上跑（`_llm.Pool.chat_for("extract", jsonmode=True)`，機率會正規化、
+信心會夾在 0–1，缺答或壞 JSON 一律 `type:"unknown"`、不補造）；`--provider typesafe` 走真正的 Jev
+（`POST https://api.typesafe.ai/v1/systemone`，模型釘 `jev-1.14.0`，輸入 $0.042/Mtok、輸出免費，無免費層），本機沒有
+金鑰時回 UNKNOWN，不會偷換成池的答案；金鑰照 token-onboard.py 上線，`--provider auto` 有鑰走 Jev、無鑰走池。
+用法：要在幾個車道／候選／版本之間挑一個，或替一批候選排序時，先把現況寫成 state、把選項寫成 choice，讀回機率再決定；
+機率是建議不是證據（F1S ④），verdict 仍要本回合證據。官方技能 `typesafe-jev`（typesafe-ai/skills，MIT）已過
+fleet-skill-vet 的 SkillSpector 閘進 canon，寫 state／questions 的手法看它。
+hub 既有的 Jev 顧問（`_harness/runtime/jev_skill_advisor.py`、`jev_phase_advisor.py`、`jev_turn_router.py`，2026-09-22 起）只認 TypeSafe 憑證、沒鑰就走本機路由；它們的 transport 可注入，`jev_systemone.pool_transport(request)` 用 TypeSafe 的線路格式回答，讓同一套顧問無鑰也能在免費池上建議（池答不出就 raise，顧問記 provider error，不補造）。
+`python _skill/engines/jev_systemone.py probe` 看哪個 provider 可答；
+`python _skill/engines/jev_systemone.py ask --state '{...}' --choice lane "a770|cpu|free pool" --noul idle "the machine is idle"`。

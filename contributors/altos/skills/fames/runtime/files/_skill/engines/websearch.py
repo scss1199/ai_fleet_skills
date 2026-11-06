@@ -72,7 +72,11 @@ def _gemini_keys():
                                          "api-matrix.json"), encoding="utf-8-sig").read())
     except Exception:
         return []
-    return [k["key"] for k in m.get("keys", []) if k.get("provider") == "gemini" and k.get("status") == "ok" and k.get("key")]
+    # 2026-11-04: all three keys read "ratelimited" while two of them answered grounding with 8-14 sources, so this
+    # filter emptied the backend with no error at all. The status is older than the call; a real 429 walks on below.
+    keys = [k for k in m.get("keys", []) if k.get("provider") == "gemini" and k.get("key")
+            and k.get("status") in ("ok", "ratelimited")]
+    return [k["key"] for k in sorted(keys, key=lambda k: k.get("status") != "ok")]
 
 
 def _resolve(url, timeout=8):
