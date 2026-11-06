@@ -116,6 +116,9 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 
 - 綠測試要測到真實成果，不是測到容易過的替身。改碼後說「修好」的那個測試，必須會因為這個 bug 變紅（修 bug 段），
   否則它證明不了任何事——一個對不上目標的檢查，過了也是 UNKNOWN。
+- 驗證要包含消費端實際用的 loader 或它的 log，不能只靠自家的離線解析器：東西被回報「空」或「壞」時，先讀使用端自己的
+  執行 log，再掃檔案（ai_nuwa #12：Q05 離線 UnityPy 與渲染全過，但遊戲 BepInEx/LogOutput.log 顯示 Unity 拒載；
+  根因是重壓後 UnityFS 檔頭總大小沒更新，離線讀取器不看這欄，全庫掃出 103 個；commit 0a6c243、tests/test_empty_item_check.py）。
 - 生成者不得是自己產出的唯一裁判（程式審查段已成規則）：同一個 agent 既做事又替自己打分，分數會向可規避處漂移。
 - 「進度」只算使用者看得到的真實成果，不是通過了多少自家檢查；report／alert／驗證腳本的數量不是進度（本段已有）。
 - 未經外部查核的基準分數是指標不是事實（F1S ④）：自評「金牌／全綠」在外部裁判看過前只是待證，寫法對照
@@ -131,7 +134,10 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 延遲數字（TTFB、TTFT、頁面／模型速度）三條全成立才算數，否則寫 UNKNOWN：
 (1) 每個目標有「回應是對的」證明——HTTP 200 只是傳輸證據（同 FAMES transport_rule）：頁面要驗 HTML 或預期的
 redirect 去向，模型要驗回覆引用了 prompt 裡的暗號；資料頁還要驗內容的日期／來源是新的——快又 200 的過期備援不算對
-（jci /events 2026-10-22：GAS 回錯誤頁、網站默默送 08-09 的舊資料約 2.5 個月）；(2) 多輪重複，看 ok-rate 再看中位數，一次冷啟動不能定案，
+（jci /events 2026-10-22：GAS 回錯誤頁、網站默默送 08-09 的舊資料約 2.5 個月）；部署讀回同理：要讀到
+commit 與建置時間。映像檔裡沒有 .git 時，在 Dockerfile 最後一個 source COPY 之後 `RUN date -u > BUILT_AT`，讓
+version 端點回 `built_at`（ai_ziyaoastro 51ed1a1，/api/version built_at 2026-11-06T01:10:17Z）；Workers 站改比對
+首頁 HTML 的 BUILD_ID（deploy-nextjs-cloudflare）；(2) 多輪重複，看 ok-rate 再看中位數，一次冷啟動不能定案，
 不穩或慢的目標加輪；遇 429/503 降並發；模型要用正式環境實際用的那把 key 和實際大小的 prompt（暗號藏在長 system prompt 裡），
 api-matrix／key 健康狀態或一字 ping 都不算；(3) 每次存一份 run 檔，與上一份比，超過門檻才標 regressed。
 重用範本：`ai_ziyaoastro/scripts/llm_provider_probe.py`（模型）、`jci_taipei/jci_taipei_website/scripts/page_latency_probe.py`（頁面）。
@@ -200,7 +206,9 @@ VIX 資訊（VVIX→TWII −0.396 但增量 R² 0.009）；加三道閘後碰巧
 「我講過」＝已給過的參考沒被用）。做法：(1) 先量參考——把「像」拆成可量的數字（開眼比例、眼下明暗差、版面尺寸、語速、句長）；
 (2) 只動主體自己的內容往那些數字靠，設上限（單次最多 +25% 之類）並守住自然不變量（成對的部位同一比例，光線、膚色、虹膜不換）；
 **把參考的像素／段落貼到主體上不算達到參考**，光線與陰影對不上就會不自然、不對稱；(3) 做完再量一次主體，
-結案要附「參考值／改前／改後」三欄與並排對照（左原圖、中舊版、右新版），舊版留 `_prev` 不覆寫；(4) 沒量到參考值的部位要寫明沒動。
+結案要附「參考值／改前／改後」三欄與並排對照（左原圖、中舊版、右新版），舊版留 `_prev` 不覆寫；
+給 operator 看的對照圖寫成 PNG 放 `C:\Users\sc\Downloads\_quick_output`（檔名含日期）並 SendUserFile，不埋在 runtime 裡
+（operator 2026-10-31，ai_nuwa）；(4) 沒量到參考值的部位要寫明沒動。
 量測數值與口味（哪種臉要多亮）留在座位自己的 memory，這裡只留程序。
 （ai_photo IMG_0054 大小眼＝整雙眼從 20261010 貼過來；IMG_0063 沒精神＝只銳化沒量眼下 −15～−29 vs 參考 −10～−13；
 重做：兩眼開眼比例同到 0.365，commit 990d901，58 測試）

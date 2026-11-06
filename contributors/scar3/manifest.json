@@ -5,8 +5,8 @@
   "role": "downstream_curator",
   "machine": "scar3",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-11-05T12:02:32Z",
-  "manifest_sha": "cfa610a0be8c302b",
+  "generated_at": "2026-11-06T03:08:25Z",
+  "manifest_sha": "cd857eff27d3cc99",
   "required": [
     "fames",
     "independent-review",
@@ -56,12 +56,12 @@
     },
     {
       "name": "agc-auto-goal-compact",
-      "sha": "f49fb34cbe0696b3",
+      "sha": "7672ee88293047c0",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "ed90da9571e7622f186034390003aa62210d79942ed741e4a91b829425267517",
+      "package_sha": "d755e6ca7bc7e11653b1ded5d2cf704aa62ba1491cabd4cc976656879808ef7d",
       "files": {
-        "SKILL.md": "f49fb34cbe0696b3daf6e0701f24efa4d378671e26ff4713b308420adf13ca18"
+        "SKILL.md": "7672ee88293047c02c754970d1276c070c13312df5e118facd13efa2d5878724"
       }
     },
     {
@@ -122,22 +122,22 @@
     },
     {
       "name": "chapter-compose",
-      "sha": "2b61d55835ac6acc",
+      "sha": "a52e51e983eec2c8",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "eae69a520b9136f886f46f5b9605dd15ab61e9958935c10245669d380ab8a79e",
+      "package_sha": "f85864ec21711758b5fa89eb954aebfd3165a023c2eeaf739b0cabe4fb449463",
       "files": {
-        "SKILL.md": "2b61d55835ac6acc607eb44f6d0bb0ca4f8c01ffe970ec77f1078e6a6b6df022"
+        "SKILL.md": "a52e51e983eec2c86a442692e5e84d827b855d680c64b17955c7a347a3cf1d28"
       }
     },
     {
       "name": "deploy-nextjs-cloudflare",
-      "sha": "22fe745a4c14b82e",
+      "sha": "99bf5964aaa7af26",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "7853a4f4c4a4daf92f9bade40d3afe85e17252575d76d56e955c46086efe0966",
+      "package_sha": "2051b3e7375a579d69cb95f20bb4c1eebdffbe65f3dd5ef0fb71e557c07d586b",
       "files": {
-        "SKILL.md": "22fe745a4c14b82e9b78e90d792636e91ee97e8b20ba07c39d682ad220a8557f",
+        "SKILL.md": "99bf5964aaa7af26dfde5d3f77b50fbe6eb97faa560c9d959c3f25f0ac6033b0",
         "agents/openai.yaml": "138a80cd1780892c6b4f1f1b9395e3a601f80790782a4b8681deae98eadf5f39",
         "assets/claude-cloudflare-migration-prompt.md": "7b1ae8438ea664637a75f107c1797f2a0b5af89c710493bf572d2e35873dd5a9",
         "assets/fames-ship-receipt.template.json": "865456a3bd3511c884334446579f1f92bfef78106126830fb25162e0cf91681f",
@@ -178,14 +178,14 @@
     },
     {
       "name": "fames",
-      "sha": "8d85390e01f29d7f",
+      "sha": "7a30544b23451621",
       "required": true,
       "lane": null,
-      "package_sha": "9017900da71e2cff6e19e613ef2d5b9326ab2dc602a71995009963dcecdbb5ad",
+      "package_sha": "bb8bf2486d865e708e888a50e582527912c42d55a731398e8a0791873aa9dcd2",
       "files": {
         ".gitattributes": "448f5307a4b4eaab3e5e0615e1b57e125c2e6419d590025c4ac3d2e2c004955e",
-        "SKILL.md": "8d85390e01f29d7faa68168771e4c9483b09ac0f6cc74d19817f00e423932c5a",
-        "bundle-manifest.json": "5913aa65ef13f09a89e90fef065d3c63d94e1ecb237c78ad27ae5f6cd10f6064",
+        "SKILL.md": "7a30544b23451621e128bf4531b85a4b746666ce13bf2b93c8af23d5adb6b5a9",
+        "bundle-manifest.json": "4016ab1a192cab47bf2fefbd34677f9e60b8511ddd8cebc5dd31dafb75670852",
         "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
         "references/autonomous-knowledge.md": "b34ca6beb034909aaade75be4707c772e90155c6c12b8278c7b3964ec8238df5",
         "references/cases.json": "2ebbb062b8e58241dfd2a70ec423678c4c16e40303d436ffa6de6e5560f67a40",
@@ -198,13 +198,13 @@
         "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
         "references/runtime-sources.json": "51b9d0860b8d73a83ad7628bb3686365ae01c819d82829638592731e9435f1e2",
         "references/scoped-skills.md": "b8d6178efa7c1700b13cab721a208900f0d088e3f416c9a906eb661c22362f85",
-        "references/protocols/fames-protocol.json": "15f1876a5577cd25659b6c1b4071894e4cf992b4d94b31eb518fe3d5d10b096c",
+        "references/protocols/fames-protocol.json": "96762f1899964d8aef935f128a42c8ec6cbc27c5668b0b04d44414236786643f",
         "references/protocols/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
         "references/protocols/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
         "references/protocols/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
         "references/protocols/scf-protocol.json": "6688d7370af1040b421dfcc715e7b730d4a74331b60bf316e3b527285be27906",
         "references/protocols/seal-protocol.json": "7de5562242692e0827a64bbc94f7a5a71fc418601558f51dc54371a11820b9a4",
-        "runtime/manifest.json": "60303a957357cfdeadcc0c94ff94f6bcdceac395fc4ee3dfd3ffd4f3dcb70b61",
+        "runtime/manifest.json": "994bd44a04285d3e72a2f0e5798d6093e6199adefd01fdf18ef63a5f084091bc",
         "runtime/files/_harness/runtime/document_preservation.py": "7af583a1d534c54332a2d9444afba1430f73a81f06627379965d5c137b6e5d48",
         "runtime/files/_harness/runtime/dsh_fames_hook.py": "35f126d239b2ae1d333dc21d14e3e05b51dfac380f324228b5fe7e92ac1c3f54",
         "runtime/files/_harness/runtime/dsh_fames_plugin.mjs": "cde86d6be7cfcb5729c17f7e46c65f30d7681e8fa6ede9a60e3c2c30b52f4ed7",
@@ -228,14 +228,14 @@
         "runtime/files/_lean/fames/FamesTurnRecovery.lean": "c7535908561b0d13ddf1533ec6e178785d46f933611bcc670a8728f075f8b6c3",
         "runtime/files/_lean/fames/claim_conformance.py": "47bb78d57a08d6f5aa9a185e4b383a017fdfc9c193686c69f5fc9ca2df555dec",
         "runtime/files/_lean/fames/conformance.py": "2cc97944eec22196b61d31b62cfe00b7788366c6610248d9c87418aba622ed42",
-        "runtime/files/_lean/fames/f1s_audit.py": "3f212e899e71d0f2dd4e3adac5f56f3829b15db53460557576a9f3dbad2ecb7b",
+        "runtime/files/_lean/fames/f1s_audit.py": "69f683bc37f361ba5076b99031938cc9be62a9c09b4e211832fca2e9ce5ca780",
         "runtime/files/_lean/fames/lean_gate.py": "6eb82287a898c3225d859eaf28d74eb42f78aa12727a523b6f294e29c01052ab",
         "runtime/files/_lean/fames/phase_conformance.py": "ba60fd7f4aa8f850968239279dfa354ba0ce4a53243c383aeec873af65e1f989",
         "runtime/files/_lean/fames/phase_contract.py": "6b03b9d4fe4569cf69bbb14b23ff7244710bae4181f08f9027887c448e6e5726",
         "runtime/files/_lean/fames/turn_recovery_contract.py": "b4e6861fef6e2b4d42fd0e7a4ec93f3d5fe24a647362d1383a24950df5615193",
         "runtime/files/_registry/agent-surfaces.json": "b36cebd6b0f912587f117bc7df19c352496bbb6bcf7c9d3293b0940e951e8f60",
         "runtime/files/_registry/claude-remote-control.json": "44f271d7e0700238d5351698be0638cb1f798669d9f30c8aa3ad1c7d2fc2cfa2",
-        "runtime/files/_registry/fames-protocol.json": "15f1876a5577cd25659b6c1b4071894e4cf992b4d94b31eb518fe3d5d10b096c",
+        "runtime/files/_registry/fames-protocol.json": "96762f1899964d8aef935f128a42c8ec6cbc27c5668b0b04d44414236786643f",
         "runtime/files/_registry/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
         "runtime/files/_registry/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
         "runtime/files/_registry/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -451,12 +451,12 @@
       "sha": "0da40f10628fde2d",
       "required": false,
       "lane": null,
-      "package_sha": "ded562a6a4bcc53eb4ca4ee26be2e93f4d6d0a6f53f8d14251bdeecd65264219",
+      "package_sha": "ce40f83503e3322a82a01699b9eeef9cb6630880ce5735d30baafc256ccda0d8",
       "files": {
         "SKILL.md": "c8b55bb0ce7bef5c3be55b41a5d653ae6e6cc7a9ed50e070770dc41836f3a4ba",
         "agents/openai.yaml": "3b3a5bb4f3fc5b43bd8242ef17dec4e8503111acc39ca46ef8c6019f83342002",
         "references/line-api-boundaries.md": "c5f8bb100756aa34dd2266601caf25bd16bcd339dbc96858602f000895e4d516",
-        "scripts/fetch_public_social.mjs": "21569d6a98596fa3ff36076a5da900066052fb1f11954ec5363202edd71017b9",
+        "scripts/fetch_public_social.mjs": "00181a1a3e0a2d2020990ff9fd6ae2a0a14e64b189aa75dd3b22d94323374e0a",
         "scripts/inspect_line_inbox.py": "460168215f3ecf231dbd202d87922dd1a234530deaf14937b7df23c0c6f10fa1",
         "scripts/test_inspect_line_inbox.py": "de695f9296a1d47af6721aa16b8aff95d6fb4642719db8a9ce771ec1d34f36e8"
       }
@@ -494,12 +494,12 @@
     },
     {
       "name": "mtm-api-pool-offload",
-      "sha": "1248157692534981",
+      "sha": "86c81f7d477b4dd5",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "08615cc64be5a0f1cf5f8a7d5000f66ed764d97b2c02eb93166270342376b701",
+      "package_sha": "9e3e3d2450da3b6aa15aeb2cc238cd89ad8833358373cf4120cb467570d80a50",
       "files": {
-        "SKILL.md": "53f4fbe60eeb9e7b6f142bfb4390eba459d2ebb103f139a0d087f59cbd645011"
+        "SKILL.md": "86c81f7d477b4dd55deb1cca85772a36325459d2b60a282311097c1bce3bddf8"
       }
     },
     {
@@ -673,22 +673,22 @@
     },
     {
       "name": "web-ui-taste",
-      "sha": "5c4c02c273751b02",
+      "sha": "3026b18647dd0d14",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "13f46f811f4067aed8c606263a8cacf0acff6f5b9c6fe490d4dba6b1ee1435b4",
+      "package_sha": "ed5b7dc623eea46f9bd296fcab5c4eb78762bc39c1f0e4279e38084db217171f",
       "files": {
-        "SKILL.md": "9048bee5f3ee82a49c409bfd94aa30a4790ca526e07baa0df2d9730f080ce15c"
+        "SKILL.md": "a2e19583e53c8b1d353bfe0134eb1861df7396137ea88b6b38fbc628f6f2e6d0"
       }
     },
     {
       "name": "windows-runtime-pitfalls",
-      "sha": "a9af235ec63bbe53",
+      "sha": "9dec387b2fa05402",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "b984bef2df5669a8bcebc51f1e2f74813547cc7c3e1213a05952b29ebc583578",
+      "package_sha": "e3965f628a6794e36f9f10cf99f4e0e7b0d3bb8321d5e68806d0a7b139fdaab4",
       "files": {
-        "SKILL.md": "a9af235ec63bbe5351550af7e909828d3ddbc398bde7359f4c9a53526f08c189"
+        "SKILL.md": "9dec387b2fa05402d2da0dfce47e23eec9ff1f1d35d16cc9bb14266742e1be76"
       }
     },
     {
@@ -744,12 +744,12 @@
     },
     {
       "name": "ztm-git-ship",
-      "sha": "31dd939e6088af8c",
+      "sha": "a0f0aa5c9b097131",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "efef9f077c3c7bbb7f79b1d9d2f2bdc885dff1089525d5c46bc2d3ba912d9ecf",
+      "package_sha": "6d3407532bb0a723aa431705f984594688e65266305bda3650dc60d6f9e417bb",
       "files": {
-        "SKILL.md": "6bfd386d319100228ea6913e9aae1a3afc8e3208ee50984b3d6cd8284a4f4320",
+        "SKILL.md": "5ecb2410b259b34599504f348305c3eb7a966ec42d2409f1bab1d037113ef6ed",
         "engines/git_repo_detect.py": "86a8275e600a2aa990dc6ffc4de2cf854b5dd3172f79b8451f4b75b00586f2a7",
         "tests/test_git_repo_detect.py": "84966608e5bf9e1f32127a44654e77c38b25586478aa4e64099235eb3012aeff"
       }
@@ -816,12 +816,12 @@
     },
     {
       "name": "ztm-verify-before-done",
-      "sha": "20cf76b71d08007c",
+      "sha": "ec2c409cccecd79a",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "b6cacb0c0d39de4ac97896d328b3d0efedb61bfcb900217ff91eab6a51ee0d85",
+      "package_sha": "bb60ab82e4e5378a6966a05a3619f0a3be1d03f6ca013cbc9f85be843ab7207c",
       "files": {
-        "SKILL.md": "20cf76b71d08007c4d71efb428b29ecbf99cb29418e63c191b915f7aa1d84ad7"
+        "SKILL.md": "ec2c409cccecd79a4b9d73867ee438be57159c4c65f33678006b808883de4000"
       }
     },
     {
