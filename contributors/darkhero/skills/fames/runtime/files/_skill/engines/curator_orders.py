@@ -357,7 +357,7 @@ def token_watch(now: float | None = None, spawn=None, line_fn=None) -> str:
     """operator 2026-11-06 「讓這個主對話去監控各cwd的付費模型與免費模型的消耗狀態與使用狀態」: the curator sees paid spend
     per cwd by model and free-pool use every turn; f1s_waste.py measure re-runs hidden at most hourly. Fail-open."""
     now = time.time() if now is None else now
-    _hidden_refresh(now, TOKEN_WATCH_STAMP, TOKEN_WATCH_REFRESH_S, ["f1s_waste.py", "measure", "--days", "7"], spawn)
+    _hidden_refresh(now, TOKEN_WATCH_STAMP, TOKEN_WATCH_REFRESH_S, ["f1s_waste.py", "measure", "--days", "2"], spawn)
     if line_fn is None:
         try:
             import importlib.util
