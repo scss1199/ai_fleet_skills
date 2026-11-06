@@ -314,6 +314,58 @@ def out_of_scope(session_id: str | None) -> bool:
         return False
 
 
+ARCHIVE_DUE = os.path.join(REGISTRY, "session-consolidate", "archive-due.json")
+ARCHIVE_DUE_STAMP = os.path.join(REGISTRY, "session-consolidate", "archive-due.stamp")
+ARCHIVE_DUE_REFRESH_S = 30 * 60
+
+
+def _refresh_archive_due(now: float, spawn=None) -> None:
+    """Re-scan in a hidden child at most every ARCHIVE_DUE_REFRESH_S (the stamp holds the last spawn epoch)."""
+    try:
+        with open(ARCHIVE_DUE_STAMP, encoding="utf-8") as fh:
+            if now - float(fh.read().strip() or 0) < ARCHIVE_DUE_REFRESH_S:
+                return
+    except (OSError, ValueError):
+        pass
+    try:
+        os.makedirs(os.path.dirname(ARCHIVE_DUE_STAMP), exist_ok=True)
+        with open(ARCHIVE_DUE_STAMP, "w", encoding="utf-8") as fh:
+            fh.write(str(now))
+        argv = [os.path.join(os.path.dirname(sys.executable), "pythonw.exe") if os.name == "nt" else sys.executable,
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), "session-consolidate.py"), "due"]
+        if not os.path.exists(argv[0]):
+            argv[0] = sys.executable
+        if spawn:
+            spawn(argv)
+        else:
+            import subprocess
+            subprocess.Popen(argv, cwd=HUB, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                             creationflags=0x08000000 | 0x00000008 if os.name == "nt" else 0, close_fds=True)
+    except OSError:
+        pass
+
+
+def archive_due(session_id: str = "", now: float | None = None, spawn=None) -> str:
+    """operator 2026-11-06 「注意f1s是否能自動關閉並整併已經沒有任務或沒有意義的子對話」: the curator conversation sees the
+    sessions session-consolidate.py `due` found (ended 沒有下一步 or stale, no open ask) and archives them; the scan
+    re-runs hidden every 30 min. Never lists the asking conversation itself. Fail-open: no file, no line."""
+    now = time.time() if now is None else now
+    _refresh_archive_due(now, spawn)
+    try:
+        with open(ARCHIVE_DUE, encoding="utf-8") as fh:
+            rows = json.load(fh).get("due") or []
+        if now - os.path.getmtime(ARCHIVE_DUE) > 4 * ARCHIVE_DUE_REFRESH_S:
+            return ""
+    except (OSError, ValueError, AttributeError):
+        return ""
+    rows = [r for r in rows if r.get("session_id") != session_id and r.get("host_id") and r.get("host_id") != session_id]
+    if not rows:
+        return ""
+    items = "; ".join(f"{r['host_id']} ({r.get('reason')}, {str(r.get('title') or '')[:30]})" for r in rows[:8])
+    return (f"SESSION ARCHIVE DUE — {len(rows)} conversation(s) have no task left: {items}. Archive each with "
+            f"archive_session (reason = its reason); a reopened one comes back on its next order.")
+
+
 def open_orders(seat: str, session_id: str | None = None) -> list[dict]:
     """The seat's open orders; with `session_id`, only those this conversation must answer (unowned or its own)."""
     if out_of_scope(session_id):
@@ -331,7 +383,7 @@ def injection(seat: str, session_id: str = "") -> str:
         return ""
     if seat == curator():
         queue = review_queue()
-        techniques = _waiting_techniques(seat)
+        techniques = "\n".join(t for t in (_waiting_techniques(seat), archive_due(session_id)) if t)
         unclaimed = _unclaimed_orders()
         if not queue:
             return "\n".join(t for t in (techniques, unclaimed) if t)
