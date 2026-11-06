@@ -29,6 +29,12 @@ python $env:AI_WORKSPACE\_skill\engines\git_smart.py commit-push . --zct --stage
 
 用各 repo 的 `ship.ps1` / `ship.py`（Vercel probe 內建）。Curator 不問 operator push。
 
+## dev → master 被 hub 部署的髒檔擋住時
+
+hub 部署會在各 seat 的 master 留下已追蹤但未提交的檔案，擋住 fast-forward。做法：`git stash push -- <那些檔>`
+→ `git merge --ff-only dev` → `git stash pop`（內容相同會乾淨地彈回）。gitignore 掉的 `.agents`／`.claude` skill 資料夾裡、
+已追蹤的檔要用 `git add -f`。worktree 裡的測試不能假設有 `.venv`。（ai_trader e1202875d、22fd6d462，2026-11-06）
+
 ## 禁止
 
 - 裸 `git diff` 進 agent context

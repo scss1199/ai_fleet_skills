@@ -62,6 +62,10 @@ DevTools 看到 API 已回 200 但列表是 0 筆＝初始化沒再跑。規則�
 新頁漏掉直接紅（`ai_ziyaoastro/tests/client_router_reload_guard_test.mjs`、`frontend/src/layouts/Base.astro`
 的 `REINIT`，b806548）；③ 宣稱前端修好前，在正式站用內建瀏覽器做至少三條來回路徑（A→B→A、A→B→上一頁→上一頁、
 A→C→A），每一站都要看到真資料，不是只截首頁；沒驗到的頁面要點名（synthesis 那輪就沒驗到）。
+④ 線上資產幾分鐘內就會被同步成新版、量不出前後差時，用「線上頁 A/B 換資產」驗證：headless Playwright 開線上頁，
+`page.route('**/<asset>.js*')` 分別 fulfill HEAD 版（`git show HEAD:path` 存到 scratchpad）和工作樹版，各量一個 DOM 指標。
+route handler 只能用單參數 lambda；寫成兩個參數時 Playwright 會把 request 塞進第二個參數，goto 卡到逾時。
+（ai_metadata 0ef6ba3c cluster_engine.js：canvas 3→1，頁面錯誤 0）
 
 ## 讀取速度（反向學習自 jci_taipei jci-web-fast-read，源頭 fracdigi psyncClientCache）
 
