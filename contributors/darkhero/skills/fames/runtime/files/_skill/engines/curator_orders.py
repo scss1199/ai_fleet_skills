@@ -321,18 +321,22 @@ ARCHIVE_DUE_REFRESH_S = 30 * 60
 
 def _refresh_archive_due(now: float, spawn=None) -> None:
     """Re-scan in a hidden child at most every ARCHIVE_DUE_REFRESH_S (the stamp holds the last spawn epoch)."""
+    _hidden_refresh(now, ARCHIVE_DUE_STAMP, ARCHIVE_DUE_REFRESH_S, ["session-consolidate.py", "due"], spawn)
+
+
+def _hidden_refresh(now: float, stamp: str, every_s: float, script_args: list, spawn=None) -> None:
     try:
-        with open(ARCHIVE_DUE_STAMP, encoding="utf-8") as fh:
-            if now - float(fh.read().strip() or 0) < ARCHIVE_DUE_REFRESH_S:
+        with open(stamp, encoding="utf-8") as fh:
+            if now - float(fh.read().strip() or 0) < every_s:
                 return
     except (OSError, ValueError):
         pass
     try:
-        os.makedirs(os.path.dirname(ARCHIVE_DUE_STAMP), exist_ok=True)
-        with open(ARCHIVE_DUE_STAMP, "w", encoding="utf-8") as fh:
+        os.makedirs(os.path.dirname(stamp), exist_ok=True)
+        with open(stamp, "w", encoding="utf-8") as fh:
             fh.write(str(now))
         argv = [os.path.join(os.path.dirname(sys.executable), "pythonw.exe") if os.name == "nt" else sys.executable,
-                os.path.join(os.path.dirname(os.path.abspath(__file__)), "session-consolidate.py"), "due"]
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), script_args[0]), *script_args[1:]]
         if not os.path.exists(argv[0]):
             argv[0] = sys.executable
         if spawn:
@@ -343,6 +347,30 @@ def _refresh_archive_due(now: float, spawn=None) -> None:
                              creationflags=0x08000000 | 0x00000008 if os.name == "nt" else 0, close_fds=True)
     except OSError:
         pass
+
+
+TOKEN_WATCH_STAMP = os.path.join(REGISTRY, "f1s-waste.stamp")
+TOKEN_WATCH_REFRESH_S = 3600
+
+
+def token_watch(now: float | None = None, spawn=None, line_fn=None) -> str:
+    """operator 2026-11-06 「讓這個主對話去監控各cwd的付費模型與免費模型的消耗狀態與使用狀態」: the curator sees paid spend
+    per cwd by model and free-pool use every turn; f1s_waste.py measure re-runs hidden at most hourly. Fail-open."""
+    now = time.time() if now is None else now
+    _hidden_refresh(now, TOKEN_WATCH_STAMP, TOKEN_WATCH_REFRESH_S, ["f1s_waste.py", "measure", "--days", "7"], spawn)
+    if line_fn is None:
+        try:
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("f1s_waste_watch", os.path.join(os.path.dirname(os.path.abspath(__file__)), "f1s_waste.py"))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            line_fn = mod.watch_line
+        except Exception:
+            return ""
+    try:
+        return line_fn() or ""
+    except Exception:
+        return ""
 
 
 def archive_due(session_id: str = "", now: float | None = None, spawn=None) -> str:
@@ -383,7 +411,7 @@ def injection(seat: str, session_id: str = "") -> str:
         return ""
     if seat == curator():
         queue = review_queue()
-        techniques = "\n".join(t for t in (_waiting_techniques(seat), archive_due(session_id)) if t)
+        techniques = "\n".join(t for t in (_waiting_techniques(seat), archive_due(session_id), token_watch()) if t)
         unclaimed = _unclaimed_orders()
         if not queue:
             return "\n".join(t for t in (techniques, unclaimed) if t)
