@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "altos",
-  "package_sha": "0259b16e24ed7d602dcd6070768c18d98a62e442234ecfd2268a5cf02e6c67a6",
+  "package_sha": "88cb273d9a903c6ac5020321c8a4d1d6dc5e6a6faf283c1f8f1164dbb0bd06ab",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "3c59e8217350a4eb766d7010da225be137c9aea86d61c1ff62a41a4b5d0ebee6",
   "runner_state": "armed",
-  "observed_at": "2026-11-06T07:00:53.277570+00:00",
+  "observed_at": "2026-11-06T07:32:09.396669+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -355,7 +355,7 @@
     "base_proof_state": "PASS",
     "native_state": "UNKNOWN",
     "native_events": [],
-    "runtime_release_sha256": "a4f61960dbf2a9ad4dfac173812fe38dfaefa19d55311b312204b51f5841b75f"
+    "runtime_release_sha256": "76ca4648b9a1a4efe1c543abf32dfe1428d2a3c990e16ab14d80a9887688bd18"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
