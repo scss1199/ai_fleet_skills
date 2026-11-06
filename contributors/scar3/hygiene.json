@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "scar3",
-  "at": "2026-11-05T15:44:20",
+  "at": "2026-11-06T11:45:15",
   "hub": "C:\\ai_workspace",
-  "seconds": 250.4,
+  "seconds": 88.5,
   "check": {
     "seats": [
       {
@@ -31,7 +31,7 @@
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
-        "newest_file": "2026-11-05",
+        "newest_file": "2026-11-06",
         "activity": "ACTIVE"
       },
       {
@@ -53,23 +53,23 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-05",
+        "newest_file": "2026-11-06",
         "activity": "ACTIVE"
       },
       {
         "seat": "ai_scar3",
         "missing": [],
         "findings": [
-          "dirty_files:180"
+          "dirty_files:192"
         ],
         "repo": "own",
-        "dirty": 180,
+        "dirty": 192,
         "unpushed": 0,
         "last_commit": "2026-10-31",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
-        "newest_file": "2026-11-05",
+        "newest_file": "2026-11-06",
         "activity": "ACTIVE"
       },
       {
@@ -79,13 +79,13 @@
           "prunable_worktrees:1"
         ],
         "repo": "own",
-        "dirty": 34,
+        "dirty": 46,
         "unpushed": 0,
         "last_commit": "2026-10-31",
         "worktrees": 1,
         "worktrees_prunable": 1,
         "worktrees_orphan": 0,
-        "newest_file": "2026-11-05",
+        "newest_file": "2026-11-06",
         "activity": "ACTIVE"
       },
       {
@@ -183,35 +183,27 @@
   },
   "sweep": {
     "applied": true,
-    "planned": 110,
-    "planned_bytes": 1238509609,
+    "planned": 97,
+    "planned_bytes": 8215815,
     "by_class": {
       "cache_dir": {
-        "count": 9,
-        "bytes": 4084053
-      },
-      "stale": {
-        "count": 1,
-        "bytes": 1231210942
+        "count": 11,
+        "bytes": 5054851
       },
       "expired_state": {
-        "count": 83,
-        "bytes": 3209372
-      },
-      "orphan_inbox": {
-        "count": 17,
-        "bytes": 5242
+        "count": 86,
+        "bytes": 3160964
       }
     },
     "skipped": {
       "git_tracked": 284,
-      "protected": 63
+      "protected": 65
     },
-    "moved": 110,
+    "moved": 97,
     "engine": "fleet-residue-quarantine.py",
     "errors": []
   },
-  "delete_bytes": 9074031510,
+  "delete_bytes": 9082327365,
   "summary": {
     "seats": 7,
     "violations": 5,
@@ -223,8 +215,8 @@
     "scheduled_task_findings": 0,
     "producer_leaks": 2,
     "retention_antipatterns": 9,
-    "moved": 110,
-    "planned_bytes": 1238509609,
+    "moved": 97,
+    "planned_bytes": 8215815,
     "applied": true
   }
 }
