@@ -17,6 +17,7 @@ CITE: 50-techniques/piggyback-timer-grade-execution.md, 50-techniques/auto-effec
 
 usage:
   register-rider.py add   <host> <id> "<command>" [--gate "<sentinel-cmd>"] [--every <min> | --cadence <spec>] [--priority <int>] [--desc "..."]
+                          [--done-when "..." --task-session <id>]   # task rider; without --done-when it is fixed
   register-rider.py rm    <host> <id>
   register-rider.py list
   register-rider.py audit           # flag duplicate commands armed on >1 host (zombie double-mounts)
@@ -243,7 +244,7 @@ def _lint_flash(command):
 def cmd_add(args):
     host, rid = args[0], args[1]
     command = args[2]
-    gate, every, cadence, priority, desc = None, None, None, 0, ""
+    gate, every, cadence, priority, desc, done_when, task_session = None, None, None, 0, "", None, None
     i = 3
     while i < len(args):
         if args[i] == "--gate":
@@ -256,6 +257,10 @@ def cmd_add(args):
             priority = max(-1000, min(1000, int(args[i + 1]))); i += 2
         elif args[i] == "--desc":
             desc = args[i + 1]; i += 2
+        elif args[i] == "--done-when":
+            done_when = args[i + 1]; i += 2
+        elif args[i] == "--task-session":
+            task_session = args[i + 1]; i += 2
         else:
             i += 1
     for _w in _lint_flash(command):
@@ -269,6 +274,9 @@ def cmd_add(args):
         riders = d["hosts"][host]["riders"]
         row = {"id": rid, "command": command, "gate": gate, "every_min": every, "cadence": cadence,
                "priority": priority, "desc": desc,
+               # operator 2026-11-06: fixed = periodic for good; task = ends when done_when holds (f1s_control status lists it)
+               "schedule_type": "task" if done_when else "fixed",
+               **({"done_when": done_when, "task_session": task_session} if done_when else {}),
                "managed_by": _managed_by(host),
                "registered": _now().isoformat(timespec="seconds"), "last_run": None}
         riders[:] = [r for r in riders if r.get("id") != rid] + [row]   # upsert
