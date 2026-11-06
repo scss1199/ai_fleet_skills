@@ -37,6 +37,8 @@ metadata:
 - **OPS** 2–30m — inbox / mandatory / **fleet-skill-pulse** / aware / tray-ensure
 - **FIELD** ≥1h 或 @daily — `hub-ztm-tick`（plan-usage）重鏈
 
+固定型與任務型（operator 2026-11-06）：rider 預設 `schedule_type: fixed`（長期週期）；帶 `--done-when "…" --task-session <id>` 才是 `task`。task rider 在 done_when 成立時 `register-rider.py rm` 拆掉、其 session archive，交 f1s-reverse-learning 收割。`f1s_control.py status` 的 `task_riders` 列每個未完成的 done_when；`stale: true` = session 已自行 archive 但 rider 仍掛著，先拆。
+
 ```powershell
 python %AI_WORKSPACE%\_skill\engines\hubpulse.py status
 python %AI_WORKSPACE%\_skill\engines\hubpulse.py classify
