@@ -249,6 +249,7 @@ LIE_NEEDS = {
     "code_change": "F1S ③ 先重用再自己寫 / Brownfield: code was written or edited this turn with no grep / glob / find before the first write — search existing implementations and usages first (then write), or revert the write",
     "placation": "operator 2026-10-18 「我他媽最討厭看到任何模型跟我說『你說得對』」: agreeing after a correction proves the work was skipped before. Delete the opener; state what was wrong, the evidence this turn found, and what you did about it",
     "secret_ask": "never ask the operator to paste or hand over a token, key or password: run auth_check.py / the vault / token-onboard.py, or the browser-login-handoff skill (agent does the OAuth itself; only a password/MFA screen is the operator's, shown once in the built-in browser)",
+    "attached_session": "operator 2026-11-06 「上次不是講過不是把對話掛在你下面 而是送到ai_trader這個cwd去執行?」: a session this turn started still nests under this chat. Call detach_session(<id>) now (work for another seat goes to that seat's cwd and its own main chat via curator_orders issue + send_message, never a child of this chat)",
     "handback": "推託: this step is handed to the operator although the line names no operator-reserved action (login/OAuth, permanent delete, rider arming, global settings, secrets, funds, hardware) and no tool failed this turn: do it yourself now, or try it and cite the failing tool result",
 }
 READ_CMD = re.compile(
@@ -1255,6 +1256,9 @@ def _test_scan_note(command: str, result: str, green: bool, is_error) -> str | N
     return f"{cmd} -> {verdict}"
 
 
+SESSION_ID = re.compile(r"session_id: (local_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
+
+
 def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
     exec_mod = _exec_module()
     uses: dict[str, tuple[str, dict]] = {}
@@ -1269,6 +1273,8 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
         "test_after_write": False,
         # 2026-10-30: which tool results were read as test evidence (shown in the tests_pass block message)
         "test_scan": [],
+        # 2026-11-06: sessions this turn started, and the ones it detached
+        "started_sessions": [], "detached_sessions": [],
     }
     last_write = -1
     last_read = -1
@@ -1293,6 +1299,10 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
                 ok = is_error is not True
                 f["tool_calls"] += 1
                 command = str(tool_input.get("command") or "")
+                if ok and name.endswith(("__start_session", "__hand_off_to_session")):
+                    f["started_sessions"].extend(i for i in SESSION_ID.findall(result or "") if i not in f["started_sessions"])
+                if ok and name.endswith("__detach_session"):
+                    f["detached_sessions"].append(str(tool_input.get("session_id") or ""))
                 if size < MAX_HAYSTACK:
                     chunk = result + "\n" + json.dumps(tool_input, ensure_ascii=False)
                     haystack.append(chunk)
@@ -1501,6 +1511,12 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
             if not admissible("unrequested_file", {"requestedDoc": doc_requested(Path(mdp), prompt_text)}):
                 violations.append({"line": 0, "class": "unrequested_file", "snippet": str(mdp)[:SNIPPET],
                                    "need": LIE_NEEDS["unrequested_file"]})
+
+    if classes.get("attached_session", True):
+        for sid in f.get("started_sessions") or []:
+            if sid not in (f.get("detached_sessions") or []):
+                violations.append({"line": 0, "class": "attached_session", "snippet": sid[:SNIPPET],
+                                   "need": LIE_NEEDS["attached_session"]})
 
     if classes.get("code_change", True) and (f.get("code_writes") or 0) > 0:
         if not admissible("code_change", {"searchedBeforeWrite": f.get("searched_before_write")}):
