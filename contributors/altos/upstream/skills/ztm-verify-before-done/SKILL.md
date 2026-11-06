@@ -42,6 +42,19 @@ parent_skill: aex-agent-evolution
   被 PROOF write gate 擋下時先判斷是不是誤判（引號內的 `>`、工具必備的 manifest、harness 指定的
   side-session-notes 資料夾），誤判就改 `claude-proof-hook.py` 加測試；不是誤判就把內容寫進回覆。
   同一個檔換副檔名（.txt）或換檔名再寫＝繞過 gate，禁止（ai_theater 2026-10-26／27 x3）。
+- ⑥-引擎輸出紀律（operator 2026-10-31「根本就不會再被使用的中間檔…製造他們的機制是什麼該如何修正」）：
+  引擎、rider、hook、測試寫出的每個檔案都要有讀回者或是使用者點名的收據，否則不准寫。每跑一次／每個 session 一個檔
+  （uuid、時間戳命名）＝沒有生命週期的中間檔：改成固定檔名覆寫（staged write＋os.replace）、append-only 的 .jsonl 帳本，
+  或在 STATE_TTL 登記期限。「刪除」紅線保護的是使用者資料；引擎自己的鎖、佇列標記、暫存副本、previous 複本不是資料——
+  把它們改名成 `.MIGRATED-bak`、uuid 備份目錄、`.<stamp>.bak` 走號、`.previous.json` 疊存，都不是守紅線，是製造垃圾
+  （2026-10-31 量到：ship-queue 27k 個 MIGRATED-bak、fleet-learning 290 份 repo 複本 4 GB、aex-loop 57k 個 job 檔、
+  fames-phase 3,103 個 session 目錄、_bus/inbox/ai_workspace 11k 封沒人收的警報、_logs 4.7k 個 goal .bak）。
+  `.MIGRATED-bak` 只用在一次性遷移使用者資料；備份整棵樹只在那棵樹不在 git 時。測試只寫 tmp_path，禁止寫進 repo 的
+  evidence/（「Deliberately retained」fixture 一天 28k 檔）。警報只送有 charter 的 seat，同一 pid 只送一次。
+  機械檢查：`fleet-hygiene.py producers`（state 目錄 >1000 個項目或 ≥100 個備份命名＝點名寫入引擎；
+  程式碼掃 `MIGRATED-bak` rename／uuid 備份／retained fixture）每 20 h 隨 fames-converge 跑並發布 hygiene.json；
+  到期的引擎狀態由同一引擎依 STATE_TTL 搬進 _delete（有 manifest）。新寫一個會重複產生檔案的功能前，先決定它的
+  讀回者與期限，再寫；找不到讀回者就不寫檔，寫進回覆或既有帳本。
 - 「進度」只算使用者看得到的成果（例：帳本有真實成交、正式網站上線、使用者可用的功能），不是 commit 數、
   文件數、告警或驗證腳本；做不到就直接說卡在哪一步（ai_trader owner 2026-09-21／10-12，f1s-reverse-learning）。
   模擬／回測的判決（NOT_QUALIFIED、乾跑通過）是資訊不是進度，也不能拿來當「沒有下一步」的理由：真路線卡在
@@ -103,6 +116,9 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 
 - 綠測試要測到真實成果，不是測到容易過的替身。改碼後說「修好」的那個測試，必須會因為這個 bug 變紅（修 bug 段），
   否則它證明不了任何事——一個對不上目標的檢查，過了也是 UNKNOWN。
+- 驗證要包含消費端實際用的 loader 或它的 log，不能只靠自家的離線解析器：東西被回報「空」或「壞」時，先讀使用端自己的
+  執行 log，再掃檔案（ai_nuwa #12：Q05 離線 UnityPy 與渲染全過，但遊戲 BepInEx/LogOutput.log 顯示 Unity 拒載；
+  根因是重壓後 UnityFS 檔頭總大小沒更新，離線讀取器不看這欄，全庫掃出 103 個；commit 0a6c243、tests/test_empty_item_check.py）。
 - 生成者不得是自己產出的唯一裁判（程式審查段已成規則）：同一個 agent 既做事又替自己打分，分數會向可規避處漂移。
 - 「進度」只算使用者看得到的真實成果，不是通過了多少自家檢查；report／alert／驗證腳本的數量不是進度（本段已有）。
 - 未經外部查核的基準分數是指標不是事實（F1S ④）：自評「金牌／全綠」在外部裁判看過前只是待證，寫法對照
@@ -118,7 +134,10 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 延遲數字（TTFB、TTFT、頁面／模型速度）三條全成立才算數，否則寫 UNKNOWN：
 (1) 每個目標有「回應是對的」證明——HTTP 200 只是傳輸證據（同 FAMES transport_rule）：頁面要驗 HTML 或預期的
 redirect 去向，模型要驗回覆引用了 prompt 裡的暗號；資料頁還要驗內容的日期／來源是新的——快又 200 的過期備援不算對
-（jci /events 2026-10-22：GAS 回錯誤頁、網站默默送 08-09 的舊資料約 2.5 個月）；(2) 多輪重複，看 ok-rate 再看中位數，一次冷啟動不能定案，
+（jci /events 2026-10-22：GAS 回錯誤頁、網站默默送 08-09 的舊資料約 2.5 個月）；部署讀回同理：要讀到
+commit 與建置時間。映像檔裡沒有 .git 時，在 Dockerfile 最後一個 source COPY 之後 `RUN date -u > BUILT_AT`，讓
+version 端點回 `built_at`（ai_ziyaoastro 51ed1a1，/api/version built_at 2026-11-06T01:10:17Z）；Workers 站改比對
+首頁 HTML 的 BUILD_ID（deploy-nextjs-cloudflare）；(2) 多輪重複，看 ok-rate 再看中位數，一次冷啟動不能定案，
 不穩或慢的目標加輪；遇 429/503 降並發；模型要用正式環境實際用的那把 key 和實際大小的 prompt（暗號藏在長 system prompt 裡），
 api-matrix／key 健康狀態或一字 ping 都不算；(3) 每次存一份 run 檔，與上一份比，超過門檻才標 regressed。
 重用範本：`ai_ziyaoastro/scripts/llm_provider_probe.py`（模型）、`jci_taipei/jci_taipei_website/scripts/page_latency_probe.py`（頁面）。
@@ -139,13 +158,57 @@ matrix engine 333 個假設 2026-10-23 全數 SCREEN_FAIL——樣本內通過�
 `research_cash_intraday_leadlag.py` 的 `registration()`/`run()`（登記守門）、`matrix_engine.py` 的 `register()`/`screen()`/`forward()`/`decide()`（帳本＋前測 Bonferroni）。
 這是證據規則不是新 gate：PROOF 不加片語比對，照 ④ 由寫的人引用登記 commit 與收據。
 
+## 勝率先拆出場機制再歸因（ai_trader v37 2f2140f3d，F1S 2026-10-31 吸收）
+
+回報任何規則、模型或車道的勝率／敗率前，先把每筆結果按**出場機制**分組（到目標、停損、視窗結束強平／逾時平倉、手動），
+各組列筆數與淨額：勝率是出場機制決定的，不是訊號——出場政策可以把勝率買上去，淨值與 t 不會因此轉正。
+做法：(1) 勝率單獨不算進步，勝率、強平率、淨值、t 四個數同一行一起報，缺一寫 UNKNOWN；(2) 出場政策的候選跟進場門檻一樣
+整族預先登記（走上面「要先登記再算」），挑選只用登記時寫好的準則，**事後看到更好的同族變體不接線**，只在收據裡記；
+(3) 留倉到視窗後的政策（resolve／trailing）結算要掃 D+1 的成交列，否則勝率被截斷。
+ai_trader FX demo 帳本 52 筆：視窗結束強平 20 筆 0 勝、到目標 29 筆全勝、停損只 3 筆，中位持有 3,513 s＝整個視窗；
+v37 96 組出場×門檻 NOT_QUALIFIED（family p 1.0、walk-forward −136.7 USD），預先登記的 P2 樣本外勝率 56.5→78.0%、強平 50→8%、
+淨 −45.8→−42.4 USD；同組 flatten 版淨更好（−11.2）但事後才看到，沒接線。收據 runtime/research/fx_exit_policy/report-20261030T234347.json、
+settlement-<day>.json 的 by_magic／exits。這是 ④ 的證據規則不是新 gate：PROOF 不加片語比對。
+
+## 大表的極值格子先驗方法（ai_trader 044cb51de，F1S 2026-10-30 吸收）
+
+任何大規模統計表（相關矩陣、排序分數、回測總表、評分面板）交付前，先看極值格子：top／bottom N 若**貼在值域邊界**（±1.000、0、滿分）
+或**全等於同一個數**，先懷疑方法再懷疑資料，不准當發現交付。做法：(1) 取 top/bottom 各 N 格，附每格的樣本數（共同日數、交易筆數）；
+(2) 邊界值配小樣本＝近似法貼邊的假象，改成精確公式（分母用每對自己的共同觀測，不用全表共同數）再算一次；
+(3) 修完的 top 要能用一句話解釋成已知關係（同一資產兩個時鐘、母子公司），解釋不出來的留 UNKNOWN。
+ai_trader 第一版 9,330×9,330 相關矩陣用「各自視窗 z 分數除以共同日數」近似，top pairs 全是 ±1.000；改成六個遮罩矩陣乘法的精確 Pearson 後，
+top 變成同一資產兩個時鐘（FX ETF vs 匯率隔日 bar）。收據 ai_trader/sinopac-trading-system/runtime/research/correlation_matrix/order19-receipt.json（first_build_defect）。
+
+同一類表的**本徵分解**（相關／共變異矩陣的 eigenportfolio、因子數）另有三條讀法（ai_trader d85dd5bbf，F1S 2026-10-31 吸收）：
+(1) 本徵值大不等於可預測，結構只認兩個數——高於 Marchenko–Pastur 上緣（q=N/T）的個數，與**半樣本本徵向量 |cos|**，
+跨半樣本不穩（|cos| 低於約 0.5）的方向就算 λ 很大也只列不當因子；(2) 兩兩共同日拼出的矩陣可能不是半正定（最小本徵值為負），
+拿本徵向量當權重前先做 PSD 修補或改成共同日宇宙，否則寫 UNKNOWN；(3) 對稱／不對稱先量（||A−Aᵀ||/||A||）再選解法：
+對稱用 Lanczos（eigsh），有向 lag 矩陣用 Arnoldi（eigs）。ai_trader 9,330 檔：λ1 占 29.6%、60 個高於 MP 邊界 14.56，
+但半樣本 |cos| k=1 0.78、k=3 0.32、k≥5 ≤0.33→只有前 3–4 個方向是結構，最小本徵值 −155。收據 runtime/research/correlation_matrix/eigen/summary.json
+（marchenko_pastur.above_upper_edge、stability.cos_first_vs_second）。
+
+## 大掃描相關檢定的三道閘（ai_trader e60f51a5d，F1S 2026-10-30 吸收）
+
+一個饋送、因子或特徵對幾千檔標的掃相關（或對幾百個假設掃分數）後說「X 與 Y 相關」，掃描本身會製造贏家：格子越多，
+碰巧越過固定門檻的越多。交付前三道閘全過才算有東西，缺一道寫 UNKNOWN：(1) **solid-n 下限**——頭條極值只能來自共同觀測數
+≥ 下限（ai_trader 用 SOLID_N=200）的格子，薄格（n 63–85）的 |corr| 只列不排名；(2) **循環位移 surrogate**——把饋送整列循環位移
+（位移 ≥ 最小格數，抽 ≥ 200 次）重算同一個統計量，真值要超過 surrogate 的 p95，並附「碰巧越過門檻的期望格數」與實際越過數並列；
+(3) **對已持有資訊的增量 R²**——目標先回歸在矩陣已有的對照列（如 ^VIX，須早於交易時段已知），加入饋送後 R² 多出的量才是貢獻，
+相關高但增量 R² 接近 0 ＝ 重複資訊、權重 0。ai_trader 2026-10-30 五個免費情緒饋送掃 9,330 檔：第一版 6/48 過 band，全是薄格或已持有的
+VIX 資訊（VVIX→TWII −0.396 但增量 R² 0.009）；加三道閘後碰巧期望 2.4 vs 實際 6、最佳增量 R² 0.03–0.05，結論反轉為零權重。
+重用範本：`ai_trader/sinopac-trading-system/scripts/sentiment_feeds.py` 的 `band()`（surrogate）、`incremental()`（增量 R²）、SOLID_N 遮罩；
+收據 `runtime/research/sentiment_feeds/report.json`（expected_above_band_by_chance、above_band_solid、incremental_best）。
+這是 ④ 的證據規則不是新 gate：PROOF 不加片語比對。
+
 ## 參考樣本是量測目標，不是素材（ai_photo 2026-10-27，F1S 2026-10-28 吸收）
 
 使用者點名「理想狀態是 <資料夾／截圖／聲音／文章>」時，那份參考在整個任務裡對之後每一次修改都有效（f1s-intake 原話綁定；
 「我講過」＝已給過的參考沒被用）。做法：(1) 先量參考——把「像」拆成可量的數字（開眼比例、眼下明暗差、版面尺寸、語速、句長）；
 (2) 只動主體自己的內容往那些數字靠，設上限（單次最多 +25% 之類）並守住自然不變量（成對的部位同一比例，光線、膚色、虹膜不換）；
 **把參考的像素／段落貼到主體上不算達到參考**，光線與陰影對不上就會不自然、不對稱；(3) 做完再量一次主體，
-結案要附「參考值／改前／改後」三欄與並排對照（左原圖、中舊版、右新版），舊版留 `_prev` 不覆寫；(4) 沒量到參考值的部位要寫明沒動。
+結案要附「參考值／改前／改後」三欄與並排對照（左原圖、中舊版、右新版），舊版留 `_prev` 不覆寫；
+給 operator 看的對照圖寫成 PNG 放 `C:\Users\sc\Downloads\_quick_output`（檔名含日期）並 SendUserFile，不埋在 runtime 裡
+（operator 2026-10-31，ai_nuwa）；(4) 沒量到參考值的部位要寫明沒動。
 量測數值與口味（哪種臉要多亮）留在座位自己的 memory，這裡只留程序。
 （ai_photo IMG_0054 大小眼＝整雙眼從 20261010 貼過來；IMG_0063 沒精神＝只銳化沒量眼下 −15～−29 vs 參考 −10～−13；
 重做：兩眼開眼比例同到 0.365，commit 990d901，58 測試）

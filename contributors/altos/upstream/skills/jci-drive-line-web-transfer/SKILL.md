@@ -1,12 +1,6 @@
 ---
 name: jci-drive-line-web-transfer
-description: >-
-  jci_taipei route map for moving files and content between LINE, Google Drive, the local repo,
-  heavy-compute hosts and the website (jci-taipei-website / GAS jci_taipei_70), plus the Google
-  credential split and access probes behind it. Pick the engine per direction, run it dry first,
-  read the destination back. Use in jci_taipei whenever a task moves meeting files, LINE uploads,
-  roster/registry data, IG assets or website content across LINE / Drive / web, or when a Drive or
-  GAS call says "Requested entity was not found", invalid_secret or 403.
+description: jci_taipei route map for moving files between LINE, Drive, the repo, heavy hosts and the website, plus the Google credential split. Use there for any LINE/Drive/web transfer, or on 'Requested entity was not found', invalid_secret or 403.
 metadata:
   fleet:
     lane: zero-token-mechanism

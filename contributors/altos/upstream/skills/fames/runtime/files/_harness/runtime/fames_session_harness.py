@@ -419,6 +419,38 @@ def _atomic_write(path: Path, payload: dict[str, Any]) -> None:
     os.replace(temp, path)
 
 
+# Hot-refresh state: ONE file for every session (operator 2026-11-01 「人不會去讀就是垃圾」). It used to be one
+# <session_key>.json per session: 13,242 files by 2026-11-01 (~1,300 a day), pruned only by ship-f1s moving them
+# into _delete. Entries unseen for HOT_SESSION_TTL_D days drop out on the next write; a lost race between two
+# hooks only costs one extra refresh notice, never a wrong one.
+HOT_SESSIONS = "sessions.json"
+HOT_SESSION_TTL_D = 3
+
+
+def _hot_sessions(path: Path) -> dict[str, Any]:
+    data, _ = _read_json(path)
+    rows = data.get("sessions")
+    return rows if isinstance(rows, dict) else {}
+
+
+def _hot_session_put(path: Path, key: str, row: dict[str, Any]) -> None:
+    cut = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=HOT_SESSION_TTL_D)).isoformat()
+    rows = _hot_sessions(path)
+    rows = {k: v for k, v in rows.items() if isinstance(v, dict) and _utc(v.get("seen")) >= cut}
+    rows[key] = row
+    try:
+        _atomic_write(path, {"schema": 2, "ttl_days": HOT_SESSION_TTL_D, "sessions": rows})
+    except OSError:
+        pass                                  # a locked file (concurrent hook) only means one more refresh notice
+
+
+def _utc(stamp: Any) -> str:
+    try:
+        return dt.datetime.fromisoformat(str(stamp)).astimezone(dt.timezone.utc).isoformat()
+    except (TypeError, ValueError):
+        return ""
+
+
 # ---------------------------------------------------------------------------
 # FAMES auto_goal_compact lane (AGC): the goal vector survives every compaction.
 #
@@ -1375,8 +1407,8 @@ def hot_refresh(
     session_key = hashlib.sha256(
         f"{surface_id}\0{session_id or agent}".encode("utf-8")
     ).hexdigest()[:24]
-    state_path = workspace / "_registry" / "fames-hot" / f"{session_key}.json"
-    previous, _ = _read_json(state_path)
+    state_path = workspace / "_registry" / "fames-hot" / HOT_SESSIONS
+    previous = _hot_sessions(state_path).get(session_key) or {}
     changed = any(previous.get(key) != value for key, value in identity.items())
     should_inject = (changed or state != "PASS") and not acknowledge
     now = dt.datetime.now(dt.timezone.utc).astimezone().isoformat(timespec="seconds")
@@ -1392,7 +1424,7 @@ def hot_refresh(
         "diagnostic": "" if state == "PASS" else (diagnostic or contract_diagnostic),
         "state_path": str(state_path),
     }
-    _atomic_write(state_path, hot)
+    _hot_session_put(state_path, session_key, {**identity, "agent": agent, "surface_id": surface_id, "seen": now})
     hot["plan_text"] = (
         f"FAMES HOT REFRESH — {state} — gen={identity['skill_gen'] or 'UNKNOWN'} — "
         f"package={str(identity['package_sha'] or 'UNKNOWN')[:12]}\n"

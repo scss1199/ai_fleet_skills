@@ -28,6 +28,7 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -76,13 +77,40 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _is_junction(path: str) -> bool:
+    try:
+        return os.path.isjunction(path)
+    except AttributeError:  # Python < 3.12
+        return False
+
+
+def _make_writable(func, path, _exc) -> None:
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
+
+
+def _move(source: Path, destination: Path) -> None:
+    """Rename; when that fails, copy then remove the origin. The copy skips junctions (a link into someone else's tree,
+    one DSH job's self-links walked as 6.7 M files) and the removal clears read-only (.git objects aborted a whole call)."""
+    try:
+        os.rename(source, destination)
+    except OSError:
+        if source.is_file():
+            shutil.move(str(source), str(destination))
+            return
+        shutil.copytree(source, destination, symlinks=True,
+                        ignore=lambda folder, names: [n for n in names if _is_junction(os.path.join(folder, n))])
+        shutil.rmtree(source, onerror=_make_writable)
+
+
 def _tree_stats(path: Path) -> tuple[int, int]:
     """(file count, total bytes) for a file or a directory."""
     if path.is_file():
         return 1, path.stat().st_size
     files = 0
     total = 0
-    for root, _dirs, names in os.walk(path):
+    for root, dirs, names in os.walk(path):
+        dirs[:] = [d for d in dirs if not _is_junction(os.path.join(root, d))]
         for name in names:
             try:
                 total += (Path(root) / name).stat().st_size
@@ -150,7 +178,7 @@ def quarantine(paths: list[str], topic: str, note: str = "", dry_run: bool = Fal
         }
         if not dry_run:
             destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(source), str(destination))
+            _move(source, destination)
             # Verify at the destination rather than trusting the move: a file
             # whose bytes did not survive is a silent data loss, and this engine
             # exists precisely so the operator does not have to check by hand.

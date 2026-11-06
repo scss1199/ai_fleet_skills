@@ -1,6 +1,6 @@
 ---
 name: burn-captions
-description: Deterministic burnt-in Traditional Chinese captions for ffmpeg renders. Turns narration text + duration into a PlayRes-locked .ass (max 2 lines, bottom safe band, sentence+comma cue splitting) so captions can never climb into the picture or stack into 疊字. Use whenever a video gets subtitles burnt in (ai_demo render-brief / make-video, any ffmpeg compose), or when a caption overlaps UI or wraps into tall blocks.
+description: Deterministic burnt-in Traditional Chinese captions (.ass) for ffmpeg renders. Use when burning subtitles, or when captions overlap UI or stack.
 metadata:
   fleet:
     lane: zero-token-mechanism

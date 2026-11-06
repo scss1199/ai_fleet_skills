@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -68,6 +69,32 @@ def _hard_lines(cwd: str) -> tuple[str, str]:
         return "UNKNOWN", (f"T1 HARD LINES — UNKNOWN — {type(exc).__name__}; "
                            "read tier T1 of _registry/rules-blueprint.json before acting.")
     return ("injected", text) if text else ("charter", "")
+
+
+def _auto_mode_line(seat: str, settings_path: str | None = None, protocol_path: str | None = None) -> str:
+    """One SessionStart status line: does this host's ~/.claude/settings.json carry the F1S auto-mode posture
+    (_registry/fames-protocol.json#auto_mode_posture)? Report only - the writer is sync-cursor-hooks.py, run by
+    fames-immediate-apply after every package install. "" when the SSOT has no section. Never raises."""
+    try:
+        path = HUB / "_skill" / "engines" / "sync-cursor-hooks.py"
+        spec = importlib.util.spec_from_file_location("fames_hook_auto_mode", path)
+        if not path.is_file() or spec is None or spec.loader is None:
+            return ""
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        st = mod.auto_mode_status(settings_path, protocol_path or str(HUB / "_registry" / "fames-protocol.json"))
+        state = st.get("state")
+        if state == "ABSENT":
+            return ""
+        seat_part = f"seat {seat} section {'present' if seat in (st.get('seats') or []) else 'none'}"
+        head = (f"AUTO-MODE POSTURE — {state} — {st.get('expected')} F1S classifier rows in settings.json autoMode "
+                f"(fleet env {st.get('fleet_environment')} / soft_deny {st.get('fleet_soft_deny')}; {seat_part})")
+        if state == "IN_SYNC":
+            return head + " — SSOT _registry/fames-protocol.json#auto_mode_posture"
+        return head + (f" — missing {st.get('missing')} / stale {st.get('stale')}; the next fames-converge renders it,"
+                       " or: python _skill/engines/sync-cursor-hooks.py --claude-only")
+    except Exception:
+        return ""
 
 
 def _f1s_record(agent: str, max_age_hours: float = 6.0) -> str:
@@ -314,8 +341,9 @@ def _resolve_seat(cwd: str) -> str:
         if projects_path.is_file() and spec is not None and spec.loader is not None:
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            name = module.whoami(cwd)[0]
-            if name and name != "unknown":
+            name, registered = module.whoami(cwd)[:2]
+            # whoami answers an unregistered cwd with its basename: a chat that cd'd into _skill/engines was seat `engines` (2026-11-04)
+            if name and name != "unknown" and (registered or name != base):
                 return str(name)
     except Exception:
         pass
@@ -498,11 +526,79 @@ def live_update(doc, *, event: str="PostToolUse", watch_seat: str | None=None) -
     return _contract_dedup(surface_id,session_id,"\n".join(p for p in parts if p).strip(),agent_id=agent_id)
 
 
+MAP_STREAK=8
+MAP_TAIL_BYTES=96*1024
+_READ_ONLY_SHELL=re.compile(r"^\s*(cd\s+[^;&|]+(&&|;)\s*)*(cat|grep|rg|sed\s+-n|head|tail|ls|find|wc|git\s+(log|show|diff|status|grep))\b")
+
+
+def _read_only_call(block: dict) -> bool:
+    name=str(block.get("name") or "")
+    if name in {"Read","Grep","Glob"}:
+        return True
+    return name in {"Bash","PowerShell"} and bool(_READ_ONLY_SHELL.match(str((block.get("input") or {}).get("command") or "")))
+
+
+def _read_streak(transcript: str) -> int:
+    """Read-only calls in a row at the end of this conversation; the operator's prompt or any other tool ends the run."""
+    path=Path(transcript)
+    with path.open("rb") as fh:
+        fh.seek(max(0,path.stat().st_size-MAP_TAIL_BYTES))
+        lines=fh.read().decode("utf-8","replace").splitlines()[1:]
+    count=0
+    for line in reversed(lines):
+        try:
+            row=json.loads(line)
+        except ValueError:
+            continue
+        if row.get("isSidechain"):
+            continue
+        content=(row.get("message") or {}).get("content")
+        if row.get("type")=="user":
+            if isinstance(content,str) or any(isinstance(b,dict) and b.get("type")=="text" for b in content or []):
+                return count
+        elif row.get("type")=="assistant":
+            for block in reversed(content or []):
+                if isinstance(block,dict) and block.get("type")=="tool_use":
+                    if not _read_only_call(block):
+                        return count
+                    count+=1
+    return count
+
+
+def _map_nudge(doc) -> str:
+    """One line, once per run of reads, and never a block: reading many files is the work the free pool can take."""
+    try:
+        if _read_streak(str(doc.get("transcript_path") or ""))!=MAP_STREAK:
+            return ""
+    except (OSError,ValueError):
+        return ""
+    seat=_seat_for_cwd(str(doc.get("cwd") or os.getcwd()))
+    return (f"F1S MAP: {MAP_STREAK} reads in a row. If you are looking for a fact across files, this returns checked file:line quotes at 0 Claude tokens: "
+            f"python %AI_WORKSPACE%\\_skill\\engines\\f1s_map.py --seat {seat} --question \"...\" <paths>")
+
+
+def _audit(doc,nudge: str) -> str:
+    """Every step is reviewed by rules at no model cost (f1s_audit.py); loaded per call, so a running chat gets the next version at its next tool."""
+    try:
+        import importlib.util
+        spec=importlib.util.spec_from_file_location("f1s_audit_step",HUB/"_skill"/"engines"/"f1s_audit.py")
+        mod=importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.step(doc,_seat_for_cwd(str(doc.get("cwd") or "")),("free.read_streak",) if nudge else ())
+    except Exception:
+        return ""
+
+
 def _midturn(doc) -> int:
-    """PostToolUse fast path: print {} unless F1S or this seat's curator orders changed since this session last saw them."""
+    """PostToolUse fast path: print {} unless F1S or this seat's curator orders changed since this session last saw them, or the step broke an audit rule."""
     context=live_update(doc)
-    if context:
-        print(json.dumps({"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":MIDTURN_HEAD+"\n"+context}},ensure_ascii=True))
+    nudge=_map_nudge(doc)
+    audit=_audit(doc,nudge)
+    notes="\n".join(x for x in (nudge,audit) if x)
+    if notes and not context:
+        print(json.dumps({"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":notes}},ensure_ascii=True))
+    elif context:
+        print(json.dumps({"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":MIDTURN_HEAD+"\n"+context+("\n"+audit if audit else "")}},ensure_ascii=True))
     else:
         print("{}")
     return 0
@@ -598,7 +694,24 @@ def _curator_orders(agent: str, session_id: str = "") -> str:
         return ""
 
 
-def _article_relay(agent: str, cwd: str) -> str:
+def _article_seen(prompt: str) -> str:
+    """operator 2026-11-03: a link pasted into any seat answers what already happened to it, so nothing is read twice.
+    "" without a link, for an unknown link or on any error (_skill/engines/f1s_apply.py). Never raises."""
+    path = HUB / "_skill" / "engines" / "f1s_apply.py"
+    try:
+        if "http" not in (prompt or ""):
+            return ""
+        spec = importlib.util.spec_from_file_location("fames_hook_f1s_apply", path)
+        if not path.is_file() or spec is None or spec.loader is None:
+            return ""
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return str(module.seen_context(prompt) or "")
+    except Exception:
+        return ""
+
+
+def _article_relay(agent: str, cwd: str, session_id: str = "") -> str:
     """operator 2026-10-26: on the operator's prompt to the curator, new LINE articles go to the seat they were sent
     for (kyloren_quant -> ai_trader as a curator order; the curator's own kyloren_bot articles inline). "" for every
     other seat or on any error (_skill/engines/article_relay.py). Never raises."""
@@ -609,7 +722,7 @@ def _article_relay(agent: str, cwd: str) -> str:
             return ""
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        return str(module.hook_context(agent, cwd) or "")
+        return str(module.hook_context(agent, cwd, session_id) or "")
     except Exception:
         return ""
 
@@ -722,7 +835,8 @@ def main():
         for update in (_t1_refresh(surface_id, session_id, at_start=False),
                        _charter_refresh(surface_id, session_id, cwd, at_start=False, transcript_path=transcript_path),
                        _proof_carry(session_id), "" if machine_event else _proof_recurrence(cwd),
-                       "" if machine_event else _article_relay(agent, cwd)):
+                       "" if machine_event else _article_relay(agent, cwd, session_id),
+                       "" if machine_event else _article_seen(prompt)):
             if update:
                 context=(context+"\n"+update).strip()
     else:
@@ -746,6 +860,10 @@ def main():
         record=_f1s_record(agent)
         if record:
             context=(context+"\n"+record).strip()
+        # operator 2026-10-31: the auto-mode classifier posture is F1S-carried; every session sees whether this host has it.
+        posture=_auto_mode_line(agent)
+        if posture:
+            context=(context+"\n"+posture).strip()
         _everything_bg_prewarm()
     # The curator's orders go first, above this seat's own plan: they outrank its decisions (T1 f1s-governs).
     orders=_curator_orders(agent, session_id)

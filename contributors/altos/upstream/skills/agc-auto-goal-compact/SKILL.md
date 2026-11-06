@@ -66,6 +66,8 @@ _registry/agc-compact/<agent>.orthogonal.md      # 被投影走的正交區塊�
 | PARK（手動里程碑） | `goal_compact.py park` | 段末 / 收工（`milestone_park`） |
 | Platform compact | Cursor preCompact / Claude PreCompact | 視窗滿（`platform_pre_compaction`）；事後 `context_window_compaction` |
 
+**壓縮迴圈卡死（反向學習自 ai_metadata 2026-11-04「還是卡在context full」）**：執行中的程序只認它啟動時的壓縮門檻，舊程序的門檻（約 136K）低於壓縮後底量（約 125K）就會連續壓縮直到停住；改設定救不了它，只有新程序讀得到新門檻。`f1s_live.py thrash_due` 會把卡住的 transcript 通知主控座位：list_sessions 找 local_ id → archive_session → unarchive_session → send_message 帶剩下的步驟，之後讀回下一次壓縮的 preTokens（約 270K）才算疏通。
+
 ## 自適應上限（uncompact_upper_limit）
 
 每 seat 有獨立上限 → `_registry/agc-agent-limits.json`（`agc-adapt-limits.py --write` 可調）：

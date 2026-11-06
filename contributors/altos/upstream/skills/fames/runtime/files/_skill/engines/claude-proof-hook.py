@@ -61,6 +61,7 @@ DEFAULTS = {
     "max_blocks_per_turn": 2,
     "max_blocks_per_session": 12,
     "classes": {
+        "popup_gate": True,       # 2026-10-31: visible windows / focus steal from a tool call (red line)
         "tests_pass": True, "pushed": True, "committed": True, "deployed": True,
         "verified": True, "completion": True, "measurement": True,
         # 2026-10-13 (operator: 「藉由 LEAN … 直接杜絕任何可能的說謊與假裝」): the classes that escaped
@@ -447,6 +448,221 @@ def _publish_gate(doc: dict, tool: str, ti: dict) -> dict | None:
                                    "permissionDecisionReason": reason}}
 
 
+# ── popup / focus-steal gate (2026-10-31) ─────────────────────────────────────────────────────────────────────────
+# Operator red lines RL-PERIODIC-FOREGROUND-POPUP / RL-POPUP-OAUTH-ONLY (零前景, 零彈窗: only an OAuth sign-in may pop).
+# The static auditor (zt-foreground-guard) scans rider/hook entry files after the fact and the live detector
+# (flash_watch.py) was not armed; nothing stopped an interactive turn from running `Start-Process mt5setup.exe`,
+# `AppActivate` + `SendKeys` (ai_trader 2026-10-28), a `-WindowStyle Hidden` launcher (fake hidden: conhost + focus
+# steal) or writing one into a script. This gate denies those tool calls before they run. Comment lines, grep/rg/
+# Select-String/re.compile lines and Markdown files are not matched; an OAuth/login/authorize command may open a browser.
+POPUP_RULES = (
+    ("fake-hidden", re.compile(r"(?i)-WindowStyle\s+Hidden|(?<![\w-])-w\s+hidden\b"),
+     "powershell -WindowStyle Hidden 仍會配 conhost 並在隱藏前搶焦點（假隱藏）"),
+    # call syntax only: prose that names these APIs (a memory note, a report line) is not a call
+    ("focus-steal", re.compile(r"(?i)AppActivate\s*\(|SendKeys\]::|SendKeys\s*\(|SendWait\s*\(|SetForegroundWindow\s*\(|BringWindowToTop\s*\(|SwitchToThisWindow\s*\("),
+     "AppActivate / SendKeys / SetForegroundWindow 會把別的視窗搶到前景"),
+    ("start-process-gui", re.compile(r"(?i)\bStart-Process\b(?![^\n;|]*(?:pythonw(?:\.exe)?|wscript(?:\.exe)?|-NoNewWindow))"),
+     "Start-Process 會開一個可見視窗（安裝程式、瀏覧器、主控台）；背景程式用 pythonw / CREATE_NO_WINDOW / wscript Run(...,0)"),
+    ("cmd-start", re.compile(r"(?i)(?:^|[;&|(]\s*|cmd(?:\.exe)?\s+/[ck]\s+)start\s+(?:\"\"\s*)?(?:/min\s+|/b\s+)?[\"']?(?!pythonw|wscript)[A-Za-z\\/\.]"),
+     "cmd `start` 會開新視窗"),
+    ("open-gui", re.compile(r"(?i)(?:^|[;&|\s(])(?:explorer(?:\.exe)?\s+[\"'A-Za-z/\\.]|Invoke-Item\b|os\.startfile\(|webbrowser\.open(?:_new)?\()"),
+     "explorer / Invoke-Item / os.startfile / webbrowser.open 會開可見視窗"),
+    ("messagebox", re.compile(r"(?i)\bMessageBox\w*\s*\(|Windows\.Forms\.MessageBox|\bmsg\s+\*\s|tkinter\.messagebox|ctypes\.windll\.user32\.MessageBox"),
+     "MessageBox 是搶焦點的模態對話框"),
+    ("console-flash", re.compile(r"CREATE_NEW_CONSOLE|creationflags\s*=\s*0\b"),
+     "新主控台會閃出黑窗"),
+    # 2026-11-02 jci_taipei scratchpad/fake_meet_window.py: a real WS_POPUP|WS_VISIBLE window with no message pump, run 5
+    # times to exercise the tray's call watcher; it took the foreground and went Ghost. Scratch paths are not exempt from
+    # this rule (POPUP_ANYWHERE_RULES): a test needs fake window enumeration, never a window on the operator's desktop.
+    ("create-window", re.compile(r"\bCreateWindow(?:Ex)?[AW]?\s*\(|\bWS_VISIBLE\b|\btk(?:inter)?\.Tk\s*\(|\bQApplication\s*\("),
+     "在 operator 桌面建立真視窗（測試也一樣）；測偵測邏輯請注入假的視窗列舉資料"),
+)
+POPUP_ANYWHERE_RULES = ("create-window",)
+# The tray owns the fleet's only deliberate overlays; this gate's own test quotes the forms it denies.
+POPUP_WINDOW_OWNER_PATH = re.compile(r"(?i)[\\/]ai_darkhero[\\/]tray[\\/]|[\\/]_delete[\\/]|[\\/]test_proof_popup_gate\.py$")
+POPUP_WEB_RULE = ("browser-modal", re.compile(r"(?<![\w.])(?:alert|confirm|prompt)\s*\(|window\.open\s*\("),
+                  "前端 alert()/confirm()/prompt()/window.open() 是模態彈窗，改用頁內 toast 與兩段式按鈕")
+POPUP_CODE_EXT = (".py", ".ps1", ".psm1", ".bat", ".cmd", ".js", ".ts", ".tsx", ".jsx", ".html", ".htm", ".vbs", ".ahk")
+POPUP_WEB_EXT = (".js", ".ts", ".tsx", ".jsx", ".html", ".htm", ".vue", ".svelte")
+OAUTH_OK = re.compile(r"(?i)oauth|authorize|login|sign[- ]?in|consent|device[_ ]code|auth[_ ]url")
+POPUP_SKIP_LINE = re.compile(r"(?i)^\s*(#|//|\*|rem\b|<!--|-- )|\b(grep|rg|findstr|Select-String|re\.compile|re\.search|re\.match|re\.finditer|\.search\(|\.match\(|sed|awk|perl\s+-p)\b")
+# Test suites and scratch patch scripts legitimately quote the forbidden forms (the gate's own tests do).
+POPUP_EXEMPT_PATH = re.compile(r"(?i)[\\/](tests?|scratchpad|_delete)[\\/]|[\\/]test_[^\\/]*\.py$")
+POPUP_REASON = (
+    "PROOF POPUP GATE (operator red line 零前景／零彈窗, RL-POPUP-OAUTH-ONLY): this call would open a visible window or "
+    "steal focus — {what}. Fix: run background work with pythonw.exe or subprocess creationflags=CREATE_NO_WINDOW "
+    "(or wscript Run(...,0)); drive an app through its API/CLI instead of AppActivate+SendKeys; never Start-Process a "
+    "GUI/installer from a session; front-end confirmations are inline two-step buttons, notices are toasts. Only an "
+    "OAuth sign-in may open a browser window (name it in the command). Kill switch: _registry/proof.json "
+    "classes.popup_gate=false."
+)
+
+
+def _popup_live_text(text: str) -> str:
+    """Drop lines that only talk about the pattern (comments, searches, regex definitions)."""
+    return "\n".join(l for l in text.splitlines() if not POPUP_SKIP_LINE.search(l))
+
+
+def popup_violations(tool: str, ti: dict) -> list[tuple[str, str]]:
+    """[(rule, snippet)] for a tool call that would pop a window or steal focus; [] when clean."""
+    if tool in ("Bash", "PowerShell"):
+        text = str(ti.get("command") or "")
+        rules = list(POPUP_RULES)
+        web = False
+    elif tool in ("Write", "Edit", "MultiEdit"):
+        path = str(ti.get("file_path") or "").lower()
+        if not path.endswith(POPUP_CODE_EXT):
+            return []
+        text = str(ti.get("content") or ti.get("new_string") or "")
+        if not text and isinstance(ti.get("edits"), list):
+            text = "\n".join(str(e.get("new_string") or "") for e in ti["edits"] if isinstance(e, dict))
+        rules = [r for r in POPUP_RULES if r[0] != "open-gui" or path.endswith((".ps1", ".bat", ".cmd"))]
+        web = path.endswith(POPUP_WEB_EXT)
+        if POPUP_EXEMPT_PATH.search(path):
+            rules = [r for r in rules if r[0] in POPUP_ANYWHERE_RULES]
+            web = False
+        if POPUP_WINDOW_OWNER_PATH.search(path):
+            rules = [r for r in rules if r[0] not in POPUP_ANYWHERE_RULES]
+        if not rules and not web:
+            return []
+    else:
+        return []
+    live = _popup_live_text(text)
+    out = []
+    for rule, pat, why in rules:
+        m = pat.search(live)
+        if not m:
+            continue
+        if rule == "open-gui" and OAUTH_OK.search(live):
+            continue                                  # the one sanctioned popup: an OAuth / login window
+        out.append((rule, f"{why}: `{live[max(0, m.start() - 30):m.end() + 40].strip()[:110]}`"))
+    if web:
+        rule, pat, why = POPUP_WEB_RULE
+        m = pat.search(live)
+        if m:
+            out.append((rule, f"{why}: `{live[max(0, m.start() - 30):m.end() + 40].strip()[:110]}`"))
+    return out
+
+
+def _popup_gate(doc: dict, tool: str, ti: dict) -> dict | None:
+    hits = popup_violations(tool, ti)
+    if not hits:
+        return None
+    what = "; ".join(h[1] for h in hits[:3])
+    _log({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "session_id": str(doc.get("session_id") or ""),
+          "event": "PreToolUse", "tool": tool, "matched": "popup_gate", "rules": [h[0] for h in hits],
+          "what": what[:300], "verdict": "deny", "cwd": str(doc.get("cwd") or "")})
+    reason = POPUP_REASON.format(what=what[:300])
+    if "cursor_version" in doc or str(doc.get("hook_event_name") or "") == "preToolUse":
+        return {"permission": "deny", "user_message": reason, "agent_message": reason}
+    return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                   "permissionDecisionReason": reason}}
+
+
+# ── junk-writer gate (2026-11-01) ─────────────────────────────────────────────────────────────────────────────────
+# operator 2026-11-01 「f1s為何還是會產出一堆不必要檔案? 比如 migrated-bak .json .npy 一堆沒意義的中間檔 人不會去讀就是垃圾
+# 去f1s找到根本解決」. The write gate above only sees a .md/.json the MODEL writes; the residue comes from CODE the model
+# writes (an engine that names a file per run/session/item with a uuid or a timestamp, renames to .MIGRATED-bak, saves a
+# .npy per item, a test that keeps its fixture) and then runs on a rider for weeks. fleet-hygiene `producers` finds
+# such lines 20 h later and the STATE_TTL broom moves the output to _delete, so the operator still sees it. This gate
+# refuses the line when it is written. A line that really must keep files says who reads them or when they go:
+# `# retention: <reader or TTL>` on that line or the one above.
+JUNK_WRITER_RULES = (
+    ("migrated-bak", re.compile(r"MIGRATED-bak"), re.compile(r"(?i)rename|replace|move|copy|with_name|with_suffix|\+\s*['\"]|f['\"]"),
+     ".MIGRATED-bak 只給一次性的使用者資料遷移；引擎狀態用固定檔名覆寫（暫存檔 + os.replace）"),
+    # tempfile.mkstemp / NamedTemporaryFile are the atomic-write staging step (write, then os.replace): not residue
+    ("uuid-name", re.compile(r"uuid\.?uuid4\(\)|uuid4\(\)\.hex|randomUUID\(\)"),
+     re.compile(r"(?i)[/\\]|Path\(|path\.join|\.(json|jsonl|npy|npz|bak|txt|md|csv|log|pkl|lock)\b|_registry|_temp|runtime|evidence|backup|previous"),
+     "uuid 檔名＝每跑一次多一個檔；用固定檔名覆寫，或追加到同一個 .jsonl / sqlite"),
+    # the clock call sits INSIDE the file name (f-string field or `+` concatenation that ends in an extension);
+    # a date printed into a report line is content, not a name
+    ("stamp-name", re.compile(r"(?i)\{[^{}]*(?:strftime|isoformat|time\(\)|now\(|time_ns\(\))[^{}]*\}[^\s'\"{}]{0,40}"
+                              r"\.(?:json|npy|npz|bak|txt|md|csv|log|pkl|lock|wav|png)['\"]|"
+                              r"(?:strftime|isoformat|time_ns)\([^)]*\)\s*\+\s*f?['\"][^'\"\s]{0,40}\.(?:json|npy|npz|bak|txt|md|csv|log|pkl|lock|wav|png)['\"]"),
+     re.compile(r"."),
+     "時間戳檔名＝每跑一次多一個檔；時間寫進檔案內容，檔名固定"),
+    ("per-item-array", re.compile(r"\bnp\.(save|savez|savez_compressed|savetxt)\(|\btorch\.save\(|\bpickle\.dump\("),
+     re.compile(r"."),
+     "每項一個 .npy/.pkl 是沒人會讀的中間檔；放進同一個 sqlite / .npz 快取（以來源檔大小+mtime 為鍵），用完即覆寫"),
+    ("retained-fixture", re.compile(r"(?i)deliberately retained|no TemporaryDirectory|keep_fixture"),
+     re.compile(r"."),
+     "測試只寫 tmp_path / TemporaryDirectory，跑完不留檔"),
+)
+JUNK_WRITER_EXT = (".py", ".ps1", ".psm1", ".js", ".mjs", ".cjs", ".ts")
+JUNK_WRITER_EXEMPT = re.compile(r"(?i)[\\/](scratchpad|_delete)[\\/]|[\\/](fleet-hygiene|f1s_audit|claude-proof-hook|"
+                                r"test_fleet_hygiene|test_proof_\w+)\.py$")
+JUNK_TEST_PATH = re.compile(r"(?i)[\\/]tests?[\\/]|[\\/]test_[^\\/]*\.py$|_test\.py$")
+RETENTION_NOTE = re.compile(r"(?i)(#|//)\s*retention\s*:\s*\S.{3,}")
+JUNK_WRITER_REASON = (
+    "PROOF JUNK-WRITER GATE (operator 2026-11-01 「人不會去讀就是垃圾 … 去f1s找到根本解決」): this code would leave a "
+    "file nobody reads — {what}. Rewrite it so the run leaves no residue: one fixed-name file overwritten in place "
+    "(write tmp + os.replace), or append to one .jsonl ledger / sqlite store; intermediates live in tempfile and are "
+    "gone when the run ends; tests use tmp_path. If the files truly have a reader or a lifetime, say so on that line "
+    "or the one above: `# retention: <who reads it / TTL>`. Kill switch: _registry/proof.json classes.junk_writer_gate=false."
+)
+
+
+def _added_lines(tool: str, ti: dict) -> tuple[str, list[str]]:
+    """(path, lines this call ADDS to a code file). Edit/MultiEdit count only lines absent from old_string, so
+    touching a file that already holds an old pattern is not blocked; apply_patch counts its `+` lines."""
+    path = str(ti.get("file_path") or ti.get("path") or "")
+    if tool == "Write":
+        return path, str(ti.get("content") or "").splitlines()
+    if tool in ("Edit", "MultiEdit"):
+        pairs = [(ti.get("old_string"), ti.get("new_string"))]
+        if isinstance(ti.get("edits"), list):
+            pairs = [(e.get("old_string"), e.get("new_string")) for e in ti["edits"] if isinstance(e, dict)]
+        out = []
+        for old, new in pairs:
+            have = set(str(old or "").splitlines())
+            out.extend(l for l in str(new or "").splitlines() if l not in have)
+        return path, out
+    if tool == "apply_patch":
+        text = " ".join(map(str, ti.values()))
+        files = re.findall(r"^\*\*\* (?:Add|Update) File:\s*(.+?)\s*$", text, re.M)
+        return (files[0] if files else ""), [l[1:] for l in text.splitlines() if l.startswith("+") and not l.startswith("+++")]
+    return "", []
+
+
+def junk_writer_violations(tool: str, ti: dict) -> list[tuple[str, str]]:
+    """[(rule, snippet)] for code that would leave per-run / per-item residue; [] when clean."""
+    path, lines = _added_lines(tool, ti)
+    if not lines or not path.lower().endswith(JUNK_WRITER_EXT) or JUNK_WRITER_EXEMPT.search(path):
+        return []
+    in_test = bool(JUNK_TEST_PATH.search(path))
+    out, prev = [], ""
+    for line in lines:
+        s = line.strip()
+        note = RETENTION_NOTE.search(s) or RETENTION_NOTE.search(prev)
+        prev = s
+        if not s or note or POPUP_SKIP_LINE.search(s) or s.startswith(("*", '"""', "'''", "-")):
+            continue
+        for rule, pat, ctx, why in JUNK_WRITER_RULES:
+            if (rule == "retained-fixture") != in_test:
+                continue                          # fixture rule is for tests; the others for engines
+            if rule == "migrated-bak" and re.search(r"endswith|glob\(|not in|SKIP|in str\(|startswith", s):
+                continue                          # reading / skipping backups is not making one
+            if pat.search(s) and ctx.search(s):
+                out.append((rule, f"{why}: `{s[:110]}`"))
+                break
+    return out[:3]
+
+
+def _junk_writer_gate(doc: dict, tool: str, ti: dict) -> dict | None:
+    hits = junk_writer_violations(tool, ti)
+    if not hits:
+        return None
+    what = "; ".join(h[1] for h in hits)
+    _log({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "session_id": str(doc.get("session_id") or ""),
+          "event": "PreToolUse", "tool": tool, "matched": "junk_writer_gate", "rules": [h[0] for h in hits],
+          "what": what[:300], "verdict": "deny", "cwd": str(doc.get("cwd") or "")})
+    reason = JUNK_WRITER_REASON.format(what=what[:400])
+    if "cursor_version" in doc or str(doc.get("hook_event_name") or "") == "preToolUse":
+        return {"permission": "deny", "user_message": reason, "agent_message": reason}
+    return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                   "permissionDecisionReason": reason}}
+
+
 def pre_tool_use(doc: dict, cfg: dict) -> dict | None:
     """Deny the CREATION of an unrequested .md / .json before it is written.  One gate for Claude Code
     (`PreToolUse`), Codex (`PreToolUse`, same reply shape) and Cursor (`preToolUse`, `permission` reply).
@@ -455,6 +671,14 @@ def pre_tool_use(doc: dict, cfg: dict) -> dict | None:
     ti0 = doc.get("tool_input") if isinstance(doc.get("tool_input"), dict) else {}
     if (cfg.get("classes") or {}).get("publish_gate", True):
         gated = _publish_gate(doc, tool0, ti0)
+        if gated:
+            return gated
+    if (cfg.get("classes") or {}).get("popup_gate", True):
+        gated = _popup_gate(doc, tool0, ti0)
+        if gated:
+            return gated
+    if (cfg.get("classes") or {}).get("junk_writer_gate", True):
+        gated = _junk_writer_gate(doc, tool0, ti0)
         if gated:
             return gated
     if not (cfg.get("classes") or {}).get("unrequested_file", True):
@@ -755,6 +979,21 @@ CMD_FAIL = re.compile(r"(?im)^\s*(?:error|fatal|exception|traceback|failed)\b|\b
 SELFTEST_CMD = re.compile(r"(?i)(?:self-?tests?|tests?_[\w-]+|[\w-]+_tests?|run_tests?)\.(?:py|js|ts|sh|ps1)\b|\bpytest\b|\bunittest\b|\bnpm\s+test\b|\bcargo\s+test\b|\bgo\s+test\b")
 TEST_FAIL = re.compile(r"(?i)\b[1-9]\d*\s+(?:failed|failures?|errors?)\b|\bFAILED\b|RESULT\s+FAIL|AssertionError|Traceback")
 TEST_OK = re.compile(r"(?i)\b[1-9]\d*\s+passed\b|\bok\b|RESULT\s+PASS|\bpass(?:ed)?\b|✓|全部通過")
+# A pytest summary line ("20 passed in 21.53s", "3 passed, 1 skipped in 0.4s") is distinctive enough to count
+# even when it reaches the transcript through a pipe, a subshell or a `tail` of the background task's output file
+# (f1s-evolve 2026-10-30, ai_trader 8bb262d4: `(cd … && pytest -q …) > file` ran in the background, the result
+# was read with `tail -4 file`, and the command of that read carried no test-runner token).
+PYTEST_SUMMARY = re.compile(r"(?i)\b[1-9]\d*\s+passed\b[^\n]{0,80}?\bin\s+\d+(?:\.\d+)?\s*s\b")
+# a command that RUNS a test runner (SELFTEST_CMD also matches a mere `sed -n 1,80p tests/test_x.py`)
+RUNNER_CMD = re.compile(r"(?i)\bpytest\b|\bunittest\b|\bnpm\s+test\b|\bcargo\s+test\b|\bgo\s+test\b|"
+                        r"(?:python[\w.]*|node|bash|sh|pwsh|powershell)(?:\.exe)?\s+(?:-\S+\s+)*\S*(?:self-?tests?|tests?_[\w-]+|[\w-]+_tests?|run_tests?)\.(?:py|js|ts|sh|ps1)\b")
+# Background-task completion rows: the client writes them as plain `user` rows WITHOUT isMeta, so until
+# 2026-10-30 each one opened a new "turn" and every Bash result before it (the test run itself) fell out of the
+# PROOF window — 20 tests_pass blocks in 7 days on ai_trader for this one cause.  They are tool output, not a
+# prompt: the turn continues and the row is read as the tool_result of the <tool-use-id> it names.
+TASK_NOTIFICATION = re.compile(r"^\s*<task-notification>")
+TASK_FIELD = re.compile(r"<(task-id|tool-use-id|output-file|status|summary)>(.*?)</\1>", re.S)
+TASK_OUTPUT_TAIL = 64 * 1024
 PATH_TOKEN = re.compile(
     r"(?:[A-Za-z]:[\\/]|~[\\/]|\.{1,2}[\\/]|/)?(?:[\w.@~-]+[\\/])*[\w@~-][\w.@~-]*\.[A-Za-z0-9]{1,8}\b"
 )
@@ -867,7 +1106,43 @@ def _is_human_prompt(row: dict) -> bool:
     blocks = _blocks(row)
     if not blocks:
         return False
-    return not any(isinstance(b, dict) and b.get("type") == "tool_result" for b in blocks)
+    if any(isinstance(b, dict) and b.get("type") == "tool_result" for b in blocks):
+        return False
+    # a background task's completion row is tool output, not the operator speaking
+    return not TASK_NOTIFICATION.match(_text_of(blocks))
+
+
+def task_notification(row: dict) -> dict | None:
+    """A <task-notification> user row rewritten as the tool_result of the background tool call it names.
+    The content is the notification text plus the tail of its output file (fail-open: unreadable file =
+    notification text only).  is_error mirrors a non-`completed` status or a non-zero exit code."""
+    if row.get("type") != "user":
+        return None
+    text = _text_of(_blocks(row))
+    if not TASK_NOTIFICATION.match(text):
+        return None
+    fields = {k: v.strip() for k, v in TASK_FIELD.findall(text)}
+    parts = [text]
+    out = fields.get("output-file") or ""
+    if out:
+        try:
+            with open(out, "rb") as fh:
+                end = fh.seek(0, os.SEEK_END)
+                fh.seek(max(0, end - TASK_OUTPUT_TAIL))
+                parts.append(fh.read().decode("utf-8", "replace"))
+        except OSError:
+            pass
+    status = (fields.get("status") or "").lower()
+    summary = fields.get("summary") or ""
+    is_error = bool(status and status != "completed") or bool(re.search(r"exit code [1-9]", summary))
+    return {"type": "tool_result", "tool_use_id": fields.get("tool-use-id") or "", "content": "\n".join(parts),
+            "is_error": is_error, "task_notification": True}
+
+
+def _fact_blocks(row: dict) -> list:
+    """Blocks of a row as `facts` should see them: task-notification rows become one tool_result block."""
+    synthetic = task_notification(row)
+    return [synthetic] if synthetic else _blocks(row)
 
 
 def current_turn(path: Path) -> tuple[list[dict], dict | None, bool, str]:
@@ -955,9 +1230,29 @@ def _green_test(exec_mod, command: str, result: str, is_error) -> bool:
                 return True
         except Exception:  # noqa: BLE001
             pass
-    if is_error is not False or not SELFTEST_CMD.search(command):
+    if is_error is True:
         return False
-    return bool(TEST_OK.search(result)) and not TEST_FAIL.search(result)
+    # a runner command (pytest, python tests/test_x.py, selftest.py …); a `grep`/`sed -n`/`ls` whose only test
+    # token is a tests/test_x.py path is a read of a test file and is judged by the summary-line rule below
+    if SELFTEST_CMD.search(command) and (RUNNER_CMD.search(command) or not READ_CMD.search(command)):
+        return is_error is False and bool(TEST_OK.search(result)) and not TEST_FAIL.search(result)
+    # the runner's own summary line read back from a file / pipe (background pytest, `tail` of its output)
+    if READ_CMD.search(command) and PYTEST_SUMMARY.search(result):
+        return not TEST_FAIL.search(result)
+    return False
+
+
+def _test_scan_note(command: str, result: str, green: bool, is_error) -> str | None:
+    """One line for the tests_pass block message: which tool results were looked at as test evidence."""
+    # a `sed -n`/`grep` over tests/test_x.py is a read of a test file, not a run: only runner commands, summary
+    # lines and failed test output are worth listing (replay of ai_trader 8bb262d4 filled the list with reads)
+    looked = green or RUNNER_CMD.search(command) or PYTEST_SUMMARY.search(result) or (
+        SELFTEST_CMD.search(command) and TEST_FAIL.search(result or ""))
+    if not looked:
+        return None
+    verdict = "green" if green else ("error" if is_error is True else "not green")
+    cmd = " ".join(command.split())[:70] or "(task-notification)"
+    return f"{cmd} -> {verdict}"
 
 
 def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
@@ -972,6 +1267,8 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
         "read_result": False, "failure_observed": False, "searched": False, "scheduler_touched": False,
         "md_writes": [], "prompt_text": "", "searched_before_write": False, "first_code_write": None, "first_search": None,
         "test_after_write": False,
+        # 2026-10-30: which tool results were read as test evidence (shown in the tests_pass block message)
+        "test_scan": [],
     }
     last_write = -1
     last_read = -1
@@ -982,7 +1279,7 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
         haystack.append(f["prompt_text"])
     for row in rows:
         kind = row.get("type")
-        for b in _blocks(row):
+        for b in _fact_blocks(row):
             if not isinstance(b, dict):
                 continue
             if kind == "assistant" and b.get("type") == "tool_use":
@@ -1036,7 +1333,11 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
                 if SCHEDULER_TOUCH.search(command) or SCHEDULER_TOUCH.search(result or ""):
                     f["scheduler_touched"] = True
                 if name in BASH_TOOLS:
-                    if _green_test(exec_mod, command, result, is_error):
+                    green = _green_test(exec_mod, command, result, is_error)
+                    note = _test_scan_note(command, result, green, is_error)
+                    if note and len(f["test_scan"]) < 6:
+                        f["test_scan"].append(note)
+                    if green:
                         f["tests_pass"] = True
                         last_test = index
                     if ok and GIT_PUSH.search(command) and not GIT_FAIL.search(result):
@@ -1285,7 +1586,13 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
             else:
                 supported = bool(f.get(name))
             if not supported:
-                violations.append({"line": number, "class": name, "snippet": snippet, "need": NEEDS[name]})
+                need = NEEDS[name]
+                if name == "tests_pass":
+                    # say what was scanned, so a wrongly judged turn can be diagnosed from the block itself
+                    scan = f.get("test_scan") or []
+                    need += (f" (scanned {f.get('tool_calls', 0)} tool results since the last operator prompt; "
+                             + ("test-like: " + "; ".join(scan) if scan else "none looked like a test run") + ")")
+                violations.append({"line": number, "class": name, "snippet": snippet, "need": need})
         if classes.get("measurement", True):
             hay = f.get("haystack") or ""
             for m in MEASUREMENT.finditer(line):

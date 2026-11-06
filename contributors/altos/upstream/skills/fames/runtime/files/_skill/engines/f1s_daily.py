@@ -35,6 +35,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -56,6 +57,10 @@ FIRST_READ_BYTES = 32 * 1024 * 1024
 KEEP_DAYS = 14
 ARTICLE_SLA_S = 24 * 3600
 ARTICLES_PER_TICK = 40                 # 6 h rider: 160 a day keeps a backlog inside the 24 h SLA
+# 2026-10-31: a tick measured 14 min 50 s for 40 articles (~22 s each: fetch + free-model digest) and HubClock
+# kills a rider at 600 s (DEFAULT_MAX_RUNTIME) - f1s-daily was rc 124 four runs straight and no digest landed.
+# The article pass stops at this budget and the rest waits for the next tick; scan + daily still run after it.
+ARTICLE_BUDGET_S = 420
 DAILY_AFTER_HOUR = 3
 LIVE_MAX_CHARS = 2600
 NW = 0x08000000 if os.name == "nt" else 0
@@ -386,8 +391,8 @@ def relate(pool, article: str, tasks: list[dict]) -> list[dict]:
     listing = "\n".join(json.dumps({"session": t["id"][:8], "seat": t["seat"], "state": t["state"],
                                     "title": t["title"]}, ensure_ascii=False) for t in tasks)
     try:
-        raw = pool.chat_for("extract", [{"role": "user", "content": RELATE_PROMPT % (article[:2500], listing)}],
-                            jsonmode=True, max_tokens=600)
+        msgs = [{"role": "user", "content": RELATE_PROMPT % (article[:2500], listing)}]
+        raw = _within(lambda: pool.chat_for("extract", msgs, jsonmode=True, max_tokens=600), 45)
         m = re.search(r"\{[\s\S]*\}", str(raw or ""))
         picks = json.loads(m.group(0)).get("related") or [] if m else []
     except Exception:  # noqa: BLE001 — a pool failure relates nothing; it never stops the batch
@@ -414,7 +419,27 @@ def task_list(state: dict, opened: set[str], n: int = 60) -> list[dict]:
     return (opened_rows + archived)[:n]
 
 
-def read_articles(state: dict, now: float, opened: set[str], limit: int = ARTICLES_PER_TICK) -> dict:
+def _within(fn, seconds: float):
+    """Run fn in a daemon thread; a free-pool call that blocks past the budget is abandoned, not waited for (rc 124 on 11-04)."""
+    box: dict = {}
+
+    def run():
+        try:
+            box["v"] = fn()
+        except BaseException as exc:  # noqa: BLE001 - handed back to the caller's except
+            box["e"] = exc
+    th = threading.Thread(target=run, daemon=True)
+    th.start()
+    th.join(seconds)
+    if th.is_alive():
+        raise TimeoutError(f"article fetch exceeded {int(seconds)}s")
+    if "e" in box:
+        raise box["e"]
+    return box.get("v")
+
+
+def read_articles(state: dict, now: float, opened: set[str], limit: int = ARTICLES_PER_TICK,
+                  budget_s: float = ARTICLE_BUDGET_S) -> dict:
     for u in state["urls"].values():                   # SLA: every pending URL past 24h is late, read or not
         if u["status"] == "pending":
             u["late"] = now - _epoch(u["seen"]) > ARTICLE_SLA_S
@@ -430,9 +455,15 @@ def read_articles(state: dict, now: float, opened: set[str], limit: int = ARTICL
         return {"read": 0, "pending": len(todo), "blocked": f"distill-url: {type(exc).__name__}"}
     tasks = task_list(state, opened)
     done = failed = 0
+    budget_hit = False
+    t0 = time.time()
     for u in todo:
-        try:
-            res = distill.distill_one(u["url"])
+        if (done or failed) and time.time() - t0 >= budget_s:
+            budget_hit = True                     # the rest stays pending for the next tick (SLA still tracked)
+            break
+        try:        # one youtube/sider delegate may run 600 s = the whole rider (rc 124 on 11-02..11-04): cap it to the budget left
+            os.environ["DISTILL_DELEGATE_TIMEOUT_S"] = str(max(30, int(min(240, budget_s - (time.time() - t0)))))
+            res = _within(lambda: distill.distill_one(u["url"]), max(15.0, min(90.0, budget_s - (time.time() - t0))))
             res = res if isinstance(res, dict) else {}
         except Exception as exc:  # noqa: BLE001 — one bad URL never stops the batch
             res = {"error": f"{type(exc).__name__}: {exc}"[:200]}
@@ -459,7 +490,11 @@ def read_articles(state: dict, now: float, opened: set[str], limit: int = ARTICL
             if u["attempts"] >= 3:
                 u["status"] = "unreadable"            # never fabricated: recorded as unreadable with the reason
             failed += 1
-    return {"read": done, "failed": failed, "pending": sum(1 for u in state["urls"].values() if u["status"] == "pending")}
+    out = {"read": done, "failed": failed, "pending": sum(1 for u in state["urls"].values() if u["status"] == "pending")}
+    if budget_hit:
+        out["budget_hit"] = True
+        out["elapsed_s"] = round(time.time() - t0, 1)
+    return out
 
 
 # ── daily ───────────────────────────────────────────────────────────────────────────────────────
@@ -558,6 +593,14 @@ def render_live(day: str, state: dict, rows: dict, gap: dict, since: str) -> str
     if errs:
         lines.append("## Repeated tool errors (fix the cause, not the retry)")
         lines += [f"- [{seat}] x{n}: {sig[:120]}" for n, seat, sig in errs[:6]]
+    hyg = fleet_hygiene_rows(since)
+    if hyg:   # before the articles: live.md is capped at LIVE_MAX_CHARS and the first render of 2026-10-30 cut this off
+        lines.append("## Fleet hygiene (每台自己的 check/sweep 報告, fleet-hygiene.py fleet)")
+        for h in hyg:
+            act = h.get("activity") or {}
+            lines.append(f"- [{h['contributor']}] {str(h.get('at'))[5:16]} cwd {h.get('seats')} 違規 {h.get('violations')} "
+                         f"(active {act.get('ACTIVE')}/idle {act.get('IDLE')}/dormant {act.get('DORMANT')}) 搬 {h.get('moved')} "
+                         f"_delete {h.get('delete_gb')} GB" + (f" 首項 {h['findings'][0][:60]}" if h.get("findings") else ""))
     arts = [u for u in state["urls"].values() if u["status"] == "read" and str(u.get("read_at") or "") >= since]
     if arts:
         lines.append("## Articles read (24h)")
@@ -569,13 +612,6 @@ def render_live(day: str, state: dict, rows: dict, gap: dict, since: str) -> str
         lines.append("## 「需要你決定」 asked (24h): " + ", ".join(f"{s} {n}" for s, n in sorted(dec.items())))
     if gap["unregistered_seats"]:
         lines.append("## Matrix gaps: unregistered seats " + ", ".join(gap["unregistered_seats"]))
-    hyg = fleet_hygiene_rows(since)
-    if hyg:
-        lines.append("## Fleet hygiene (hosts' own check/sweep reports, fleet-hygiene.py)")
-        for h in hyg:
-            lines.append(f"- [{h['contributor']}] {str(h.get('at'))[:16]} seats {h.get('seats')} violations {h.get('violations')} "
-                         f"activity {h.get('activity')} moved {h.get('moved')} _delete {h.get('delete_gb')} GB"
-                         + (" findings: " + "; ".join(h["findings"][:5]) if h.get("findings") else ""))
     text = "\n".join(lines) + "\n"
     return text if len(text) <= LIVE_MAX_CHARS else text[:LIVE_MAX_CHARS - 40].rsplit("\n", 1)[0] + "\n(truncated)\n"
 
@@ -598,8 +634,10 @@ def daily(state: dict, now: float, opened: set[str]) -> dict:
               "line_cards": [], "live": str(LIVE), "project_matrix": write_matrix(rows, gap, day)}
     pool = _pool()
     tasks = task_list(state, opened)
-    for card in line_cards(now - 86400):
-        card["related"] = relate(pool, card["title"] + "\n" + card["summary"], tasks)
+    t_rel = time.time()
+    for card in line_cards(now - 86400):     # relating is a bonus: past 120 s cards go out unrelated (rider limit 600 s)
+        card["related"] = (relate(pool, card["title"] + "\n" + card["summary"], tasks)
+                           if time.time() - t_rel < 120 else [])
         digest["line_cards"].append(card)
     _write(OUT / f"digest-{day}.json", digest)
     state["last_daily"] = day

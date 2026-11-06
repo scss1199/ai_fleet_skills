@@ -355,10 +355,10 @@ def cmd_export(node_name: str, node: dict, *, quiet: bool = False) -> dict:
             previous_manifest = {}
     skills_dir = os.path.join(export, "skills")
     keep = None
+    in_place = False
     if os.path.isdir(skills_dir):
-        keep = Path(HUB) / "_registry/fleet-skill-export-backups" / uuid.uuid4().hex / "skills"
-        keep.parent.mkdir(parents=True, exist_ok=True)
-        Path(skills_dir).rename(keep)
+        keep = _retire_previous_skills(export, skills_dir)
+        in_place = keep is None
     os.makedirs(skills_dir, exist_ok=True)
 
     rows = []
@@ -387,6 +387,11 @@ def cmd_export(node_name: str, node: dict, *, quiet: bool = False) -> dict:
         return {"ok": False, "state": "UNKNOWN", "reason": "skill_copy_verification_failed",
                 "failed_skills": failures, "retained_previous_skills": str(keep) if keep else None,
                 "retained_failed_stage": skills_dir, "node": node_name}
+    stale: list[str] = []
+    if in_place:
+        written = {os.path.normcase(os.path.join(skills_dir, row["name"], *rel.split("/")))
+                   for row in rows for rel in row.get("copied") or []}
+        stale = _sweep_stale_export_files(skills_dir, written)
 
     digest_path = os.path.join(HUB, "ai_darkhero", "public", "fleet-skills-digest.json")
     digest = {}
@@ -446,9 +451,60 @@ def cmd_export(node_name: str, node: dict, *, quiet: bool = False) -> dict:
         "skill_count": len([r for r in rows if r.get("ok")]),
         "manifest_sha": manifest["manifest_sha"],
     }
+    if stale:
+        report["stale_files_moved"] = len(stale)
     if not quiet:
         print(json.dumps(report, ensure_ascii=False))
     return report
+
+
+def _clean_export_skills(export: str) -> bool:
+    """True when `export` is a git checkout whose skills tree is clean (tracked, unmodified, nothing
+    untracked): git HEAD already holds every byte, so a pre-export copy is redundant. No git, not a
+    checkout, or a dirty tree reads False and the copy is still made."""
+    try:
+        st = _git(["status", "--porcelain", "--", "skills"], export)
+    except OSError:
+        return False
+    return st.returncode == 0 and not (st.stdout or "").strip()
+
+
+def _retire_previous_skills(export: str, skills_dir: str) -> Path | None:
+    """Move the previous export's skills tree to a registry backup, or leave it for an in-place rebuild.
+
+    Returns the backup path, or None when the tree is a clean git checkout (33 full-tree copies under
+    _registry/fleet-skill-export-backups by 2026-10-31, every one already in the carrier's history).
+    """
+    if _clean_export_skills(export):
+        return None
+    keep = Path(HUB) / "_registry/fleet-skill-export-backups" / uuid.uuid4().hex / "skills"
+    keep.parent.mkdir(parents=True, exist_ok=True)
+    Path(skills_dir).rename(keep)
+    return keep
+
+
+def _sweep_stale_export_files(skills_dir: str, written: set[str]) -> list[str]:
+    """After an in-place rebuild, move (never delete) files the previous export left behind so a removed
+    skill or script does not stay published; `written` holds normcased paths this export produced."""
+    moved: list[str] = []
+    dest_root = None
+    for walk_root, _dirs, filenames in os.walk(skills_dir, topdown=False):
+        for filename in filenames:
+            path = os.path.join(walk_root, filename)
+            if os.path.normcase(path) in written:
+                continue
+            if dest_root is None:
+                now = datetime.now()
+                dest_root = os.path.join(HUB, "_delete", now.strftime("%Y-%m-%d") + "-fleet-skill-export-stale",
+                                         now.strftime("%H%M%S") + f"-{os.getpid()}")
+            rel = os.path.relpath(path, skills_dir)
+            dest = os.path.join(dest_root, rel)
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            shutil.move(path, dest)
+            moved.append(rel.replace("\\", "/"))
+        if walk_root != skills_dir and not os.listdir(walk_root):
+            os.rmdir(walk_root)
+    return moved
 
 
 class _Stdin(str):
