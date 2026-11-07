@@ -1176,6 +1176,13 @@ ELEMENTS = [
     {"id": "EVO-hubpulse-task-rider-doc", "element": "hubpulse-ops skill: how a task rider ends (rm + archive + f1s-reverse-learning harvest)", "verdict": "INFO",
      "requires": None, "detail": "the skill names the stale flag and the order: unregister first",
      "check_text": ("skill_hubpulse", "`stale: true` = session 已自行 archive 但 rider 仍掛著")},
+    # f1s-evolve 2026-11-07: ai_nuwa threejs-materials-lighting (ledger 39020d48a66f), ai_photo person-retouch-traits (ledger 0260175589c8), ai_trader ipo-auction-source re-sent (ledger 0d656711de0e)
+    {"id": "EVO-nuwa-threejs-seat-local-20261107", "element": "ai_nuwa skill threejs-materials-lighting (fleet-import of gamedev-skills/awesome-gamedev-agent-skills@19d93f9, Apache-2.0)", "verdict": "INFO",
+     "requires": None, "detail": "rejected: a vendored three.js how-to (PBR material, light rig, shadows, envMap) with no F1S governance, runtime or verification lesson; it stays seat-local in ai_nuwa, no text added"},
+    {"id": "EVO-photo-person-traits-seat-local-20261107", "element": "ai_photo memory person-retouch-traits: named people's face traits + the frozen ai_photo.polish chain (operator 「完美」 2026-11-06)", "verdict": "INFO",
+     "requires": None, "detail": "rejected: per-person biometric retouch values for named people must not spread into hub-wide skills; the general parts (a named reference binds later edits, freeze settled values into a command) are already in ztm-verify-before-done (EVO row on the named reference) and the photo-taste row EVO-photo-retouch-taste-seat-local; no text added"},
+    {"id": "EVO-ipo-auction-duplicate-20261107", "element": "ai_trader ipo-auction-source-20261023 proposal re-sent (ledger 0d656711de0e)", "verdict": "INFO",
+     "requires": None, "detail": "already integrated as EVO-silent-param-fallback (windows-runtime-pitfalls: an unparsed server parameter silently falls back to a default) and recorded as duplicate 2026-10-27; memory modified 2026-10-23, nothing new, no text added"},
 ]
 
 
