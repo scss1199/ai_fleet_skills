@@ -124,6 +124,7 @@ authenticated-browser, read-back, or rollback evidence.
    Then inspect the rendered page in the available in-app browser.
 
 6. Authenticate interactively with Cloudflare. Never handle the user's password or OTP. Verify that the account-level workers.dev subdomain is the requested value before deployment.
+   A project owned by an organisation is opened under that organisation's own account, not the operator's personal Google account, so ownership can be handed over later. While the organisation's sign-in is pending, prepare everything that needs no login (wrangler config, worker name, subdomain choice, preflight run, secret names) and leave only the sign-in for the operator; the password never enters chat. (jci_taipei 2026-11-08: tpejci888 as the Cloudflare developer account for the JCI site.)
 
 7. Upload a version, stage it at 0%, then verify and commit traffic:
 

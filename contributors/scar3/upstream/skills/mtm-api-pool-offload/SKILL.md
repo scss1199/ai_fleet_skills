@@ -123,6 +123,9 @@ operator 2026-10-16（ai_trader）：「只要搜東西，確定哪些網站是�
 - 不送出去的東西：金鑰、帳戶與持倉資料、`ai_ut` 的 UT.xlsx 內容（專有資料）、任何 operator 標成私密的檔案。查詢字串可以送，資料本身不送。語音預設用本機（`--engine local`）。
 - 輸出留在指令的 JSON 或既有收據，只把摘要與來源網址帶進對話，不新開 .md/.json。
 - 免費池回空或全部 provider 失敗：照實回報，再改用本對話的工具，不要編。
+  `__ERR__ <provider> circuit-open` 是斷路器自己計時（`_registry/free-api-health.json` 的 `open_until`：連錯退避 60 秒起、上限 15 分；402 預算用完鎖 24 小時），不要請 curator「重設」——重設只會再打一輪 429／402。
+  先看 `key-health.py summary`：`restricted`／`quota0`／`ratelimited` 是帳號端狀態，照 `api-key-apply` 狀態表處理（不在同一帳號狂換 key），不是本機能修（ai_nuwa 2026-11-07：groq restricted、cerebras quota0、gemini ratelimited、mistral 402，同時 nvidia-nim／openrouter 退避中，30 分後 nvidia-nim 已自己關回）。研究稿要能等就把 `__ERR__` 那幾題排晚點重跑。
+- 穿戴中的身體渲染圖／照片（如鞋款試穿圖）屬私密圖，不送任何外部 API（含 `image_ocr.py` 的 gemini）；本機目前沒有視覺模型（2026-11-07 `ollama` :11434／:11436 皆無），所以這類圖只能在本對話自己看，沒有免費路線。純文字、草圖、不含身體的產品圖照常走 `image_ocr.py`。要加本機 CPU 視覺模型是 load_grant 配置決定，向 curator 提案，不得放上 A770。
 - 確認一個資料源時一併記下：免金鑰與否、歷史深度（每類別第一天）、每日量與每頁耗時（決定節奏與總時數），以及
   同題試過失敗的來源和錯誤碼，讓別的座位不再重探；原始 JSON 按日落地並把 sha256 寫進 pull_log。
   指定的免金鑰端點回 503／429 時，退路要留痕不偽裝：把狀態碼＋回應本文原樣記進 pull_log，先讀 429 頁面指到的說明
