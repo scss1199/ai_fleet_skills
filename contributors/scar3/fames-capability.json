@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "3c59e8217350a4eb766d7010da225be137c9aea86d61c1ff62a41a4b5d0ebee6",
   "runner_state": "armed",
-  "observed_at": "2026-11-09T12:30:14.793369+00:00",
+  "observed_at": "2026-11-09T13:00:16.152038+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -350,7 +350,7 @@
     "C:\\ai_workspace\\_skill\\fleet-skills\\fames\\references\\cases.json"
   ],
   "execution_adoption": {
-    "runtime_state": "PASS",
+    "runtime_state": "UNKNOWN",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
     "native_state": "UNKNOWN",
