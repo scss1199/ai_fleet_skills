@@ -46,6 +46,8 @@ CONTROL_STATE = os.path.join(REGISTRY, "f1s-control.json")
 SESSION_SCOPE = os.path.join(REGISTRY, "f1s-session-scope.json")  # {"sessions": {<id>: <the one thing it does>}}
 TECHNIQUES = os.path.join(REGISTRY, "f1s-apply.json")
 UNCLAIMED_AFTER_S = 3600
+STALE_OWNER_AFTER_S = 6 * 3600  # owner transcript silent this long: the claim blocks every other chat (ai_metadata #14/#15, 11-10)
+CLAUDE_PROJECTS = os.path.join(os.path.expanduser("~"), ".claude", "projects")
 CURATOR_FALLBACK = "ai_darkhero"
 REVIEW_SAMPLE = 8       # one routine order in this many still gets the curator's review
 MECHANICAL = "mechanical"
@@ -479,8 +481,9 @@ def _fanout_line() -> str:
 
 def _unclaimed_orders() -> str:
     """An order waits for a chat in its seat, and a seat with no open chat never takes it (11-02: ai_network, ai_demo,
-    ai_career, sdnext_a770 sat unowned). Engines cannot open a conversation, so the curator is told."""
-    rows = []
+    ai_career, sdnext_a770 sat unowned). Engines cannot open a conversation, so the curator is told. An owned order whose
+    owner stopped writing is the same wait with a lock on it (ai_metadata #14/#15 2026-11-10: owner silent, seat chat skipped it)."""
+    rows, stale = [], []
     for seat in _seats_with_orders():
         for o in open_orders(seat):
             try:
@@ -489,10 +492,36 @@ def _unclaimed_orders() -> str:
                 continue
             if not owner_of(o) and age > UNCLAIMED_AFTER_S:
                 rows.append(f"{seat}#{o['n']} {o['title']}")
-    if not rows:
-        return ""
-    return (f"UNCLAIMED ORDERS — {len(rows)} open with no conversation: {'; '.join(rows[:6])}. Send each into that seat's main chat "
-            "(send_message, or start_session + detach, then deliver), or measure and close them yourself.")
+            elif owner_of(o) and _owner_silent_s(owner_of(o)) > STALE_OWNER_AFTER_S:
+                stale.append(f"{seat}#{o['n']} owner {owner_of(o)[:8]}")
+    lines = []
+    if rows:
+        lines.append(f"UNCLAIMED ORDERS — {len(rows)} open with no conversation: {'; '.join(rows[:6])}. Send each into that seat's main chat "
+                     "(send_message, or start_session + detach, then deliver), or measure and close them yourself.")
+    if stale:
+        lines.append(f"STALE CLAIMS — {len(stale)} open order(s) whose owning conversation wrote nothing for "
+                     f"{STALE_OWNER_AFTER_S // 3600}h+: {'; '.join(stale[:6])}. list_sessions first (host_gone is not dead); "
+                     "if the owner is not running, curator_orders.py claim <seat> <n> --release, then send the order into a live chat of that seat.")
+    return "\n".join(lines)
+
+
+def _owner_silent_s(session_id: str, now: float | None = None) -> float:
+    """Seconds since the owner's transcript was last written; 0 when unknown (no projects dir), so nothing is called stale
+    on a host that cannot see transcripts. A missing transcript under a readable projects dir counts as silent forever."""
+    now = now if now is not None else time.time()
+    try:
+        dirs = os.listdir(CLAUDE_PROJECTS)
+    except OSError:
+        return 0.0
+    newest = None
+    for d in dirs:
+        path = os.path.join(CLAUDE_PROJECTS, d, f"{session_id}.jsonl")
+        try:
+            m = os.path.getmtime(path)
+        except OSError:
+            continue
+        newest = m if newest is None else max(newest, m)
+    return float("inf") if newest is None else max(0.0, now - newest)
 
 
 def _judged_by_control_loop() -> set[tuple[str, int]]:

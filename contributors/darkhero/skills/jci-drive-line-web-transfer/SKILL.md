@@ -62,6 +62,7 @@ clasp 權杖做不到的寫入 → 改走 GAS `drive_*`；兩者都不行才是�
 - Drive：`website-drive-list&folderId=<目的夾>` 或 Drive API `files?q='<夾>' in parents` 看到檔名與大小。
 - 會議夾：`manifest.json` 與會議 JSON 的 `agenda_url` 已更新。
 - 網站：GET 正式頁（`https://jci-taipei-website.vercel.app/...`）看到新內容；沒讀回就寫 UNKNOWN。
+- 收稿／名冊類 sheet：只寫內容欄，公式欄（ARRAYFORMULA 的狀態、字數、進度）不蓋；operator 給了本機檔就上傳 Drive、開知道連結者可檢視、把連結填進去，不回報「缺連結」；稿件掛哪一列由 operator 確認，不自行認定（2026-11-09 元月刊收稿表）；寫完用 gviz 讀回。
 
 ## 4 找不到檔案／登入／授權
 

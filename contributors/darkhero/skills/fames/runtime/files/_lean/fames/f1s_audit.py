@@ -717,6 +717,10 @@ ELEMENTS = [
     {"id": "EVO-cf-usage-alert-rider-not-armed", "element": "new HubClock rider (<=15m) reading workersInvocationsAdaptive, alerting at 50%/80% of 100k", "verdict": "INFO",
      "requires": None, "detail": "not armed: a new periodic rider needs operator authorization (T1 授權; HubClock rider arming = operator); cf-worker-health.py exists but is not in hosts.json; the request-budget rule is carried by EVO-cf-request-budget",
      "check_text": ("skill_deploy_cf", "Request budget before ship: every seat's Workers share one account cap")},
+    # f1s-evolve 2026-11-10: the 11-10 00:03 30-file skill rewrite (54315f93) dropped the request-budget line; audit went red, 3 edits held
+    {"id": "EVO-cf-request-budget-restored-20261110", "element": "deploy-nextjs-cloudflare request-budget rule restored after a compaction rewrite removed it", "verdict": "REFINE",
+     "requires": None, "detail": "the rule still holds (EVO-cf-request-budget, EVO-cf-usage-alert-rider-not-armed); restored as one line above the rate-gate line, incident numbers left to that line; adds that no usage-alert rider is armed; f1s_prune judges whole skills only, so the audit row is the line-level guard and worked",
+     "check_text": ("skill_deploy_cf", "No usage-alert rider is armed (arming = operator)")},
     # f1s-evolve 2026-10-28: ai_trader power-cut JSONL + keyless world-macro proposals (commits 00d2d65f8, ff5159dc6)
     {"id": "EVO-jsonl-powercut-torn-tail", "element": "append-only JSONL readers strip NUL debris and skip bad lines; appenders newline a torn tail first; design-pinned gate readers excepted", "verdict": "REFINE",
      "requires": None, "detail": "adopted into windows-runtime-pitfalls time/freshness section next to the Kernel-Power zero-file rule (7/17,065 files with NUL runs)",
@@ -1222,6 +1226,24 @@ ELEMENTS = [
     {"id": "EVO-order-delegate-file-row-20261109", "element": "ai_trader: a delegate session's deliverable is the file row; send_message is a notification and undelivered/queued is not retried", "verdict": "REFINE",
      "requires": None, "detail": "curator_orders.injection() report line tells the seat: claim before taking over, do not take an owned order, delegate output is an idempotent file row read back before write, send_message only notifies; the order-text parsing that routes the Stop-hook push to the delegate or the main chat was not adopted (fragile text matching; the claim fix already makes the first claim win)",
      "check_text": ("curator_orders", "send_message 只是通知")},
+    # f1s-evolve 2026-11-10: ai_darkhero article autopilot (f1s_apply, 6 rows)
+    {"id": "EVO-report-skipped-unchecked-20261110", "element": "article 8e46864741: end a completion report with what was skipped and which code was not checked", "verdict": "REFINE",
+     "requires": None, "detail": "ztm-verify-before-done ④ gains a closing 跳過／未檢查 list; anything not listed is not claimed verified; skill text, no PROOF phrase rule (phrase-matching FP ceiling)",
+     "check_text": ("skill_verify", "完成回報最後一段寫「跳過：…」與「未檢查：…」")},
+    {"id": "EVO-article-uiux-plugin-20261110", "element": "articles c11e730d27 / 6a819fb758: install and enable an unnamed UI/UX plugin / skill module", "verdict": "INFO",
+     "requires": None, "detail": "6a819fb758 covered by fleet skill web-ui-taste; c11e730d27 rejected: the post names no vetted plugin, a plugin install changes ~/.claude global config (operator authorisation) and must pass the SkillSpector gate first"},
+    {"id": "EVO-article-chief-of-staff-bots-20261110", "element": "articles 8dbf296b96 / 7ecd8f920e / 26cc86e3c3: chief-of-staff bot dispatch, shareable bot templates, shared brand folder", "verdict": "INFO",
+     "requires": None, "detail": "covered: curator seat ai_darkhero dispatches via _skill/engines/curator_orders.py + inbox.py; templates ship as fleet skills through ai_fleet_skills (mtm-fleet-skill-github); shared context lives in _skill/technique_output and _skill/fleet-skills; no text added"},
+    # f1s-evolve 2026-11-10: ai_metadata proposal (orders #14/#15 owned by d1255a62, owner silent, seat chat skipped them)
+    {"id": "EVO-order-stale-claim-20261110", "element": "ai_metadata: an open order whose owning conversation stopped writing is named to the curator, not left locked", "verdict": "REFINE",
+     "requires": None, "detail": "curator_orders._unclaimed_orders() adds a STALE CLAIMS line when the owner's transcript is silent STALE_OWNER_AFTER_S (6h); unreadable projects dir = unknown, never stale; release stays a curator act after list_sessions (host_gone is not dead), no automatic release (test_curator_orders::test_a_claim_whose_owner_went_silent_is_named_to_the_curator); the one-off release of #14/#15 was not done: owner silent 2.1h at 02:38, under the threshold",
+     "check_text": ("curator_orders", "STALE CLAIMS — {len(stale)} open order(s) whose owning conversation wrote nothing for ")},
+    # f1s-evolve 2026-11-10: three harvest proposals (ledger 83da1de0ae97 / 0260175589c8 / d11bcbfab3ab)
+    {"id": "EVO-jci-sheet-formula-cols-20261110", "element": "jci_taipei memory jci-yearbook71-sheet: write content columns only, never formula columns; upload operator-given local files to Drive and fill the link; row attribution is the operator's", "verdict": "REFINE",
+     "requires": None, "detail": "jci-drive-line-web-transfer §3 gains one line; sheet/folder ids and the paste keystroke recipe stay seat memory (jci data)",
+     "check_text": ("skill_jci_transfer", "公式欄（ARRAYFORMULA 的狀態、字數、進度）不蓋")},
+    {"id": "EVO-harvest-retouch-lawfirm-20261110", "element": "ai_photo memory person-retouch-traits; article decoded.legal 'Running a law firm on Free software'", "verdict": "INFO",
+     "requires": None, "detail": "rejected: person-retouch-traits is per-person face data and an operator-approved polish chain that only ai_photo runs (seat memory, personal data, not generalizable); the law-firm article reports a Debian/self-hosted/GrapheneOS stack with no technique F1S can apply or measure; no text added"},
 ]
 
 
