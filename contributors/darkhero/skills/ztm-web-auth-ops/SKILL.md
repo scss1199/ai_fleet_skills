@@ -10,11 +10,11 @@ This is the canonical policy. Host-specific skills are adapters, not authorities
 ## Invariants
 
 - Select by declared capabilities, availability, authority, evidence freshness, and risk.
-- Never branch on an AI product, model, vendor, IDE, browser brand, or skill name.
-- A platform-specific adapter may implement actions but must not redefine selection or safety policy.
-- Never ask an agent to enter passwords, recovery codes, payment data, MFA, or CAPTCHA responses.
-- Never extract browser profiles, cookies, password-manager data, or secret values into chat, logs, argv, evidence, or policy files.
-- Reuse an operator-authenticated session only through an available adapter with an explicit session capability.
+- Never branch on an AI product, model, vendor, IDE, browser brand, or skill name. (`tests/test_auth_surface_resolver.py::test_renaming_adapter_does_not_change_policy_score`)
+- A platform-specific adapter may implement actions but must not redefine selection or safety policy. (`tests/test_auth_surface_resolver.py::test_each_host_label_can_satisfy_the_same_contract`)
+- Never ask an agent to enter passwords, recovery codes, payment data, MFA, or CAPTCHA responses. (PROOF `secret_ask`)
+- Never extract browser profiles, cookies, password-manager data, or secret values into chat, logs, argv, evidence, or policy files. (PROOF `secret_ask`)
+- Reuse an operator-authenticated session only through an available adapter with an explicit session capability. (`tests/test_auth_surface_resolver.py::test_missing_capability_returns_named_handoff`)
 - Missing one host integration is not a blocker. The blocker is `NO_CAPABLE_ADAPTER` after runtime discovery.
 - A successful click, request, or redirect is not completion. Read back the provider state named by the goal.
 

@@ -17,7 +17,6 @@ parent_skill: aex-agent-evolution
 
 ## 現況（2026-07-04 verify）
 
-- `ai-ziyaoastro.kyloren.workers.dev` → canonical Workers face（health must be 2xx/3xx）
 - `ziyaoastro.fly.dev` → 302 `/login`（legacy；GHA `if: false`）
 - `.vercel/project.json` 已 link
 
