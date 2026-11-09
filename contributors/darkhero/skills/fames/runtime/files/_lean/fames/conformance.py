@@ -656,14 +656,6 @@ def compare_math_table(gate, lean_table: str) -> tuple[list, dict]:
 
 
 # --------------------------------------------------------------------------- section 3: authority
-def _subsets(items):
-    out = [[]]
-    for a in items:
-        out = out + [[a] + s for s in out]
-    # deterministic order matching Lean subsetsOf on [0,1,2,3]
-    return out
-
-
 def _lean_subsets_0123():
     def rec(xs):
         if not xs:

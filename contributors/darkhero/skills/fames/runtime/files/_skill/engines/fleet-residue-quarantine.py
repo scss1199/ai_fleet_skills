@@ -246,7 +246,6 @@ def verify(bucket_name: str, workspace: Path | None = None) -> dict:
 
 def selftest() -> int:
     """Discriminating controls: a real move, and two refusals that must abort."""
-    import ast
     import tempfile
 
     results: list[dict] = []

@@ -13,7 +13,6 @@ from pathlib import Path
 ENG = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ENG)
 from _paths import COMMON, REGISTRY  # noqa: E402
-import _projects  # noqa: E402
 import hub_python  # noqa: E402
 
 PYW = hub_python.resolve_pythonw()

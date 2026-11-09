@@ -33,8 +33,8 @@ import importlib.util
 import json
 import os
 import re
-import subprocess
 import sys
+import subprocess  # noqa: F401 - tests/test_f1s_daily.py patches this seam to prove no process is spawned
 import threading
 import time
 from datetime import datetime, timezone
