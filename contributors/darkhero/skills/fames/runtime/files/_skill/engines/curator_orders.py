@@ -242,6 +242,10 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
     if order["status"] != "open":
         raise ValueError(f"order #{n} is {order['status']}, not open")
     sid = _session_id(session)
+    if owner_of(order) and owner_of(order) != sid:
+        # ai_trader 2026-11-07..09: the main chat answered #87 that its Fable session had claimed, from a shell
+        # drifted to the hub root; only the owner, or the curator's own session (not its cwd), may answer it.
+        _require_curator(cwd, f"answers order #{n} owned by conversation {owner_of(order)[:8]}")
     order["status"] = "done" if evidence else "cannot"
     order["answer"] = {"at": _now(), "from": os.path.abspath(cwd), "session": sid,
                        "evidence": [os.path.abspath(os.path.join(cwd, p)) for p in evidence], "reason": reason.strip()}
@@ -267,8 +271,10 @@ def claim(seat: str, n: int, release: bool = False, cwd: str | None = None, sess
     if order["status"] != "open":
         raise ValueError(f"order #{n} is {order['status']}, not open")
     current = owner_of(order)
-    if current and current != sid and not is_curator(cwd):
-        raise PermissionError(f"order #{n} is owned by conversation {current[:8]}; only it or {curator()} may change that")
+    if current and current != sid:
+        # The session's own folder decides, not the shell cwd: `cd C:\ai_workspace` let ai_trader's main chat
+        # override the claim its Fable session held (#86/#87, 2026-11-07).
+        _require_curator(cwd, f"changes the owner of order #{n} (owned by conversation {current[:8]})")
     if release:
         order.pop("owner", None)
     else:
@@ -430,7 +436,9 @@ def injection(seat: str, session_id: str = "") -> str:
         else:
             lines.append(f"#{o['n']} {o['title']}: {o['do']}{extra}")
     lines.append(f"回報: python {HUB}/_skill/engines/curator_orders.py answer {seat} <n> --evidence <path> "
-                 "| --cannot \"<原因>\"（answer 的對話成為該令的負責對話；接手前先 claim {seat} <n>）")
+                 f"| --cannot \"<原因>\"（answer 的對話成為該令的負責對話；接手前先 claim {seat} <n>，已有負責對話就不要接）。"
+                 "交給別的對話（如 Fable）時，交付物是檔案列（依 item id 冪等、寫前讀回）；send_message 只是通知，"
+                 "回 undelivered/queued 是排隊不是遺失，不要重送")
     return "\n".join(lines)
 
 

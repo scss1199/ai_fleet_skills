@@ -1215,6 +1215,13 @@ ELEMENTS = [
     {"id": "EVO-counter-frame-recommendation-20261109", "element": "ai_darkhero: counter-frame check before a decision recommendation", "verdict": "REFINE",
      "requires": None, "detail": "f1s-intake section 3 gains: before a pricing / which-way / 需要你決定 recommendation, ask the same question once on the free pool with the opposite frame and list the points that flip; one chat_for call, no multi-agent council (free-runtime T1); cited card path was absent, the article id is in f1s-apply.json",
      "check_text": ("skill_intake", "給使用者決定建議（定價、走哪條路、「需要你決定」）之前做一次反框架檢查")},
+    # f1s-evolve 2026-11-09: ai_trader proposal (orders #86/#87/#88/#90 claimed by Fable, overridden by the main chat from a hub-root shell)
+    {"id": "EVO-order-owner-session-cwd-20261109", "element": "ai_trader: a curator-order owner can be changed or bypassed only by the owner or the curator's own session, never by a shell cwd drifted to the hub root", "verdict": "REFINE",
+     "requires": None, "detail": "curator_orders.claim() and answer() route any owner override through _require_curator (psutil session cwd + command cwd) instead of is_curator(cwd); an owned order answered by another conversation raises PermissionError (test_curator_orders::test_a_shell_at_the_hub_root_cannot_override_an_owner)",
+     "check_text": ("curator_orders", "changes the owner of order #{n} (owned by conversation {current[:8]})")},
+    {"id": "EVO-order-delegate-file-row-20261109", "element": "ai_trader: a delegate session's deliverable is the file row; send_message is a notification and undelivered/queued is not retried", "verdict": "REFINE",
+     "requires": None, "detail": "curator_orders.injection() report line tells the seat: claim before taking over, do not take an owned order, delegate output is an idempotent file row read back before write, send_message only notifies; the order-text parsing that routes the Stop-hook push to the delegate or the main chat was not adopted (fragile text matching; the claim fix already makes the first claim win)",
+     "check_text": ("curator_orders", "send_message 只是通知")},
 ]
 
 
@@ -1236,6 +1243,21 @@ def lean(path: Path, out: Path) -> dict:
                 if isinstance(t, dict) and not t.get("synthetic")]
     return {"verdict": doc.get("verdict"), "elapsed_s": doc.get("elapsed_s"), "theorems": theorems,
             "cautions": len(doc.get("cautions") or []), "receipt": str(out)}
+
+
+MODULES_RUN: dict = {}     # formal/<id>.lean modules added at run time from the f1s_formalize ledger
+FORMAL_LEDGER = HERE / "evidence" / "f1s-formal.json"
+FAITHFUL_MIN = 0.7
+
+
+def formal_ledger() -> dict:
+    """id -> ledger row for every f1s_formalize result that is PROVED, judged faithful and still on disk."""
+    try:
+        rows = json.loads(FORMAL_LEDGER.read_text(encoding="utf-8-sig"))["elements"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return {}
+    return {k: r for k, r in rows.items() if isinstance(r, dict) and r.get("verdict") == "PROVED"
+            and (r.get("faithful") or 0) >= FAITHFUL_MIN and r.get("file") and Path(r["file"]).is_file() and r.get("theorem")}
 
 
 def text_has(key: str, needle: str) -> bool:
@@ -1264,12 +1286,32 @@ def main() -> int:
             proofs[name] = {**prior, "reused": True}
         else:
             proofs[name] = {**lean(path, receipt), "reused": False}
+    # f1s_formalize.py (2026-11-09, Axiom's method): free-pool Lean formalizations of prose elements, kept only when
+    # the kernel said PROVED and a second route judged the statement faithful; re-proved here by hash like any module.
+    formal = formal_ledger()
+    for eid, frow in formal.items():
+        name = "Formal/" + Path(frow["file"]).stem
+        path = Path(frow["file"])
+        receipt = HERE / "evidence" / "formal" / f"{path.stem}.receipt.json"
+        prior = (previous.get("proofs") or {}).get(name) or {}
+        bound = ((previous.get("bound") or {}).get(name) or {}).get("sha256")
+        if (not force and prior.get("verdict") == "PROVED" and bound and bound == sha(path)
+                and receipt.is_file() and prior.get("theorems")):
+            proofs[name] = {**prior, "reused": True}
+        else:
+            receipt.parent.mkdir(parents=True, exist_ok=True)
+            proofs[name] = {**lean(path, receipt), "reused": False}
+        MODULES_RUN[name] = path
     proved = {t for p in proofs.values() for t in p["theorems"]}
     rows = []
     unresolved = 0
     for el in ELEMENTS:
         row = dict(el)
         req = el.get("requires")
+        frow = formal.get(el["id"])
+        if not req and frow and frow.get("theorem") in proved:      # root-namespace theorem, bound as is
+            row.update(verdict="FORMALIZED", lean_theorem=frow["theorem"], lean_ok=True,
+                       detail=f"f1s_formalize: {frow.get('kind')} proved round {frow.get('proved_round')}, faithful {frow.get('faithful')} -- {row.get('detail', '')}"[:600])
         if req:
             full = req if req.startswith("Fames.") else "Fames." + ("F1S." + req[8:] if req.startswith("F1SCore.") else req)
             row["lean_theorem"] = full
@@ -1307,7 +1349,7 @@ def main() -> int:
         "proofs": proofs, "claim_conformance_current": conf_ok, "unresolved": unresolved,
         "verdict_counts": {v: sum(1 for r in rows if r["verdict"] == v) for v in sorted({r["verdict"] for r in rows})},
         "elements": rows,
-        "bound": {k: {"path": str(p), "sha256": sha(p)} for k, p in {**MODULES, **TEXTS}.items()},
+        "bound": {k: {"path": str(p), "sha256": sha(p)} for k, p in {**MODULES, **MODULES_RUN, **TEXTS}.items()},
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
