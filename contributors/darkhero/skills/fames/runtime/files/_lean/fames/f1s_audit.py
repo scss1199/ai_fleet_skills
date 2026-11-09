@@ -1247,8 +1247,8 @@ ELEMENTS = [
      "requires": None, "detail": "rejected: person-retouch-traits is per-person face data and an operator-approved polish chain that only ai_photo runs (seat memory, personal data, not generalizable); the law-firm article reports a Debian/self-hosted/GrapheneOS stack with no technique F1S can apply or measure; no text added"},
     # f1s-evolve 2026-11-10: ai_trader proposal (order97 receipt: one commit scanned 493/5/16/41 in the main tree vs 475/3/13/25 in a worktree)
     {"id": "EVO-prune-skip-gitignored-20261110", "element": "ai_trader: f1s_prune scan counted gitignored .py (trader_output/futures_research, _migration), so self-review numbers differed by checkout", "verdict": "REFINE",
-     "requires": None, "detail": "py_files filters each code root through `git check-ignore --stdin -z` (tracked files never reported; not a git tree / no git / timeout = plain walk); only ignored paths are skipped, untracked-not-ignored files stay scanned because they are uncommitted work, not junk (test_f1s_prune::test_gitignored_files_are_not_scanned_and_a_non_git_tree_is_walked_as_before)",
-     "check_text": ("f1s_prune", "Paths under `top` that git ignores (not shipped code), so two checkouts of one commit scan alike.")},
+     "requires": None, "detail": "py_files filters each code root through `git check-ignore --stdin -z` plus `git ls-files --others --exclude-standard -z` (tracked files never reported; not a git tree / no git / timeout = plain walk). 1.45.239 kept untracked-not-ignored files scanned as 'uncommitted work'; 1.45.240 skips them too: jci_taipei order 28 showed untracked scratch (_work/canva-poster) that nobody commits (the idle sweeper commits tracked changes only) counted as a duplicate the seat cannot act on, and 'two checkouts of one commit scan alike' holds only when both unshipped classes are out (test_f1s_prune::test_gitignored_files_are_not_scanned_and_a_non_git_tree_is_walked_as_before covers ignored out/ and untracked scratch/)",
+     "check_text": ("f1s_prune", "Paths under `top` that are not shipped code: gitignored, or untracked")},
 ]
 
 
