@@ -87,6 +87,7 @@ TEXTS = {
     "skill_agc": HUB / "_skill" / "fleet-skills" / "agc-auto-goal-compact" / "SKILL.md",
     "evolve_engine": HUB / "_skill" / "engines" / "f1s-evolve-tick.py",
     "curator_orders": HUB / "_skill" / "engines" / "curator_orders.py",
+    "f1s_prune": HUB / "_skill" / "engines" / "f1s_prune.py",
     "f1s_live": HUB / "_skill" / "engines" / "f1s_live.py",
     "f1s_pytest_guard": HUB / "_skill" / "engines" / "f1s_pytest_guard" / "f1s_pytest_guard.py",
     "pinned_drift": HUB / "_skill" / "engines" / "pinned_drift.py",
@@ -1244,6 +1245,10 @@ ELEMENTS = [
      "check_text": ("skill_jci_transfer", "公式欄（ARRAYFORMULA 的狀態、字數、進度）不蓋")},
     {"id": "EVO-harvest-retouch-lawfirm-20261110", "element": "ai_photo memory person-retouch-traits; article decoded.legal 'Running a law firm on Free software'", "verdict": "INFO",
      "requires": None, "detail": "rejected: person-retouch-traits is per-person face data and an operator-approved polish chain that only ai_photo runs (seat memory, personal data, not generalizable); the law-firm article reports a Debian/self-hosted/GrapheneOS stack with no technique F1S can apply or measure; no text added"},
+    # f1s-evolve 2026-11-10: ai_trader proposal (order97 receipt: one commit scanned 493/5/16/41 in the main tree vs 475/3/13/25 in a worktree)
+    {"id": "EVO-prune-skip-gitignored-20261110", "element": "ai_trader: f1s_prune scan counted gitignored .py (trader_output/futures_research, _migration), so self-review numbers differed by checkout", "verdict": "REFINE",
+     "requires": None, "detail": "py_files filters each code root through `git check-ignore --stdin -z` (tracked files never reported; not a git tree / no git / timeout = plain walk); only ignored paths are skipped, untracked-not-ignored files stay scanned because they are uncommitted work, not junk (test_f1s_prune::test_gitignored_files_are_not_scanned_and_a_non_git_tree_is_walked_as_before)",
+     "check_text": ("f1s_prune", "Paths under `top` that git ignores (not shipped code), so two checkouts of one commit scan alike.")},
 ]
 
 
