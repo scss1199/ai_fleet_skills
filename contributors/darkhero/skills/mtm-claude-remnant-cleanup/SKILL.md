@@ -69,7 +69,7 @@ python %AI_WORKSPACE%\_skill\engines\mtm-claude-tick.py --absorb-only --brief
 
 ## 紅線
 
-- **禁止永久刪除** — 只 move + manifest；`.MIGRATED-bak` 永久刪只寫 operator 指令
+- **禁止永久刪除** — 只 move + manifest；`.MIGRATED-bak` 永久刪只寫 operator 指令（PROOF `decision` 紅線詞「永久刪除」；`mtm-claude-tick.py` 只 move）
 - 不碰 `_secrets`、fracdigi vault、operator-gated 路徑
 - ADUS draft OK；**promote** → cwd=`ai_darkhero` + `adus-promote.py`
 

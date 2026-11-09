@@ -417,7 +417,7 @@ def injection(seat: str, session_id: str = "") -> str:
         return ""
     if seat == curator():
         queue = review_queue()
-        techniques = "\n".join(t for t in (_waiting_techniques(seat), archive_due(session_id), token_watch()) if t)
+        techniques = "\n".join(t for t in (_waiting_techniques(seat), archive_due(session_id), token_watch(), _fanout_line()) if t)
         unclaimed = _unclaimed_orders()
         if not queue:
             return "\n".join(t for t in (techniques, unclaimed) if t)
@@ -463,6 +463,15 @@ def _waiting_techniques(seat: str) -> str:
         return ""
     return (f"ARTICLE TECHNIQUES — {waiting} waiting for this seat: f1s_apply.py list --seat {seat}, apply and measure the worthwhile ones, "
             "f1s_apply.py close <id> applied|covered --evidence <path> or rejected --note <why>.")
+
+
+def _fanout_line() -> str:
+    """A completed F1S fan-out the curator has not reported yet (f1s_fanout.py); empty when none or on any error."""
+    try:
+        import f1s_fanout
+        return f1s_fanout.curator_line()
+    except Exception:  # noqa: BLE001
+        return ""
 
 
 def _unclaimed_orders() -> str:

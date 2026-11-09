@@ -34,8 +34,8 @@ buildCaptionAss(text, durationSec, assPath, srtPath, { W, H, fontPx: CAP.FONT_PX
 Already wired in `ai_demo/scripts/render-brief.mjs` (video-brief/3) and `make-video.mjs` (PSYNC tours).
 
 ## Rules
-- Resolution passed to `buildCaptionAss` MUST equal the encoded frame size, or libass rescales again.
-- Card chapters put title/subtitle at screen centre; captions stay in the bottom band — never move either.
+- Resolution passed to `buildCaptionAss` MUST equal the encoded frame size, or libass rescales again. Checked by `ai_demo/scripts/check-captions.py` (PlayRes vs stream resolution).
+- Card chapters put title/subtitle at screen centre; captions stay in the bottom band — never move either. `check-captions.py` fails Alignment != 2 (bottom-centre).
 - Verify with a frame grab (`ffmpeg -ss <t> -i out.mp4 -frames:v 1 f.png`) and look at it; ffprobe cannot see layout.
 
 ## Evidence
