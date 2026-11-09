@@ -82,7 +82,8 @@ ACTIVE_TYPES = ("user", "assistant")
 SESSION_ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
 HEAD = ("F1S LIVE UPDATE — this conversation was idle when an F1S upgrade or a curator order landed (operator "
         "2026-10-24: apply it the moment a conversation is idle). Answer any open curator order now; otherwise take "
-        "the new contract on board, do nothing else, and end the turn with 「沒有下一步」.")
+        "the new contract on board, do nothing else, and end the turn with 「沒有下一步」. The reply that was on screen "
+        "stands: do not repeat it, write only what this update adds.")
 
 
 def _now() -> float:

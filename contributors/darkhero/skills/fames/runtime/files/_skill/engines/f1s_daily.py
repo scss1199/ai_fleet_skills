@@ -593,6 +593,12 @@ def render_live(day: str, state: dict, rows: dict, gap: dict, since: str) -> str
     if errs:
         lines.append("## Repeated tool errors (fix the cause, not the retry)")
         lines += [f"- [{seat}] x{n}: {sig[:120]}" for n, seat, sig in errs[:6]]
+    try:                      # one line: how much prose was said twice (f1s_repeat, operator 2026-11-09)
+        rep = _module("f1s_repeat", "f1s_repeat.py").line(1)
+    except Exception:  # noqa: BLE001 - a missing scanner never breaks the digest
+        rep = ""
+    if rep:
+        lines.append(rep)
     hyg = fleet_hygiene_rows(since)
     if hyg:   # before the articles: live.md is capped at LIVE_MAX_CHARS and the first render of 2026-10-30 cut this off
         lines.append("## Fleet hygiene (每台自己的 check/sweep 報告, fleet-hygiene.py fleet)")

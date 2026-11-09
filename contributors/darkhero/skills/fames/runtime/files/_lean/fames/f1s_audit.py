@@ -1183,6 +1183,38 @@ ELEMENTS = [
      "requires": None, "detail": "rejected: per-person biometric retouch values for named people must not spread into hub-wide skills; the general parts (a named reference binds later edits, freeze settled values into a command) are already in ztm-verify-before-done (EVO row on the named reference) and the photo-taste row EVO-photo-retouch-taste-seat-local; no text added"},
     {"id": "EVO-ipo-auction-duplicate-20261107", "element": "ai_trader ipo-auction-source-20261023 proposal re-sent (ledger 0d656711de0e)", "verdict": "INFO",
      "requires": None, "detail": "already integrated as EVO-silent-param-fallback (windows-runtime-pitfalls: an unparsed server parameter silently falls back to a default) and recorded as duplicate 2026-10-27; memory modified 2026-10-23, nothing new, no text added"},
+    # f1s-evolve 2026-11-07: ai_darkhero agent-desktop desktop-read route (IG @cooljerrett DfSGcB8AtYI, card 7a441716b4c2bf6d)
+    {"id": "EVO-agent-desktop-uia-read-20261107", "element": "ai_darkhero: native-app text read via agent-desktop@1.2.0 UIA snapshot (vercel-labs, Apache-2.0)", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls names the pinned npx route, list-windows then --window-id, the measured failure codes, never --headed, writes only on operator-named apps, SkillSpector before a skill wraps it, no raw snapshot kept; not added to hot_directive (at its cap, the skill route already points there). Probe evidence _delete/2026-11-07-agent-desktop-probe (66 statictext in the LINE window snapshot)",
+     "check_text": ("skill_runtime", "**永不加 `--headed`**（實體滑鼠＝搶前景）")},
+    # f1s-evolve 2026-11-07: ai_nuwa free pool down + more free models (IG DdUC0aEMYNV trigger)
+    {"id": "EVO-pool-circuit-no-reset-20261107", "element": "ai_nuwa: reset circuits and restore groq/cerebras/gemini keys", "verdict": "REFINE",
+     "requires": None, "detail": "circuits are self-timed in _free_api_supervisor.CircuitStore (exp backoff, 402 held 24 h); at 18:10 nvidia-nim had closed by itself, mistral 402 + openrouter 429 still open by design; key-health: groq restricted, cerebras quota0, gemini ratelimited = account-side, api-key-apply table; no manual reset, skill says so",
+     "check_text": ("skill_pool", "不要請 curator「重設」")},
+    {"id": "EVO-pool-private-body-images-20261107", "element": "ai_nuwa: free non-external vision route for worn-body renders", "verdict": "REFINE",
+     "requires": None, "detail": "no local vision model on :11434/:11436 (ollama tags 2026-11-07); worn-body images never go to external APIs incl. image_ocr gemini; text/sketch/non-body images keep image_ocr.py; a CPU vision model is a load_grant decision, never on the A770 (free-runtime T1)",
+     "check_text": ("skill_pool", "穿戴中的身體渲染圖／照片")},
+    {"id": "EVO-pool-shoe-research-duplicate-20261107", "element": "ai_nuwa: a free route for 3D/shoe-design research digests", "verdict": "INFO",
+     "requires": None, "detail": "rejected as a new route: distill-url --search + chat_for summary already is the free research route for any topic; the failure was the circuit-open moment covered by EVO-pool-circuit-no-reset-20261107; no text added"},
+    # f1s-evolve 2026-11-08: harvest corrections ai_photo 1ff4c13448fb (ledger 0d499c11a548) + 0cd3efc3e958 (ledger b5d7e823fd67), ai_nuwa 67c0a60a48a8 (ledger 0558d08f17e2)
+    {"id": "EVO-per-part-feedback-20261108", "element": "ai_photo/ai_nuwa corrections: per-part keep / revert-to-previous / level change on an iterated artifact", "verdict": "REFINE",
+     "requires": None, "detail": "ztm-verify-before-done reference section gains (5): each named part keeps its own approved version and level, approved parts carry over unchanged, only named parts are redone, closure lists source version/level per part; the per-person d-levels, teeth, nose, YSL heel geometry stay seat-local (EVO-photo-person-traits-seat-local-20261107)",
+     "check_text": ("skill_verify", "已核可部位從核可版原樣帶入，只重做被點名的部位，不整張重跑")},
+    {"id": "EVO-photo-ps-lr-learn-seat-local-20261108", "element": "ai_photo 0cd3efc3e958: learn all PS/LR light techniques, add a centre light, maximise quality", "verdict": "INFO",
+     "requires": None, "detail": "rejected beyond the per-part row: a retouch craft request for one photo set, no F1S governance lesson; research goes through the existing free research route (mtm-api-pool-offload), no text added"},
+    {"id": "EVO-nuwa-parent-child-free-parallel-20261108", "element": "ai_nuwa 67c0a60a48a8: parent/child conversations + more free models in parallel two-way correction", "verdict": "INFO",
+     "requires": None, "detail": "rejected as new text: f1s_parallel.py plan/run/merge already sends verifier-bearing units to the free pool and keeps judgment in the main chat; worn-body renders never go to external APIs (EVO-pool-private-body-images-20261107) and no local vision model may load the A770 (free-runtime T1); shoe geometry stays seat-local, no text added"},
+    {"id": "EVO-org-owned-cloud-account-20261109", "element": "jci_taipei 90ba63fa5b06: open the Cloudflare project under the organisation account tpejci888, not the personal gmail; prepare before the password arrives", "verdict": "REFINE",
+     "requires": None, "detail": "deploy-nextjs-cloudflare step 6 gains: organisation-owned projects use the organisation's own account; everything without a login is prepared ahead; only the sign-in is the operator's and the password never enters chat",
+     "check_text": ("skill_deploy_cf", "A project owned by an organisation is opened under that organisation's own account")},
+    {"id": "EVO-photo-relationship-capture-20261109", "element": "ai_photo c1445043ae66: personal relationship analysis + 'build a new conversation capture mechanism'", "verdict": "INFO",
+     "requires": None, "detail": "rejected: the body is the operator's private relationship content, seat-local and not an F1S lesson; the capture request is truncated and the mechanism already exists (f1s_live.py capture_add/capture_done), no text added"},
+    {"id": "EVO-nuwa-tool-error-rsN-20261109", "element": "ai_nuwa 4ad31b03f787: repeated tool error x3 'rsN rc=N'", "verdict": "INFO",
+     "requires": None, "detail": "rejected as noise: three occurrences of a normalised exit-code line with no cause attached; repeated tool errors already reach every seat through the f1s_daily digest, no text added"},
+    # f1s-evolve 2026-11-09: ai_darkhero proposal, article 8f1cd66098bd13f1 (LLM Council)
+    {"id": "EVO-counter-frame-recommendation-20261109", "element": "ai_darkhero: counter-frame check before a decision recommendation", "verdict": "REFINE",
+     "requires": None, "detail": "f1s-intake section 3 gains: before a pricing / which-way / 需要你決定 recommendation, ask the same question once on the free pool with the opposite frame and list the points that flip; one chat_for call, no multi-agent council (free-runtime T1); cited card path was absent, the article id is in f1s-apply.json",
+     "check_text": ("skill_intake", "給使用者決定建議（定價、走哪條路、「需要你決定」）之前做一次反框架檢查")},
 ]
 
 
