@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "scar3",
-  "at": "2026-11-06T11:45:15",
+  "at": "2026-11-09T17:42:40",
   "hub": "C:\\ai_workspace",
-  "seconds": 88.5,
+  "seconds": 98.8,
   "check": {
     "seats": [
       {
@@ -25,13 +25,13 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 10,
+        "dirty": 13,
         "unpushed": 0,
         "last_commit": "2026-10-31",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
-        "newest_file": "2026-11-06",
+        "newest_file": "2026-11-09",
         "activity": "ACTIVE"
       },
       {
@@ -46,30 +46,30 @@
         ],
         "repo": "hub",
         "newest_file": "2026-10-30",
-        "activity": "ACTIVE"
+        "activity": "IDLE"
       },
       {
         "seat": "ai_karaoke",
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-06",
+        "newest_file": "2026-11-09",
         "activity": "ACTIVE"
       },
       {
         "seat": "ai_scar3",
         "missing": [],
         "findings": [
-          "dirty_files:192"
+          "dirty_files:185"
         ],
         "repo": "own",
-        "dirty": 192,
+        "dirty": 185,
         "unpushed": 0,
-        "last_commit": "2026-10-31",
+        "last_commit": "2026-11-06",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
-        "newest_file": "2026-11-06",
+        "newest_file": "2026-11-09",
         "activity": "ACTIVE"
       },
       {
@@ -79,13 +79,13 @@
           "prunable_worktrees:1"
         ],
         "repo": "own",
-        "dirty": 46,
+        "dirty": 33,
         "unpushed": 0,
-        "last_commit": "2026-10-31",
+        "last_commit": "2026-11-06",
         "worktrees": 1,
         "worktrees_prunable": 1,
         "worktrees_orphan": 0,
-        "newest_file": "2026-11-06",
+        "newest_file": "2026-11-09",
         "activity": "ACTIVE"
       },
       {
@@ -105,15 +105,15 @@
     ],
     "scheduled_tasks": [],
     "counts": {
-      "ACTIVE": 5,
-      "IDLE": 0,
+      "ACTIVE": 4,
+      "IDLE": 1,
       "DORMANT": 2
     },
     "violations": 5,
     "producers": [
       {
         "dir": "_registry",
-        "entries": 402,
+        "entries": 404,
         "retention_named": 251,
         "writer": "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"
       },
@@ -127,7 +127,7 @@
     "retention_antipatterns": [
       {
         "file": "_skill/engines/claude-proof-hook.py",
-        "line": 571,
+        "line": 572,
         "kind": "migrated_bak_loop",
         "text": "(\"migrated-bak\", re.compile(r\"MIGRATED-bak\"), re.compile(r\"(?i)rename|replace|move|copy|with_name|with_suffix|\\+\\s*['\\\"]|f['\\\"]\"),"
       },
@@ -183,40 +183,44 @@
   },
   "sweep": {
     "applied": true,
-    "planned": 97,
-    "planned_bytes": 8215815,
+    "planned": 93,
+    "planned_bytes": 7012596,
     "by_class": {
       "cache_dir": {
-        "count": 11,
-        "bytes": 5054851
+        "count": 13,
+        "bytes": 4518966
       },
       "expired_state": {
-        "count": 86,
-        "bytes": 3160964
+        "count": 52,
+        "bytes": 2486077
+      },
+      "orphan_inbox": {
+        "count": 28,
+        "bytes": 7553
       }
     },
     "skipped": {
       "git_tracked": 284,
-      "protected": 65
+      "protected": 67
     },
-    "moved": 97,
+    "moved": 93,
     "engine": "fleet-residue-quarantine.py",
     "errors": []
   },
-  "delete_bytes": 9082327365,
+  "delete_bytes": 9805885464,
   "summary": {
     "seats": 7,
     "violations": 5,
     "activity": {
-      "ACTIVE": 5,
-      "IDLE": 0,
+      "ACTIVE": 4,
+      "IDLE": 1,
       "DORMANT": 2
     },
     "scheduled_task_findings": 0,
     "producer_leaks": 2,
     "retention_antipatterns": 9,
-    "moved": 97,
-    "planned_bytes": 8215815,
+    "moved": 93,
+    "planned_bytes": 7012596,
     "applied": true
   }
 }
