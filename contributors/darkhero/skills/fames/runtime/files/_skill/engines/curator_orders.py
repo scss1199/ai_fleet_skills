@@ -22,7 +22,7 @@ CLI (issue / reopen / close only from the curator's cwd, ai_darkhero or the hub 
   python curator_orders.py issue <seat> --title T (--do TEXT | --prompt-file PATH) [--freeze HUB_PATH]... [--forbid CMDLINE_PART]...
   python curator_orders.py deliver <seat> <n> --session LOCAL_ID   (the seat's main conversation it was sent to)
   python curator_orders.py list [<seat>]
-  python curator_orders.py answer <seat> <n> --evidence PATH [PATH...] | --cannot REASON
+  python curator_orders.py answer <seat> <n> --evidence PATH [PATH...] [--note "dead 15 -> 3; commit abc1234"] | --cannot REASON
   python curator_orders.py claim <seat> <n> [--release] [--session ID]   (owner: the one conversation pushed to answer)
   python curator_orders.py reopen <seat> <n> --note TEXT
   python curator_orders.py close <seat> <n>
@@ -230,10 +230,13 @@ def _accepted_mechanically(order: dict) -> bool:
 
 
 def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = None,
-           session: str | None = None) -> dict:
+           session: str | None = None, note: str = "") -> dict:
+    """evidence -> done (note = the seat's counts / commit / what it left, read back by f1s_fanout.collect);
+    reason -> cannot. One of the two; jci_taipei 2026-11-10 #24 had to park its counts in a scratchpad file."""
     cwd = cwd or os.getcwd()
     if bool(evidence) == bool(reason.strip()):
-        raise ValueError("answer with --evidence PATH... or --cannot REASON, not both")
+        raise ValueError("answer with --evidence PATH... [--note TEXT] or --cannot REASON, not both")
+    reason = (reason or note).strip()
     missing = [p for p in evidence if not os.path.exists(os.path.join(cwd, p))]
     if missing:
         raise ValueError(f"evidence path not found: {missing}")
@@ -248,7 +251,7 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
         _require_curator(cwd, f"answers order #{n} owned by conversation {owner_of(order)[:8]}")
     order["status"] = "done" if evidence else "cannot"
     order["answer"] = {"at": _now(), "from": os.path.abspath(cwd), "session": sid,
-                       "evidence": [os.path.abspath(os.path.join(cwd, p)) for p in evidence], "reason": reason.strip()}
+                       "evidence": [os.path.abspath(os.path.join(cwd, p)) for p in evidence], "reason": reason}
     if sid and not owner_of(order):
         # The answering conversation owns the order from now on: when the curator reopens it, only that
         # conversation is pushed to finish it (jci_taipei 2026-10-28: #5 reopened pushed every jci_taipei session).
@@ -435,7 +438,7 @@ def injection(seat: str, session_id: str = "") -> str:
             lines.append(f"#{o['n']} {o['title']}: 由對話 {owner_of(o)[:8]} 負責中，本對話讀過即可，不要 answer、不要停工{extra}")
         else:
             lines.append(f"#{o['n']} {o['title']}: {o['do']}{extra}")
-    lines.append(f"回報: python {HUB}/_skill/engines/curator_orders.py answer {seat} <n> --evidence <path> "
+    lines.append(f"回報: python {HUB}/_skill/engines/curator_orders.py answer {seat} <n> --evidence <path> [--note \"計數前後、commit、留下什麼\"] "
                  f"| --cannot \"<原因>\"（answer 的對話成為該令的負責對話；接手前先 claim {seat} <n>，已有負責對話就不要接）。"
                  "交給別的對話（如 Fable）時，交付物是檔案列（依 item id 冪等、寫前讀回）；send_message 只是通知，"
                  "回 undelivered/queued 是排隊不是遺失，不要重送")
@@ -564,6 +567,7 @@ def main(argv=None) -> int:
     g = s.add_mutually_exclusive_group(required=True)
     g.add_argument("--evidence", nargs="+")
     g.add_argument("--cannot")
+    s.add_argument("--note", default="", help="with --evidence: before -> after counts, commit, what was left and why")
     s = sub.add_parser("claim")
     s.add_argument("seat")
     s.add_argument("n", type=int)
@@ -587,7 +591,7 @@ def main(argv=None) -> int:
             seats = [a.seat] if a.seat else _seats_with_orders()
             out = {s: load(s)["orders"] if a.full else _brief(load(s)["orders"]) for s in seats}
         elif a.cmd == "answer":
-            out = answer(a.seat, a.n, a.evidence or (), a.cannot or "")
+            out = answer(a.seat, a.n, a.evidence or (), a.cannot or "", note=a.note)
         elif a.cmd == "claim":
             out = claim(a.seat, a.n, release=a.release, session=a.session)
         elif a.cmd == "reopen":
