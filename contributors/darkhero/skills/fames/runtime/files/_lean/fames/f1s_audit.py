@@ -88,6 +88,7 @@ TEXTS = {
     "evolve_engine": HUB / "_skill" / "engines" / "f1s-evolve-tick.py",
     "curator_orders": HUB / "_skill" / "engines" / "curator_orders.py",
     "f1s_prune": HUB / "_skill" / "engines" / "f1s_prune.py",
+    "fleet_hygiene": HUB / "_skill" / "engines" / "fleet-hygiene.py",
     "f1s_live": HUB / "_skill" / "engines" / "f1s_live.py",
     "f1s_pytest_guard": HUB / "_skill" / "engines" / "f1s_pytest_guard" / "f1s_pytest_guard.py",
     "pinned_drift": HUB / "_skill" / "engines" / "pinned_drift.py",
@@ -1249,6 +1250,12 @@ ELEMENTS = [
     {"id": "EVO-prune-skip-gitignored-20261110", "element": "ai_trader: f1s_prune scan counted gitignored .py (trader_output/futures_research, _migration), so self-review numbers differed by checkout", "verdict": "REFINE",
      "requires": None, "detail": "py_files filters each code root through `git check-ignore --stdin -z` plus `git ls-files --others --exclude-standard -z` (tracked files never reported; not a git tree / no git / timeout = plain walk). 1.45.239 kept untracked-not-ignored files scanned as 'uncommitted work'; 1.45.240 skips them too: jci_taipei order 28 showed untracked scratch (_work/canva-poster) that nobody commits (the idle sweeper commits tracked changes only) counted as a duplicate the seat cannot act on, and 'two checkouts of one commit scan alike' holds only when both unshipped classes are out (test_f1s_prune::test_gitignored_files_are_not_scanned_and_a_non_git_tree_is_walked_as_before covers ignored out/ and untracked scratch/)",
      "check_text": ("f1s_prune", "Paths under `top` that are not shipped code: gitignored, or untracked")},
+    {"id": "EVO-prune-external-callers-20261110", "element": "ai_theater: ai_metadata 8c8e30f0 removed set_idle_priority as dead though ai_theater imports it at module scope (gate, phase2, worker)", "verdict": "REFINE",
+     "requires": None, "detail": "scan_cwd drops a public dead function from dead_list when external_callers finds a .py in another workspace dir that names this cwd's package and the function (6,593 files walked in 4 s, cap 20,000); report carries external_callers. Live probe: set_idle_priority found outside ai_metadata. Restore routed as curator order to ai_metadata (seat repo, not edited from the tick). test_f1s_prune::test_a_public_function_another_seat_imports_is_not_dead",
+     "check_text": ("f1s_prune", "name -> a file in another seat that imports this cwd's package and names it")},
+    {"id": "EVO-hygiene-tracked-junction-files-20261110", "element": "ai_trader: 14 tracked files under .agents/skills/<name> junctions to fleet-skills get dirtied by every fleet push (gitignore does not cover tracked files)", "verdict": "REFINE",
+     "requires": None, "detail": "surface-untrack.py already does the index-only per-junction untrack but was a one-time migration nothing re-ran; fleet-hygiene check_seat now counts tracked files under junctioned .agents/.claude/.cursor skill dirs as finding tracked_junction_files:N (live ai_trader = 14) so the daily hygiene report names it. A blanket checkout that deletes the paths would delete canon through the junction, hence the fix stays surface-untrack --apply --commit. The settings.json autoCompactWindow and margin_registry.yaml writes in the same proposal are seat-local runtime writes, not adopted here. test_fleet_hygiene::test_check_seat_flags_tracked_files_under_a_junctioned_skill_dir",
+     "check_text": ("fleet_hygiene", "The fix is index-only, surface-untrack.py --apply --commit")},
 ]
 
 
