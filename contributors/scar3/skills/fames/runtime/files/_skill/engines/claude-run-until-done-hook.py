@@ -99,7 +99,8 @@ REASON = (
     "End the turn only when (a) nothing actionable remains — then say so plainly with the "
     "words 「沒有下一步」 — or (b) the only remaining step needs the operator's own authority "
     "or would destroy data — then state it on one line beginning 「需要你決定：」 and stop. "
-    "(push {n}/{cap} for this prompt)"
+    "Write only what is new since the blocked reply (it is already on screen): the step's result "
+    "and the closing line, never the report again. (push {n}/{cap} for this prompt)"
 )
 
 

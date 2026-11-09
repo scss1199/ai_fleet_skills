@@ -1663,13 +1663,17 @@ def _log(entry: dict) -> None:
         pass
 
 
+DELTA = (
+    "REPLY WITH THE DELTA ONLY: the blocked reply is already on the operator's screen, so write just the corrected or added lines (and the evidence for them) and never repeat the parts that stood; a second copy of the same report is the top source of wasted output tokens (f1s_repeat.py, 2026-11-09). "
+)
+
 REASON = (
     "PROOF (operator 2026-10-11 「解決 claude 模型會說謊」): the reply about to end this turn asserts "
     "things this turn's transcript does not show:\n{items}\n"
     "Fix it NOW, in this same turn: run the missing verification as a real tool call (test, "
     "push, re-read the file, measure) and cite the artifact path or commit, OR rewrite each listed "
     "line so it says UNKNOWN / 未驗證 for what you did not check. Never restate a listed claim "
-    "unchanged. (push {n}/{cap} for this prompt)"
+    "unchanged. " + DELTA + "(push {n}/{cap} for this prompt)"
 )
 
 

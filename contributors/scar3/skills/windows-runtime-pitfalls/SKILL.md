@@ -269,6 +269,14 @@ parent_skill: ztm-verify-before-done
   sinopac-trading-system/scripts/code_reachability.py；memory v30-cash-intraday-leadlag-20261024）
 - **控制第三方軟體先找它的設定語意（登錄檔／設定檔），不要先做 UI 模擬**；例：PotPlayer 切檔變大小是
   `ScreenFitBySize`。（hub-root potplayer-fixed-window-registry）
+- **讀原生 App 畫面上的字（LINE 桌面版群組、沒有 API 的工具）用 UIA 樹，不截圖 OCR、不動滑鼠**：
+  `npx -y agent-desktop@1.2.0 list-windows --app <exe>` 取 window id，再 `npx -y agent-desktop@1.2.0 snapshot --window-id <id>`
+  拿 JSON（元素帶 @ref）。版本釘死；預設就是 headless 語意送達，**永不加 `--headed`**（實體滑鼠＝搶前景）。多視窗 App
+  直接 `snapshot --app` 會回 `AMBIGUOUS_TARGET`；最小化的視窗只剩 root；`--surface system-tray` 在系統匣沒開時回
+  `WINDOW_NOT_FOUND`。寫入動作（click／type）只用在 operator 同次指令點名的 App；任何 skill 要包它之前先釘版本＋過
+  SkillSpector。snapshot 含私人聊天內容：在 Python 裡就地篩出要的那段，不落地 raw 檔。LINE OA webhook 看不到既有聊天
+  歷史（line-oa-ingest），要讀群組舊訊息走這條。（ai_darkhero 2026-11-07 probe：LINE.exe 聊天視窗 2.5 s、66 個
+  statictext；IG @cooljerrett DfSGcB8AtYI，card 7a441716b4c2bf6d）
 - **Claude Bash 工具會把命令文字裡的雙反斜線收成單反斜線，heredoc 的 'EOF' 引號不保護它**：用 heredoc 餵 Python 去 patch
   原始碼時，來源裡的 `\\x00` 落地成真正的 0x00（pytest `source code string cannot contain null bytes`、CreateProcess
   `embedded null character`），`\\.` 變成無效跳脫，正規表示式與路徑字串全走樣，而且同一寫法重修還是錯。做法：要透過
