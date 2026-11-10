@@ -248,7 +248,7 @@ def import_(hub: Path = HUB, force: bool = False, now: float | None = None) -> d
     listing = fjd.git(repo, "ls-tree", "-r", "--name-only", "origin/main", "contributors/")
     for rel in listing.stdout.splitlines():
         parts = rel.split("/")
-        if len(parts) == 5 and parts[2] == "bus" and parts[4].endswith(".json") and is_authority(hub):
+        if len(parts) == 5 and parts[2] == "bus" and parts[4].endswith(".json") and parts[3] not in mine and is_authority(hub):
             stamp = parts[4].split("-", 1)[0]          # inbox ids start with the send epoch
             if stamp.isdigit() and now - int(stamp) > RELAY_TTL_S:
                 deletions[rel] = None                  # addressed to a seat no host claimed within the TTL
