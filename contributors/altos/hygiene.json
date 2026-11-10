@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "desktop-rsniapr",
-  "at": "2026-11-06T11:07:19",
+  "at": "2026-11-10T22:26:23",
   "hub": "C:\\ai_workspace",
-  "seconds": 27.2,
+  "seconds": 38.3,
   "check": {
     "seats": [
       {
@@ -14,7 +14,11 @@
         "dirty": 5,
         "unpushed": 0,
         "last_commit": "2026-10-18",
-        "newest_file": "2026-11-06",
+        "worktrees": 0,
+        "worktrees_prunable": 0,
+        "worktrees_orphan": 0,
+        "tracked_junction_files": 0,
+        "newest_file": "2026-11-10",
         "activity": "ACTIVE"
       },
       {
@@ -22,11 +26,15 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 0,
+        "dirty": 2,
         "unpushed": 0,
         "last_commit": "2026-10-29",
-        "newest_file": "2026-10-29",
-        "activity": "IDLE"
+        "worktrees": 0,
+        "worktrees_prunable": 0,
+        "worktrees_orphan": 0,
+        "tracked_junction_files": 0,
+        "newest_file": "2026-11-10",
+        "activity": "ACTIVE"
       },
       {
         "seat": "ai_roas",
@@ -48,12 +56,17 @@
           ".cursor\\hooks.json"
         ],
         "findings": [
-          "charter_missing:.cursor\\hooks.json"
+          "charter_missing:.cursor\\hooks.json",
+          "worktrees:3"
         ],
         "repo": "own",
         "dirty": 47,
         "unpushed": 0,
         "last_commit": "2026-09-21",
+        "worktrees": 3,
+        "worktrees_prunable": 0,
+        "worktrees_orphan": 0,
+        "tracked_junction_files": 0,
         "newest_file": "2026-09-21",
         "activity": "DORMANT"
       },
@@ -77,12 +90,17 @@
           ".cursor\\hooks.json"
         ],
         "findings": [
-          "charter_missing:.cursor\\hooks.json"
+          "charter_missing:.cursor\\hooks.json",
+          "worktrees:3"
         ],
         "repo": "own",
         "dirty": 2,
         "unpushed": "UNKNOWN",
         "last_commit": "2026-08-27",
+        "worktrees": 3,
+        "worktrees_prunable": 0,
+        "worktrees_orphan": 0,
+        "tracked_junction_files": 0,
         "newest_file": "2026-08-27",
         "activity": "DORMANT"
       },
@@ -92,62 +110,157 @@
           ".cursor\\hooks.json"
         ],
         "findings": [
-          "charter_missing:.cursor\\hooks.json"
+          "charter_missing:.cursor\\hooks.json",
+          "worktrees:3"
         ],
         "repo": "own",
         "dirty": 0,
         "unpushed": 0,
         "last_commit": "2026-08-27",
+        "worktrees": 3,
+        "worktrees_prunable": 0,
+        "worktrees_orphan": 0,
+        "tracked_junction_files": 0,
         "newest_file": "2026-08-27",
         "activity": "DORMANT"
       }
     ],
     "scheduled_tasks": [],
     "counts": {
-      "ACTIVE": 1,
-      "IDLE": 2,
+      "ACTIVE": 2,
+      "IDLE": 1,
       "DORMANT": 4
     },
-    "violations": 5
+    "violations": 8,
+    "producers": [
+      {
+        "dir": "_registry/fames-runtime-receipts",
+        "entries": 551,
+        "retention_named": 551,
+        "writer": "_skill/fleet-skills/fames/scripts/runtime_release.py _persist_receipt"
+      }
+    ],
+    "retention_antipatterns": [
+      {
+        "file": "_skill/engines/claude-proof-hook.py",
+        "line": 572,
+        "kind": "migrated_bak_loop",
+        "text": "(\"migrated-bak\", re.compile(r\"MIGRATED-bak\"), re.compile(r\"(?i)rename|replace|move|copy|with_name|with_suffix|\\+\\s*['\\\"]|f['\\\"]\"),"
+      },
+      {
+        "file": "_skill/engines/fames-immediate-apply.py",
+        "line": 113,
+        "kind": "uuid_named_copy",
+        "text": "target = workspace / \"_registry/fames-phase-history\" / (uuid.uuid4().hex + \".json\")"
+      },
+      {
+        "file": "_skill/engines/fames-immediate-apply.py",
+        "line": 138,
+        "kind": "uuid_named_copy",
+        "text": "target = workspace / '_registry/fames-phase-history' / ('recovery-' + uuid.uuid4().hex + '.json')"
+      },
+      {
+        "file": "_skill/engines/fleet-job-dispatch.py",
+        "line": 143,
+        "kind": "uuid_named_copy",
+        "text": "wt = hub / \"_temp\" / \"fleet-job-dispatch\" / f\"wt-{uuid.uuid4().hex}\""
+      },
+      {
+        "file": "_skill/engines/fleet-job-dispatch.py",
+        "line": 375,
+        "kind": "uuid_named_copy",
+        "text": "tmp = hub / \"_temp\" / \"fleet-job-dispatch\" / f\"prompt-{uuid.uuid4().hex}.txt\""
+      },
+      {
+        "file": "_skill/engines/mtm-fleet-skill-github.py",
+        "line": 480,
+        "kind": "uuid_named_copy",
+        "text": "keep = Path(HUB) / \"_registry/fleet-skill-export-backups\" / uuid.uuid4().hex / \"skills\""
+      },
+      {
+        "file": "_skill/fleet-skills/fames/scripts/fames_fleet.py",
+        "line": 5481,
+        "kind": "uuid_named_copy",
+        "text": "backup = destination.parent / f\".{destination.name}.previous-{uuid.uuid4().hex}\""
+      },
+      {
+        "file": "_skill/fleet-skills/fames/scripts/runtime_release.py",
+        "line": 239,
+        "kind": "uuid_named_copy",
+        "text": "backup = _beneath(workspace, '_registry/fames-runtime-build-backups/' + previous['release_sha256'] + '/' + uuid.uuid4().hex)"
+      },
+      {
+        "file": "_skill/fleet-skills/fames/scripts/runtime_release.py",
+        "line": 245,
+        "kind": "uuid_named_copy",
+        "text": "+ previous['release_sha256'] + '/' + uuid.uuid4().hex)"
+      },
+      {
+        "file": "ai_darkhero/fleet-learning/scripts/fleet_learning.py",
+        "line": 591,
+        "kind": "migrated_bak_loop",
+        "text": "base / f\"{source.name}.{uuid.uuid4().hex}.MIGRATED-bak\", base, local)"
+      }
+    ],
+    "stale_memories": [
+      {
+        "seat": "ai_altos",
+        "memory": "C:\\Users\\USER\\.claude\\projects\\C--ai-workspace-ai-altos\\memory\\ai-altos-fleet-node.md",
+        "stale": [
+          "_skill/engines/zero_foreground_lint.py",
+          "fames-receipt.py"
+        ]
+      },
+      {
+        "seat": "jci_taipei",
+        "memory": "C:\\Users\\USER\\.claude\\projects\\C--ai-workspace-jci-taipei\\memory\\minutes-cloud-backend-not-local.md",
+        "stale": [
+          "_secrets/jci_taipei/meetings.env"
+        ]
+      }
+    ]
   },
   "sweep": {
     "applied": true,
-    "planned": 6,
-    "planned_bytes": 4556057,
+    "planned": 696,
+    "planned_bytes": 30499221,
     "by_class": {
       "cache_dir": {
-        "count": 4,
-        "bytes": 921848
-      },
-      "stale": {
-        "count": 1,
-        "bytes": 1187
+        "count": 12,
+        "bytes": 4964803
       },
       "backup": {
         "count": 1,
-        "bytes": 3633022
+        "bytes": 3629532
+      },
+      "expired_state": {
+        "count": 683,
+        "bytes": 21904886
       }
     },
     "skipped": {
       "git_tracked": 0,
-      "protected": 0
+      "protected": 50
     },
-    "moved": 6,
+    "moved": 696,
     "engine": "fleet-residue-quarantine.py",
     "errors": []
   },
-  "delete_bytes": 292312959,
+  "delete_bytes": 323277894,
   "summary": {
     "seats": 7,
-    "violations": 5,
+    "violations": 8,
     "activity": {
-      "ACTIVE": 1,
-      "IDLE": 2,
+      "ACTIVE": 2,
+      "IDLE": 1,
       "DORMANT": 4
     },
     "scheduled_task_findings": 0,
-    "moved": 6,
-    "planned_bytes": 4556057,
+    "producer_leaks": 1,
+    "retention_antipatterns": 10,
+    "stale_memories": 2,
+    "moved": 696,
+    "planned_bytes": 30499221,
     "applied": true
   }
 }
