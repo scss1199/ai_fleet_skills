@@ -412,6 +412,13 @@ def _code_index(hub: Path) -> dict[str, Path]:
     return out
 
 
+def _read_src(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
 def _seat_roots(seat: Path) -> list[Path]:
     """A seat's nested code roots (e.g. ai_trader/sinopac-trading-system): first-level dirs holding a .git or pyproject."""
     try:
@@ -447,6 +454,15 @@ def _mem_stale(tok: str, hub: Path, seat: Path, index: dict[str, Path]) -> str |
         if not bases or first in MEM_SKIP_FIRST:
             return None
         path = next((b / cand for b in bases if (b / cand).exists()), None)
+        if path is None and "." in cand.rsplit("/", 1)[-1]:   # module.attr() notation: dir/mod.attr -> dir/mod.py has attr
+            head, tail = cand.rsplit("/", 1)
+            mod, attr = tail.split(".", 1)
+            attr = re.split(r"[(.]", attr, 1)[0]
+            for b in bases:
+                f = b / head / f"{mod}.py"
+                if f.is_file() and attr and attr in _read_src(f):
+                    path = f
+                    break
         if path is None:
             return cand
     elif cand.lower().endswith(MEM_CODE):
@@ -455,13 +471,15 @@ def _mem_stale(tok: str, hub: Path, seat: Path, index: dict[str, Path]) -> str |
             return cand
     else:
         return None
-    flags = [f.split("=", 1)[0].rstrip(")],;:.") for w in words[1:] for f in w.split("/")
+    own = []   # this script's own words: stop at the next script token (an inner `--cmd "python x.py --flag"`)
+    for w in words[1:]:
+        if w.strip("\"'").lower().endswith(MEM_CODE):
+            break
+        own.append(w)
+    flags = [f.split("=", 1)[0].rstrip(")],;:.\"'") for w in own for f in w.split("/")
              if re.match(r"^--[a-z][a-z0-9-]+", f) and f.split("=", 1)[0] != "--help"]
     if flags and path.is_file() and path.suffix.lower() in MEM_CODE:
-        try:
-            src = path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            return None
+        src = _read_src(path)
         gone = [f for f in flags if f not in src]
         if gone:
             return f"{cand} {' '.join(gone)}"
