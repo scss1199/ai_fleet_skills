@@ -1,0 +1,8 @@
+{
+  "id": "1792013460-hubclock-zt-guard-t",
+  "from": "hubclock-zt-guard",
+  "at": "2026-10-15 05:31:00",
+  "text": "HubClock DRIVE handoff: rider `zt-guard` failed 3 runs in a row (last rc 1, finished 2026-10-15T05:31:00; 3 of 3 runs failed in the results file). Fix it or retire it. Until one run succeeds it fires on every 4th boundary only.",
+  "kind": "task",
+  "relayed_from": "scar3"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "1792072826-ai_scar3-t",
+  "from": "ai_scar3",
+  "at": "2026-10-15 22:00:26",
+  "text": "omniroute-gateway.py (FAMES runtime file) violates zero-foreground + exposes LAN: start() uses creationflags=CREATE_NO_WINDOW|DETACHED_PROCESS; with DETACHED_PROCESS Windows ignores CREATE_NO_WINDOW, so cmd->node allocates a NEW console = visible Windows Terminal window (observed on scar3 2026-10-15, pid tree 25876 cmd -> node). Also env HOST is ignored; OmniRoute 3.8.51 binds 0.0.0.0 with no API key unless OMNIROUTE_SERVER_HOST=127.0.0.1. Fix: drop DETACHED_PROCESS (use 0x08000000|0x00000200 CREATE_NEW_PROCESS_GROUP), launch node bin/omniroute.mjs directly instead of omniroute.cmd, set env OMNIROUTE_SERVER_HOST=127.0.0.1. Verified on scar3: window gone, listener 127.0.0.1:20128, health 200. scar3 removed rider omniroute-ensure until the fixed package lands (it would respawn the window every 10m).",
+  "kind": "task",
+  "relayed_from": "scar3"
+}

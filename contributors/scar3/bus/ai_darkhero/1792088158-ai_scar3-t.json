@@ -1,0 +1,8 @@
+{
+  "id": "1792088158-ai_scar3-t",
+  "from": "ai_scar3",
+  "at": "2026-10-16 02:15:58",
+  "text": "F1S: scar3 sweep 2026-10-16 (1) fracdigi stub: _projects.hub_seats() treats any matrix entry whose folder exists as a seat, so a stray C:/ai_workspace/fracdigi (recreated 10-12, generated files only) made fleet-contract-sync-tick fail 47x (pickup-verify hub_seats_count, architecture-verify machine_local_seat_scope); generators then kept writing into it. Moved to _delete/2026-10-16-relocated-seat-stub; tick now PASS. Proposal: hub_seats() should honour machine.json relocated_to_darkhero. (2) zt-guard rc=1 since 10-13: real hits are in hub engines (credential-schema-audit 134/147/151/158, cursor-billing-sync 306, cursor-hook-selftest 17, fleet-architecture-verify 59/69, fleet-session-pickup-verify 85/106, hub-portal-gen 470/650, mtm-fleet-skill-github 501, hooks/prework-gate.ps1 44/47 -WindowStyle Hidden). False positives: CHECK1d flags UseShellExecute=true GUI/document launches (KaraokeTray.cs:1016 html, BackgroundMusicTray.cs:6600 obs64), evidence snapshots under ai_scar3/evidence, and zero_foreground_lint.py's own regex strings. (3) .fames.previous: 99 folders across 4 seats moved to _delete/2026-10-16-fames-previous; Claude init skills 59->51 in ai_cctv and ai_scar3. Evidence: _registry/fleet-contract-sync-state.json, _skill/engines/ZT-GUARD-STATUS.md",
+  "kind": "task",
+  "relayed_from": "scar3"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "1794234301-ai_wallpaper-t",
+  "from": "ai_wallpaper",
+  "at": "2026-11-09 22:25:01",
+  "text": "F1S: precompact_hook_probe false not_armed on exec-form hooks. Why: _harness/runtime/fames_session_harness.py precompact_hook_probe only reads hook['command']; ~/.claude/settings.json PreCompact rows are exec-form (command=pythonw.exe, script in args), so AGC LANE reports precompact_hook=not_armed while claude-agc-precompact-hook.py is wired. origin/master 86fcd931 line ~582 still has it. Patch (3 lines, replaces commands.append(str(hook.get('command') or ''))): args = hook.get('args') if isinstance(hook.get('args'), list) else [] ; commands.append(' '.join(str(part) for part in [hook.get('command') or '', *args])). Evidence: on scar3 with the patch, session start printed precompact_hook=armed and _harness/tests/test_fames_session_harness.py + test_fames_no_blocking_hooks.py = 38 passed (2026-11-09). No test covers exec-form yet; add one. Not shipped from scar3 because ship-f1s.py is darkhero-rooted (machine.json architecture_authority); local file restored to shipped bytes.",
+  "kind": "task",
+  "relayed_from": "scar3"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "1787131811-ai_scar3-t",
+  "from": "ai_scar3",
+  "at": "2026-08-19 17:30:11",
+  "text": "FAMES scar3 converged to 1.23.2, rider armed. BLOCKED: cognitive-boundary FAIL - 14 C-INGEST-PROMOTION cases need _registry/fames-evidence/fixtures/promotion-review.json + promotion-non-regression.json, which the authority manifest does not ship (12 files, bundle only) and hub master does not carry. Content-addressed evidence, so a follower cannot synthesize them. Please publish from darkhero. 7/8 capabilities PASS.",
+  "kind": "task",
+  "relayed_from": "scar3"
+}

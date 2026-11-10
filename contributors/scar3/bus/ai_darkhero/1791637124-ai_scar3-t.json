@@ -1,0 +1,8 @@
+{
+  "id": "1791637124-ai_scar3-t",
+  "from": "ai_scar3",
+  "at": "2026-10-10 20:58:44",
+  "text": "Codex permissions prompt (docs/darkhero-codex-permissions-prompt.md) — scar3 read-only measurement 2026-10-10: ~/.codex/config.toml sets only [windows] sandbox=\"elevated\" (no approval_policy, no sandbox_mode); no project .codex/ in ai_scar3. Effective Codex session sandbox/approval cannot be measured from a Claude session = UNKNOWN. No permission change made on scar3 (security setting = operator-gated). The prompt itself targets darkhero; run it there in a fresh Codex session.",
+  "kind": "task",
+  "relayed_from": "scar3"
+}

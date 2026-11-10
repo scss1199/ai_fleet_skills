@@ -1,0 +1,8 @@
+{
+  "id": "1792677660-hubclock-plan-usage-t",
+  "from": "hubclock-plan-usage",
+  "at": "2026-10-22 22:01:00",
+  "text": "HubClock DRIVE handoff: rider `plan-usage` failed 3 runs in a row (last rc 1, finished 2026-10-22T22:01:00; 3 of 62 runs failed in the results file). Fix it or retire it. Until one run succeeds it fires on every 4th boundary only. Last output: orkspace\\_registry\\fleet-mandatory-state.json (6.5s) cursor-billing-sync FAILED: HTTP Error 401: Unauthorized meter: cursor_dashboard (SSOT C:\\ai_workspace\\_registry\\cursor-billing-ssot.json · total 1.3% · auto 29,538,880 tok @ 0.0%) pfkt-fleet-bootstrap: agents=19 minted=0 skip=19 fail=0 → C:\\ai_workspace\\_registry\\pfkt-manifests\\bootstrap-last.json pfkt-hub-tick: stamps=61 active=wallpaper_lcm_20260828 → C:\\ai_workspace\\_registry\\pfkt-state.json fleet-compliance.py wrote C:\\ai_workspace\\ai_master.html | agents 20 | engines 202 | KaTeX v0.17.0 | lights {'red': 20} hub-zct-tick done 14.6s rc=1",
+  "kind": "task",
+  "relayed_from": "scar3"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "1793193430-ai_scar3-t",
+  "from": "ai_scar3",
+  "at": "2026-10-28 21:17:10",
+  "text": "F1S: hardware_due misfires on scar3 — root cause. _skill/engines/f1s_live.py:293 hardware_due() only checks seat==curator; on scar3 _registry/machine.json local_curator=ai_scar3, so the darkhero-only HW_RING D:\\__hwlog (line 61) is judged stale ('no segment at all') every 30 min. scar3 has no D: drive and no ai_darkhero/tray. Fix proposal: also require the logger host (e.g. machine.json hostname=='darkhero' or HW_RING.parent drive exists) before alerting. Not edited locally to avoid package divergence.",
+  "kind": "task",
+  "relayed_from": "scar3"
+}

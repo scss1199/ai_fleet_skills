@@ -1,0 +1,8 @@
+{
+  "id": "1792155780-hubclock-fleet-skill-github-sync-t",
+  "from": "hubclock-fleet-skill-github-sync",
+  "at": "2026-10-16 21:03:00",
+  "text": "HubClock DRIVE handoff: rider `fleet-skill-github-sync` failed 3 runs in a row (last rc 1, finished 2026-10-16T21:03:00; 9 of 52 runs failed in the results file). Fix it or retire it. Until one run succeeds it fires on every 4th boundary only.",
+  "kind": "task",
+  "relayed_from": "scar3"
+}

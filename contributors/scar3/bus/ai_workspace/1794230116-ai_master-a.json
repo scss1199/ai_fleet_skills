@@ -1,0 +1,8 @@
+{
+  "id": "1794230116-ai_master-a",
+  "from": "ai_master",
+  "at": "2026-11-09 21:15:16",
+  "text": "--body [fleet-process-guard] python.exe under hub tree (use pythonw) pid=7536 ai_workspace :: C:\\Python311\\python.exe -B C:\\ai_workspace\\_skill\\engines\\log_session.py",
+  "kind": "alert",
+  "relayed_from": "scar3"
+}

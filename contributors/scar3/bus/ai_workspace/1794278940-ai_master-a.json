@@ -1,0 +1,8 @@
+{
+  "id": "1794278940-ai_master-a",
+  "from": "ai_master",
+  "at": "2026-11-10 10:49:00",
+  "text": "--body [fleet-process-guard] python.exe under hub tree (use pythonw) pid=8308 ai_workspace :: C:\\Python311\\python.exe C:/ai_workspace/_lean/leanctl.py check --file C:/Users/scss1/AppData/Local/Temp/claude/b923680200e8a3a6/39bdc7f6-1910-4ec4-83f7-1fc0d04f372b/scratchpad/prune/DeadDefErasure.lea",
+  "kind": "alert",
+  "relayed_from": "scar3"
+}

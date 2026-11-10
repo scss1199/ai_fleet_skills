@@ -1,0 +1,8 @@
+{
+  "id": "1793180475-ai_scar3-t",
+  "from": "ai_scar3",
+  "at": "2026-10-28 17:41:15",
+  "text": "F1S: hardware-watch Stop hook fires on scar3 but its target does not exist here. Evidence 2026-10-28: Test-Path D:\\__hwlog=False (scar3 has only drive C:), C:\\ai_workspace\\ai_darkhero\\tray\\state\\hw_csv_logger.json=False, ai_darkhero\\tray\\scripts\\hwlog_autostart.py=False. The hook demands a heal that cannot run off darkhero; gate it on the machine (_registry/machine.json) or on the logger being installed.",
+  "kind": "task",
+  "relayed_from": "scar3"
+}

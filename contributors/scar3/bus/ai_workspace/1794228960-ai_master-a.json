@@ -1,0 +1,8 @@
+{
+  "id": "1794228960-ai_master-a",
+  "from": "ai_master",
+  "at": "2026-11-09 20:56:00",
+  "text": "--body [fleet-process-guard] python.exe under hub tree (use pythonw) pid=10172 ai_workspace :: C:\\Python311\\python.exe C:\\ai_workspace\\_skill\\engines\\credential-schema-audit.py scan --json --root C:\\ai_workspace --out C:\\Users\\scss1\\AppData\\Local\\Temp\\api_registry_scan.json",
+  "kind": "alert",
+  "relayed_from": "scar3"
+}

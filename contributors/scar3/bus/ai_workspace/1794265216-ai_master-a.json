@@ -1,0 +1,8 @@
+{
+  "id": "1794265216-ai_master-a",
+  "from": "ai_master",
+  "at": "2026-11-10 07:00:16",
+  "text": "--body [fleet-process-guard] python.exe under hub tree (use pythonw) pid=22984 ai_workspace :: C:\\Python311\\python.exe C:\\ai_workspace\\_lean\\leanctl.py --ascii check --file C:\\ai_workspace\\_registry\\fames-phase-history\\phase-check-f90f6e17e62e4d0a8732318b2397d307\\fames-conf-16f17fd80b104758b851",
+  "kind": "alert",
+  "relayed_from": "scar3"
+}

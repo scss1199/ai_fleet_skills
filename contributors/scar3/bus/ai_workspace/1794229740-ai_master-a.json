@@ -1,0 +1,8 @@
+{
+  "id": "1794229740-ai_master-a",
+  "from": "ai_master",
+  "at": "2026-11-09 21:09:00",
+  "text": "--body [fleet-process-guard] python.exe under hub tree (use pythonw) pid=5300 ai_workspace :: C:\\Python311\\python.exe -B C:\\ai_workspace\\_skill\\engines\\claude-proof-hook.py",
+  "kind": "alert",
+  "relayed_from": "scar3"
+}

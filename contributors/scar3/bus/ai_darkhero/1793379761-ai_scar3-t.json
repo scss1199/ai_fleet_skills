@@ -1,0 +1,8 @@
+{
+  "id": "1793379761-ai_scar3-t",
+  "from": "ai_scar3",
+  "at": "2026-10-31 01:02:41",
+  "text": "F1S: fleet-rogue-scheduler-sweep false positives turn every scar3 seat red\n原因: 命中全是 AGENTS.md T1 禁令文字 + seat 內 vendored skills/fames/runtime 偵測引擎 regex；41/seat → park 後 8/seat，真實安裝腳本 0；導致每日 MANDATORY 指令。修法: _scan_repo_scripts 跳過 <seat>/.agents|.claude|.cursor/skills 與根目錄 AGENTS.md/CLAUDE.md（patch 見證據 §A）。scar3 改 _skill/engines 被權限擋。\n證據: _inbox/from_projects/ai_scar3/scar3-seat-sweep-2026-10-31.md ; _registry/fleet-rogue-schedulers.json",
+  "kind": "task",
+  "relayed_from": "scar3"
+}
