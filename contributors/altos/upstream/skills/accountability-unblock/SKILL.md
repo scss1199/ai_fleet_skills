@@ -35,7 +35,7 @@ BLOCKED 原文：
 
 ## 紅線
 
-- 禁止假寫 result-field（evidence 必須可複驗）
+- 禁止假寫 result-field（evidence 必須可複驗）（checker：`accountability_enforce.py` fake-delivery deny；`result-field.py` evidence 欄）
 - suspended clear 僅在 inbox/stuck 已處理或 curator 已補完工作後
 - 回覆繁體中文；BLOCKED 原因用 fixes_en（英文）避免亂碼
 

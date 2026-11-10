@@ -580,7 +580,8 @@ def precompact_hook_probe(settings_path: Path | None = None) -> dict[str, Any]:
     for row in rows if isinstance(rows, list) else []:
         for hook in (row.get("hooks") or []) if isinstance(row, dict) else []:
             if isinstance(hook, dict) and hook.get("type") == "command":
-                commands.append(str(hook.get("command") or ""))
+                args = hook.get("args") if isinstance(hook.get("args"), list) else []   # exec form: script in args
+                commands.append(" ".join(str(part) for part in [hook.get("command") or "", *args]))
     armed = any(AGC_PRECOMPACT_ADAPTER in command for command in commands)
     return {
         "armed": armed,

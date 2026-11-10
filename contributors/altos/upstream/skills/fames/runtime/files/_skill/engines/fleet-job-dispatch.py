@@ -155,9 +155,14 @@ def _publish(repo: Path, hub: Path, files: dict, message: str, branch: str = "ma
             git(wt, "sparse-checkout", "disable")
             rel = []
             for relpath, doc in files.items():
-                _write_json(wt / relpath, doc)
+                if doc is None:                        # fleet-bridge: a relayed message the curator absorbed
+                    target = wt / relpath
+                    if target.is_file():
+                        target.unlink()
+                else:
+                    _write_json(wt / relpath, doc)
                 rel.append(relpath)
-            git(wt, "add", "-f", "--", *rel)
+            git(wt, "add", "-f", "--all", "--", *rel)
             c = git(wt, "-c", "user.name=fleet-job-dispatch", "-c", "user.email=fleet-job-dispatch@local",
                     "commit", "-q", "-m", message, "--", *rel)
             if c.returncode and "nothing to commit" not in (c.stdout + c.stderr):
