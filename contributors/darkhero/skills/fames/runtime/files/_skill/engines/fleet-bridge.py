@@ -169,6 +169,31 @@ def learn_doc(hub: Path = HUB, projects: Path | None = None) -> dict:
     return {"schema": 1, "host": this_host(), "seats": seats, "sha": sha, **body}
 
 
+LESSONS_MAX_AGE_S = 24 * 3600
+
+
+def refresh_lessons(hub: Path = HUB, now: float | None = None, runner=None) -> str:
+    """Follower transcripts never met f1s_daily (no rider runs it there): tick it before exporting when
+    _registry/f1s-daily/lessons.json is missing or a day old, so conversation lessons ride along."""
+    now = now or time.time()
+    lessons = hub / "_registry" / "f1s-daily" / "lessons.json"
+    engine = ENGINES / "f1s_daily.py"
+    if not engine.is_file():
+        return "no-engine"
+    try:
+        if lessons.is_file() and now - lessons.stat().st_mtime < LESSONS_MAX_AGE_S:
+            return "fresh"
+    except OSError:
+        pass
+    runner = runner or (lambda cmd: __import__("subprocess").run(cmd, capture_output=True, text=True, timeout=1500,
+                                                                   creationflags=getattr(__import__("subprocess"), "CREATE_NO_WINDOW", 0)))
+    try:
+        r = runner([sys.executable, str(engine), "tick"])
+        return "ticked" if getattr(r, "returncode", 1) == 0 else f"tick-rc{getattr(r, 'returncode', '?')}"
+    except Exception as exc:  # noqa: BLE001 - a slow or broken daily never blocks the relay
+        return f"tick-failed:{type(exc).__name__}"
+
+
 def relay_candidates(hub: Path = HUB) -> list[tuple[str, Path]]:
     """(seat, file) for every inbox message addressed to a seat not hosted here."""
     inbox = hub / "_bus" / "inbox"
@@ -193,6 +218,7 @@ def export(hub: Path = HUB, force: bool = False, publish: bool = True, now: floa
         return {"skipped": "throttled", "next_in_s": int(THROTTLE_S - (now - state["export_at"]))}
     me = slug(hub)
     authority = is_authority(hub)
+    lessons = refresh_lessons(hub, now) if not authority else "authority"
     doc = learn_doc(hub) if not authority else {"memories": [], "skills": [], "conversations": [], "sha": "authority"}
     files: dict = {}
     if not authority and doc["sha"] != state.get("learn_sha"):   # the curator's own knowledge IS the corpus
@@ -205,7 +231,7 @@ def export(hub: Path = HUB, force: bool = False, publish: bool = True, now: floa
             files[f"contributors/{me}/bus/{seat}/{f.name}"] = msg
     out = {"at": now, "host": this_host(), "slug": me, "learn_changed": LEARN_FILE in "".join(files),
            "memories": len(doc["memories"]), "skills": len(doc["skills"]), "conversations": len(doc["conversations"]),
-           "bus": len(relayed), "published": None}
+           "bus": len(relayed), "lessons": lessons, "published": None}
     if not authority:
         _save(STATE_DIR / "learn.json", doc)
     if files and publish:
