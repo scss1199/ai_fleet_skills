@@ -21,7 +21,7 @@ parent_skill: browser-login-handoff
 - 不印 secret／token 值；vault 只說檔名與 key 名。
 - Drive 只做 trash，永久刪除是 operator 親手的事。`drive_trash_files` 能 trash 任何 id：只餵剛從清單讀到的 id，
   不用推算出來的批次，送出後逐一讀回。
-- LINE 不能列歷史群組檔：要 webhook 存下的 `message_id` 或本機副本；不准爬 `manager.line.biz`。
+- LINE 不能列歷史群組檔：要 webhook 存下的 `message_id` 或本機副本；不准爬 `manager.line.biz`。（取回路徑：`_line/line_oa_recover.py`）
 - 會寫入的引擎先跑 dry-run（不加 `--apply`／`--push`），看清單再寫。
 
 ## 1 路由表（每列都已對過引擎參數）

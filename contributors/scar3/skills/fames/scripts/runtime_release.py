@@ -462,9 +462,11 @@ def _apply(workspace: Path, package: Path, checked: dict) -> dict:
         elif current is not None:
             if relative in old_files and current_hash == old_files[relative]['sha256']:
                 baseline = {'baseline_kind': 'previous_installed_manifest'}
-            elif relative in old_files:
-                baseline = None
             else:
+                # A destination the previous install wrote but that no longer carries its hash is still safe to
+                # replace when it is byte-identical to git HEAD/index (scar3 2026-11-10: three engines were reset to
+                # the checkout's HEAD after generation 263, and every later generation refused with
+                # UNKNOWN_LOCAL_CHANGES). Only a destination that differs from both is unmanaged.
                 baseline = _clean_git_baseline(destination, current)
             if baseline is None:
                 receipt.update(state='UNKNOWN_LOCAL_CHANGES')

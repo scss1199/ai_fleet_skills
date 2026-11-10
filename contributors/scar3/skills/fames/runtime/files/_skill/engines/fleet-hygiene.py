@@ -49,6 +49,7 @@ ACTIVE_D, IDLE_D = 7, 30
 WORKTREE_MAX = 3            # extra worktrees per repo before it is a finding (each is a full working-tree copy)
 SEAT_RE = re.compile(r"^(ai_[a-z0-9_]+|jci_[a-z0-9_]+|sdnext_[a-z0-9_]+|fracdigi)$")
 CHARTER = ("CLAUDE.md", "AGENTS.md", os.path.join(".cursor", "hooks.json"))
+SKILL_SURFACES = (".agents/skills", ".claude/skills", ".cursor/skills")   # each <name> may be a junction to fleet-skills
 PRUNE = {".git", "node_modules", ".venv", "venv", "env", "_secrets", ".claude"}
 CACHE_DIRS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".hypothesis", ".ipynb_checkpoints"}
 TEMP_SUFFIX = (".tmp", ".temp", ".swp", ".swo", ".part", ".crdownload", ".pyc", ".pyo")
@@ -253,6 +254,12 @@ def check_seat(seat: Path, now: float) -> dict:
                                           if d.is_dir() and os.path.normcase(os.path.normpath(str(d))) not in known)
         else:
             row["worktrees"] = "UNKNOWN"
+        # tracked files under a junctioned skill dir: every fleet-skill push dirties them (ai_trader 2026-11-10, 14 files).
+        # The fix is index-only, surface-untrack.py --apply --commit; a checkout that deletes the paths deletes canon.
+        ls = _git(seat, "ls-files", "--", *SKILL_SURFACES)
+        if ls.returncode == 0:
+            row["tracked_junction_files"] = sum(1 for f in ls.stdout.splitlines()
+                                                if f.count("/") >= 3 and _is_junction(str(seat / "/".join(f.split("/")[:3]))))
     newest = newest_file(seat)
     row["newest_file"] = time.strftime("%Y-%m-%d", time.localtime(newest)) if newest else None
     days = (now - newest) / 86400 if newest else 9999
@@ -263,6 +270,8 @@ def check_seat(seat: Path, now: float) -> dict:
         row["findings"].append(f"unpushed_commits:{row['unpushed']}")
     if isinstance(row.get("dirty"), int) and row["dirty"] > 50:
         row["findings"].append(f"dirty_files:{row['dirty']}")
+    if row.get("tracked_junction_files"):
+        row["findings"].append(f"tracked_junction_files:{row['tracked_junction_files']}")
     if row.get("worktrees_prunable"):
         row["findings"].append(f"prunable_worktrees:{row['worktrees_prunable']}")
     if row.get("worktrees_orphan"):

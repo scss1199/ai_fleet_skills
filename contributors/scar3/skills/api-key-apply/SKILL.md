@@ -10,12 +10,11 @@ Treat the local credential store as data to verify, never as proof by itself.
 ## Boundaries
 
 - Keep values only in _secrets/api-matrix.json, _secrets/vault.json, or a provider CLI store.
-- Never put a key in chat, argv, git, _registry, logs, or generated reports.
+- Never put a key in chat, argv, git, _registry, logs, or generated reports. Checked by PROOF `secret_ask` and `tests/test_deepgram_provider_secret.py::test_receipt_never_contains_value`.
 - Accept values only through token-onboard.py ingest or key-onboard.py --key-stdin.
-- Never sign up, accept Terms, bypass captcha, or invent account consent.
-- Never claim automatic key creation unless a provider-specific mint adapter, management credential,
+- Never claim automatic key creation unless a provider-specific mint adapter, management credential, (PROOF `automated` class)
   explicit local policy, candidate validation, atomic consumer update, and rollback are all proven.
-- Synchronize names and status only. Each of darkhero, scar3, and altos keeps its own values locally.
+- Synchronize names and status only. Each of darkhero, scar3, and altos keeps its own values locally. Receipt shape: `tests/test_deepgram_provider_secret.py`.
 
 ## Audit before action
 

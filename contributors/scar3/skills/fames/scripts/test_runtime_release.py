@@ -10,7 +10,6 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
-import uuid
 
 import pytest
 
@@ -211,6 +210,30 @@ def test_changed_managed_file_is_never_overwritten(lab):
     result = release.apply(target, package)
     assert result['state'] == 'UNKNOWN_LOCAL_CHANGES'
     assert (target / PATH_A).read_bytes() == b'operator customization\n'
+
+
+def test_managed_file_reset_to_clean_git_head_is_replaced_again(lab):
+    """scar3 2026-11-10: three engines the previous install had written were reset to the checkout's HEAD
+    (git-clean, old hash), and every later generation refused with UNKNOWN_LOCAL_CHANGES; a destination
+    byte-identical to HEAD/index is as safe as a first install onto a clean tracked file."""
+    _, source, package, target = lab
+    build(lab, [PATH_A])
+    put(target, PATH_A, b'old tracked implementation\n')
+    git(target, 'init', '-q')
+    git(target, 'add', '--', PATH_A)
+    git(target, 'commit', '-q', '-m', 'Synthetic baseline')
+    assert release.apply(target, package)['ok']                       # install 1 writes the new bytes
+    git(target, 'checkout', '--', PATH_A)                             # something resets it to HEAD (old, clean)
+    put(source, PATH_A, b'new release\n')
+    build(lab)
+    result = release.apply(target, package)
+    assert result['ok'], result
+    assert result['files'][0]['baseline_kind'] == 'clean_tracked_git_HEAD'
+    assert (target / PATH_A).read_bytes() == b'new release\n'
+    put(target, PATH_A, b'operator customization\n')                  # dirty vs HEAD and vs install: still refused
+    put(source, PATH_A, b'newer release\n')
+    build(lab)
+    assert release.apply(target, package)['state'] == 'UNKNOWN_LOCAL_CHANGES'
 
 
 def test_rollback_and_same_generation_fork_fail_closed(lab):

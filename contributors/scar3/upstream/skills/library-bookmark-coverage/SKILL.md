@@ -39,13 +39,12 @@ about the pipeline, not about a module existing on disk.
    existed, `index.html` embedded a stale blocked-list, and every rebuild without `--probe`
    dropped the verdict back to 待驗證; kemono (login-free) was listed as needing verification.
    Rules (operator 2026-10-29, ai_metadata `216f9704`):
-   - 待驗證 is only the state BEFORE a live probe. A verified/blocked verdict is keyed on the
+   - 待驗證 is only the state BEFORE a live probe. A verified/blocked verdict is keyed on the (`scripts/library_coverage.py --probe`)
      credential-file fingerprint and survives rebuilds until the file changes.
-   - A login-free source is `PUBLIC_READ` (公開來源), never 待驗證; its fetch failure is
      來源端阻擋, not a login request to the operator.
-   - A primary source that answers 403 (twitter) must show the archive lane (Wayback) as the
+   - A primary source that answers 403 (twitter) must show the archive lane (Wayback) as the (`tests/test_x_wayback_fallback.py`)
      live path with the per-account count it actually fetched — "blocked" alone is not a status.
-   - 不訂閱 = the download queue row is `declined` and the sweep never re-arms it; the
+   - 不訂閱 = the download queue row is `declined` and the sweep never re-arms it; the (`scripts/library_coverage.py`)
      bookmark itself stays (the operator's list is not the engine's state).
    Guard (ai_metadata): `tests/test_auth_inventory.py`, `tests/test_bookmark_sweep_refresh.py`,
    `tests/test_person_page_schedule_status.py`.
@@ -59,7 +58,7 @@ python scripts/library_coverage.py --gate
 ```
 
 - `--gate` → non-zero exit on any **unwaived** gap. This is the PFKT verify command.
-- `--probe` → live yt-dlp probe for `web_video` rows that only a *generic* extractor could reach,
+- `--probe` → live yt-dlp probe for `web_video` rows that only a *generic* extractor could reach, (`scripts/library_coverage.py` probe_web_video)
   cached in `runtime/library-coverage-probe.json`. Read-only against the operator's own pages:
   it lists formats and downloads nothing. Never reads or prints cookie values.
 
@@ -94,11 +93,11 @@ Then: `pytest tests/test_library_coverage.py tests/test_platform_registry.py tes
 
 ## Security invariants (seat red lines)
 
-- `CATCH_ALL_PLATFORM = "web"`, never a credentialed platform. The platform key selects
+- `CATCH_ALL_PLATFORM = "web"`, never a credentialed platform. The platform key selects (`tests/test_library_coverage.py`)
   `secrets/<platform>/cookies.txt` (`web_video_zct._cookiefile_for`,
   `downloader.download_via_extractor`), so a catch-all of `"youtube"` hands an arbitrary
   unknown host the owner's YouTube cookies. `web` has no secrets dir — that is the point.
-- Cookie/secret **values** are never printed. Schema and counts only.
+- Cookie/secret **values** are never printed. Schema and counts only. (PROOF `secret_ask`)
 - Login-walled fetch only through the owner's own session. Never bypass.
 
 ## Scheduling

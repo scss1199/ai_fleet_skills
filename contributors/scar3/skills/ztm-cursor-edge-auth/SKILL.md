@@ -16,7 +16,6 @@ When measured available, this adapter may declare:
 - `interactive_navigation`
 - `dom_interaction`
 - `provider_state_readback`
-- `download_to_dropfile` only after the local download path is proven
 - `operator_external_paste` when the operator can directly use the visible page
 
 Availability, authentication state, download support, and provider rendering must be probed at run

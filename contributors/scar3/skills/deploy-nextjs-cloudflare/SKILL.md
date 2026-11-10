@@ -15,15 +15,13 @@ Produce a working public URL, not a placeholder page. Preserve the application's
 
 ## Hard gates
 
-- Use this canonical shared skill at `%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare`. Treat copied per-agent installations as discovery mirrors, never as the editable source of truth.
-- Keep source projects, isolated deployment workspaces, generated evidence, and reusable prompts under `%AI_WORKSPACE%`. Never place an active deployment workspace under a user-profile Documents, Desktop, Downloads, or OS temp directory.
+- Use this canonical shared skill at `%AI_WORKSPACE%\_skill\fleet-skills\deploy-nextjs-cloudflare`. Treat copied per-agent installations as discovery mirrors, never as the editable source of truth. Copies are overwritten by `fleet-skill-sync.py`.
 - Read the repository `AGENTS.md` before acting.
 - If `%AI_WORKSPACE%\_skill\engines` exists, run MTO prework and task routing, then mint a PFKT fragment whose verification command checks the final public URL.
-- Never edit a dirty user worktree. Copy the deployable application or create an isolated worktree, recursively excluding every `.env*` and `.secrets` path plus `.next`, `.open-next`, `.vercel`, `.wrangler`, `.firebase`, `node_modules`, `test-results`, verification screenshots, and build caches.
-- Before installing dependencies, scan the isolated tree and require zero `.env*` files and zero directories named `.secrets`. If anything was copied, remove it only from the verified isolated destination and re-scan.
+- Never edit a dirty user worktree. Copy the deployable application or create an isolated worktree, recursively excluding every `.env*` and `.secrets` path plus `.next`, `.open-next`, `.vercel`, `.wrangler`, `.firebase`, `node_modules`, `test-results`, verification screenshots, and build caches. `scripts/preflight.py` reports `dirty_worktree_use_isolated_copy`.
 - Require an explicit Cloudflare account subdomain. A public URL is `https://<worker>.<account-subdomain>.workers.dev/`.
 - Require Worker names to match `[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?`; underscores are invalid.
-- Never print, commit, or place secret values in arguments. Logs may contain environment key names and counts only.
+- Never print, commit, or place secret values in arguments. Logs may contain environment key names and counts only. (PROOF `secret_ask`)
 - Stop before purchasing a plan, changing production DNS, or editing OAuth provider consoles unless the user explicitly authorized that action.
 
 ## Local-build-first policy
@@ -33,10 +31,9 @@ Produce a working public URL, not a placeholder page. Preserve the application's
 - Record wall-clock time for dependency installation when needed, `cf:build`, Wrangler dry-run, and upload. On `darkhero` (i9-14900K, 96 GiB RAM, Samsung 990 Pro), the measured fracdigi baseline on 2026-08-04 was 59.67 seconds for `npm run cf:build`, 3.52 seconds for `wrangler deploy --dry-run`, and 21.31 seconds for the incremental upload/deploy.
 - Prefer CPU, RAM, and NVMe capacity. Next.js/SWC/esbuild/OpenNext builds do not normally use a discrete GPU; do not install GPU tooling or claim A770/A310 acceleration without project-specific evidence.
 - Keep hosted build quota separate from deployment/runtime limits. Local compilation avoids Cloudflare build-minute use, but it cannot bypass the compressed Worker bundle cap, startup-time cap, runtime CPU/memory limits, static-asset limits, or request limits. Wrangler still validates these during upload or dry-run.
-- Request budget before ship: every seat's Workers share one account cap (Free = 100k requests/day; binding subrequests count too). A change that adds client polling, retries or self-fetch must state its expected requests/day in the ship receipt and stay under 20% of the account cap; otherwise cut the poll rate or move the traffic off the Worker. Bulk file transport (photos, media) goes local -> Drive with rclone on HubClock, never through a Worker. (ai_photo 2026-10-27: ai-jci-taipei used 376,966 requests in one UTC day, about 90 req/s, and every seat's Worker was down until 00:00 UTC.)
+- Request budget before ship: every seat's Workers share one account cap (Free = 100k requests/day; binding subrequests count too). A change that adds client polling, retries or self-fetch must state its expected requests/day in the ship receipt and stay under 20% of the account cap; otherwise cut the poll rate or move the traffic off the Worker. Bulk media goes local -> Drive with rclone, never through a Worker. No usage-alert rider is armed (arming = operator).
 - Per-client rate gate at the Worker entry, and what it cannot do: the 376,966-request day was one built-in browser parked on the site while Next.js looped `?_rsc=` prefetches (not a rider, not a webhook). Gate every public Next.js Worker in front of the app handler with a Workers `ratelimits` binding, separate limits for RSC prefetch (`?_rsc=`, `RSC: 1`, `Next-Router-Prefetch: 1`) and other requests, answer 429 with `Retry-After` and `Cache-Control: no-store`, and fail open when the binding is missing or the limiter throws. A 429 still counts as one Worker request, so the gate only stops the loop from getting a payload and saves CPU; it does not protect the shared account cap, and workers.dev has no zone for WAF rate limiting. The structural fix is `<Link prefetch={false}>` on public pages and never leaving a built-in browser tab parked on a Next.js site. Verify by sending more prefetches than the limit in a minute and recording the index of the first 429 while a normal page still returns 200; on the next incident read `wrangler deployments status` and the invocations analytics before blaming code. (jci_taipei 2026-10-31 f5038ff rate-gate.mjs: 120 RSC / 600 other per IP per 60 s, 429 from prefetch ~121.)
 - Read back the live build without credentials: the home page HTML carries `"b":"<BUILD_ID>"`; compare it with the local `.next/BUILD_ID` of each candidate commit to tell which master commits are not live yet. Do this before claiming "deployed" when wrangler is logged out. (jci_taipei 2026-11-06: live `_fmzcXEPtiu8B2XGyTR25` = 10-31 01:56 build, cfd0cbf/1943787 not live.)
-- If the compressed Worker exceeds the current plan limit, reduce or split the artifact: remove unused dependencies, tree-shake and minify, move static/binary/config data to Workers Static Assets/R2/KV/D1 as appropriate, or split functionality into separately verified Workers with service bindings. Never describe local compilation as a way around an upload-size limit.
 
 ## Workflow
 
@@ -100,16 +97,16 @@ authenticated-browser, read-back, or rollback evidence.
 
 4. Handle environment values:
 
-   - Extract key names only from source and `.env` files.
+   - Extract key names only from source and `.env` files. (`scripts/preflight.py` ENV_RE)
    - Provide `NEXT_PUBLIC_*` values during the OpenNext build because Next.js may inline them.
    - Upload private runtime values with Cloudflare encrypted secrets. Confirm the target account and Worker immediately before transmission.
    - Do not embed secrets in `wrangler.jsonc`, source files, shell history, or chat.
-   - Update OAuth callbacks to the exact public URL only after the Worker itself passes public smoke tests.
+   - Update OAuth callbacks to the exact public URL only after the Worker itself passes public smoke tests. Smoke = `scripts/verify_deployment.py`.
    - Select the OAuth provider client by the deployed runtime `GOOGLE_CLIENT_ID`; do not assume a preferred client named in repository metadata is active.
    - Inspect the redirect URI emitted by the deployed login button. For Firebase same-origin auth, register the hostname in Firebase Authentication `authorizedDomains` and add `https://<host>/__/auth/handler` to the matching Google web client. If the application also runs a server OAuth route, separately add its exact emitted callback such as `https://<host>/api/auth/google/callback`.
    - Do not trust a `prompt=none` or signed-out OAuth probe as final proof: Google may reach an account chooser and still reject the URI after account selection or while configuration propagates. Verify the exact URI is visible in the provider console, then run a secure authenticated browser flow through account selection and back to the application.
-   - Reaching the account chooser proves only the initial authorization request. Claim full SSO only after the browser returns to the application with a valid application session; if secure browser authentication is unavailable, report that boundary without requesting credentials in chat.
-   - Firebase Admin remote Auth operations may fail inside workerd even when the same service-account key succeeds locally. If `setCustomUserClaims`, `createSessionCookie`, or `verifySessionCookie(..., true)` fails after the OAuth callback, keep RSA signing local and call the documented Identity Toolkit REST endpoints with a short-lived service-account access token. Preserve security by verifying the session signature and checking `disabled` plus `validSince`; keep every verification step on; a login that only appears successful is not a fix.
+   - Reaching the account chooser proves only the initial authorization request. Claim full SSO only after the browser returns to the application with a valid application session; if secure browser authentication is unavailable, report that boundary without requesting credentials in chat. Probe: `mtm-portal-sso-verify.py`.
+   - Firebase Admin remote Auth operations may fail inside workerd even when the same service-account key succeeds locally. If `setCustomUserClaims`, `createSessionCookie`, or `verifySessionCookie(..., true)` fails after the OAuth callback, keep RSA signing local and call the documented Identity Toolkit REST endpoints with a short-lived service-account access token. Preserve security by verifying the session signature and checking `disabled` plus `validSince`; keep every verification step on; a login that only appears successful is not a fix. Recorded in `references/known-failures.md`.
 
 5. Run local workerd and verify real application routes. Prefer the process-safe wrapper so Windows child processes cannot retain `.open-next` locks:
 

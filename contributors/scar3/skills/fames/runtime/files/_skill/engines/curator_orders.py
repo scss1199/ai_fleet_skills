@@ -22,7 +22,7 @@ CLI (issue / reopen / close only from the curator's cwd, ai_darkhero or the hub 
   python curator_orders.py issue <seat> --title T (--do TEXT | --prompt-file PATH) [--freeze HUB_PATH]... [--forbid CMDLINE_PART]...
   python curator_orders.py deliver <seat> <n> --session LOCAL_ID   (the seat's main conversation it was sent to)
   python curator_orders.py list [<seat>]
-  python curator_orders.py answer <seat> <n> --evidence PATH [PATH...] | --cannot REASON
+  python curator_orders.py answer <seat> <n> --evidence PATH [PATH...] [--note "dead 15 -> 3; commit abc1234"] | --cannot REASON
   python curator_orders.py claim <seat> <n> [--release] [--session ID]   (owner: the one conversation pushed to answer)
   python curator_orders.py reopen <seat> <n> --note TEXT
   python curator_orders.py close <seat> <n>
@@ -46,6 +46,8 @@ CONTROL_STATE = os.path.join(REGISTRY, "f1s-control.json")
 SESSION_SCOPE = os.path.join(REGISTRY, "f1s-session-scope.json")  # {"sessions": {<id>: <the one thing it does>}}
 TECHNIQUES = os.path.join(REGISTRY, "f1s-apply.json")
 UNCLAIMED_AFTER_S = 3600
+STALE_OWNER_AFTER_S = 6 * 3600  # owner transcript silent this long: the claim blocks every other chat (ai_metadata #14/#15, 11-10)
+CLAUDE_PROJECTS = os.path.join(os.path.expanduser("~"), ".claude", "projects")
 CURATOR_FALLBACK = "ai_darkhero"
 REVIEW_SAMPLE = 8       # one routine order in this many still gets the curator's review
 MECHANICAL = "mechanical"
@@ -230,10 +232,13 @@ def _accepted_mechanically(order: dict) -> bool:
 
 
 def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = None,
-           session: str | None = None) -> dict:
+           session: str | None = None, note: str = "") -> dict:
+    """evidence -> done (note = the seat's counts / commit / what it left, read back by f1s_fanout.collect);
+    reason -> cannot. One of the two; jci_taipei 2026-11-10 #24 had to park its counts in a scratchpad file."""
     cwd = cwd or os.getcwd()
     if bool(evidence) == bool(reason.strip()):
-        raise ValueError("answer with --evidence PATH... or --cannot REASON, not both")
+        raise ValueError("answer with --evidence PATH... [--note TEXT] or --cannot REASON, not both")
+    reason = (reason or note).strip()
     missing = [p for p in evidence if not os.path.exists(os.path.join(cwd, p))]
     if missing:
         raise ValueError(f"evidence path not found: {missing}")
@@ -242,9 +247,13 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
     if order["status"] != "open":
         raise ValueError(f"order #{n} is {order['status']}, not open")
     sid = _session_id(session)
+    if owner_of(order) and owner_of(order) != sid:
+        # ai_trader 2026-11-07..09: the main chat answered #87 that its Fable session had claimed, from a shell
+        # drifted to the hub root; only the owner, or the curator's own session (not its cwd), may answer it.
+        _require_curator(cwd, f"answers order #{n} owned by conversation {owner_of(order)[:8]}")
     order["status"] = "done" if evidence else "cannot"
     order["answer"] = {"at": _now(), "from": os.path.abspath(cwd), "session": sid,
-                       "evidence": [os.path.abspath(os.path.join(cwd, p)) for p in evidence], "reason": reason.strip()}
+                       "evidence": [os.path.abspath(os.path.join(cwd, p)) for p in evidence], "reason": reason}
     if sid and not owner_of(order):
         # The answering conversation owns the order from now on: when the curator reopens it, only that
         # conversation is pushed to finish it (jci_taipei 2026-10-28: #5 reopened pushed every jci_taipei session).
@@ -267,8 +276,10 @@ def claim(seat: str, n: int, release: bool = False, cwd: str | None = None, sess
     if order["status"] != "open":
         raise ValueError(f"order #{n} is {order['status']}, not open")
     current = owner_of(order)
-    if current and current != sid and not is_curator(cwd):
-        raise PermissionError(f"order #{n} is owned by conversation {current[:8]}; only it or {curator()} may change that")
+    if current and current != sid:
+        # The session's own folder decides, not the shell cwd: `cd C:\ai_workspace` let ai_trader's main chat
+        # override the claim its Fable session held (#86/#87, 2026-11-07).
+        _require_curator(cwd, f"changes the owner of order #{n} (owned by conversation {current[:8]})")
     if release:
         order.pop("owner", None)
     else:
@@ -411,7 +422,7 @@ def injection(seat: str, session_id: str = "") -> str:
         return ""
     if seat == curator():
         queue = review_queue()
-        techniques = "\n".join(t for t in (_waiting_techniques(seat), archive_due(session_id), token_watch()) if t)
+        techniques = "\n".join(t for t in (_waiting_techniques(seat), archive_due(session_id), token_watch(), _fanout_line()) if t)
         unclaimed = _unclaimed_orders()
         if not queue:
             return "\n".join(t for t in (techniques, unclaimed) if t)
@@ -429,8 +440,10 @@ def injection(seat: str, session_id: str = "") -> str:
             lines.append(f"#{o['n']} {o['title']}: 由對話 {owner_of(o)[:8]} 負責中，本對話讀過即可，不要 answer、不要停工{extra}")
         else:
             lines.append(f"#{o['n']} {o['title']}: {o['do']}{extra}")
-    lines.append(f"回報: python {HUB}/_skill/engines/curator_orders.py answer {seat} <n> --evidence <path> "
-                 "| --cannot \"<原因>\"（answer 的對話成為該令的負責對話；接手前先 claim {seat} <n>）")
+    lines.append(f"回報: python {HUB}/_skill/engines/curator_orders.py answer {seat} <n> --evidence <path> [--note \"計數前後、commit、留下什麼\"] "
+                 f"| --cannot \"<原因>\"（answer 的對話成為該令的負責對話；接手前先 claim {seat} <n>，已有負責對話就不要接）。"
+                 "交給別的對話（如 Fable）時，交付物是檔案列（依 item id 冪等、寫前讀回）；send_message 只是通知，"
+                 "回 undelivered/queued 是排隊不是遺失，不要重送")
     return "\n".join(lines)
 
 
@@ -457,10 +470,20 @@ def _waiting_techniques(seat: str) -> str:
             "f1s_apply.py close <id> applied|covered --evidence <path> or rejected --note <why>.")
 
 
+def _fanout_line() -> str:
+    """A completed F1S fan-out the curator has not reported yet (f1s_fanout.py); empty when none or on any error."""
+    try:
+        import f1s_fanout
+        return f1s_fanout.curator_line()
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def _unclaimed_orders() -> str:
     """An order waits for a chat in its seat, and a seat with no open chat never takes it (11-02: ai_network, ai_demo,
-    ai_career, sdnext_a770 sat unowned). Engines cannot open a conversation, so the curator is told."""
-    rows = []
+    ai_career, sdnext_a770 sat unowned). Engines cannot open a conversation, so the curator is told. An owned order whose
+    owner stopped writing is the same wait with a lock on it (ai_metadata #14/#15 2026-11-10: owner silent, seat chat skipped it)."""
+    rows, stale = [], []
     for seat in _seats_with_orders():
         for o in open_orders(seat):
             try:
@@ -469,10 +492,36 @@ def _unclaimed_orders() -> str:
                 continue
             if not owner_of(o) and age > UNCLAIMED_AFTER_S:
                 rows.append(f"{seat}#{o['n']} {o['title']}")
-    if not rows:
-        return ""
-    return (f"UNCLAIMED ORDERS — {len(rows)} open with no conversation: {'; '.join(rows[:6])}. Send each into that seat's main chat "
-            "(send_message, or start_session + detach, then deliver), or measure and close them yourself.")
+            elif owner_of(o) and _owner_silent_s(owner_of(o)) > STALE_OWNER_AFTER_S:
+                stale.append(f"{seat}#{o['n']} owner {owner_of(o)[:8]}")
+    lines = []
+    if rows:
+        lines.append(f"UNCLAIMED ORDERS — {len(rows)} open with no conversation: {'; '.join(rows[:6])}. Send each into that seat's main chat "
+                     "(send_message, or start_session + detach, then deliver), or measure and close them yourself.")
+    if stale:
+        lines.append(f"STALE CLAIMS — {len(stale)} open order(s) whose owning conversation wrote nothing for "
+                     f"{STALE_OWNER_AFTER_S // 3600}h+: {'; '.join(stale[:6])}. list_sessions first (host_gone is not dead); "
+                     "if the owner is not running, curator_orders.py claim <seat> <n> --release, then send the order into a live chat of that seat.")
+    return "\n".join(lines)
+
+
+def _owner_silent_s(session_id: str, now: float | None = None) -> float:
+    """Seconds since the owner's transcript was last written; 0 when unknown (no projects dir), so nothing is called stale
+    on a host that cannot see transcripts. A missing transcript under a readable projects dir counts as silent forever."""
+    now = now if now is not None else time.time()
+    try:
+        dirs = os.listdir(CLAUDE_PROJECTS)
+    except OSError:
+        return 0.0
+    newest = None
+    for d in dirs:
+        path = os.path.join(CLAUDE_PROJECTS, d, f"{session_id}.jsonl")
+        try:
+            m = os.path.getmtime(path)
+        except OSError:
+            continue
+        newest = m if newest is None else max(newest, m)
+    return float("inf") if newest is None else max(0.0, now - newest)
 
 
 def _judged_by_control_loop() -> set[tuple[str, int]]:
@@ -547,6 +596,7 @@ def main(argv=None) -> int:
     g = s.add_mutually_exclusive_group(required=True)
     g.add_argument("--evidence", nargs="+")
     g.add_argument("--cannot")
+    s.add_argument("--note", default="", help="with --evidence: before -> after counts, commit, what was left and why")
     s = sub.add_parser("claim")
     s.add_argument("seat")
     s.add_argument("n", type=int)
@@ -570,7 +620,7 @@ def main(argv=None) -> int:
             seats = [a.seat] if a.seat else _seats_with_orders()
             out = {s: load(s)["orders"] if a.full else _brief(load(s)["orders"]) for s in seats}
         elif a.cmd == "answer":
-            out = answer(a.seat, a.n, a.evidence or (), a.cannot or "")
+            out = answer(a.seat, a.n, a.evidence or (), a.cannot or "", note=a.note)
         elif a.cmd == "claim":
             out = claim(a.seat, a.n, release=a.release, session=a.session)
         elif a.cmd == "reopen":

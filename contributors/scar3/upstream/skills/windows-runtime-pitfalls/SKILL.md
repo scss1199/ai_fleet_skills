@@ -178,7 +178,7 @@ parent_skill: ztm-verify-before-done
   實測 histdata 164/164、dukascopy 4/4 相符）。工具陷阱：Claude Bash 的 heredoc 會把雙反斜線收成單反斜線，Python 原始碼字串裡
   「反斜線 x00」就變成真 NUL 進檔（SyntaxError: source code string cannot contain null bytes）；要產生該轉義文字用 Write 工具或
   `chr(92)+'x00'` 拼。
-- **斷電後 append-only 的 JSONL／log 尾巴會留一段 NUL，下一列直接黏在 NUL 後面**：讀取端每列先 strip `' \t\r\n\x00'`，
+- **斷電後 append-only 的 JSONL／log 尾巴會留一段 NUL，下一列直接黏在 NUL 後面**：讀取端每列先 strip `' \t\r\n\x00'`，（`test_accountability_lane_check.py::test_json_list_ledger_and_nul_tail`）
   仍 `json.loads` 失敗的那列跳過（計數，不 raise）；寫入端 append 前先讀最後一個位元組，不是 `\n` 就先補一個換行，
   新列才不會黏在殘骸上。例外：設計釘住的 gate 檔讀取端不得默默改寬容，要另案提出。
   （ai_trader 2026-10-27：17,065 個 runtime 檔有 7 個帶 NUL 段，3 個 JSONL 有有效列黏在後面；commit 00d2d65f8）
@@ -202,7 +202,7 @@ parent_skill: ztm-verify-before-done
   找孤兒衍生檔用帳號名或編號**完全比對**，名稱片段配對（`karina`、`twice`）會把舊資料夾誤判成還有來源。
   （ai_metadata 2026-10-27：Chrome 佇列 144 筆＝移除 23／新增 42／去重 75／空夾 4，commit 5d213312 58 測試；
   `__beauty` 兩個孤兒夾 1,934 檔搬到 `P:\_delete\2026-10-26-deleted-bookmarks\`）
-- **衍生儲存（對照頁、快取、索引、分享包）不得比來源大；每次寫出完整輸出前先問「目的地是否已持有同一份」。**
+- **衍生儲存（對照頁、快取、索引、分享包）不得比來源大；每次寫出完整輸出前先問「目的地是否已持有同一份」。**（PROOF junk_writer gate：`test_proof_junk_writer_gate.py`）
   同一張完整輸出寫兩份（一份進目的地、一份留在對照資料夾）、被換掉的舊版無上限累積、試跑檔與過期的分享壓縮檔沒人回收，
   一個本該不到 1 GB 的索引夾就長到 25 GB。規則：對照頁只留裁切／縮圖和指向目的地的路徑或 sha256，完整輸出只寫目的地一份；
   被取代的版本與過期分享包搬進 `_delete/<日期>-…`（永久刪除留給 operator）；每批收尾量 `du` 衍生夾與來源夾的比值寫進回報，

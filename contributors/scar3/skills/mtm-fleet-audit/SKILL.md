@@ -27,7 +27,7 @@ parent_skill: aex-agent-evolution
 
 - Curator 開局前：一眼看各 seat 該進 skill / 該優化 / 該平行 / PFKT 是否合規
 - 月 token 燒太快（session budget warn）
-- **禁止**把 `agent-transcripts/*.jsonl` 貼進 chat — 用本引擎離線收割
+- **禁止**把 `agent-transcripts/*.jsonl` 貼進 chat — 用本引擎離線收割（`mtm-fleet-audit.py`）
 
 ## 熱套用（不重開 session）
 

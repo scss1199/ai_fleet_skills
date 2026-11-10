@@ -87,6 +87,8 @@ TEXTS = {
     "skill_agc": HUB / "_skill" / "fleet-skills" / "agc-auto-goal-compact" / "SKILL.md",
     "evolve_engine": HUB / "_skill" / "engines" / "f1s-evolve-tick.py",
     "curator_orders": HUB / "_skill" / "engines" / "curator_orders.py",
+    "f1s_prune": HUB / "_skill" / "engines" / "f1s_prune.py",
+    "fleet_hygiene": HUB / "_skill" / "engines" / "fleet-hygiene.py",
     "f1s_live": HUB / "_skill" / "engines" / "f1s_live.py",
     "f1s_pytest_guard": HUB / "_skill" / "engines" / "f1s_pytest_guard" / "f1s_pytest_guard.py",
     "pinned_drift": HUB / "_skill" / "engines" / "pinned_drift.py",
@@ -717,6 +719,10 @@ ELEMENTS = [
     {"id": "EVO-cf-usage-alert-rider-not-armed", "element": "new HubClock rider (<=15m) reading workersInvocationsAdaptive, alerting at 50%/80% of 100k", "verdict": "INFO",
      "requires": None, "detail": "not armed: a new periodic rider needs operator authorization (T1 授權; HubClock rider arming = operator); cf-worker-health.py exists but is not in hosts.json; the request-budget rule is carried by EVO-cf-request-budget",
      "check_text": ("skill_deploy_cf", "Request budget before ship: every seat's Workers share one account cap")},
+    # f1s-evolve 2026-11-10: the 11-10 00:03 30-file skill rewrite (54315f93) dropped the request-budget line; audit went red, 3 edits held
+    {"id": "EVO-cf-request-budget-restored-20261110", "element": "deploy-nextjs-cloudflare request-budget rule restored after a compaction rewrite removed it", "verdict": "REFINE",
+     "requires": None, "detail": "the rule still holds (EVO-cf-request-budget, EVO-cf-usage-alert-rider-not-armed); restored as one line above the rate-gate line, incident numbers left to that line; adds that no usage-alert rider is armed; f1s_prune judges whole skills only, so the audit row is the line-level guard and worked",
+     "check_text": ("skill_deploy_cf", "No usage-alert rider is armed (arming = operator)")},
     # f1s-evolve 2026-10-28: ai_trader power-cut JSONL + keyless world-macro proposals (commits 00d2d65f8, ff5159dc6)
     {"id": "EVO-jsonl-powercut-torn-tail", "element": "append-only JSONL readers strip NUL debris and skip bad lines; appenders newline a torn tail first; design-pinned gate readers excepted", "verdict": "REFINE",
      "requires": None, "detail": "adopted into windows-runtime-pitfalls time/freshness section next to the Kernel-Power zero-file rule (7/17,065 files with NUL runs)",
@@ -1215,6 +1221,41 @@ ELEMENTS = [
     {"id": "EVO-counter-frame-recommendation-20261109", "element": "ai_darkhero: counter-frame check before a decision recommendation", "verdict": "REFINE",
      "requires": None, "detail": "f1s-intake section 3 gains: before a pricing / which-way / 需要你決定 recommendation, ask the same question once on the free pool with the opposite frame and list the points that flip; one chat_for call, no multi-agent council (free-runtime T1); cited card path was absent, the article id is in f1s-apply.json",
      "check_text": ("skill_intake", "給使用者決定建議（定價、走哪條路、「需要你決定」）之前做一次反框架檢查")},
+    # f1s-evolve 2026-11-09: ai_trader proposal (orders #86/#87/#88/#90 claimed by Fable, overridden by the main chat from a hub-root shell)
+    {"id": "EVO-order-owner-session-cwd-20261109", "element": "ai_trader: a curator-order owner can be changed or bypassed only by the owner or the curator's own session, never by a shell cwd drifted to the hub root", "verdict": "REFINE",
+     "requires": None, "detail": "curator_orders.claim() and answer() route any owner override through _require_curator (psutil session cwd + command cwd) instead of is_curator(cwd); an owned order answered by another conversation raises PermissionError (test_curator_orders::test_a_shell_at_the_hub_root_cannot_override_an_owner)",
+     "check_text": ("curator_orders", "changes the owner of order #{n} (owned by conversation {current[:8]})")},
+    {"id": "EVO-order-delegate-file-row-20261109", "element": "ai_trader: a delegate session's deliverable is the file row; send_message is a notification and undelivered/queued is not retried", "verdict": "REFINE",
+     "requires": None, "detail": "curator_orders.injection() report line tells the seat: claim before taking over, do not take an owned order, delegate output is an idempotent file row read back before write, send_message only notifies; the order-text parsing that routes the Stop-hook push to the delegate or the main chat was not adopted (fragile text matching; the claim fix already makes the first claim win)",
+     "check_text": ("curator_orders", "send_message 只是通知")},
+    # f1s-evolve 2026-11-10: ai_darkhero article autopilot (f1s_apply, 6 rows)
+    {"id": "EVO-report-skipped-unchecked-20261110", "element": "article 8e46864741: end a completion report with what was skipped and which code was not checked", "verdict": "REFINE",
+     "requires": None, "detail": "ztm-verify-before-done ④ gains a closing 跳過／未檢查 list; anything not listed is not claimed verified; skill text, no PROOF phrase rule (phrase-matching FP ceiling)",
+     "check_text": ("skill_verify", "完成回報最後一段寫「跳過：…」與「未檢查：…」")},
+    {"id": "EVO-article-uiux-plugin-20261110", "element": "articles c11e730d27 / 6a819fb758: install and enable an unnamed UI/UX plugin / skill module", "verdict": "INFO",
+     "requires": None, "detail": "6a819fb758 covered by fleet skill web-ui-taste; c11e730d27 rejected: the post names no vetted plugin, a plugin install changes ~/.claude global config (operator authorisation) and must pass the SkillSpector gate first"},
+    {"id": "EVO-article-chief-of-staff-bots-20261110", "element": "articles 8dbf296b96 / 7ecd8f920e / 26cc86e3c3: chief-of-staff bot dispatch, shareable bot templates, shared brand folder", "verdict": "INFO",
+     "requires": None, "detail": "covered: curator seat ai_darkhero dispatches via _skill/engines/curator_orders.py + inbox.py; templates ship as fleet skills through ai_fleet_skills (mtm-fleet-skill-github); shared context lives in _skill/technique_output and _skill/fleet-skills; no text added"},
+    # f1s-evolve 2026-11-10: ai_metadata proposal (orders #14/#15 owned by d1255a62, owner silent, seat chat skipped them)
+    {"id": "EVO-order-stale-claim-20261110", "element": "ai_metadata: an open order whose owning conversation stopped writing is named to the curator, not left locked", "verdict": "REFINE",
+     "requires": None, "detail": "curator_orders._unclaimed_orders() adds a STALE CLAIMS line when the owner's transcript is silent STALE_OWNER_AFTER_S (6h); unreadable projects dir = unknown, never stale; release stays a curator act after list_sessions (host_gone is not dead), no automatic release (test_curator_orders::test_a_claim_whose_owner_went_silent_is_named_to_the_curator); the one-off release of #14/#15 was not done: owner silent 2.1h at 02:38, under the threshold",
+     "check_text": ("curator_orders", "STALE CLAIMS — {len(stale)} open order(s) whose owning conversation wrote nothing for ")},
+    # f1s-evolve 2026-11-10: three harvest proposals (ledger 83da1de0ae97 / 0260175589c8 / d11bcbfab3ab)
+    {"id": "EVO-jci-sheet-formula-cols-20261110", "element": "jci_taipei memory jci-yearbook71-sheet: write content columns only, never formula columns; upload operator-given local files to Drive and fill the link; row attribution is the operator's", "verdict": "REFINE",
+     "requires": None, "detail": "jci-drive-line-web-transfer §3 gains one line; sheet/folder ids and the paste keystroke recipe stay seat memory (jci data)",
+     "check_text": ("skill_jci_transfer", "公式欄（ARRAYFORMULA 的狀態、字數、進度）不蓋")},
+    {"id": "EVO-harvest-retouch-lawfirm-20261110", "element": "ai_photo memory person-retouch-traits; article decoded.legal 'Running a law firm on Free software'", "verdict": "INFO",
+     "requires": None, "detail": "rejected: person-retouch-traits is per-person face data and an operator-approved polish chain that only ai_photo runs (seat memory, personal data, not generalizable); the law-firm article reports a Debian/self-hosted/GrapheneOS stack with no technique F1S can apply or measure; no text added"},
+    # f1s-evolve 2026-11-10: ai_trader proposal (order97 receipt: one commit scanned 493/5/16/41 in the main tree vs 475/3/13/25 in a worktree)
+    {"id": "EVO-prune-skip-gitignored-20261110", "element": "ai_trader: f1s_prune scan counted gitignored .py (trader_output/futures_research, _migration), so self-review numbers differed by checkout", "verdict": "REFINE",
+     "requires": None, "detail": "py_files filters each code root through `git check-ignore --stdin -z` plus `git ls-files --others --exclude-standard -z` (tracked files never reported; not a git tree / no git / timeout = plain walk). 1.45.239 kept untracked-not-ignored files scanned as 'uncommitted work'; 1.45.240 skips them too: jci_taipei order 28 showed untracked scratch (_work/canva-poster) that nobody commits (the idle sweeper commits tracked changes only) counted as a duplicate the seat cannot act on, and 'two checkouts of one commit scan alike' holds only when both unshipped classes are out (test_f1s_prune::test_gitignored_files_are_not_scanned_and_a_non_git_tree_is_walked_as_before covers ignored out/ and untracked scratch/)",
+     "check_text": ("f1s_prune", "Paths under `top` that are not shipped code: gitignored, or untracked")},
+    {"id": "EVO-prune-external-callers-20261110", "element": "ai_theater: ai_metadata 8c8e30f0 removed set_idle_priority as dead though ai_theater imports it at module scope (gate, phase2, worker)", "verdict": "REFINE",
+     "requires": None, "detail": "scan_cwd drops a public dead function from dead_list when external_callers finds a .py in another workspace dir that names this cwd's package and the function (6,593 files walked in 4 s, cap 20,000); report carries external_callers. Live probe: set_idle_priority found outside ai_metadata. Restore routed as curator order to ai_metadata (seat repo, not edited from the tick). test_f1s_prune::test_a_public_function_another_seat_imports_is_not_dead",
+     "check_text": ("f1s_prune", "name -> a file in another seat that imports this cwd's package and names it")},
+    {"id": "EVO-hygiene-tracked-junction-files-20261110", "element": "ai_trader: 14 tracked files under .agents/skills/<name> junctions to fleet-skills get dirtied by every fleet push (gitignore does not cover tracked files)", "verdict": "REFINE",
+     "requires": None, "detail": "surface-untrack.py already does the index-only per-junction untrack but was a one-time migration nothing re-ran; fleet-hygiene check_seat now counts tracked files under junctioned .agents/.claude/.cursor skill dirs as finding tracked_junction_files:N (live ai_trader = 14) so the daily hygiene report names it. A blanket checkout that deletes the paths would delete canon through the junction, hence the fix stays surface-untrack --apply --commit. The settings.json autoCompactWindow and margin_registry.yaml writes in the same proposal are seat-local runtime writes, not adopted here. test_fleet_hygiene::test_check_seat_flags_tracked_files_under_a_junctioned_skill_dir",
+     "check_text": ("fleet_hygiene", "The fix is index-only, surface-untrack.py --apply --commit")},
 ]
 
 
@@ -1236,6 +1277,21 @@ def lean(path: Path, out: Path) -> dict:
                 if isinstance(t, dict) and not t.get("synthetic")]
     return {"verdict": doc.get("verdict"), "elapsed_s": doc.get("elapsed_s"), "theorems": theorems,
             "cautions": len(doc.get("cautions") or []), "receipt": str(out)}
+
+
+MODULES_RUN: dict = {}     # formal/<id>.lean modules added at run time from the f1s_formalize ledger
+FORMAL_LEDGER = HERE / "evidence" / "f1s-formal.json"
+FAITHFUL_MIN = 0.7
+
+
+def formal_ledger() -> dict:
+    """id -> ledger row for every f1s_formalize result that is PROVED, judged faithful and still on disk."""
+    try:
+        rows = json.loads(FORMAL_LEDGER.read_text(encoding="utf-8-sig"))["elements"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return {}
+    return {k: r for k, r in rows.items() if isinstance(r, dict) and r.get("verdict") == "PROVED"
+            and (r.get("faithful") or 0) >= FAITHFUL_MIN and r.get("file") and Path(r["file"]).is_file() and r.get("theorem")}
 
 
 def text_has(key: str, needle: str) -> bool:
@@ -1264,12 +1320,32 @@ def main() -> int:
             proofs[name] = {**prior, "reused": True}
         else:
             proofs[name] = {**lean(path, receipt), "reused": False}
+    # f1s_formalize.py (2026-11-09, Axiom's method): free-pool Lean formalizations of prose elements, kept only when
+    # the kernel said PROVED and a second route judged the statement faithful; re-proved here by hash like any module.
+    formal = formal_ledger()
+    for eid, frow in formal.items():
+        name = "Formal/" + Path(frow["file"]).stem
+        path = Path(frow["file"])
+        receipt = HERE / "evidence" / "formal" / f"{path.stem}.receipt.json"
+        prior = (previous.get("proofs") or {}).get(name) or {}
+        bound = ((previous.get("bound") or {}).get(name) or {}).get("sha256")
+        if (not force and prior.get("verdict") == "PROVED" and bound and bound == sha(path)
+                and receipt.is_file() and prior.get("theorems")):
+            proofs[name] = {**prior, "reused": True}
+        else:
+            receipt.parent.mkdir(parents=True, exist_ok=True)
+            proofs[name] = {**lean(path, receipt), "reused": False}
+        MODULES_RUN[name] = path
     proved = {t for p in proofs.values() for t in p["theorems"]}
     rows = []
     unresolved = 0
     for el in ELEMENTS:
         row = dict(el)
         req = el.get("requires")
+        frow = formal.get(el["id"])
+        if not req and frow and frow.get("theorem") in proved:      # root-namespace theorem, bound as is
+            row.update(verdict="FORMALIZED", lean_theorem=frow["theorem"], lean_ok=True,
+                       detail=f"f1s_formalize: {frow.get('kind')} proved round {frow.get('proved_round')}, faithful {frow.get('faithful')} -- {row.get('detail', '')}"[:600])
         if req:
             full = req if req.startswith("Fames.") else "Fames." + ("F1S." + req[8:] if req.startswith("F1SCore.") else req)
             row["lean_theorem"] = full
@@ -1307,7 +1383,7 @@ def main() -> int:
         "proofs": proofs, "claim_conformance_current": conf_ok, "unresolved": unresolved,
         "verdict_counts": {v: sum(1 for r in rows if r["verdict"] == v) for v in sorted({r["verdict"] for r in rows})},
         "elements": rows,
-        "bound": {k: {"path": str(p), "sha256": sha(p)} for k, p in {**MODULES, **TEXTS}.items()},
+        "bound": {k: {"path": str(p), "sha256": sha(p)} for k, p in {**MODULES, **MODULES_RUN, **TEXTS}.items()},
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")

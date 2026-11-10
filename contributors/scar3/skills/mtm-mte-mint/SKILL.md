@@ -41,7 +41,7 @@ python %AI_WORKSPACE%\_skill\engines\adus-detect.py --agent {{agent}} --write
 
 - 單一入口 `*.py` + `--agent` + exit code verify
 - 變數用 lexicon：`{{agent}}` `%AI_WORKSPACE%`
-- 禁止把 raw 輸出貼進對話
+- 禁止把 raw 輸出貼進對話（`f1s_audit.py` usage.big_result）
 
 ### 3 Verify
 

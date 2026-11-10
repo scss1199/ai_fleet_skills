@@ -44,7 +44,7 @@ This is the file-based, zero-token realization of *Agent Workflow Memory* — se
    periodically: atlas.py radar <site>  ──►  re-verify stale/broken pages (ZTM)
 ```
 
-- **Forward (use)** — *always `lookup` first.* If the atlas knows the page, you
+- **Forward (use)** — *always `lookup` first.* If the atlas knows the page, you (`scripts/atlas.py lookup`)
   save the whole explore-the-menus dance. Lookup is a local grep = **0 tokens**.
 - **Backward (learn)** — after you reach a page worth remembering, or a page's
   behavior changed, `add` it. The one judgement call ("is this worth recording?")
