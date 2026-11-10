@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "78e62b825aa31aec61dc046d43e1138cac8694581b9501347c4686cb07b32f0a",
+  "package_sha": "d16c9e54dc250fa89eea1adb74f8e6d9ffe4e5afac47e8d3e78a465cdd5241e9",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
-  "validator_set_sha": "3c59e8217350a4eb766d7010da225be137c9aea86d61c1ff62a41a4b5d0ebee6",
+  "validator_set_sha": "10029e9e15feccbc1153c198a5e4f5350a1af0ee862296ae7c6f8fa271c1b585",
   "runner_state": "armed",
-  "observed_at": "2026-11-10T03:30:42.082977+00:00",
+  "observed_at": "2026-11-10T03:41:34.040611+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -350,12 +350,12 @@
     "C:\\ai_workspace\\_skill\\fleet-skills\\fames\\references\\cases.json"
   ],
   "execution_adoption": {
-    "runtime_state": "PASS",
+    "runtime_state": "UNKNOWN",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
     "native_state": "UNKNOWN",
     "native_events": [],
-    "runtime_release_sha256": "92feb303418a205333c12b738c7612fc6a93fbd6355224f951e3e50b04710109"
+    "runtime_release_sha256": "92af01ae504fd60a82944a1b1040fe3d4de6388a0392042fc2c989d194b1439b"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
