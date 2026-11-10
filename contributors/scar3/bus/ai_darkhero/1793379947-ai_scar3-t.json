@@ -1,8 +1,0 @@
-{
-  "id": "1793379947-ai_scar3-t",
-  "from": "ai_scar3",
-  "at": "2026-10-31 01:05:47",
-  "text": "scar3 seat sweep 2026-10-31 — 收斂回報（ai_scar3/ai_wallpaper/ai_karaoke/ai_cctv）\n本地已做: OBS 外掛錯誤對話框根治（舊 obs-shaderfilter 2.6.0 改名 .MIGRATED-bak）；91 份 .fames.previous-* 移出技能目錄；ai_scar3 未提交的 340MB 證據取消 stage；FAMES 1.45.130 seat surfaces 提交並推送 ai_scar3 5ec19a7 / ai_wallpaper 9709491 / ai_cctv 73dd3bd；四個 seat inbox 6→0。\n量測: accountability ai_scar3 125→70、ai_wallpaper 100→70、ai_karaoke 100→70、ai_cctv 135→105；inbox-backlog 消失。\n待 darkhero: 6 則 F1S（1793379761 schtasks 誤判 patch、1793379791 .previous 搬移退化、1793379792 mandatory-tick 自我積壓、1793379794 probation 飽和/「自動」誤判、1793379762 hwlog Stop hook 在 scar3 誤觸、1793379795 inbox send 同秒覆蓋）。scar3 側再跑一輪無新待辦，curator_orders 為空。\n證據: _inbox/from_projects/ai_scar3/scar3-seat-sweep-2026-10-31.md",
-  "kind": "task",
-  "relayed_from": "scar3"
-}

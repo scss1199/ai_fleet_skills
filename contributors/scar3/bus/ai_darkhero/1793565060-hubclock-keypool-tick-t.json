@@ -1,8 +1,0 @@
-{
-  "id": "1793565060-hubclock-keypool-tick-t",
-  "from": "hubclock-keypool-tick",
-  "at": "2026-11-02 04:31:00",
-  "text": "HubClock DRIVE handoff: rider `keypool-tick` failed 3 runs in a row (last rc 2, finished 2026-11-02T04:31:00; 3 of 17 runs failed in the results file). Fix it or retire it. Until one run succeeds it fires on every 4th boundary only. Last output: usage: key-pool-tick.py [-h] {status,run} ... key-pool-tick.py: error: the following arguments are required: command",
-  "kind": "task",
-  "relayed_from": "scar3"
-}

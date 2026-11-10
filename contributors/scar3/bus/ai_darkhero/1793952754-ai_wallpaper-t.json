@@ -1,8 +1,0 @@
-{
-  "id": "1793952754-ai_wallpaper-t",
-  "from": "ai_wallpaper",
-  "at": "2026-11-06 16:12:34",
-  "text": "F1S: projector streaming-window e2e test via real product path (OBS screenshot ground truth). Reason: page-level and title-only checks gave false FAILs (embed URL player error, extension tabs, autoplay block); the reliable gate is OBS GetSourceScreenshot of the capture AND Program, 2 shots 0.7s apart (bright>=8, motion>=0.3), PID-only window match, z-order/move events between checkpoints, close->unbind->Program recovery poll. Result: potplayer/edge/chrome_noflag/chrome_flag/chrome_youtube all PASS (32/32 checkpoints), bind 1-5s, unbind 2-3s; occlusion flags not needed; original black-screen cause UNKNOWN (DRM untested). Evidence: C:\\Users\\scss1\\AppData\\Local\\Temp\\claude\\C--Users-scss1--claude-spares-spare-vgA6OY\\ad104d8a-cc06-469b-b08e-d7000baa6924\\scratchpad\\e2e.py, C:\\Users\\scss1\\AppData\\Local\\Temp\\claude\\C--Users-scss1--claude-spares-spare-vgA6OY\\ad104d8a-cc06-469b-b08e-d7000baa6924\\scratchpad\\e2e_out\\*.json, *.png; commit 8fc35b0 (scar3)",
-  "kind": "task",
-  "relayed_from": "scar3"
-}

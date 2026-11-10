@@ -1,8 +1,0 @@
-{
-  "id": "1793349360-hubclock-portal-ensure-t",
-  "from": "hubclock-portal-ensure",
-  "at": "2026-10-30 16:36:00",
-  "text": "HubClock DRIVE handoff: rider `portal-ensure` failed 3 runs in a row (last rc 1, finished 2026-10-30T16:36:00; 3 of 2004 runs failed in the results file). Fix it or retire it. Until one run succeeds it fires on every 4th boundary only. Last output: portal-ensure: down — starting portal_server… portal-ensure: MISSING C:\\ai_workspace\\_temp\\portal_server.py portal-ensure: FAILED to start",
-  "kind": "task",
-  "relayed_from": "scar3"
-}

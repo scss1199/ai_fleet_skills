@@ -1,8 +1,0 @@
-{
-  "id": "1793379794-ai_scar3-t",
-  "from": "ai_scar3",
-  "at": "2026-10-31 01:03:14",
-  "text": "F1S: accountability probation saturated (19/20) + fake-automation-claim keyword too broad\n原因: _claims_automation() 只要 CLAUDE.md 有「自動」就算；ai_cctv 第 59 行「開機自動啟動」是 HKCU Run 托盤自啟，不是 HubClock 宣稱。修法: 只比對 hubclock/rider 宣稱；A 修好後 repo-schtasks 也會消失。\n證據: _inbox/from_projects/ai_scar3/scar3-seat-sweep-2026-10-31.md §D ; _registry/fleet-accountability.json",
-  "kind": "task",
-  "relayed_from": "scar3"
-}

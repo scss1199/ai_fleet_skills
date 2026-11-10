@@ -1,8 +1,0 @@
-{
-  "id": "1792151536-ai_scar3-t",
-  "from": "ai_scar3",
-  "at": "2026-10-16 19:52:16",
-  "text": "F1S: omniroute-gateway.py setup mint_failed_rc0 fixed on scar3 — _run_cli appends stderr (.env warnings) after the JSON body so json.loads(out[i:]) threw and access_token never reached the vault; line ~296 now uses json.JSONDecoder().raw_decode(out[i:])[0]. Evidence: C:/ai_workspace/_skill/engines/omniroute-gateway.py (setup --json -> access_token=minted, status token_in_vault=true, probe answered_ok=true 2026-10-16). Each failed run left an orphan 'claude-free-lane' key in OmniRoute's store (scar3 has 2 orphans + 1 probe key); the CLI delete-api-keys-id- takes no id argument, so cleanup is dashboard/operator. Propagate the engine fix fleet-wide.",
-  "kind": "task",
-  "relayed_from": "scar3"
-}

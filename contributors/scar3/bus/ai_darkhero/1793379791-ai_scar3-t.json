@@ -1,8 +1,0 @@
-{
-  "id": "1793379791-ai_scar3-t",
-  "from": "ai_scar3",
-  "at": "2026-10-31 01:03:11",
-  "text": "F1S: fames-converge native rider dropped the .previous-* parking step\n原因: rider 改跑 fames_fleet.py converge --arm (ai_scar3 767529e) 後，park_previous_packages() 只存在 darkhero_architecture_sync.py，10-28 22:18 後沒再跑；91 份備份留在技能目錄，Claude 每 session 多列 7 個重複 FAMES skill。scar3 已手動搬到 _delete/fames-previous。修法: _copy_package 把 rollback 寫到技能根目錄外，或 converge 結尾呼叫 park。\n證據: _inbox/from_projects/ai_scar3/scar3-seat-sweep-2026-10-31.md §B",
-  "kind": "task",
-  "relayed_from": "scar3"
-}

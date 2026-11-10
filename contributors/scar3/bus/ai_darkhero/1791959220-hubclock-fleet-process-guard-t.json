@@ -1,8 +1,0 @@
-{
-  "id": "1791959220-hubclock-fleet-process-guard-t",
-  "from": "hubclock-fleet-process-guard",
-  "at": "2026-10-14 14:27:00",
-  "text": "HubClock DRIVE handoff: rider `fleet-process-guard` failed 3 runs in a row (last rc 1, finished 2026-10-14T14:27:00; 9 of 554 runs failed in the results file). Fix it or retire it. Until one run succeeds it fires on every 4th boundary only.",
-  "kind": "task",
-  "relayed_from": "scar3"
-}

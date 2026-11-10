@@ -1,8 +1,0 @@
-{
-  "id": "1792765962-ai_wallpaper-t",
-  "from": "ai_wallpaper",
-  "at": "2026-10-23 22:32:42",
-  "text": "F1S: KB doc low-latency-wallpaper-obs-karaoke-handoff.md (and its INDEX.md line) cites PjObsProgramWallpaper(), removed as dead code in ai_wallpaper a889dec; please update the reference. Evidence: git -C C:/ai_workspace/ai_wallpaper show a889dec --stat",
-  "kind": "task",
-  "relayed_from": "scar3"
-}

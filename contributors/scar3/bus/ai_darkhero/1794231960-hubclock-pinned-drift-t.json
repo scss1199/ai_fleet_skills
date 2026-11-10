@@ -1,8 +1,0 @@
-{
-  "id": "1794231960-hubclock-pinned-drift-t",
-  "from": "hubclock-pinned-drift",
-  "at": "2026-11-09 21:46:00",
-  "text": "HubClock PINNED-DRIFT: FAMES-release-pinned file(s) _harness/runtime/fames_session_harness.py, _skill/engines/fleet-hygiene.py, _skill/engines/fleet-residue-quarantine.py, _skill/engines/fleet-skill-sync.py differ from the shipped runtime, which is why fames-converge and fleet-skill-pulse fail. Ship the edit from the session that made it, or here: python C:\\ai_workspace\\_skill\\engines\\ship-f1s.py --why \"<why>\" --verified-by \"<tests run>\" --files _harness/runtime/fames_session_harness.py _skill/engines/fleet-hygiene.py _skill/engines/fleet-residue-quarantine.py _skill/engines/fleet-skill-sync.py HubClock DRIVE handoff: rider `fames-converge` failed 3 runs in a row (last rc 1, finished 2026-11-09T21:46:00; 79 of 786 runs failed in the results file). Fix it or retire it. Until one run succeeds it fires on every 4th boundary only. Last output: ot-converged'}, 'rider': {'ok': True, 'host': 'ai_scar3', 'rider': 'armed', 'detail': 'fames-converge @15m', 'changed': False, 'proposal': 'C:\\\\ai_workspace\\\\_skill\\\\engines\\\\register-rider.py add HubClock fames-converge \"C:\\\\Python311\\\\pythonw.exe C:\\\\ai_workspace\\\\_skill\\\\fleet-skills\\\\fames\\\\scripts\\\\fames_fleet.py converge --workspace C:\\\\ai_workspace --host ai_scar3 --arm\" --cadence 15m --priority 90 --desc \"FAMES self-convergence: verified GitHub generation pull + heartbeat\"', 'errors': []}, 'capability': {'ok': False, 'state': 'UNKNOWN', 'errors': ['follow did not pass']}, 'errors': []}",
-  "kind": "task",
-  "relayed_from": "scar3"
-}

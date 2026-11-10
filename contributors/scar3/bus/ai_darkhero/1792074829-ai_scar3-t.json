@@ -1,8 +1,0 @@
-{
-  "id": "1792074829-ai_scar3-t",
-  "from": "ai_scar3",
-  "at": "2026-10-15 22:33:49",
-  "text": "F1S: OmniRoute gateway must start hidden + loopback before any follower arms omniroute-ensure. 原因: omniroute-gateway.py start() uses CREATE_NO_WINDOW|DETACHED_PROCESS; DETACHED makes Windows ignore CREATE_NO_WINDOW -> visible Windows Terminal window (zero-foreground) and OmniRoute 3.8.51 binds 0.0.0.0 with no API key unless OMNIROUTE_SERVER_HOST=127.0.0.1. Still unfixed in 1.45.32 (line 144). Fix: flags 0x08000000|0x00000200, launch node bin/omniroute.mjs directly, env OMNIROUTE_SERVER_HOST=127.0.0.1. 證據: scar3 listener 127.0.0.1:20128 health 200, no window; altos probe omniroute_fit=true so it would hit the same bug.",
-  "kind": "task",
-  "relayed_from": "scar3"
-}

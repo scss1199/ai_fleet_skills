@@ -1,8 +1,0 @@
-{
-  "id": "1794217501-loop-engine-t",
-  "from": "loop-engine",
-  "at": "2026-11-09 17:45:01",
-  "text": "[loop] portal ai_accountancy light=red score=50 — 下次 session 對照 agent-status 修合規。",
-  "kind": "task",
-  "relayed_from": "scar3"
-}

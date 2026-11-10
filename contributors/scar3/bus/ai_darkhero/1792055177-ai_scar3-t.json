@@ -1,8 +1,0 @@
-{
-  "id": "1792055177-ai_scar3-t",
-  "from": "ai_scar3",
-  "at": "2026-10-15 17:06:17",
-  "text": "scar3 F1S/Lean/Jev integrity sweep 2026-10-15: FAMES 1.45.29 package 8d9af0ca verify-package/self-check/status/verify-host scar3 all PASS (6 surfaces). Upstream defects for authority: (1) fleet-skill-sync.py:607,744 os.path.isjunction needs Python>=3.12; scar3 runs 3.11.9 -> AttributeError in _junction_skill (master test test_named_deploy_only_adds_requested_skill fails). Needs fallback e.g. getattr(os.path,'isjunction',None) or stat FILE_ATTRIBUTE_REPARSE_POINT. (2) _harness/tests/test_jev_turn_router.py::test_unavailable_actual_runtime_has_no_provider_side_effect hardcodes ai_darkhero; on followers jev-advisor.json allowed_agents=[ai_scar3,ai_wallpaper] so reason=agent_not_enabled; use the host's own agent. (3) master test_local_compute_profile_covers_projects_and_lifecycle expects _registry/fames-local-compute.json not shipped to followers. (4) fleet-rogue-scheduler-sweep repo-schtasks-scripts=5 for ai_scar3 are all false positives (AGENTS.md rule text lines 19/23 + claude-proof-hook.py SCHEDULER_TOUCH regex in 3 skill copies); exclude rule prose and package copies. Hub checkout on scar3 is branch codex/scar3-tray-consolidation-20260810, 486 behind / 38 ahead of master; stale validate-fames-stack.py (removed on master in 3e3251c) still fails its old needles there.",
-  "kind": "task",
-  "relayed_from": "scar3"
-}

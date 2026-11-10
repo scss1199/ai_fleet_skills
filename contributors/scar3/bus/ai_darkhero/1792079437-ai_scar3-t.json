@@ -1,8 +1,0 @@
-{
-  "id": "1792079437-ai_scar3-t",
-  "from": "ai_scar3",
-  "at": "2026-10-15 23:50:37",
-  "text": "F1S: fleet-job-dispatch run_prompt should self-refresh a stale Claude probe stamp instead of blocking. 原因: altos operator ran claude auth login, credential present (auth_source=cli_credentials_file) and last probe ok=True, but stamp age 254319s > ttl 43200s so every prompt job returns claude_auth_unverified; the only fix today is a person typing claude-remote-exec.py check --probe on that machine. Proposal: when auth_present and stamp found ok but stale, run check --probe once (one small call, CREATE_NO_WINDOW) then retry readiness. 證據: jobs/altos/20261015T154631Z-0be0e38d result, ai_fleet_skills repo.",
-  "kind": "task",
-  "relayed_from": "scar3"
-}

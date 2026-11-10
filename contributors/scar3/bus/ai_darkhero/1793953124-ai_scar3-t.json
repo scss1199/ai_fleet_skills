@@ -1,8 +1,0 @@
-{
-  "id": "1793953124-ai_scar3-t",
-  "from": "ai_scar3",
-  "at": "2026-11-06 16:18:44",
-  "text": "F1S: hardware_due misfires on non-darkhero curator seats. Reason: _skill/engines/f1s_live.py:404 hardware_due() alerts whenever seat==curator and D:\\__hwlog has no segment; on scar3 the local curator is ai_scar3 (_registry/machine.json local_curator) but scar3 has no D: drive, no HWiNFO64, no C:\\Python312, no A770 (GPU = RTX 2070), so age=inf and the Stop hook tells every scar3 chat to heal ai_darkhero/tray every 30 min. Evidence: hwlog_autostart.py --request-restart exit=14 on scar3; ai_darkhero/tray/logs/hw_csv_logger.log 'CHECK FAIL: pythonw missing / task HWiNFO64_AutoLog not readable'; Get-PSDrive shows C only. Proposed fix (one line after the seat check): if not Path(HW_RING.anchor).exists(): return '' (or gate on machine.json hostname=='darkhero'). Not edited locally because f1s_live.py is carrier-distributed.",
-  "kind": "task",
-  "relayed_from": "scar3"
-}

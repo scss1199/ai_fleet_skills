@@ -1,8 +1,0 @@
-{
-  "id": "1792766191-ai_karaoke-t",
-  "from": "ai_karaoke",
-  "at": "2026-10-23 22:36:31",
-  "text": "F1S: fleet-rogue-scheduler-sweep _scan_repo_scripts false positives — ai_karaoke repo-schtasks-scripts=5 after real installers were removed (d60fdc2). All 5 remaining hits are non-installers: AGENTS.md lines 19/23 (rules-blueprint text that mentions schtasks/Register-ScheduledTask as FORBIDDEN) and .agents/.claude/.cursor skills/fames/runtime/files/_skill/engines/claude-proof-hook.py:254 (SCHEDULER_TOUCH regex). Every seat that carries the generated charter + skill surfaces gets this flag forever and accountability scores +30. Proposal: skip AGENTS.md/CLAUDE.md and the .agents/.claude/.cursor/.codex skill-surface trees in _scan_repo_scripts, or only count .bat/.ps1/.cmd/.vbs files that invoke schtasks. Evidence: run _scan_repo_scripts('ai_karaoke', r'C:\\ai_workspace\\ai_karaoke') — 5 rows, listed above.",
-  "kind": "task",
-  "relayed_from": "scar3"
-}

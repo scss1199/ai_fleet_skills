@@ -1,8 +1,0 @@
-{
-  "id": "1793379762-ai_scar3-t",
-  "from": "ai_scar3",
-  "at": "2026-10-31 01:02:42",
-  "text": "F1S: HARDWARE WATCH Stop hook fires on scar3 which has no hw logger\n原因: scar3 無 D:\\、無 C:\\Python312\\pythonw.exe、無 \\HWiNFO64_AutoLog；hwlog_autostart.py --check = CHECK FAIL，--request-restart exit 14，每回合 Stop 被擋。修法: 限定在擁有 logger 的 host (darkhero)。\n證據: _inbox/from_projects/ai_scar3/scar3-seat-sweep-2026-10-31.md §E",
-  "kind": "task",
-  "relayed_from": "scar3"
-}
