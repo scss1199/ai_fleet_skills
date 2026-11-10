@@ -66,6 +66,8 @@ parent_skill: aex-agent-evolution
   期望值（規則在單一項目上的 t）；多開只是把負期望乘以 N。探測失敗記到項目名＋錯誤碼，「N 筆失敗」不算量測
   （ai_trader 2026-10-29 8d6b8715f：MT5 0.02 ms/檔、224 檔 4.3 ms/輪、8 程序合計 1 萬輪/秒，瓶頸不在 IPC；
   14 檔保證金 916 AUD、50 美金只夠 1 檔；receipt runtime/fx_lane/capacity-20261029T132351.json）。
+- 回報結尾列範圍：完成回報最後一段寫「跳過：…」與「未檢查：…」（沒跑的測試、沒讀的檔案或程式區塊、沒驗的路徑），
+  沒有就寫「跳過：無；未檢查：無」；未列出的部分不得被當成已驗證（@yrrah9_ 8e46864741，F1S 2026-11-10 吸收）。
 - 宣稱完成時跑 SEAL：`fames_phase_runtime.py --turn --result --closure`。
 
 ## 必跑（0-token engines 優先）

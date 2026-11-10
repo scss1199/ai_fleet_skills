@@ -5,8 +5,8 @@
   "role": "downstream_curator",
   "machine": "scar3",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-11-10T00:04:02Z",
-  "manifest_sha": "111c4ddc0b31aa37",
+  "generated_at": "2026-11-10T00:32:20Z",
+  "manifest_sha": "61f23252de6550a6",
   "required": [
     "fames",
     "independent-review",
@@ -452,12 +452,12 @@
       "sha": "79932ca06332f37c",
       "required": false,
       "lane": null,
-      "package_sha": "e6103c76a63a91e6af3f28c89fb5f035a6c370e123e695e03de40b5d9e651547",
+      "package_sha": "13ce7fcb1d5983ed72d5a878b32991712f451aadb1b43a9a1e8d49ffacffcae5",
       "files": {
         "SKILL.md": "b5197acc05f5bc9524b2a5ecd61a8a45f7d6e15720532df62e12677e2af392f7",
         "agents/openai.yaml": "3b3a5bb4f3fc5b43bd8242ef17dec4e8503111acc39ca46ef8c6019f83342002",
         "references/line-api-boundaries.md": "c5f8bb100756aa34dd2266601caf25bd16bcd339dbc96858602f000895e4d516",
-        "scripts/fetch_public_social.mjs": "00181a1a3e0a2d2020990ff9fd6ae2a0a14e64b189aa75dd3b22d94323374e0a",
+        "scripts/fetch_public_social.mjs": "21569d6a98596fa3ff36076a5da900066052fb1f11954ec5363202edd71017b9",
         "scripts/inspect_line_inbox.py": "460168215f3ecf231dbd202d87922dd1a234530deaf14937b7df23c0c6f10fa1",
         "scripts/test_inspect_line_inbox.py": "de695f9296a1d47af6721aa16b8aff95d6fb4642719db8a9ce771ec1d34f36e8"
       }
