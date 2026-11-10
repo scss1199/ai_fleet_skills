@@ -23,6 +23,8 @@ What one run does (zero model tokens, bounded, reversible):
 
   python fleet-hygiene.py run [--apply] [--force] [--no-publish] [--host NAME]
   python fleet-hygiene.py status
+  python fleet-hygiene.py memories       # stale memories: Claude memory files naming an engine file, hub path or
+                                         # flag that no longer exists (fix or remove the memory, not the file)
   python fleet-hygiene.py fleet          # curator: every host's latest hygiene.json from the carrier clone
 """
 from __future__ import annotations
@@ -375,9 +377,145 @@ def retention_antipatterns(hub: Path) -> list[dict]:
     return hits[:60]
 
 
+# ------------------------------------------------------------------ stale memories (2026-11-10)
+# Anthropic's Pokemon run: a wrong remembered route sent Claude into the same trap three times before it quit. A Claude
+# memory that names an engine file, hub path or CLI flag that no longer exists gets re-applied the same way, so check
+# reads every hub/seat memory dir and lists the backticked references that do not resolve; the fix is to edit or
+# remove that memory, never to recreate the file. Advisory: a bare name counts only for code (.py/.ps1/.lean) found
+# nowhere in the hub, a slash path only when its first segment exists in the hub or the seat; other machines, ~, URLs,
+# elisions and the trees that move by design (_delete quarantine, auto-digested _inbox receipts) are skipped.
+MEMORY_ROOT = Path.home() / ".claude" / "projects"
+MEM_TOKEN = re.compile(r"`([^`\n]{2,200})`")
+MEM_CODE = (".py", ".ps1", ".lean")
+MEM_SKIP_FIRST = {"_delete", "_inbox"}
+MEM_TRANSIENT = (".lock", ".off", ".on", ".pid", ".log")   # switch / lock files that exist only while in effect
+MEM_INDEX_CAP = 300000
+MEM_CAP = 200
+
+
+def _project_dir(path: Path) -> str:
+    return re.sub(r"[^A-Za-z0-9]", "-", str(path))
+
+
+def _code_index(hub: Path) -> dict[str, Path]:
+    """lower-case code file name -> first path under the hub (pruned like the sweep, _delete excluded)."""
+    out: dict[str, Path] = {}
+    n = 0
+    for dp, dns, fns in os.walk(hub):
+        dns[:] = [d for d in dns if d not in PRUNE and d not in CACHE_DIRS and d != "_delete" and not d.startswith(".")]
+        for f in fns:
+            n += 1
+            if f.lower().endswith(MEM_CODE):
+                out.setdefault(f.lower(), Path(dp) / f)
+        if n > MEM_INDEX_CAP:
+            break
+    return out
+
+
+def _read_src(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
+def _seat_roots(seat: Path) -> list[Path]:
+    """A seat's nested code roots (e.g. ai_trader/sinopac-trading-system): first-level dirs holding a .git or pyproject."""
+    try:
+        return [d for d in seat.iterdir() if d.is_dir() and not d.name.startswith(".") and d.name not in PRUNE
+                and ((d / ".git").exists() or (d / "pyproject.toml").is_file() or (d / "package.json").is_file())]
+    except OSError:
+        return []
+
+
+def _mem_stale(tok: str, hub: Path, seat: Path, index: dict[str, Path]) -> str | None:
+    """The reference in one backticked token that does not resolve, or None (resolves / not a hub reference)."""
+    words = tok.strip().split()
+    if not words:
+        return None
+    cand = re.sub(r":\d+$", "", words[0].strip("\"',;")).replace("\\", "/")
+    while cand.endswith(")") and cand.count(")") > cand.count("("):   # punctuation, not a Next.js `(group)` segment
+        cand = cand[:-1]
+    cand = cand.lstrip("(") if cand.count("(") > cand.count(")") else cand
+    if (any(c in cand for c in "<>*{}$%~|…") or "..." in cand or "://" in cand
+            or "/-" in cand or cand.startswith((".", "-", "/")) or cand.lower().endswith(MEM_TRANSIENT)):
+        return None
+    if re.match(r"^[A-Za-z]:/", cand):   # absolute: only inside this hub (never probe other drives, G: hangs Explorer)
+        hub_s = str(hub).replace("\\", "/").rstrip("/").lower() + "/"
+        if not (cand.lower() + "/").startswith(hub_s):
+            return None
+        cand = cand[len(hub_s):]
+    elif ":" in cand:
+        return None
+    cand = cand.strip("/")
+    if "/" in cand:
+        first = cand.split("/", 1)[0]
+        bases = [b for b in (seat, hub, *_seat_roots(seat)) if (b / first).exists()]
+        if not bases or first in MEM_SKIP_FIRST:
+            return None
+        path = next((b / cand for b in bases if (b / cand).exists()), None)
+        if path is None and "." in cand.rsplit("/", 1)[-1]:   # module.attr() notation: dir/mod.attr -> dir/mod.py has attr
+            head, tail = cand.rsplit("/", 1)
+            mod, attr = tail.split(".", 1)
+            attr = re.split(r"[(.]", attr, 1)[0]
+            for b in bases:
+                f = b / head / f"{mod}.py"
+                if f.is_file() and attr and attr in _read_src(f):
+                    path = f
+                    break
+        if path is None:
+            return cand
+    elif cand.lower().endswith(MEM_CODE):
+        path = (seat / cand) if (seat / cand).is_file() else index.get(cand.lower())
+        if path is None:
+            return cand
+    else:
+        return None
+    own = []   # this script's own words: stop at the next script token (an inner `--cmd "python x.py --flag"`)
+    for w in words[1:]:
+        if w.strip("\"'").lower().endswith(MEM_CODE):
+            break
+        own.append(w)
+    flags = [f.split("=", 1)[0].rstrip(")],;:.\"'") for w in own for f in w.split("/")
+             if re.match(r"^--[a-z][a-z0-9-]+", f) and f.split("=", 1)[0] != "--help"]
+    if flags and path.is_file() and path.suffix.lower() in MEM_CODE:
+        src = _read_src(path)
+        gone = [f for f in flags if f not in src]
+        if gone:
+            return f"{cand} {' '.join(gone)}"
+    return None
+
+
+def stale_memories(hub: Path, root: Path | None = None) -> list[dict]:
+    """Every hub/seat memory file with references to engine files, paths or flags that no longer exist."""
+    root = root or MEMORY_ROOT
+    out: list[dict] = []
+    index: dict[str, Path] | None = None
+    for seat in [hub] + seats(hub):
+        mem = root / _project_dir(seat) / "memory"
+        if not mem.is_dir():
+            continue
+        index = _code_index(hub) if index is None else index
+        for f in sorted(mem.glob("*.md")):
+            try:
+                text = f.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            stale = sorted({s for t in MEM_TOKEN.findall(text) if (s := _mem_stale(t, hub, seat, index))})
+            if stale:
+                out.append({"seat": seat.name, "memory": str(f), "stale": stale[:12]})
+                if len(out) >= MEM_CAP:
+                    return out
+    return out
+
+
 def check(hub: Path, now: float | None = None) -> dict:
     now = now or _now()
     rows = [check_seat(s, now) for s in seats(hub)]
+    try:
+        mems = stale_memories(hub)
+    except Exception as exc:  # noqa: BLE001
+        mems = f"UNKNOWN: {type(exc).__name__}"
     try:
         leaks = producers(hub)
     except Exception as exc:  # noqa: BLE001 — a hygiene check never takes the rider down
@@ -389,7 +527,7 @@ def check(hub: Path, now: float | None = None) -> dict:
     return {"seats": rows, "scheduled_tasks": scheduled_task_findings(hub),
             "counts": {k: sum(1 for r in rows if r["activity"] == k) for k in ("ACTIVE", "IDLE", "DORMANT")},
             "violations": sum(len(r["findings"]) for r in rows),
-            "producers": leaks, "retention_antipatterns": anti}
+            "producers": leaks, "retention_antipatterns": anti, "stale_memories": mems}
 
 
 # ------------------------------------------------------------------ sweep
@@ -706,6 +844,7 @@ def run(hub: Path = HUB, host: str | None = None, apply: bool = False, force: bo
                            "scheduled_task_findings": chk["scheduled_tasks"] if isinstance(chk["scheduled_tasks"], str) else len(chk["scheduled_tasks"]),
                            "producer_leaks": chk["producers"] if isinstance(chk["producers"], str) else len(chk["producers"]),
                            "retention_antipatterns": chk["retention_antipatterns"] if isinstance(chk["retention_antipatterns"], str) else len(chk["retention_antipatterns"]),
+                           "stale_memories": chk["stale_memories"] if isinstance(chk["stale_memories"], str) else len(chk["stale_memories"]),
                            "moved": sw["moved"], "planned_bytes": sw["planned_bytes"], "applied": apply}}
         doc["seconds"] = round(time.time() - t0, 1)
         _save(OUT / f"{host}.json", doc)
@@ -751,6 +890,7 @@ def main(argv=None) -> int:
     r.add_argument("--max-moves", type=int, help=f"cap on entries moved in this run (default {MAX_MOVES}); backlog runs raise it")
     sub.add_parser("status")
     sub.add_parser("fleet")
+    sub.add_parser("memories", help="memories naming engine files, paths or flags that no longer exist")
     pr = sub.add_parser("producers", help="name the engines that keep filling state dirs (no move)")
     pr.add_argument("--cap", type=int, default=PRODUCER_CAP)
     a = ap.parse_args(argv)
@@ -761,6 +901,8 @@ def main(argv=None) -> int:
     elif a.cmd == "producers":
         out = {"producers": producers(HUB, a.cap), "retention_antipatterns": retention_antipatterns(HUB),
                "expired_state_planned": len(expired_state(HUB))}
+    elif a.cmd == "memories":
+        out = stale_memories(HUB)
     elif a.cmd == "status":
         host = this_host()
         out = {"host": host, "state": _load(OUT / f"{host}.state.json", {}), "report": _load(OUT / f"{host}.json", {}).get("summary")}

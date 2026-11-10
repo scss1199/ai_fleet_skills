@@ -606,7 +606,9 @@ def render_live(day: str, state: dict, rows: dict, gap: dict, since: str) -> str
             act = h.get("activity") or {}
             lines.append(f"- [{h['contributor']}] {str(h.get('at'))[5:16]} cwd {h.get('seats')} 違規 {h.get('violations')} "
                          f"(active {act.get('ACTIVE')}/idle {act.get('IDLE')}/dormant {act.get('DORMANT')}) 搬 {h.get('moved')} "
-                         f"_delete {h.get('delete_gb')} GB" + (f" 首項 {h['findings'][0][:60]}" if h.get("findings") else ""))
+                         f"_delete {h.get('delete_gb')} GB" + (f" 首項 {h['findings'][0][:60]}" if h.get("findings") else "")
+                         + (f" 過期記憶 {h['stale_memories']} 檔(fleet-hygiene.py memories,改或刪該記憶)"
+                            if isinstance(h.get("stale_memories"), int) and h["stale_memories"] else ""))
     arts = [u for u in state["urls"].values() if u["status"] == "read" and str(u.get("read_at") or "") >= since]
     if arts:
         lines.append("## Articles read (24h)")
