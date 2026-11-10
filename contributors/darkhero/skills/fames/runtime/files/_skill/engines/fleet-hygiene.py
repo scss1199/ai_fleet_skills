@@ -417,7 +417,10 @@ def _mem_stale(tok: str, hub: Path, seat: Path, index: dict[str, Path]) -> str |
     words = tok.strip().split()
     if not words:
         return None
-    cand = re.sub(r":\d+$", "", words[0].strip("\"'(),;")).replace("\\", "/")
+    cand = re.sub(r":\d+$", "", words[0].strip("\"',;")).replace("\\", "/")
+    while cand.endswith(")") and cand.count(")") > cand.count("("):   # punctuation, not a Next.js `(group)` segment
+        cand = cand[:-1]
+    cand = cand.lstrip("(") if cand.count("(") > cand.count(")") else cand
     if (any(c in cand for c in "<>*{}$%~|…") or "..." in cand or "://" in cand
             or "/-" in cand or cand.startswith((".", "-", "/")) or cand.lower().endswith(MEM_TRANSIENT)):
         return None
