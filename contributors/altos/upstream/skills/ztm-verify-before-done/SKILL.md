@@ -97,6 +97,9 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 同一種錯誤第二次出現時，加一道機械檢查（測試、lint、依賴規則檔、hook 的判斷類別），不要再加一段散文規則；
 長規則文件會被模型當成建議。非 trivial 的邏輯可加 mutation test 當驗證的一部分。
 
+給人看的對外文字（履歷、面試稿、PTT 售文、行銷文案）交出前可選跑 `python %AI_WORKSPACE%\_skill\engines\prose-slop-lint.py <file-or-dir> [--last 10] --summary`：
+0-token 抓 AI 腔（套話開場、「不是 X 而是 Y」、一行多個破折號、三連列舉、buzzword），只標行號，改寫仍由該 seat 判斷；以前後 count 比較。（Stop Slop，ai_darkhero 2026-11-11）
+
 ## 即時擷取不能無人看管（operator 2026-10-24，jci_taipei 數位第八次會議漏錄 55 分鐘）
 
 錄會議、字幕側錄、直播／串流下載這類**錯過就無法重來**的擷取，「開了」不等於「錄到了」，「會一直跑到結束」更不是完成：
@@ -118,6 +121,8 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 
 - 綠測試要測到真實成果，不是測到容易過的替身。改碼後說「修好」的那個測試，必須會因為這個 bug 變紅（修 bug 段），（Lean `ClaimContract.lean` fix_claim_needs_test_after_write）
   否則它證明不了任何事——一個對不上目標的檢查，過了也是 UNKNOWN。
+- 驗收標準放在做事的人改不到的地方：同一個變更裡同時放寬測試、門檻或預期值，又宣稱修好，這個綠不算數；
+  要改驗收就另起一步、寫明理由，宣稱只能用改之前的驗收（kyloren 卡 8f8d9476b6ad71eb，AI agent 交易系統「人當監考官」）。
 - 驗證要包含消費端實際用的 loader 或它的 log，不能只靠自家的離線解析器：東西被回報「空」或「壞」時，先讀使用端自己的
   執行 log，再掃檔案（ai_nuwa #12：Q05 離線 UnityPy 與渲染全過，但遊戲 BepInEx/LogOutput.log 顯示 Unity 拒載；
   根因是重壓後 UnityFS 檔頭總大小沒更新，離線讀取器不看這欄，全庫掃出 103 個；commit 0a6c243、tests/test_empty_item_check.py）。

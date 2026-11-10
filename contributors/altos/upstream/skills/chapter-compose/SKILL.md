@@ -30,6 +30,10 @@ Claude writes the brief and the prompts; the pipeline does the work (0 model tok
 1. `python .../assets/build_index.py` — refresh the asset index (consent/notes preserved).
 2. Copy `briefs/_template/video.yaml` to `briefs/<id>/video.yaml`; fill narration, pick `asset:` ids or `src:` paths,
    write `prompts/<chapter>.md` for t2i/i2v chapters.
+2b. Storyboard before compute: render `render-brief.mjs video.yaml --allow-pending` + the step-5 contact sheet and get
+   the operator's yes on that storyboard before `--submit` or the final render (A770 time and power risk are the cost;
+   card kyloren-knowledge-social/consolidate/cards/e0325979535c1742.md). Motion graphics stay in ai_demo's Remotion
+   compositor (`npm run studio` / `compose`); an outside Remotion agent skill is imported only after SkillSpector passes it.
 3. `gen_from_brief.py --dry-run` → `prompts/jobs.json`; `--submit` when SD.Next :7860 is up (operator starts
    `sdnext_a770_t2i.bat`; the A770 is a hard-reset risk under load, see memory power-loss-combined-cpu-gpu-load).
 4. `render-brief.mjs video.yaml` — refuses while t2i/i2v chapters are pending; `--allow-pending` renders a draft
