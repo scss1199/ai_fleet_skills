@@ -189,7 +189,18 @@ def refresh_lessons(hub: Path = HUB, now: float | None = None, runner=None) -> s
                                                                    creationflags=getattr(__import__("subprocess"), "CREATE_NO_WINDOW", 0)))
     try:
         r = runner([sys.executable, str(engine), "tick"])
-        return "ticked" if getattr(r, "returncode", 1) == 0 else f"tick-rc{getattr(r, 'returncode', '?')}"
+        if getattr(r, "returncode", 1) != 0:
+            return f"tick-rc{getattr(r, 'returncode', '?')}"
+        # tick exits 0 and says why it did nothing ({"skipped": ...} lock held, {"deferred": ...} no load grant):
+        # scar3 2026-11-10 reported "ticked" for a day while every tick was deferred (no_sensor_log).
+        try:
+            doc = json.loads(getattr(r, "stdout", "") or "{}")
+        except ValueError:
+            doc = {}
+        for key in ("skipped", "deferred"):
+            if isinstance(doc, dict) and doc.get(key):
+                return f"tick-{key}:{doc[key]}"
+        return "ticked"
     except Exception as exc:  # noqa: BLE001 - a slow or broken daily never blocks the relay
         return f"tick-failed:{type(exc).__name__}"
 
