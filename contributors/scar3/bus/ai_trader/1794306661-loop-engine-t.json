@@ -1,8 +1,0 @@
-{
-  "id": "1794306661-loop-engine-t",
-  "from": "loop-engine",
-  "at": "2026-11-10 18:31:01",
-  "text": "[loop] portal ai_trader light=red score=50 — 下次 session 對照 agent-status 修合規。",
-  "kind": "task",
-  "relayed_from": "scar3"
-}
