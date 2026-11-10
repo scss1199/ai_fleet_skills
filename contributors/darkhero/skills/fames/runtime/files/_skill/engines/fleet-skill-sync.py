@@ -978,6 +978,9 @@ def main() -> int:
     elif args.cmd == "absorb":
         out = cmd_absorb()
     elif args.cmd == "deploy":
+        if args.dry_run:      # deploy has no dry-run path; refuse instead of writing (scar3 2026-11-10)
+            print("deploy: --dry-run is not supported; nothing written")
+            return 2
         if args.agent:
             out = cmd_deploy(args.agent, all_folders=False, seats_only=False,
                              entrypoints_only=args.entrypoints_only, skill=args.skill or None)

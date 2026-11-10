@@ -374,7 +374,11 @@ def _write_report(doc):
         fh.write("\n".join(lines) + "\n")
 
 
-def main():
+def main(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    if argv:      # --help (or any argument) must not run a real sweep and rewrite the registry (scar3 2026-11-10)
+        print(__doc__)
+        return 0 if set(argv) <= {"-h", "--help"} else 2
     doc = build()
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as fh:
