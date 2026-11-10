@@ -84,6 +84,7 @@
     "_skill/engines/token-onboard.py",
     "_skill/engines/websearch.py",
     "_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py",
+    "ai_darkhero/tray/load_posture.py",
     "ai_darkhero/tray/scripts/load_grant.py"
   ],
   "excluded": [
