@@ -30,6 +30,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import sys
 import time
 import uuid
@@ -607,6 +608,18 @@ def _skill_tree_hash(root: str) -> str:
     return digest.hexdigest()
 
 
+def _isjunction(path: str) -> bool:
+    """os.path.isjunction exists only from Python 3.12; followers run 3.11 (scar3 3.11.9, altos 3.10),
+    so probe the reparse tag directly (st_reparse_tag is available since 3.8)."""
+    f = getattr(os.path, "isjunction", None)
+    if f is not None:
+        return f(path)
+    try:
+        return os.lstat(path).st_reparse_tag == stat.IO_REPARSE_TAG_MOUNT_POINT
+    except (OSError, AttributeError):
+        return False
+
+
 def _junction_skill(src_dir: str, dest_dir: str) -> str:
     """Point dest_dir at the canonical skill through a directory junction.
 
@@ -615,7 +628,7 @@ def _junction_skill(src_dir: str, dest_dir: str) -> str:
     LINK and leave canon intact, so a surface wipe can never reach the canonical skill.
     os.path.islink() is False for a junction — isjunction() is the only correct probe.
     """
-    if os.path.isjunction(dest_dir):
+    if _isjunction(dest_dir):
         if os.path.realpath(dest_dir).lower() == os.path.realpath(src_dir).lower():
             return "ok"
         os.rmdir(dest_dir)  # a junction is one dir entry; rmdir drops the reparse point
@@ -752,7 +765,7 @@ def _deploy_to_root(root: str, names: tuple[str, ...] | None = None) -> dict:
             # False, so probe the reparse point itself (measured 2026-09-05: 161 dangling links).
             for res in results.values():
                 leg = os.path.join(res["dest"], legacy)
-                if os.path.isjunction(leg):
+                if _isjunction(leg):
                     os.rmdir(leg)
                     removed.append(legacy)
                 elif os.path.isdir(leg):
