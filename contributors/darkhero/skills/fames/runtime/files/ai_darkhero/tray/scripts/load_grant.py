@@ -30,10 +30,14 @@ import json
 import os
 import socket
 import subprocess
+import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TRAY = os.path.dirname(HERE)
+if TRAY not in sys.path:
+    sys.path.insert(0, TRAY)
+import load_posture  # noqa: E402  (tray/load_posture.py: awake | nap | sleep | cooldown)
 RING = "D:/__hwlog"
 STATE = os.path.join(TRAY, "state", "load_grant.json")
 LOCK = os.path.join(TRAY, "state", "load_grant.lock")
@@ -42,6 +46,9 @@ WINDOW_S = 60
 STABLE_SPREAD_W = 30.0
 BUDGET_W = 250.0
 MAX_STEP_W = 40.0
+# load posture (operator 2026-11-10, tray/load_posture.py): while the sleep overlay is up a job may step 60 W at a
+# time (budget, steadiness window and spacing unchanged); in the cooldown after sleep no new load is granted at all.
+SLEEP_MAX_STEP_W = 60.0
 SPACING_S = 20.0
 STALE_S = 10.0
 TAIL_BYTES = 262144
@@ -212,18 +219,26 @@ def pending_w(recent: list, now_w: float) -> float:
     return round(max(0.0, granted - shown), 1)
 
 
+def max_step_w(posture: str = "awake") -> float:
+    return SLEEP_MAX_STEP_W if posture == "sleep" else MAX_STEP_W
+
+
 def decide(owner: str, step_w: float, power: dict, last: dict, now: float, measured_w: float = 0.0,
-           pending: float = 0.0) -> dict:
+           pending: float = 0.0, posture: str = "awake") -> dict:
     """Pure decision (tested without sensors): {'ok': bool, 'reason': str, 'charged_w': float}. `measured_w` is what
     this owner's earlier grants really added (learned_step); it is charged when larger than what it announces.
-    `pending` is granted load that has not shown up in the sensors yet (pending_w); it counts against the budget."""
+    `pending` is granted load that has not shown up in the sensors yet (pending_w); it counts against the budget.
+    `posture` (load_posture.read()): 'sleep' widens the step to SLEEP_MAX_STEP_W, 'cooldown' refuses every grant."""
+    if posture == "cooldown":
+        return {"ok": False, "reason": "cooldown: sleep just ended, the operator is taking the box back; no new load"}
+    limit = max_step_w(posture)
     if measured_w > step_w:
-        if measured_w > MAX_STEP_W:
+        if measured_w > limit:
             return {"ok": False, "reason": f"step {step_w:.0f} W announced but {owner} measured +{measured_w:.0f} W "
-                                           f"> {MAX_STEP_W:.0f} W: shrink the job (fewer threads/lanes)"}
+                                           f"> {limit:.0f} W: shrink the job (fewer threads/lanes)"}
         step_w = measured_w
-    if step_w > MAX_STEP_W:
-        return {"ok": False, "reason": f"step {step_w:.0f} W > {MAX_STEP_W:.0f} W: ramp in smaller steps"}
+    if step_w > limit:
+        return {"ok": False, "reason": f"step {step_w:.0f} W > {limit:.0f} W: ramp in smaller steps"}
     if not power.get("ok"):
         return {"ok": False, "reason": power.get("reason", "power_unknown")}
     if power["spread_w"] > STABLE_SPREAD_W:
@@ -270,7 +285,9 @@ def try_grant(owner: str, step_w: float) -> dict:
             power = recent_power()
             recent = unsettled(last, now)
             pending = pending_w(recent, power["now_w"]) if power.get("ok") else 0.0
-            result = decide(owner, step_w, power, last, now, learned_step(owner, now), pending)
+            posture = load_posture.read(now=now)
+            result = decide(owner, step_w, power, last, now, learned_step(owner, now), pending, posture)
+            result["posture"] = posture
             if result["ok"]:
                 recent.append({"owner": owner, "charged_w": result["charged_w"], "epoch": now,
                                "before_w": power.get("now_w")})
@@ -290,7 +307,7 @@ def wait_grant(owner: str, step_w: float, timeout_s: float = 900.0, poll_s: floa
     while True:
         result = try_grant(owner, step_w)
         if result["ok"] or time.time() >= deadline or result["reason"].startswith("step "):
-            _log({k: result[k] for k in ("ok", "owner", "step_w", "reason")})
+            _log({k: result[k] for k in ("ok", "owner", "step_w", "reason", "posture") if k in result})
             return result
         time.sleep(poll_s)
 
