@@ -407,6 +407,8 @@ def hardware_due(seat: str, curator: str, now: float | None = None) -> str:
     (at most once per HW_ALERT_EVERY_S across curator conversations); "" otherwise."""
     if not seat or seat != curator:
         return ""
+    if not Path(HW_RING.anchor).exists():      # host without the sensor drive (scar3: no D:, local curator ai_scar3)
+        return ""
     now = now if now is not None else _now()
     try:
         newest = max((p for p in HW_RING.glob("hwlog-*.csv")), key=lambda p: p.stat().st_mtime)

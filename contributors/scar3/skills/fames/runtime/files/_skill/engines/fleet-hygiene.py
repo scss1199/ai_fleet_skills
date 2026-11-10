@@ -33,6 +33,7 @@ import argparse
 import importlib.util
 import json
 import os
+import stat
 import re
 import shutil
 import socket
@@ -142,9 +143,8 @@ def _iso(ts: float | None = None) -> str:
 
 def _is_junction(p: str) -> bool:
     try:
-        f = getattr(os.path, "isjunction", None)
-        return bool(f and f(p)) or os.path.islink(p)
-    except OSError:
+        return os.path.islink(p) or os.lstat(p).st_reparse_tag == stat.IO_REPARSE_TAG_MOUNT_POINT   # 3.11-safe
+    except (OSError, AttributeError):
         return False
 
 
