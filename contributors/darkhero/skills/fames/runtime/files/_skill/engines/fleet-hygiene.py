@@ -98,7 +98,6 @@ WRITERS = (  # longest matching prefix wins; extend when a new producer is found
     ("_registry/f1s-parallel", "_skill/engines/f1s_parallel.py (one store per seat + ledger.jsonl; no per-plan files)"),
     ("_registry", "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"),
     ("evidence/fames-fleet-20260924", "_lean/fames/tests/test_phase_contract.py proof_fixture (test writes into the repo)"),
-    ("evidence/jev-adoption-20260922", "static test fixtures read by _harness/tests/test_jev_skill_advisor.py (data, not residue)"),
     ("_registry/f1s-sources", "_skill/engines/f1s-sources.py / knowledge-consolidate.py content store (data, not residue)"),
 )
 # Engine code that spells the retention antipattern; a hit is a finding for the file's owner, never an edit.

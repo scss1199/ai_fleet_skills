@@ -1309,6 +1309,9 @@ ELEMENTS = [
      "check_text": ("session_harness", "exec form: script in args")},
     {"id": "EVO-prune-synced-copies-20261110", "element": "ai_scar3 1ee1146: f1s_prune counts refs per cwd; 12 'dead' publics in darkhero-synced tray modules are referenced by ai_darkhero/tray/tests (Lean PROVED erase_unreferenced_preserves_eval)", "verdict": "INFO",
      "requires": None, "detail": "covered in part: f1s_prune.external_callers already checks other seats' imports before a public counts as dead; tests of a synced copy live on another host and are invisible to the follower's scan, so the follower keeping them (as ai_scar3 did) is the right outcome; the autologon item closed itself (scar3 sign-in works); no text added"},
+    {"id": "EVO-prune-memory-dreaming-20261110", "element": "ai_darkhero proposal 2026-11-10 (Anthropic 'dreaming', card kyloren-knowledge-social/consolidate/cards/a898a9dc40dbc6c2.md): nothing checked seat memory against the tree; curator memory 150 notes, MEMORY.md 21193 B, 18 notes cite 42 .py names that exist nowhere in the hub", "verdict": "REFINE",
+     "requires": None, "detail": "f1s_prune gains a zero-model MEMORY lens: scan_cwd reports, per cwd's ~/.claude/projects/<cwd>/memory (hub = curator seat), dead .py refs per note, notes MEMORY.md does not list, index links to missing notes, index lines on retired topics and index bytes; a nonzero count joins the order fingerprint and the order asks the seat's own session to rewrite or merge, never delete (notes that record a removal on purpose stay). Live scan reproduces 18/42/21193. Judged by index bytes and dead_refs falling in _registry/f1s-prune.json. test_f1s_prune::test_memory_lens_lists_dead_engine_refs_unindexed_and_retired_notes_without_touching_them",
+     "check_text": ("f1s_prune", "Candidates for the seat's own rewrite/merge pass (dreaming); never deleted here.")},
 ]
 
 

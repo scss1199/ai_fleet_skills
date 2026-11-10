@@ -472,11 +472,13 @@ def _waiting_techniques(seat: str) -> str:
 
 def _fanout_line() -> str:
     """A completed F1S fan-out the curator has not reported yet (f1s_fanout.py); empty when none or on any error."""
-    try:
-        import f1s_fanout
-        return f1s_fanout.curator_line()
-    except Exception:  # noqa: BLE001
-        return ""
+    lines = []
+    for name in ("f1s_fanout", "f1s_reuse", "f1s_posture"):     # one line each: fan-out due, reuse ledger, night queue
+        try:
+            lines.append(__import__(name).curator_line())
+        except Exception:  # noqa: BLE001
+            pass
+    return chr(10).join(x for x in lines if x)
 
 
 def _unclaimed_orders() -> str:
