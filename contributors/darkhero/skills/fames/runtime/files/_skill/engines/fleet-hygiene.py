@@ -412,6 +412,15 @@ def _code_index(hub: Path) -> dict[str, Path]:
     return out
 
 
+def _seat_roots(seat: Path) -> list[Path]:
+    """A seat's nested code roots (e.g. ai_trader/sinopac-trading-system): first-level dirs holding a .git or pyproject."""
+    try:
+        return [d for d in seat.iterdir() if d.is_dir() and not d.name.startswith(".") and d.name not in PRUNE
+                and ((d / ".git").exists() or (d / "pyproject.toml").is_file() or (d / "package.json").is_file())]
+    except OSError:
+        return []
+
+
 def _mem_stale(tok: str, hub: Path, seat: Path, index: dict[str, Path]) -> str | None:
     """The reference in one backticked token that does not resolve, or None (resolves / not a hub reference)."""
     words = tok.strip().split()
@@ -434,7 +443,7 @@ def _mem_stale(tok: str, hub: Path, seat: Path, index: dict[str, Path]) -> str |
     cand = cand.strip("/")
     if "/" in cand:
         first = cand.split("/", 1)[0]
-        bases = [b for b in (seat, hub) if (b / first).exists()]
+        bases = [b for b in (seat, hub, *_seat_roots(seat)) if (b / first).exists()]
         if not bases or first in MEM_SKIP_FIRST:
             return None
         path = next((b / cand for b in bases if (b / cand).exists()), None)
@@ -446,7 +455,7 @@ def _mem_stale(tok: str, hub: Path, seat: Path, index: dict[str, Path]) -> str |
             return cand
     else:
         return None
-    flags = [f.split("=", 1)[0] for w in words[1:] for f in w.split("/")
+    flags = [f.split("=", 1)[0].rstrip(")],;:.") for w in words[1:] for f in w.split("/")
              if re.match(r"^--[a-z][a-z0-9-]+", f) and f.split("=", 1)[0] != "--help"]
     if flags and path.is_file() and path.suffix.lower() in MEM_CODE:
         try:
