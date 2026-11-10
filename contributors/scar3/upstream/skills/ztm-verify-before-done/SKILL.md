@@ -121,6 +121,9 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 - 驗證要包含消費端實際用的 loader 或它的 log，不能只靠自家的離線解析器：東西被回報「空」或「壞」時，先讀使用端自己的
   執行 log，再掃檔案（ai_nuwa #12：Q05 離線 UnityPy 與渲染全過，但遊戲 BepInEx/LogOutput.log 顯示 Unity 拒載；
   根因是重壓後 UnityFS 檔頭總大小沒更新，離線讀取器不看這欄，全庫掃出 103 個；commit 0a6c243、tests/test_empty_item_check.py）。
+  畫面類同理：判定看產品最終輸出的截圖，不看頁面狀態或視窗標題——擷取／投影串流用產品自己的截圖 API 對來源與輸出
+  各取兩張、相隔約 0.7 s，量亮度與變化（有畫面且在動），視窗只用 PID 對，關閉後輪詢輸出恢復（ai_wallpaper scar3
+  8fc35b0：頁面與標題檢查誤判 FAIL，OBS GetSourceScreenshot 5 種播放路徑 32/32 PASS）。
 - 生成者不得是自己產出的唯一裁判（程式審查段已成規則）：同一個 agent 既做事又替自己打分，分數會向可規避處漂移。
 - 「進度」只算使用者看得到的真實成果，不是通過了多少自家檢查；report／alert／驗證腳本的數量不是進度（本段已有）。
 - 未經外部查核的基準分數是指標不是事實（F1S ④）：自評「金牌／全綠」在外部裁判看過前只是待證，寫法對照

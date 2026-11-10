@@ -30,6 +30,10 @@ Playwright CLI = `microsoft/playwright-cli`（Apache-2.0）。F1S 只取做法�
    DESIGN.md（配色、字型、間距、按鈕），放進該 repo 既有的設計檔位置；不要在同一頁混兩套。
 2. **品味／方向**：先寫三句 art direction（用途、氣氛、一個參考），再動手；避免預設灰底卡片＋藍按鈕的通用樣子。
    Taste Skill 的原則：明確層級、留白一致、只用一到兩個強調色、互動要有狀態。
+   **動畫給數字，不給形容詞**（「更順」「更絲滑」交給模型只會更差；做法來自 transitions.dev，IG reel DfetS3zJH-I）：
+   對話框 `scale(.96)→1` 加淡入，開 250ms／關 150ms；選單／popover `scale(.97)→1`，`transform-origin` 設在觸發元件那一側；
+   toast `translateY(16px)→0` 加 `blur(2px)→0`；全站只用一條 easing 曲線，開比關慢；只動 transform／opacity／filter
+   （仍禁 `transition: all`），全部包在 `prefers-reduced-motion: no-preference` 裡，reduce 時直接出現。
 3. **參考圖轉程式**：使用者給截圖或設計圖時，先用視覺讀出版面區塊與尺寸，再寫程式；完成後對照同尺寸截圖。
    **新素材與既有素材並排驗證**：新增圖示、按鈕、卡片等會跟既有元件並存的素材時，從最接近的既有元件起手，
    完成後把幾個既有元件和新元件放在同一張圖（同一頁）上，放大 2–3 倍截圖，逐項比對尺寸、輪廓／線寬、圖層、
