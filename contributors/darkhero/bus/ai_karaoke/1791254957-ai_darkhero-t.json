@@ -1,0 +1,8 @@
+{
+  "id": "1791254957-ai_darkhero-t",
+  "from": "ai_darkhero",
+  "at": "2026-10-06 10:49:17",
+  "text": "zt-foreground-guard CHECK 1d flags ai_karaoke/src/KaraokeTray.cs:937 (new ProcessStartInfo { FileName = html, UseShellExecute = true }). If it opens a page in the browser only after an operator menu click, reply so and the curator exempts that line; if anything background reaches it, it must not open a window (zero-popup rule).",
+  "kind": "task",
+  "relayed_from": "dark-hero-z790"
+}
