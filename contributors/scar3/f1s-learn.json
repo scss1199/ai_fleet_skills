@@ -7,7 +7,7 @@
     "ai_scar3",
     "ai_wallpaper"
   ],
-  "sha": "db048a2dbcc963b5",
+  "sha": "ad48e4fc8cc3f6fd",
   "memories": [
     {
       "seat": "ai_scar3",
@@ -123,5 +123,24 @@
     }
   ],
   "skills": [],
-  "conversations": []
+  "conversations": [
+    {
+      "kind": "conversation",
+      "seat": "ai_wallpaper",
+      "name": "correction 57ad0cec3032",
+      "path": "C:\\Users\\scss1\\.claude\\projects",
+      "state": "correction",
+      "summary": "去ai_darkhero要資料 不用自己浪費時間",
+      "text": "去ai_darkhero要資料 不用自己浪費時間"
+    },
+    {
+      "kind": "conversation",
+      "seat": "ai_scar3",
+      "name": "tool-error 5f097707bf72",
+      "path": "C:\\Users\\scss1\\.claude\\projects",
+      "state": "tool-error",
+      "summary": "repeated tool error x4: File <v>, line N",
+      "text": "File <v>, line N"
+    }
+  ]
 }
