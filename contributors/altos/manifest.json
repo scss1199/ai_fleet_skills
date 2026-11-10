@@ -5,8 +5,8 @@
   "role": "downstream_follower",
   "machine": "altos",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-11-06T08:34:23Z",
-  "manifest_sha": "1a41c8ddaad28719",
+  "generated_at": "2026-11-10T14:26:29Z",
+  "manifest_sha": "ef448fc9d5dd071b",
   "required": [
     "fames",
     "independent-review",
@@ -26,12 +26,12 @@
   "skills": [
     {
       "name": "accountability-unblock",
-      "sha": "faf8f28d4a4e9ebd",
+      "sha": "45268a29b46cf80d",
       "required": false,
       "lane": "MTD",
-      "package_sha": "fa75dc87a75cb87bcc9badc514bbf941993fb23eef3b6515bebab585f01ea5f8",
+      "package_sha": "4bc05ccd7cfda38971d678ee74e8f0f92e36e5d90f81f048b6388fc7c61d8f63",
       "files": {
-        "SKILL.md": "35e74b96bfc14fa92b08eb8f282c1b346459d36d2e8b6b9cdd3d8e8a5c2ecb75"
+        "SKILL.md": "7b0f06e9afff1b03467dc815354fc790dacc225544979e3539542e70ff61fae8"
       }
     },
     {
@@ -46,7 +46,7 @@
     },
     {
       "name": "aex-agent-evolution",
-      "sha": "30b5e0e5feb8a450",
+      "sha": "4a9c3001cffd495a",
       "required": true,
       "lane": "zero-token-mechanism",
       "package_sha": "494cc8b0af44e5ec2bc4a55b3528c42f38e266716d50fcb35773ca6ead15a3dd",
@@ -66,12 +66,12 @@
     },
     {
       "name": "api-key-apply",
-      "sha": "e3622efdd06860f2",
+      "sha": "563290fc4f3be0ba",
       "required": false,
       "lane": null,
-      "package_sha": "9340950244c1e71e0fa0b9e8624c3f417fb8a09fbcff42dd2afc06fcb5e90d2f",
+      "package_sha": "c449e187fc8bdd1fdfc403599e27895ac6d8e47bdd80e18e218d8e5f442ede4d",
       "files": {
-        "SKILL.md": "c61a8707142ef3c44fbfa268e341963f4388879a4c1a86b9db9490f464efd3dc",
+        "SKILL.md": "a669ca81995db998366eb8095d4618a03b3662c3e3355124165b0589a6a9cc39",
         "agents/openai.yaml": "ef1d9d6f4ccc3e291101cce0f335140d5fc3db7120651f1e8743b227a88918a8",
         "references/api-matrix-schema.md": "911b0be27961d1bd09b6d16849f7be0cb5b7421d4bf6efef03cee5006e1ee3da",
         "references/current-inventory.md": "18648d13bb39886ddc9117a682c4480fd10740b25479e182eff7672e77dae8ac",
@@ -102,12 +102,12 @@
     },
     {
       "name": "burn-captions",
-      "sha": "32030ecf48a411c8",
+      "sha": "4315c2e88007dec4",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "0167bd35a051d3fac487d010d2e421568ab7eb1c543d663f8dfb1387d25af53e",
+      "package_sha": "b38185213dcedbdb7a8871f1d8bf13775a7d87a79d120712fbb6ac1ff7ff8594",
       "files": {
-        "SKILL.md": "32030ecf48a411c85e2f1f47b9d0db5d4292eb99545c7a9a6c0829630044cf8a"
+        "SKILL.md": "4315c2e88007dec4e55c00dcabcbd4346745b3f69c685fb60dbe4bd59829bb64"
       }
     },
     {
@@ -122,12 +122,12 @@
     },
     {
       "name": "deploy-nextjs-cloudflare",
-      "sha": "99bf5964aaa7af26",
+      "sha": "cf4d16ef7d8ea19e",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "2051b3e7375a579d69cb95f20bb4c1eebdffbe65f3dd5ef0fb71e557c07d586b",
+      "package_sha": "8f8cad3eb72695f137bb5e97350f71e6057107faa808ee44fad0be0fbc6d5e83",
       "files": {
-        "SKILL.md": "99bf5964aaa7af26dfde5d3f77b50fbe6eb97faa560c9d959c3f25f0ac6033b0",
+        "SKILL.md": "cf4d16ef7d8ea19e5dacc99bc91d075b65f0bffe0a81f24ec170c15784733590",
         "agents/openai.yaml": "138a80cd1780892c6b4f1f1b9395e3a601f80790782a4b8681deae98eadf5f39",
         "assets/claude-cloudflare-migration-prompt.md": "7b1ae8438ea664637a75f107c1797f2a0b5af89c710493bf572d2e35873dd5a9",
         "assets/fames-ship-receipt.template.json": "865456a3bd3511c884334446579f1f92bfef78106126830fb25162e0cf91681f",
@@ -148,12 +148,12 @@
     },
     {
       "name": "f1s-intake",
-      "sha": "b47baea4a1db0461",
+      "sha": "d5a383868a9545be",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "6e2e77272002ce1451e5c3471b17aa215500e8cca14d7acca76089467eafa723",
+      "package_sha": "d979aa8ee4ae2c793a0c1e3f3c58fb3543b91943faf516b8cd08fccfde48dc0b",
       "files": {
-        "SKILL.md": "3fc3dabcc8e6308163958179b4baa49bbe83a5ea239e3ce5aeedd9cb47e47044"
+        "SKILL.md": "330ed6efa6e969143b8c31582401018ccf72d4fa0a5f33abb2cf29a2e09ec4a9"
       }
     },
     {
@@ -168,14 +168,14 @@
     },
     {
       "name": "fames",
-      "sha": "2ff426f4aa46b7b5",
+      "sha": "15d2f3863c34d920",
       "required": true,
       "lane": null,
-      "package_sha": "5fb35c4a7537407bb3cb334a6bf11f15739acc6a4bb82d64e14a03ac819f08dd",
+      "package_sha": "8f04ba9f462d7c660e1ebe412c6bc93cac621d86314d85e867ecfb6f244a89fc",
       "files": {
         ".gitattributes": "448f5307a4b4eaab3e5e0615e1b57e125c2e6419d590025c4ac3d2e2c004955e",
-        "SKILL.md": "2ff426f4aa46b7b552e4aa7b8b382a8af446fc393012734da8612e40038c0e52",
-        "bundle-manifest.json": "48c0436fc68784b0c7ee51ed63803ef71d6f834459409dc265e2a9376177bb87",
+        "SKILL.md": "15d2f3863c34d920752663ff99f01778c3e7190d9c91d44d552c906a90e92de5",
+        "bundle-manifest.json": "de7e616faa26af0907d84c552a5621d8e1635f1720d1331b74573903fbf507c4",
         "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
         "references/autonomous-knowledge.md": "b34ca6beb034909aaade75be4707c772e90155c6c12b8278c7b3964ec8238df5",
         "references/cases.json": "2ebbb062b8e58241dfd2a70ec423678c4c16e40303d436ffa6de6e5560f67a40",
@@ -186,21 +186,21 @@
         "references/minimal-context.md": "f5c24bd6cc37901d7e71187ef9d273a88676be4c1393faaedf1664ff794478da",
         "references/operator-manual.md": "ddfdafdb484c5233b59bf91d80f44a0060b161f822342db9669e7bcf63b0903c",
         "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
-        "references/runtime-sources.json": "51b9d0860b8d73a83ad7628bb3686365ae01c819d82829638592731e9435f1e2",
+        "references/runtime-sources.json": "e91d92112a3c4b0fa8c133d7e6b2ee9213fe6ad2bed77b9db50909ba62c5142c",
         "references/scoped-skills.md": "b8d6178efa7c1700b13cab721a208900f0d088e3f416c9a906eb661c22362f85",
-        "references/protocols/fames-protocol.json": "1b69b2c38f24d28a16e09dcb44326aee17c91ae9ffdcd30af6cda1bdd64efde2",
+        "references/protocols/fames-protocol.json": "975e91533c1305422a1a1b1b35229fcf2526c0ec6b49f60cf52a3893e62f38f7",
         "references/protocols/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
         "references/protocols/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
         "references/protocols/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
         "references/protocols/scf-protocol.json": "6688d7370af1040b421dfcc715e7b730d4a74331b60bf316e3b527285be27906",
         "references/protocols/seal-protocol.json": "7de5562242692e0827a64bbc94f7a5a71fc418601558f51dc54371a11820b9a4",
-        "runtime/manifest.json": "d77eefef0698cf7bc013ab75789a3b4ed9a554350201230ccf61a75e2b1c683c",
+        "runtime/manifest.json": "61fb4da7a924808bb5fba8165d7a96ef2c709b2758f205a7617539aa4ce25c29",
         "runtime/files/_harness/runtime/document_preservation.py": "7af583a1d534c54332a2d9444afba1430f73a81f06627379965d5c137b6e5d48",
         "runtime/files/_harness/runtime/dsh_fames_hook.py": "35f126d239b2ae1d333dc21d14e3e05b51dfac380f324228b5fe7e92ac1c3f54",
         "runtime/files/_harness/runtime/dsh_fames_plugin.mjs": "cde86d6be7cfcb5729c17f7e46c65f30d7681e8fa6ede9a60e3c2c30b52f4ed7",
         "runtime/files/_harness/runtime/fames_capabilities.py": "c55ad66713d987b3087a9b9e346ef3a67ff254126ece45cb2f0dcdee6db0d359",
         "runtime/files/_harness/runtime/fames_phase_runtime.py": "f95237b99113311e3b5ccb83d01c29d29527c7f79242913d03264fa567eb8e5b",
-        "runtime/files/_harness/runtime/fames_session_harness.py": "c871615c1dd442aa85631eb2a0831abac3317e7e8cd3e5b0b6800e361ac296bb",
+        "runtime/files/_harness/runtime/fames_session_harness.py": "e4b195835836a85f698d72e4fb77bfee9248e3dc0dcf37e58352fbf7c2df8e6f",
         "runtime/files/_harness/runtime/fames_turn_binding.py": "ebc57eb024b976d79db90fa5d176b8d25571f2c18587684be060f65979f14b6f",
         "runtime/files/_harness/runtime/jev_phase_advisor.py": "3512af5166341135e29f083b807a6e159286d2e04599ef15c914c1df45752d40",
         "runtime/files/_harness/runtime/jev_skill_advisor.py": "438e0e7c39ee6105483d1e9f689de582161e0464c36d69939498f6afbfbd9057",
@@ -217,15 +217,15 @@
         "runtime/files/_lean/fames/FamesPhaseContract.lean": "74941a3d2731985692bd2c34dabb7209c50b1f1b95ae18b2d6ae8e567e68ef5c",
         "runtime/files/_lean/fames/FamesTurnRecovery.lean": "c7535908561b0d13ddf1533ec6e178785d46f933611bcc670a8728f075f8b6c3",
         "runtime/files/_lean/fames/claim_conformance.py": "47bb78d57a08d6f5aa9a185e4b383a017fdfc9c193686c69f5fc9ca2df555dec",
-        "runtime/files/_lean/fames/conformance.py": "2cc97944eec22196b61d31b62cfe00b7788366c6610248d9c87418aba622ed42",
-        "runtime/files/_lean/fames/f1s_audit.py": "e28195862714abdf45a4fbfccf28415f7312bdc19e0fb976577f62b3aac15347",
+        "runtime/files/_lean/fames/conformance.py": "be37ceac19048f17a563248064026548cd3e45a90753df7846156bfe0550eee8",
+        "runtime/files/_lean/fames/f1s_audit.py": "8e5ca2da9ccd25a612cbdc10ac0b3d58296665e98cdb3df5e28e466d1bfd5e9d",
         "runtime/files/_lean/fames/lean_gate.py": "6eb82287a898c3225d859eaf28d74eb42f78aa12727a523b6f294e29c01052ab",
         "runtime/files/_lean/fames/phase_conformance.py": "ba60fd7f4aa8f850968239279dfa354ba0ce4a53243c383aeec873af65e1f989",
         "runtime/files/_lean/fames/phase_contract.py": "6b03b9d4fe4569cf69bbb14b23ff7244710bae4181f08f9027887c448e6e5726",
         "runtime/files/_lean/fames/turn_recovery_contract.py": "b4e6861fef6e2b4d42fd0e7a4ec93f3d5fe24a647362d1383a24950df5615193",
         "runtime/files/_registry/agent-surfaces.json": "b36cebd6b0f912587f117bc7df19c352496bbb6bcf7c9d3293b0940e951e8f60",
         "runtime/files/_registry/claude-remote-control.json": "44f271d7e0700238d5351698be0638cb1f798669d9f30c8aa3ad1c7d2fc2cfa2",
-        "runtime/files/_registry/fames-protocol.json": "1b69b2c38f24d28a16e09dcb44326aee17c91ae9ffdcd30af6cda1bdd64efde2",
+        "runtime/files/_registry/fames-protocol.json": "975e91533c1305422a1a1b1b35229fcf2526c0ec6b49f60cf52a3893e62f38f7",
         "runtime/files/_registry/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
         "runtime/files/_registry/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
         "runtime/files/_registry/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -244,23 +244,25 @@
         "runtime/files/_skill/engines/_projects.py": "9121798be38115430276d2b4f98200d75917ac2c0680aa990efbd0b730d7e046",
         "runtime/files/_skill/engines/_secrets.py": "0918c1b3a8f2a314567127312cd2b1f9f61a2f8c12124196815a4a347bc9a073",
         "runtime/files/_skill/engines/api_budget.py": "d8f1f65cbe0ae44caa6d8f709ccbbe0514c36874e93291d8e9883dfa0774d29e",
-        "runtime/files/_skill/engines/claim-linter.py": "b81bace525467206964a96751ca38043266fd9143e9d2e5085c57b8f2cd503f2",
+        "runtime/files/_skill/engines/claim-linter.py": "4efdfa7ef98835706cbcdda34d9498434627fce87e22d031da74764ef6f4c1c0",
         "runtime/files/_skill/engines/claude-claim-integrity-hook.py": "a13bfb56f0523caa27cbe6cf08fb69adbd2f1b4e962d617a3bfeb6ea09352c5f",
-        "runtime/files/_skill/engines/claude-proof-hook.py": "22f456409cd392ad6ff7e5315cc03e4ea190bd8b49525083c858a82fa1bfa327",
+        "runtime/files/_skill/engines/claude-proof-hook.py": "c8ab2aa466c6130664aad3fa7d5ac740bcc1d2c6a432685757e93d75d13c9e6f",
         "runtime/files/_skill/engines/claude-remote-exec.py": "95f72f9d17d0c5f41716774dc2e4ea1a26b16760f81374942390b069ad7cb1c1",
-        "runtime/files/_skill/engines/claude-run-until-done-hook.py": "cff67a38895f5aadad4086ced6c31c7c7d2a4b9ffb4baf254758f087a181e16b",
-        "runtime/files/_skill/engines/curator_orders.py": "f6369ddbe4915a285e6bd9a682dc4db78f387961cf7b6bb8da5f3a232d468657",
+        "runtime/files/_skill/engines/claude-run-until-done-hook.py": "e65819f10baa2f969dde3b67570a669d4ff4485aeaa97f8f0fd72c30f0593f68",
+        "runtime/files/_skill/engines/curator_orders.py": "5adc578046289a23f25839de85924b6c169e0958c29bbb46ca5b544797c55434",
         "runtime/files/_skill/engines/cursor-fames-hot-refresh.py": "491f24b2e91d7e7cb96139e9e014047ac8373fa94a617c91e347a36df1fa9fee",
-        "runtime/files/_skill/engines/cursor_bootstrap_pack.py": "517116cb0da0fb19e520677df20f9e65e85c3454273f18d4c12be542288e1892",
-        "runtime/files/_skill/engines/f1s-transcript-audit.py": "9ccba9a56e259a0ac48d4bef8eefbeca8a8a90b74dd2cedf39f0cf2679035062",
-        "runtime/files/_skill/engines/f1s_daily.py": "cb62823bfeaefe2a1bf0bab815d243b651afde30882df82fec4bbf12390a0b8f",
-        "runtime/files/_skill/engines/f1s_live.py": "5d03ea78aecc5be6398dafdbda882609fb89f6160f1b8cab164584ccca595c23",
+        "runtime/files/_skill/engines/cursor_bootstrap_pack.py": "e77c465e716f02b8e6586ceb67af19d5ccded6add9c0c91b0646d1d25de34124",
+        "runtime/files/_skill/engines/f1s-transcript-audit.py": "cfae5df262fbb0a79137225125c6e262ad852d23c6d3bb7f7f5879966209bdf5",
+        "runtime/files/_skill/engines/f1s_daily.py": "16f07362ec8740d620ee17d2876feb2d397b31b01d4786135b99a547b8f80298",
+        "runtime/files/_skill/engines/f1s_live.py": "d3b7f105c4b49e2c7695ce0028d47d18b8aa8b1aa9d759171d23e3f7f4b91e5d",
         "runtime/files/_skill/engines/fames-immediate-apply.py": "7473fb1f1d9494798f02403e15456a150e38cda9fdc79156c464faf10c052be6",
         "runtime/files/_skill/engines/fames_execution_evidence.py": "47f1ef6470401c155a88355816e2a13377e8d6730a440b9d7032a0a391bbacf5",
-        "runtime/files/_skill/engines/fleet-hygiene.py": "a2cca0bf6922cb7e5769448acd29c39c52595b5c67642861e607ec21e0d1748d",
-        "runtime/files/_skill/engines/fleet-job-dispatch.py": "5ed14c656e9b83a3b8883cd803724dd2833f98c87f5a164264826da66234d2ae",
-        "runtime/files/_skill/engines/fleet-residue-quarantine.py": "4367e6faea83e5139a79c1645bdf5a4939cc54541892f522f83442b5342c32ca",
-        "runtime/files/_skill/engines/fleet-skill-sync.py": "2c0d57c4dacfa6e651022a29ddaa0974936b01a66770c525b9a6a5fd3ac54f3d",
+        "runtime/files/_skill/engines/fleet-bridge.py": "e6429442f85994d5426df6dc6310ccaa9acb6bfae03c8ebaf388205ba95cd22e",
+        "runtime/files/_skill/engines/fleet-hygiene.py": "fcf56dc7dba86021f28cc412754e765fd6ee2558aed19040b0760f3482df1a4c",
+        "runtime/files/_skill/engines/fleet-job-dispatch.py": "aaa480f0d82a4186e8876cb97f09687c7af66b792626e0ddf9c45a4140558976",
+        "runtime/files/_skill/engines/fleet-residue-quarantine.py": "afb050756694ebf9286bd23aafba19812baac72cecb3de87be8e4b93db99f9f3",
+        "runtime/files/_skill/engines/fleet-rogue-scheduler-sweep.py": "cabd10d3d31f555f31ada1e289df627dc10b25b2e41e9320f7a0632f55e8c7fb",
+        "runtime/files/_skill/engines/fleet-skill-sync.py": "7a48bbe612f0f534d35e2476f3dc862e590326f229554275ca7bfed9b4e2e676",
         "runtime/files/_skill/engines/hub_python.py": "94e826b861844e6ab0b199ccc3ab1d2d2f639412302e6841f9371651506ec167",
         "runtime/files/_skill/engines/hubclock.py": "ea5adcaa7467adfad4bd3434f65e6f70df9de0ba8717e1998d9d7a885e2c2b3c",
         "runtime/files/_skill/engines/key-health.py": "fddb546ccfa92384f3036bbc60645273c9a3a3b213380f3ce85e00760b26f60d",
@@ -268,26 +270,28 @@
         "runtime/files/_skill/engines/lane_taxonomy.py": "e8cb50dd7a0ea47368196320ad4ce3e1ce90379beb757be0f3d38fe193d26888",
         "runtime/files/_skill/engines/mtm-fleet-skill-github.py": "841ff3ad7a528085804b17aec0f6faf70f1e9d1665983484211c5878685cbc9f",
         "runtime/files/_skill/engines/omniroute-gateway.py": "e2fa63483534f1373b41cba47924ccb27f02463d992807650d098eb6fb2123dc",
-        "runtime/files/_skill/engines/pinned_drift.py": "864ddb74c392952eca8b7a31b8b0d6a8aff98ef7b3f13b4ce78ac9117cc2ff3e",
+        "runtime/files/_skill/engines/pinned_drift.py": "96d4a66025ee304fb00430866a63bbd97e537f6bcb39b491946480a1a04f0094",
         "runtime/files/_skill/engines/register-rider.py": "6094cf29b53cb9ef50666152aca08a507402c282e04d5e1346e38c88a88776fe",
         "runtime/files/_skill/engines/route_candidates.py": "37044a6fb819d26459af15102fe56c2d15f0952344d23f0a8d56294dd300badb",
         "runtime/files/_skill/engines/rules_brief.py": "6d86344dae5f4260fd77675b43a1ac7c9d028571e34d667cd74e9fbae4a0434e",
-        "runtime/files/_skill/engines/sync-cursor-hooks.py": "b1259c2c8b107cfb289048411d96e1885299f96930e11b5b1fdde81a7df37354",
+        "runtime/files/_skill/engines/sync-cursor-hooks.py": "a6d43d99a31d1673ff3ba4c0df30dddd8620482274d0634a8b62fafc55284d28",
         "runtime/files/_skill/engines/token-onboard.py": "b36201e60c667dadc26f06f211b8b9fc7275a778035d980143f19f4721dbfb39",
         "runtime/files/_skill/engines/websearch.py": "fe9f331cd3ea3f168a1745c07339fbaa376072a5851890e9728e259d9370dce5",
         "runtime/files/_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py": "71ec7ab14b047827dd4ce4298a3aa274016203d51e76017959aaba2dc0318a1c",
+        "runtime/files/ai_darkhero/tray/load_posture.py": "e7170d2771daf7313f7f1fdf0101aee31f728b853af2c04063cf73062c912070",
+        "runtime/files/ai_darkhero/tray/scripts/load_grant.py": "ead9f7c7af2313b8a94edd9dc000093fe8f752eb1774b77f62144994e9cc6eb9",
         "scripts/adaptive_response_controller.py": "07a19c6e0bda90f25800617a274d5f641709676d0d71cdfae8e17dec91e0d911",
         "scripts/claude_live_ab.py": "3aaa4276c505e1eceea33207c6c4baeb190b6319b737f081fd53fbc055834261",
         "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
         "scripts/context_packet.py": "83ea5f25d31ed03b70d1b29b3ed33c7076fd5192ed85cb093804da4b7ff91adb",
         "scripts/execution_evidence.py": "a0e15c249ff1ee86048647b314c926eb54006877038dcc9060fe538fdcdb73c1",
-        "scripts/fames_fleet.py": "dfc763a72948583eaca5569f3c033a1e7941e351dd85f9e7e71253c20a623fdf",
+        "scripts/fames_fleet.py": "95d46fe58d92ae5a295858f9ee3968b7aacbf776dde60510575a4190b22923db",
         "scripts/knowledge_evidence.py": "aee01474f7ab6f4b7c43a008700d498fffc1ba64803598c2c48a9ad57bbac2da",
-        "scripts/runtime_release.py": "5a15100b4a3f4ce4084ffef02973acb794f988e8d376310620e0511de81efb63",
+        "scripts/runtime_release.py": "b8ff7d9531c6015b76541dffa8ae97dab0a4eac7b97f4cc27dcdec9a3e022cd2",
         "scripts/test_context_packet.py": "4046deb01229db855de71f9dc42c3e469231a9a9456054dbfeb2c56a8c6133d8",
         "scripts/test_execution_evidence.py": "c772c1bf23058ccc51fde55ad544eef584cf9f2e9a74ed7fbc03a19601a15b71",
         "scripts/test_knowledge_evidence.py": "fecf1dc7cee04f3dc67edc3e632da7ce85254e3e26cbef149416e12505566447",
-        "scripts/test_runtime_release.py": "c00265bca90a67e14079ba0b2945c7efe5fdc7384a6f690722e02023a7a63842",
+        "scripts/test_runtime_release.py": "78e239e633ee85bebf3e5853a01a2c3d029460f30c0f4e2558cbce754ad07323",
         "scripts/test_work_efficiency.py": "e4250ba4c05f616c79cf97182507d1ff3585487c788546151a97b2dad74f0536",
         "scripts/work_efficiency.py": "42d41b64b8075280b1212625b46a25ab32bba35d27f5c019cf79dde02552022e"
       }
@@ -326,45 +330,45 @@
     },
     {
       "name": "jci-drive-line-web-transfer",
-      "sha": "e6bf5edc2f4eb0da",
+      "sha": "edad0a496150ae49",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "df8b961120c155873d3be55f54036f4ea556358a326c8e95f51cc871f0bbe526",
+      "package_sha": "aae726b6d02b79fd901135c6f87fb0f2e9fff2ed96f2752fda7bb6a0c8f20e43",
       "files": {
-        "SKILL.md": "e6bf5edc2f4eb0da83852fba894b3cf3189b8d96c0535707c459ee255d5b5dac"
+        "SKILL.md": "edad0a496150ae49eb2ea042f1116aa56b3a87c1d1e24e04ef24669c28b7950c"
       }
     },
     {
       "name": "lean-math-prover",
-      "sha": "eb9c0a3fd0e68b16",
+      "sha": "b710b0eb6d235a00",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "b93d8825b90c49a876ce6ab97a37650a5d18d05e8db32706f11a933f7a2d7d60",
+      "package_sha": "8ada84f7fa8108e5084508951ca0a9eeec65c7b530f0fb657691a0739be799ea",
       "files": {
-        "SKILL.md": "31055b292ab6644e6de0e896ef8cdda2c535510490138690d1f3d39bd546af9d"
+        "SKILL.md": "fbf6b074bdb5c901b3ee678666e4c8515e8d4e6c61c63b811bf376663e5d203c"
       }
     },
     {
       "name": "library-bookmark-coverage",
-      "sha": "265dd340ca0131b5",
+      "sha": "463452df27b1feab",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "ca933925131826340dd371a9c84559b750c9507c627da5ed733b26f6068a5efd",
+      "package_sha": "271ace814daa1d53fd7315e4b9b20dce4a8566db63bad0ddb43d1159522bea1a",
       "files": {
-        "SKILL.md": "55843b32c92493a678ff3ca58f25c2eba4d831dc7eb9d95cefae077cc0fed0bc"
+        "SKILL.md": "43e3b9bb2d8e9763063962d2ac95f551746b29cdeea125607258d0aa591690cf"
       }
     },
     {
       "name": "line-oa-ingest",
-      "sha": "0da40f10628fde2d",
+      "sha": "79932ca06332f37c",
       "required": false,
       "lane": null,
-      "package_sha": "ded562a6a4bcc53eb4ca4ee26be2e93f4d6d0a6f53f8d14251bdeecd65264219",
+      "package_sha": "e6103c76a63a91e6af3f28c89fb5f035a6c370e123e695e03de40b5d9e651547",
       "files": {
-        "SKILL.md": "c8b55bb0ce7bef5c3be55b41a5d653ae6e6cc7a9ed50e070770dc41836f3a4ba",
+        "SKILL.md": "b5197acc05f5bc9524b2a5ecd61a8a45f7d6e15720532df62e12677e2af392f7",
         "agents/openai.yaml": "3b3a5bb4f3fc5b43bd8242ef17dec4e8503111acc39ca46ef8c6019f83342002",
         "references/line-api-boundaries.md": "c5f8bb100756aa34dd2266601caf25bd16bcd339dbc96858602f000895e4d516",
-        "scripts/fetch_public_social.mjs": "21569d6a98596fa3ff36076a5da900066052fb1f11954ec5363202edd71017b9",
+        "scripts/fetch_public_social.mjs": "00181a1a3e0a2d2020990ff9fd6ae2a0a14e64b189aa75dd3b22d94323374e0a",
         "scripts/inspect_line_inbox.py": "460168215f3ecf231dbd202d87922dd1a234530deaf14937b7df23c0c6f10fa1",
         "scripts/test_inspect_line_inbox.py": "de695f9296a1d47af6721aa16b8aff95d6fb4642719db8a9ce771ec1d34f36e8"
       }
@@ -402,42 +406,42 @@
     },
     {
       "name": "mtm-api-pool-offload",
-      "sha": "86c81f7d477b4dd5",
+      "sha": "b5e51c66a424a796",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "9e3e3d2450da3b6aa15aeb2cc238cd89ad8833358373cf4120cb467570d80a50",
+      "package_sha": "304db059116c66e80a544c012f093cd9ea79c117c24fa10c6dc92ee5ebd596fe",
       "files": {
-        "SKILL.md": "86c81f7d477b4dd55deb1cca85772a36325459d2b60a282311097c1bce3bddf8"
+        "SKILL.md": "b5e51c66a424a7968f5d67b0065f1175890b548a4365ab4722b30c9cc818364a"
       }
     },
     {
       "name": "mtm-claude-remnant-cleanup",
-      "sha": "bd0fad2975c4c7dd",
+      "sha": "fe3b8f63d34e4a21",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "2648107d7385f998263b418f68f3d62f0248732ac99927689f133a484a39b89c",
+      "package_sha": "4d7744aa03600ba70991bbd2061c27119b535724e3d0375825beb8f7458ef699",
       "files": {
-        "SKILL.md": "72973c68a9f555432a33216121305116369467fb711dcb85b48a3246dbc3727f"
+        "SKILL.md": "3409e8238d7519a9b3ebeffa3b0f7e8d7d6877027d81277904b5ae5b123135b3"
       }
     },
     {
       "name": "mtm-everything-find",
-      "sha": "3164098420a759f7",
+      "sha": "d2e4e6427bb51358",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "b76627c7f71d57c5314f08e2e4da074881a4f9f037c8f63c5723562b323f6b84",
+      "package_sha": "ba325f655613673ea5e66d904a32cae9da73e7d4d10aff49d1ee6894ffb886ed",
       "files": {
-        "SKILL.md": "3164098420a759f7359912d9b6ed060f1e7685fc5fa180a28550122f361f7e3e"
+        "SKILL.md": "d2e4e6427bb5135814709519d7648c2a8413e6a6410d42680a88dbcc486b3ed9"
       }
     },
     {
       "name": "mtm-fleet-audit",
-      "sha": "7fffc27521158a4d",
+      "sha": "0bab5bc9ef67f1f6",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "4eddee0db390f068d7a30fd140c7f17d1e5bedabc33c8b1a7343512802215b16",
+      "package_sha": "4cbac27ce6fe4cc563a6ef7e4e55d0a007a33af2233164e92ce83ebb773cb33e",
       "files": {
-        "SKILL.md": "f0836356608894f5e8f96b816a7b43ab188d869b54d5631345b6b4abece1f25d"
+        "SKILL.md": "1c17e6d0736f03d0db115da0ea9afbc572aee27f05c01b5184ccbb8a679dc8a3"
       }
     },
     {
@@ -452,33 +456,33 @@
     },
     {
       "name": "mtm-github-ops",
-      "sha": "ccc473c4abc8fcb2",
+      "sha": "83a754f2485aa287",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "b767c3b7a7bc63a1b10d6fed1e04d01aaf375554cf048e04dd0a91ef92d0b2db",
+      "package_sha": "2415c3c191fe767aa934b9b46c811306075e3cc9ff142edcfdb6d6e290ea0737",
       "files": {
-        "SKILL.md": "0c00da6ca2f0ab9ee7580dd16f2a4e8959b86dc451314655fb7ec12349cd1c5d",
+        "SKILL.md": "130c6a910ff1a41c9b73855688858a04af1126f7a8d22c13daad1c84b6431007",
         "scripts/quick_validate.py": "0544c8efc19d9467af6ad679ee0f02e58c94a6dba0592aed110d701e3db7149a"
       }
     },
     {
       "name": "mtm-mte-mint",
-      "sha": "2a8e47a281c14185",
+      "sha": "cfea5106cbbc5cf4",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "4e553140e1a5fab0a52758543a60f419a3d22f13cac8d4efc66676920c3354ed",
+      "package_sha": "3e7845147dba1fc4b262984219d91036ec43e1cb62e2084233f5e732bc0b0f01",
       "files": {
-        "SKILL.md": "a789f0f91d9ff802fd66e18c2977e41a8416065741725283d1e205e670884aa6"
+        "SKILL.md": "a7c83e6f81d69706a067f470ad6915361d23c1087e71e991ae0187dfcde833fa"
       }
     },
     {
       "name": "mtm-mto-first",
-      "sha": "143f52a8820267ad",
+      "sha": "0f8236681cbd8379",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "c22055b1f75e061727739d433fd0e9f8b73ff99d47aec54db23ce760a26b419b",
+      "package_sha": "daaf0be1bc33cc7c2efc8d31bf97b831d89bb53c85dbd1651237d2c58286803f",
       "files": {
-        "SKILL.md": "dab76ecfaf45026040ed3da0696abca3b7bd84981f7722e1ee1afcfa1530b71e"
+        "SKILL.md": "d9483f46e33868dc94bd014d94172f4791acd5b526d79e7c4f6d2572b6df1216"
       }
     },
     {
@@ -543,7 +547,7 @@
     },
     {
       "name": "sso-browser-session",
-      "sha": "eb24ce01497fe449",
+      "sha": "ca55894ff9304f05",
       "required": false,
       "lane": "zero-token-mechanism",
       "package_sha": "6e56b3586f80a38dffa6647c4331dd716d7496f5db6c619d76ee46a402ddbe96",
@@ -578,53 +582,53 @@
     },
     {
       "name": "web-page-atlas",
-      "sha": "4cb73c20e490ea76",
+      "sha": "c8a0e236f83020e8",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "33686f554d7a9de6d66d0a4b9b11649ce80d99afc55ef00ebc4760fc1400c42b",
+      "package_sha": "e7d742f9d13754ed10b49296bb6555d30b293dabe0ee8ea7e63066808d73a8e3",
       "files": {
-        "SKILL.md": "4cb73c20e490ea76f941c04eee46c98fe2d6925b96eb7c4832b4f5fc4b1c22c8",
+        "SKILL.md": "c8a0e236f83020e87d351b25e461be6e7ab014995085d4aa90ee23115b277497",
         "scripts/atlas.py": "25b243c2e7b9fe96233505408f5f67a43fe0a8d04503a751ac5f99098c71a214"
       }
     },
     {
       "name": "web-ui-taste",
-      "sha": "3026b18647dd0d14",
+      "sha": "45f98c30791059d5",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "ed5b7dc623eea46f9bd296fcab5c4eb78762bc39c1f0e4279e38084db217171f",
+      "package_sha": "ffcb209c3d4cc821d200e9f1204541f96e245411ae78278e0ea64f5ffb2a4332",
       "files": {
-        "SKILL.md": "a2e19583e53c8b1d353bfe0134eb1861df7396137ea88b6b38fbc628f6f2e6d0"
+        "SKILL.md": "612ed59aa0e3e8a32a6004b3312724651cfe0975095d3e8574fd7ba056edf4de"
       }
     },
     {
       "name": "windows-runtime-pitfalls",
-      "sha": "9dec387b2fa05402",
+      "sha": "aeac844b04367480",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "e3965f628a6794e36f9f10cf99f4e0e7b0d3bb8321d5e68806d0a7b139fdaab4",
+      "package_sha": "c08f428a8440693568faa8cbd73d09455851f6e348d8c3735abf49d35f6623bc",
       "files": {
-        "SKILL.md": "9dec387b2fa05402d2da0dfce47e23eec9ff1f1d35d16cc9bb14266742e1be76"
+        "SKILL.md": "aeac844b04367480dc8cddf46cf4a437526d6a552e9e4f5c48f8e90b3a48b859"
       }
     },
     {
       "name": "zh-tts-narrate",
-      "sha": "589af930d28d51e3",
+      "sha": "53362d813f70e74a",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "2bb82d4d8b483d842f797e4eeb7bc0443e907b4c6af0d532a85cad387dab4446",
+      "package_sha": "67b94e86bab16cfc004f7b963b82dc9d46c4bfda43a31b7ec2b6b45cb0159d37",
       "files": {
-        "SKILL.md": "589af930d28d51e3c3d4b12c78b664c8aad68e3a19ee618a47b6019904548ca2"
+        "SKILL.md": "53362d813f70e74aa982f20d887b471db49bd1b2603202e0aa25178f41daf6eb"
       }
     },
     {
       "name": "ztm-cursor-edge-auth",
-      "sha": "2c402031516bc0b2",
+      "sha": "0877e3cd4ce69313",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "d2623e83fc6f44a07b46f75d2ff3403afbeefdf7e78c9708754216c4b6c057ce",
+      "package_sha": "dd9f4492fa837b828575b881450298dddc76b515d3531b1ffdd70b912e9c0818",
       "files": {
-        "SKILL.md": "4820658c263577e62a7a60f41a091260eb51c49ba938f39df701a84ed6ba13fb",
+        "SKILL.md": "0877e3cd4ce6931369de0c57637082608f9706ea8ce47c3249ea66121012f8bf",
         "inapp-browser-secret-transfer.md": "a1f9b6a1f4f0a6283b296dc64e36a253e8528c796338477cbd44090336682af8"
       }
     },
@@ -650,12 +654,12 @@
     },
     {
       "name": "ztm-fracdigi-psync",
-      "sha": "721b3c84f11c61ff",
+      "sha": "b3277da1df29c74f",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "df05dba8a2cde73c77a7641a46105ce95479f9def055ceacebda03a5e60f7bc2",
+      "package_sha": "78fa54b9f2e65fa47f98b3b1d0e7b96023b97d6fa2a43f2ac5c68041d3cb9ce7",
       "files": {
-        "SKILL.md": "1e375b74aac3e0d96a5046fb5e5ffdff199e415998b7289f1f1b37acb7c235bb"
+        "SKILL.md": "fd3aa9dc96a8e1aaf966ac7e462f59e4e960a250cb23705d991b53110817f3fb"
       }
     },
     {
@@ -682,7 +686,7 @@
     },
     {
       "name": "ztm-oauth-redirect-fleet",
-      "sha": "98d8d2abb7f4b81d",
+      "sha": "38482e844475ac22",
       "required": false,
       "lane": "zero-token-mechanism",
       "package_sha": "d5ccb533ca7aad7a390cb238939c7176bb8b6625241fc68d81a885a5d7fce4fa",
@@ -722,22 +726,22 @@
     },
     {
       "name": "ztm-verify-before-done",
-      "sha": "ec2c409cccecd79a",
+      "sha": "b477d5832526b504",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "bb60ab82e4e5378a6966a05a3619f0a3be1d03f6ca013cbc9f85be843ab7207c",
+      "package_sha": "40847cb903a445be1d68d1c565aab16a3df59db1da758da894bf7f9b1531a1d7",
       "files": {
-        "SKILL.md": "ec2c409cccecd79a4b9d73867ee438be57159c4c65f33678006b808883de4000"
+        "SKILL.md": "b477d5832526b504a6c9e6d1ba6268847089e61bb0d83886d12ae2a1760e1fd9"
       }
     },
     {
       "name": "ztm-web-auth-ops",
-      "sha": "342085ca295468f0",
+      "sha": "5567bef449f9402e",
       "required": true,
       "lane": "zero-token-mechanism",
-      "package_sha": "7967a402968a2b1a8396b633489fda82d13354cae69b826332f6d5c627a7a254",
+      "package_sha": "eb8ff234ac3263988e9be66c5796988922df7823d5d0376401c90c16767eb088",
       "files": {
-        "SKILL.md": "afde5fe2facfd12f9bb6edc157f9445e5b735a5955c795981584babb8cbb9848",
+        "SKILL.md": "5567bef449f9402e14f72c0e86f0c1eb140a876a049adf80dd6386c1ae5c10bd",
         "host-adapter-contract.md": "1723252087a9129ee17f87f4222f72743ef11d77f87ae9d809402a88b11728d6",
         "oauth-verify-ledger.md": "00b3e5aa744e3fbcf1f622b125af4524982e9282906e598d2a561afa356f2302",
         "reference.md": "0f890af0f5e9acb38e12f6dcf6ebaaa5be868ce0cda1e0c1b099a044d093a9d6",
@@ -747,33 +751,33 @@
     },
     {
       "name": "ztm-web-stack",
-      "sha": "e36b4c6bc3dfb867",
+      "sha": "cc823a6e76fd463c",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "aa22c9056b293fecd099cbeb6f240d710bd63b710ed95a5cbe40e9628f7eb96a",
+      "package_sha": "54739d423f0b6f4b14eb5785abb8fb474f4d784ad87637673ccf0bfb28aa816b",
       "files": {
-        "SKILL.md": "257fb40f5a0d836af7410f2b9a5bafb2c13e62a422c268ead28453ce6919b359",
+        "SKILL.md": "b51d0597b1d392614a20b81ea7ecaadc19b9ad3980e94327c2feb759d1cb97f0",
         "reference.md": "33ba0add716d94504abf58f5c37f452f9c30b8da6e5059abe88ad6cb53bf87bc"
       }
     },
     {
       "name": "ztm-webapp-verify",
-      "sha": "0f81731ba5d54b15",
+      "sha": "e7820ecca88958d1",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "2952d1f3f6775d3c983817504e124507824e99041824f8b2e24dec1e9cf83965",
+      "package_sha": "7aeb0af80ca545c12c385d5dee769d3b999ebba8029fdf996daca190ec66fddf",
       "files": {
-        "SKILL.md": "3232ad8d3e7d6d3cb519fc6e58b3fb4cea7aca58e31fb8c9b940a91fc92a9c62"
+        "SKILL.md": "3b431c2725b760c97a3c0c9e0c8fc9ccb9f13bc2b9d0f2bebdb97d8e3740c768"
       }
     },
     {
       "name": "ztm-ziyaoastro-vercel",
-      "sha": "b5b22d8a080816b1",
+      "sha": "4252b55e9b594c5c",
       "required": false,
       "lane": "zero-token-mechanism",
-      "package_sha": "321079d7038f5b424a3c81324c2d887adb71520e0755a366f165f67da8106ca2",
+      "package_sha": "08693f624a2c6d21f7bc41b42bbaec7724560270ce6791b17e60027e60bc4ea2",
       "files": {
-        "SKILL.md": "955ff985c853f040090a42d8a4693c1e9fc489ecd1fefebc91e2e069654b4886"
+        "SKILL.md": "c03f4961c4d970df1e1e2c730923b15c41842e5c32cf46350ea616919c8e1fd3"
       }
     }
   ]

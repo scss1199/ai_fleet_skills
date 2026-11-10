@@ -99,11 +99,11 @@ still shows what the file declares — none of it is proved. At most 40 theorems
 
 ## Red lines
 
-- **Only `PROVED` may be reported as proved or formally verified.** Every other verdict,
+- **Only `PROVED` may be reported as proved or formally verified.** Every other verdict, (Lean `FamesKernel.lean` math_needs_proved)
   `CHECKED` included, proves nothing. Never paraphrase a failed run as "mostly verified".
 - **State each result as a named `theorem`. `example` is refused even when correct**: it leaves
   nothing to audit or cite.
-- **Never "fix" a failing proof with `sorry`, a new `axiom`, `native_decide`, a `debug.*` option
+- **Never "fix" a failing proof with `sorry`, a new `axiom`, `native_decide`, a `debug.*` option (`leanctl.py` receipt)
   or `#guard_msgs`.** The checker refuses all of them. Report the failure instead.
 - **`PROVED` covers the Lean statement, not your informal claim.** Read the statement back from
   `audit.theorems[]` (section above). Traps: `ℕ` subtraction truncates (`2 - 3 = 0`), `/` on
@@ -136,7 +136,7 @@ Facts read on 2026-10-20 from the pages named; quote them, do not improve them.
 
 Rules this adds to the skill:
 
-- A `PROVED` receipt is a statement about one kernel build: always report the toolchain line from
+- A `PROVED` receipt is a statement about one kernel build: always report the toolchain line from (`leanctl.py` receipt toolchain field)
   `leanctl.py info` next to the verdict, and re-run the file after any Lean upgrade before repeating the
   claim. "Kernel accepted" is not "sound under every kernel".
 - A natural-language proof graded by humans (the 2025 route) and a kernel-checked proof (this skill) are

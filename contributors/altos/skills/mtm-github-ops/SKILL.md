@@ -28,7 +28,7 @@ parent_skill: aex-agent-evolution
 - 探索陌生 repo / 跨 seat 比較架構
 - 進 ship 前快速靜態檢查（syntax / scripts / lockfile drift）
 - Curator 全艦 GitHub 健康掃描
-- **禁止**：未跑本 skill 就 `Read` 整個 repo / `@codebase` / raw `git diff`
+- **禁止**：未跑本 skill 就 `Read` 整個 repo / `@codebase` / raw `git diff`（`f1s_audit.py` usage.big_result）
 
 ## MTO 工作流（arch → static → diff）
 
@@ -54,8 +54,8 @@ python %AI_WORKSPACE%\_skill\engines\mtm-github-arch.py --path C:\ai_workspace\a
 python %AI_WORKSPACE%\_skill\engines\mtm-github-static.py --seat <seat> --py-limit 0 --report <inventory.json>
 ```
 
-- Python: parse/compile only; report parsed, discovered and unchecked counts. The default limit is 80; `--py-limit 0` covers all eligible Python sources.
-- JS/TS: bounded package script metadata only. No repository execution, installer or automatic `tsc`; syntax and runtime need separate evidence.
+- Python: parse/compile only; report parsed, discovered and unchecked counts. The default limit is 80; `--py-limit 0` covers all eligible Python sources. (`mtm-github-static.py --py-limit`)
+- JS/TS: bounded package script metadata only. No repository execution, installer or automatic `tsc`; syntax and runtime need separate evidence. (`mtm-github-static.py`)
 - Add `--baseline <previous-inventory.json>` to compare same-root source hashes. Read the compact summary; retain the full inventory cold. Unchanged but unreviewed code stays pending. Incomplete coverage returns UNKNOWN and a nonzero exit code.
 
 ### 3 結構 diff — 僅需要時

@@ -18,7 +18,6 @@ parent_skill: aex-agent-evolution
 ## 紅線
 
 - 憑證：**fracdigi-private vault**，勿碰 hub `_secrets`
-- **禁止** Firebase deploy from psync repo
 - popup-gate：對 **psync repo 路徑**跑 gate，勿掃整個 `.secrets` chrome profile
 
 ## 本輪機械流程

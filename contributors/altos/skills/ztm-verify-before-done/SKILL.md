@@ -23,13 +23,13 @@ parent_skill: aex-agent-evolution
 
 ## F1S ④⑤⑥（PROOF Stop hook 機械擋；本文教怎麼過）
 
-- ④ 每個主張要有本回合跑過的驗證或能開的檔案，否則寫 UNKNOWN；寧可說不知道也不准自信亂答再翻供。
+- ④ 每個主張要有本回合跑過的驗證或能開的檔案，否則寫 UNKNOWN；寧可說不知道也不准自信亂答再翻供。（Lean `FamesKernel.lean` unsupported_claim_blocks；PROOF Stop hook）
   改碼後說「修好」必須在最後一次改碼之後跑過綠的測試（tdd，避免改 A 壞 B；
   Lean `ClaimContract.fix_claim_needs_test_after_write`）。
   測試與 commit 分兩步：先讀測試結果，再寫宣稱；不得把 pytest 與 git commit 串在同一指令
   （ai_nuwa f8fbd78/283559b：1 個失敗卻寫 N passed）。commit 訊息或 `--verified-by` 寫「N passed」時，
   `git_smart.py commit ... --test-cmd "<seat 測試指令>"` 會當場重跑，失敗或數量不符即拒絕 commit（exit 3）。
-- ⑤ 不准說謊、不准推託：已讀、推進、已自動化、做不到、重問同一決定、要已給過的值、把自己能做的步驟
+- ⑤ 不准說謊、不准推託：已讀、推進、已自動化、做不到、重問同一決定、要已給過的值、把自己能做的步驟（Lean `ClaimContract.lean` handback_needs_red_line_or_failure／repeated_decision_inadmissible／ask_value_needs_search）
   推給使用者，每一句都要有本回合工具結果，否則寫 UNKNOWN 或自己去做。只有登入/OAuth、永久刪除、
   rider 授權、全域設定、金鑰、資金、硬體是使用者的步驟。Anthropic 額度用完不是停下的理由：
   `claude-remote-exec` auto lane 改走本機 OmniRoute 免費池（`omniroute-gateway.py`）。
@@ -66,6 +66,8 @@ parent_skill: aex-agent-evolution
   期望值（規則在單一項目上的 t）；多開只是把負期望乘以 N。探測失敗記到項目名＋錯誤碼，「N 筆失敗」不算量測
   （ai_trader 2026-10-29 8d6b8715f：MT5 0.02 ms/檔、224 檔 4.3 ms/輪、8 程序合計 1 萬輪/秒，瓶頸不在 IPC；
   14 檔保證金 916 AUD、50 美金只夠 1 檔；receipt runtime/fx_lane/capacity-20261029T132351.json）。
+- 回報結尾列範圍：完成回報最後一段寫「跳過：…」與「未檢查：…」（沒跑的測試、沒讀的檔案或程式區塊、沒驗的路徑），
+  沒有就寫「跳過：無；未檢查：無」；未列出的部分不得被當成已驗證（@yrrah9_ 8e46864741，F1S 2026-11-10 吸收）。
 - 宣稱完成時跑 SEAL：`fames_phase_runtime.py --turn --result --closure`。
 
 ## 必跑（0-token engines 優先）
@@ -114,11 +116,14 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 教訓（不含任何操作細節，只取對「宣稱完成」的規則）：當評分器／檢查本身可以被規避時，**通過檢查不等於達成目標**；
 把力氣花在讓檢查「看起來綠」而非讓真實結果為真，就是 Goodhart。對照 F1S ④⑤⑥：
 
-- 綠測試要測到真實成果，不是測到容易過的替身。改碼後說「修好」的那個測試，必須會因為這個 bug 變紅（修 bug 段），
+- 綠測試要測到真實成果，不是測到容易過的替身。改碼後說「修好」的那個測試，必須會因為這個 bug 變紅（修 bug 段），（Lean `ClaimContract.lean` fix_claim_needs_test_after_write）
   否則它證明不了任何事——一個對不上目標的檢查，過了也是 UNKNOWN。
 - 驗證要包含消費端實際用的 loader 或它的 log，不能只靠自家的離線解析器：東西被回報「空」或「壞」時，先讀使用端自己的
   執行 log，再掃檔案（ai_nuwa #12：Q05 離線 UnityPy 與渲染全過，但遊戲 BepInEx/LogOutput.log 顯示 Unity 拒載；
   根因是重壓後 UnityFS 檔頭總大小沒更新，離線讀取器不看這欄，全庫掃出 103 個；commit 0a6c243、tests/test_empty_item_check.py）。
+  畫面類同理：判定看產品最終輸出的截圖，不看頁面狀態或視窗標題——擷取／投影串流用產品自己的截圖 API 對來源與輸出
+  各取兩張、相隔約 0.7 s，量亮度與變化（有畫面且在動），視窗只用 PID 對，關閉後輪詢輸出恢復（ai_wallpaper scar3
+  8fc35b0：頁面與標題檢查誤判 FAIL，OBS GetSourceScreenshot 5 種播放路徑 32/32 PASS）。
 - 生成者不得是自己產出的唯一裁判（程式審查段已成規則）：同一個 agent 既做事又替自己打分，分數會向可規避處漂移。
 - 「進度」只算使用者看得到的真實成果，不是通過了多少自家檢查；report／alert／驗證腳本的數量不是進度（本段已有）。
 - 未經外部查核的基準分數是指標不是事實（F1S ④）：自評「金牌／全綠」在外部裁判看過前只是待證，寫法對照
@@ -208,7 +213,9 @@ VIX 資訊（VVIX→TWII −0.396 但增量 R² 0.009）；加三道閘後碰巧
 **把參考的像素／段落貼到主體上不算達到參考**，光線與陰影對不上就會不自然、不對稱；(3) 做完再量一次主體，
 結案要附「參考值／改前／改後」三欄與並排對照（左原圖、中舊版、右新版），舊版留 `_prev` 不覆寫；
 給 operator 看的對照圖寫成 PNG 放 `C:\Users\sc\Downloads\_quick_output`（檔名含日期）並 SendUserFile，不埋在 runtime 裡
-（operator 2026-10-31，ai_nuwa）；(4) 沒量到參考值的部位要寫明沒動。
+（operator 2026-10-31，ai_nuwa）；(4) 沒量到參考值的部位要寫明沒動；
+(5) 逐部位回饋（「男生可以、女生眼睛回到上一版」「眉毛維持 d5、眼睛降到 d4~d5」「其他不要亂動」）＝每個部位各自記住核可的版本與等級，
+已核可部位從核可版原樣帶入，只重做被點名的部位，不整張重跑；結案逐部位列「來源版／等級」（ai_photo、ai_nuwa 2026-11-07）。
 量測數值與口味（哪種臉要多亮）留在座位自己的 memory，這裡只留程序。
 （ai_photo IMG_0054 大小眼＝整雙眼從 20261010 貼過來；IMG_0063 沒精神＝只銳化沒量眼下 −15～−29 vs 參考 −10～−13；
 重做：兩眼開眼比例同到 0.365，commit 990d901，58 測試）

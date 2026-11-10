@@ -178,7 +178,7 @@ parent_skill: ztm-verify-before-done
   實測 histdata 164/164、dukascopy 4/4 相符）。工具陷阱：Claude Bash 的 heredoc 會把雙反斜線收成單反斜線，Python 原始碼字串裡
   「反斜線 x00」就變成真 NUL 進檔（SyntaxError: source code string cannot contain null bytes）；要產生該轉義文字用 Write 工具或
   `chr(92)+'x00'` 拼。
-- **斷電後 append-only 的 JSONL／log 尾巴會留一段 NUL，下一列直接黏在 NUL 後面**：讀取端每列先 strip `' \t\r\n\x00'`，
+- **斷電後 append-only 的 JSONL／log 尾巴會留一段 NUL，下一列直接黏在 NUL 後面**：讀取端每列先 strip `' \t\r\n\x00'`，（`test_accountability_lane_check.py::test_json_list_ledger_and_nul_tail`）
   仍 `json.loads` 失敗的那列跳過（計數，不 raise）；寫入端 append 前先讀最後一個位元組，不是 `\n` 就先補一個換行，
   新列才不會黏在殘骸上。例外：設計釘住的 gate 檔讀取端不得默默改寬容，要另案提出。
   （ai_trader 2026-10-27：17,065 個 runtime 檔有 7 個帶 NUL 段，3 個 JSONL 有有效列黏在後面；commit 00d2d65f8）
@@ -202,7 +202,7 @@ parent_skill: ztm-verify-before-done
   找孤兒衍生檔用帳號名或編號**完全比對**，名稱片段配對（`karina`、`twice`）會把舊資料夾誤判成還有來源。
   （ai_metadata 2026-10-27：Chrome 佇列 144 筆＝移除 23／新增 42／去重 75／空夾 4，commit 5d213312 58 測試；
   `__beauty` 兩個孤兒夾 1,934 檔搬到 `P:\_delete\2026-10-26-deleted-bookmarks\`）
-- **衍生儲存（對照頁、快取、索引、分享包）不得比來源大；每次寫出完整輸出前先問「目的地是否已持有同一份」。**
+- **衍生儲存（對照頁、快取、索引、分享包）不得比來源大；每次寫出完整輸出前先問「目的地是否已持有同一份」。**（PROOF junk_writer gate：`test_proof_junk_writer_gate.py`）
   同一張完整輸出寫兩份（一份進目的地、一份留在對照資料夾）、被換掉的舊版無上限累積、試跑檔與過期的分享壓縮檔沒人回收，
   一個本該不到 1 GB 的索引夾就長到 25 GB。規則：對照頁只留裁切／縮圖和指向目的地的路徑或 sha256，完整輸出只寫目的地一份；
   被取代的版本與過期分享包搬進 `_delete/<日期>-…`（永久刪除留給 operator）；每批收尾量 `du` 衍生夾與來源夾的比值寫進回報，
@@ -269,6 +269,14 @@ parent_skill: ztm-verify-before-done
   sinopac-trading-system/scripts/code_reachability.py；memory v30-cash-intraday-leadlag-20261024）
 - **控制第三方軟體先找它的設定語意（登錄檔／設定檔），不要先做 UI 模擬**；例：PotPlayer 切檔變大小是
   `ScreenFitBySize`。（hub-root potplayer-fixed-window-registry）
+- **讀原生 App 畫面上的字（LINE 桌面版群組、沒有 API 的工具）用 UIA 樹，不截圖 OCR、不動滑鼠**：
+  `npx -y agent-desktop@1.2.0 list-windows --app <exe>` 取 window id，再 `npx -y agent-desktop@1.2.0 snapshot --window-id <id>`
+  拿 JSON（元素帶 @ref）。版本釘死；預設就是 headless 語意送達，**永不加 `--headed`**（實體滑鼠＝搶前景）。多視窗 App
+  直接 `snapshot --app` 會回 `AMBIGUOUS_TARGET`；最小化的視窗只剩 root；`--surface system-tray` 在系統匣沒開時回
+  `WINDOW_NOT_FOUND`。寫入動作（click／type）只用在 operator 同次指令點名的 App；任何 skill 要包它之前先釘版本＋過
+  SkillSpector。snapshot 含私人聊天內容：在 Python 裡就地篩出要的那段，不落地 raw 檔。LINE OA webhook 看不到既有聊天
+  歷史（line-oa-ingest），要讀群組舊訊息走這條。（ai_darkhero 2026-11-07 probe：LINE.exe 聊天視窗 2.5 s、66 個
+  statictext；IG @cooljerrett DfSGcB8AtYI，card 7a441716b4c2bf6d）
 - **Claude Bash 工具會把命令文字裡的雙反斜線收成單反斜線，heredoc 的 'EOF' 引號不保護它**：用 heredoc 餵 Python 去 patch
   原始碼時，來源裡的 `\\x00` 落地成真正的 0x00（pytest `source code string cannot contain null bytes`、CreateProcess
   `embedded null character`），`\\.` 變成無效跳脫，正規表示式與路徑字串全走樣，而且同一寫法重修還是錯。做法：要透過

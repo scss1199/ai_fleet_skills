@@ -69,11 +69,6 @@ def _norm(text: str) -> str:
     return str(text).replace("\\", "/").lower()
 
 
-def _tool_uses(transcript: Path):
-    for name, args, _at in _tool_uses_at(transcript):
-        yield name, args
-
-
 def _epoch(stamp) -> float | None:
     try:
         from datetime import datetime

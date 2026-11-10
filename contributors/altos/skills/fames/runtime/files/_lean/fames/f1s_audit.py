@@ -87,6 +87,9 @@ TEXTS = {
     "skill_agc": HUB / "_skill" / "fleet-skills" / "agc-auto-goal-compact" / "SKILL.md",
     "evolve_engine": HUB / "_skill" / "engines" / "f1s-evolve-tick.py",
     "curator_orders": HUB / "_skill" / "engines" / "curator_orders.py",
+    "f1s_prune": HUB / "_skill" / "engines" / "f1s_prune.py",
+    "fleet_hygiene": HUB / "_skill" / "engines" / "fleet-hygiene.py",
+    "fleet_bridge": HUB / "_skill" / "engines" / "fleet-bridge.py",
     "f1s_live": HUB / "_skill" / "engines" / "f1s_live.py",
     "f1s_pytest_guard": HUB / "_skill" / "engines" / "f1s_pytest_guard" / "f1s_pytest_guard.py",
     "pinned_drift": HUB / "_skill" / "engines" / "pinned_drift.py",
@@ -100,6 +103,9 @@ TEXTS = {
     "ship_engine": HUB / "_skill" / "engines" / "ship-f1s.py",
     "jev_router": HUB / "_harness" / "runtime" / "jev_turn_router.py",
     "popup_gate": HUB / "_skill" / "engines" / "zt-popup-gate.py",
+    "session_harness": HUB / "_harness" / "runtime" / "fames_session_harness.py",
+    "rogue_sweep": HUB / "_skill" / "engines" / "fleet-rogue-scheduler-sweep.py",
+    "agc_lib": HUB / "_skill" / "engines" / "agc_lib.py",
 }
 
 # The architecture scan.  `requires` names the Lean theorem that must be PROVED for the verdict to stand;
@@ -717,6 +723,10 @@ ELEMENTS = [
     {"id": "EVO-cf-usage-alert-rider-not-armed", "element": "new HubClock rider (<=15m) reading workersInvocationsAdaptive, alerting at 50%/80% of 100k", "verdict": "INFO",
      "requires": None, "detail": "not armed: a new periodic rider needs operator authorization (T1 授權; HubClock rider arming = operator); cf-worker-health.py exists but is not in hosts.json; the request-budget rule is carried by EVO-cf-request-budget",
      "check_text": ("skill_deploy_cf", "Request budget before ship: every seat's Workers share one account cap")},
+    # f1s-evolve 2026-11-10: the 11-10 00:03 30-file skill rewrite (54315f93) dropped the request-budget line; audit went red, 3 edits held
+    {"id": "EVO-cf-request-budget-restored-20261110", "element": "deploy-nextjs-cloudflare request-budget rule restored after a compaction rewrite removed it", "verdict": "REFINE",
+     "requires": None, "detail": "the rule still holds (EVO-cf-request-budget, EVO-cf-usage-alert-rider-not-armed); restored as one line above the rate-gate line, incident numbers left to that line; adds that no usage-alert rider is armed; f1s_prune judges whole skills only, so the audit row is the line-level guard and worked",
+     "check_text": ("skill_deploy_cf", "No usage-alert rider is armed (arming = operator)")},
     # f1s-evolve 2026-10-28: ai_trader power-cut JSONL + keyless world-macro proposals (commits 00d2d65f8, ff5159dc6)
     {"id": "EVO-jsonl-powercut-torn-tail", "element": "append-only JSONL readers strip NUL debris and skip bad lines; appenders newline a torn tail first; design-pinned gate readers excepted", "verdict": "REFINE",
      "requires": None, "detail": "adopted into windows-runtime-pitfalls time/freshness section next to the Kernel-Power zero-file rule (7/17,065 files with NUL runs)",
@@ -1157,6 +1167,11 @@ ELEMENTS = [
     {"id": "EVO-f1s-apply-close-seat-guard", "element": "jci_taipei: close on a row with `also` returns it status=new under the next seat; a retry closed ai_eatery's turn with jci_taipei's evidence (78dcaaf79a)", "verdict": "REFINE",
      "requires": None, "detail": "close() takes the caller seat (CLI: --seat, default the seat owning cwd) and refuses another seat's row (curator exempt); the CLI prints 'handed to <seat>'; test_f1s_apply.py",
      "check_text": ("f1s_apply", "if you closed it already it was handed on; do not close it again")},
+    {"id": "EVO-f1s-apply-cli-parser-name", "element": "ai_theater 2026-11-06: main() reused 'ap' for the autopilot subparser, so close/list/... parsed as 'autopilot'", "verdict": "REFINE",
+     "requires": None, "detail": "already fixed in the engine (au); test_every_subcommand_parses_as_itself added to test_f1s_apply.py, fails 4/5 on the reused-name form",
+     "check_text": ("f1s_apply", 'au = sub.add_parser("autopilot"')},
+    {"id": "EVO-article-autopilot-20261106", "element": "6 article rows (IG DfRCEd_T0oq weight editing, DfXiaZ_ymYc spec-driven agents)", "verdict": "INFO",
+     "requires": None, "detail": "COVERED 7142ca2ff3 by f1s_map.py (NL question -> checked file:line quotes) and 587535e0a7 by f1s_parallel.py plan/run/merge; REJECTED ea9c856a95/e8d253f885/42b00906db/4cde0715b4: model weight editing needs GPU training (A770 load), F1S trains no models, unverified claims"},
     {"id": "EVO-fg-guard-scan-dir", "element": "sdnext_a770: bare subprocess spawns in a seat's own scripts/ are outside zt-foreground-guard's rider/hook-derived scan (9 found, commit e285abf5)", "verdict": "REFINE",
      "requires": None, "detail": "the existing CHECK 1 scanner already handles **kwargs flag providers (the AST idea's false-positive case), so no second scanner: --scan-dir PATH runs it over a whole seat folder on demand, outside the daily rc because a terminal-run script inherits its console",
      "check_text": ("fg_guard", "--scan-dir PATH: CHECK 1 over a whole seat folder")},
@@ -1171,6 +1186,129 @@ ELEMENTS = [
     {"id": "EVO-hubpulse-task-rider-doc", "element": "hubpulse-ops skill: how a task rider ends (rm + archive + f1s-reverse-learning harvest)", "verdict": "INFO",
      "requires": None, "detail": "the skill names the stale flag and the order: unregister first",
      "check_text": ("skill_hubpulse", "`stale: true` = session 已自行 archive 但 rider 仍掛著")},
+    # f1s-evolve 2026-11-07: ai_nuwa threejs-materials-lighting (ledger 39020d48a66f), ai_photo person-retouch-traits (ledger 0260175589c8), ai_trader ipo-auction-source re-sent (ledger 0d656711de0e)
+    {"id": "EVO-nuwa-threejs-seat-local-20261107", "element": "ai_nuwa skill threejs-materials-lighting (fleet-import of gamedev-skills/awesome-gamedev-agent-skills@19d93f9, Apache-2.0)", "verdict": "INFO",
+     "requires": None, "detail": "rejected: a vendored three.js how-to (PBR material, light rig, shadows, envMap) with no F1S governance, runtime or verification lesson; it stays seat-local in ai_nuwa, no text added"},
+    {"id": "EVO-photo-person-traits-seat-local-20261107", "element": "ai_photo memory person-retouch-traits: named people's face traits + the frozen ai_photo.polish chain (operator 「完美」 2026-11-06)", "verdict": "INFO",
+     "requires": None, "detail": "rejected: per-person biometric retouch values for named people must not spread into hub-wide skills; the general parts (a named reference binds later edits, freeze settled values into a command) are already in ztm-verify-before-done (EVO row on the named reference) and the photo-taste row EVO-photo-retouch-taste-seat-local; no text added"},
+    {"id": "EVO-ipo-auction-duplicate-20261107", "element": "ai_trader ipo-auction-source-20261023 proposal re-sent (ledger 0d656711de0e)", "verdict": "INFO",
+     "requires": None, "detail": "already integrated as EVO-silent-param-fallback (windows-runtime-pitfalls: an unparsed server parameter silently falls back to a default) and recorded as duplicate 2026-10-27; memory modified 2026-10-23, nothing new, no text added"},
+    # f1s-evolve 2026-11-07: ai_darkhero agent-desktop desktop-read route (IG @cooljerrett DfSGcB8AtYI, card 7a441716b4c2bf6d)
+    {"id": "EVO-agent-desktop-uia-read-20261107", "element": "ai_darkhero: native-app text read via agent-desktop@1.2.0 UIA snapshot (vercel-labs, Apache-2.0)", "verdict": "REFINE",
+     "requires": None, "detail": "windows-runtime-pitfalls names the pinned npx route, list-windows then --window-id, the measured failure codes, never --headed, writes only on operator-named apps, SkillSpector before a skill wraps it, no raw snapshot kept; not added to hot_directive (at its cap, the skill route already points there). Probe evidence _delete/2026-11-07-agent-desktop-probe (66 statictext in the LINE window snapshot)",
+     "check_text": ("skill_runtime", "**永不加 `--headed`**（實體滑鼠＝搶前景）")},
+    # f1s-evolve 2026-11-07: ai_nuwa free pool down + more free models (IG DdUC0aEMYNV trigger)
+    {"id": "EVO-pool-circuit-no-reset-20261107", "element": "ai_nuwa: reset circuits and restore groq/cerebras/gemini keys", "verdict": "REFINE",
+     "requires": None, "detail": "circuits are self-timed in _free_api_supervisor.CircuitStore (exp backoff, 402 held 24 h); at 18:10 nvidia-nim had closed by itself, mistral 402 + openrouter 429 still open by design; key-health: groq restricted, cerebras quota0, gemini ratelimited = account-side, api-key-apply table; no manual reset, skill says so",
+     "check_text": ("skill_pool", "不要請 curator「重設」")},
+    {"id": "EVO-pool-private-body-images-20261107", "element": "ai_nuwa: free non-external vision route for worn-body renders", "verdict": "REFINE",
+     "requires": None, "detail": "no local vision model on :11434/:11436 (ollama tags 2026-11-07); worn-body images never go to external APIs incl. image_ocr gemini; text/sketch/non-body images keep image_ocr.py; a CPU vision model is a load_grant decision, never on the A770 (free-runtime T1)",
+     "check_text": ("skill_pool", "穿戴中的身體渲染圖／照片")},
+    {"id": "EVO-pool-shoe-research-duplicate-20261107", "element": "ai_nuwa: a free route for 3D/shoe-design research digests", "verdict": "INFO",
+     "requires": None, "detail": "rejected as a new route: distill-url --search + chat_for summary already is the free research route for any topic; the failure was the circuit-open moment covered by EVO-pool-circuit-no-reset-20261107; no text added"},
+    # f1s-evolve 2026-11-08: harvest corrections ai_photo 1ff4c13448fb (ledger 0d499c11a548) + 0cd3efc3e958 (ledger b5d7e823fd67), ai_nuwa 67c0a60a48a8 (ledger 0558d08f17e2)
+    {"id": "EVO-per-part-feedback-20261108", "element": "ai_photo/ai_nuwa corrections: per-part keep / revert-to-previous / level change on an iterated artifact", "verdict": "REFINE",
+     "requires": None, "detail": "ztm-verify-before-done reference section gains (5): each named part keeps its own approved version and level, approved parts carry over unchanged, only named parts are redone, closure lists source version/level per part; the per-person d-levels, teeth, nose, YSL heel geometry stay seat-local (EVO-photo-person-traits-seat-local-20261107)",
+     "check_text": ("skill_verify", "已核可部位從核可版原樣帶入，只重做被點名的部位，不整張重跑")},
+    {"id": "EVO-photo-ps-lr-learn-seat-local-20261108", "element": "ai_photo 0cd3efc3e958: learn all PS/LR light techniques, add a centre light, maximise quality", "verdict": "INFO",
+     "requires": None, "detail": "rejected beyond the per-part row: a retouch craft request for one photo set, no F1S governance lesson; research goes through the existing free research route (mtm-api-pool-offload), no text added"},
+    {"id": "EVO-nuwa-parent-child-free-parallel-20261108", "element": "ai_nuwa 67c0a60a48a8: parent/child conversations + more free models in parallel two-way correction", "verdict": "INFO",
+     "requires": None, "detail": "rejected as new text: f1s_parallel.py plan/run/merge already sends verifier-bearing units to the free pool and keeps judgment in the main chat; worn-body renders never go to external APIs (EVO-pool-private-body-images-20261107) and no local vision model may load the A770 (free-runtime T1); shoe geometry stays seat-local, no text added"},
+    {"id": "EVO-org-owned-cloud-account-20261109", "element": "jci_taipei 90ba63fa5b06: open the Cloudflare project under the organisation account tpejci888, not the personal gmail; prepare before the password arrives", "verdict": "REFINE",
+     "requires": None, "detail": "deploy-nextjs-cloudflare step 6 gains: organisation-owned projects use the organisation's own account; everything without a login is prepared ahead; only the sign-in is the operator's and the password never enters chat",
+     "check_text": ("skill_deploy_cf", "A project owned by an organisation is opened under that organisation's own account")},
+    {"id": "EVO-photo-relationship-capture-20261109", "element": "ai_photo c1445043ae66: personal relationship analysis + 'build a new conversation capture mechanism'", "verdict": "INFO",
+     "requires": None, "detail": "rejected: the body is the operator's private relationship content, seat-local and not an F1S lesson; the capture request is truncated and the mechanism already exists (f1s_live.py capture_add/capture_done), no text added"},
+    {"id": "EVO-nuwa-tool-error-rsN-20261109", "element": "ai_nuwa 4ad31b03f787: repeated tool error x3 'rsN rc=N'", "verdict": "INFO",
+     "requires": None, "detail": "rejected as noise: three occurrences of a normalised exit-code line with no cause attached; repeated tool errors already reach every seat through the f1s_daily digest, no text added"},
+    # f1s-evolve 2026-11-09: ai_darkhero proposal, article 8f1cd66098bd13f1 (LLM Council)
+    {"id": "EVO-counter-frame-recommendation-20261109", "element": "ai_darkhero: counter-frame check before a decision recommendation", "verdict": "REFINE",
+     "requires": None, "detail": "f1s-intake section 3 gains: before a pricing / which-way / 需要你決定 recommendation, ask the same question once on the free pool with the opposite frame and list the points that flip; one chat_for call, no multi-agent council (free-runtime T1); cited card path was absent, the article id is in f1s-apply.json",
+     "check_text": ("skill_intake", "給使用者決定建議（定價、走哪條路、「需要你決定」）之前做一次反框架檢查")},
+    # f1s-evolve 2026-11-09: ai_trader proposal (orders #86/#87/#88/#90 claimed by Fable, overridden by the main chat from a hub-root shell)
+    {"id": "EVO-order-owner-session-cwd-20261109", "element": "ai_trader: a curator-order owner can be changed or bypassed only by the owner or the curator's own session, never by a shell cwd drifted to the hub root", "verdict": "REFINE",
+     "requires": None, "detail": "curator_orders.claim() and answer() route any owner override through _require_curator (psutil session cwd + command cwd) instead of is_curator(cwd); an owned order answered by another conversation raises PermissionError (test_curator_orders::test_a_shell_at_the_hub_root_cannot_override_an_owner)",
+     "check_text": ("curator_orders", "changes the owner of order #{n} (owned by conversation {current[:8]})")},
+    {"id": "EVO-order-delegate-file-row-20261109", "element": "ai_trader: a delegate session's deliverable is the file row; send_message is a notification and undelivered/queued is not retried", "verdict": "REFINE",
+     "requires": None, "detail": "curator_orders.injection() report line tells the seat: claim before taking over, do not take an owned order, delegate output is an idempotent file row read back before write, send_message only notifies; the order-text parsing that routes the Stop-hook push to the delegate or the main chat was not adopted (fragile text matching; the claim fix already makes the first claim win)",
+     "check_text": ("curator_orders", "send_message 只是通知")},
+    # f1s-evolve 2026-11-10: ai_darkhero article autopilot (f1s_apply, 6 rows)
+    {"id": "EVO-report-skipped-unchecked-20261110", "element": "article 8e46864741: end a completion report with what was skipped and which code was not checked", "verdict": "REFINE",
+     "requires": None, "detail": "ztm-verify-before-done ④ gains a closing 跳過／未檢查 list; anything not listed is not claimed verified; skill text, no PROOF phrase rule (phrase-matching FP ceiling)",
+     "check_text": ("skill_verify", "完成回報最後一段寫「跳過：…」與「未檢查：…」")},
+    {"id": "EVO-article-uiux-plugin-20261110", "element": "articles c11e730d27 / 6a819fb758: install and enable an unnamed UI/UX plugin / skill module", "verdict": "INFO",
+     "requires": None, "detail": "6a819fb758 covered by fleet skill web-ui-taste; c11e730d27 rejected: the post names no vetted plugin, a plugin install changes ~/.claude global config (operator authorisation) and must pass the SkillSpector gate first"},
+    {"id": "EVO-article-chief-of-staff-bots-20261110", "element": "articles 8dbf296b96 / 7ecd8f920e / 26cc86e3c3: chief-of-staff bot dispatch, shareable bot templates, shared brand folder", "verdict": "INFO",
+     "requires": None, "detail": "covered: curator seat ai_darkhero dispatches via _skill/engines/curator_orders.py + inbox.py; templates ship as fleet skills through ai_fleet_skills (mtm-fleet-skill-github); shared context lives in _skill/technique_output and _skill/fleet-skills; no text added"},
+    # f1s-evolve 2026-11-10: ai_metadata proposal (orders #14/#15 owned by d1255a62, owner silent, seat chat skipped them)
+    {"id": "EVO-order-stale-claim-20261110", "element": "ai_metadata: an open order whose owning conversation stopped writing is named to the curator, not left locked", "verdict": "REFINE",
+     "requires": None, "detail": "curator_orders._unclaimed_orders() adds a STALE CLAIMS line when the owner's transcript is silent STALE_OWNER_AFTER_S (6h); unreadable projects dir = unknown, never stale; release stays a curator act after list_sessions (host_gone is not dead), no automatic release (test_curator_orders::test_a_claim_whose_owner_went_silent_is_named_to_the_curator); the one-off release of #14/#15 was not done: owner silent 2.1h at 02:38, under the threshold",
+     "check_text": ("curator_orders", "STALE CLAIMS — {len(stale)} open order(s) whose owning conversation wrote nothing for ")},
+    # f1s-evolve 2026-11-10: three harvest proposals (ledger 83da1de0ae97 / 0260175589c8 / d11bcbfab3ab)
+    {"id": "EVO-jci-sheet-formula-cols-20261110", "element": "jci_taipei memory jci-yearbook71-sheet: write content columns only, never formula columns; upload operator-given local files to Drive and fill the link; row attribution is the operator's", "verdict": "REFINE",
+     "requires": None, "detail": "jci-drive-line-web-transfer §3 gains one line; sheet/folder ids and the paste keystroke recipe stay seat memory (jci data)",
+     "check_text": ("skill_jci_transfer", "公式欄（ARRAYFORMULA 的狀態、字數、進度）不蓋")},
+    {"id": "EVO-harvest-retouch-lawfirm-20261110", "element": "ai_photo memory person-retouch-traits; article decoded.legal 'Running a law firm on Free software'", "verdict": "INFO",
+     "requires": None, "detail": "rejected: person-retouch-traits is per-person face data and an operator-approved polish chain that only ai_photo runs (seat memory, personal data, not generalizable); the law-firm article reports a Debian/self-hosted/GrapheneOS stack with no technique F1S can apply or measure; no text added"},
+    # f1s-evolve 2026-11-10: ai_trader proposal (order97 receipt: one commit scanned 493/5/16/41 in the main tree vs 475/3/13/25 in a worktree)
+    {"id": "EVO-prune-skip-gitignored-20261110", "element": "ai_trader: f1s_prune scan counted gitignored .py (trader_output/futures_research, _migration), so self-review numbers differed by checkout", "verdict": "REFINE",
+     "requires": None, "detail": "py_files filters each code root through `git check-ignore --stdin -z` plus `git ls-files --others --exclude-standard -z` (tracked files never reported; not a git tree / no git / timeout = plain walk). 1.45.239 kept untracked-not-ignored files scanned as 'uncommitted work'; 1.45.240 skips them too: jci_taipei order 28 showed untracked scratch (_work/canva-poster) that nobody commits (the idle sweeper commits tracked changes only) counted as a duplicate the seat cannot act on, and 'two checkouts of one commit scan alike' holds only when both unshipped classes are out (test_f1s_prune::test_gitignored_files_are_not_scanned_and_a_non_git_tree_is_walked_as_before covers ignored out/ and untracked scratch/)",
+     "check_text": ("f1s_prune", "Paths under `top` that are not shipped code: gitignored, or untracked")},
+    {"id": "EVO-prune-external-callers-20261110", "element": "ai_theater: ai_metadata 8c8e30f0 removed set_idle_priority as dead though ai_theater imports it at module scope (gate, phase2, worker)", "verdict": "REFINE",
+     "requires": None, "detail": "scan_cwd drops a public dead function from dead_list when external_callers finds a .py in another workspace dir that names this cwd's package and the function (6,593 files walked in 4 s, cap 20,000); report carries external_callers. Live probe: set_idle_priority found outside ai_metadata. Restore routed as curator order to ai_metadata (seat repo, not edited from the tick). test_f1s_prune::test_a_public_function_another_seat_imports_is_not_dead",
+     "check_text": ("f1s_prune", "name -> a file in another seat that imports this cwd's package and names it")},
+    {"id": "EVO-hygiene-tracked-junction-files-20261110", "element": "ai_trader: 14 tracked files under .agents/skills/<name> junctions to fleet-skills get dirtied by every fleet push (gitignore does not cover tracked files)", "verdict": "REFINE",
+     "requires": None, "detail": "surface-untrack.py already does the index-only per-junction untrack but was a one-time migration nothing re-ran; fleet-hygiene check_seat now counts tracked files under junctioned .agents/.claude/.cursor skill dirs as finding tracked_junction_files:N (live ai_trader = 14) so the daily hygiene report names it. A blanket checkout that deletes the paths would delete canon through the junction, hence the fix stays surface-untrack --apply --commit. The settings.json autoCompactWindow and margin_registry.yaml writes in the same proposal are seat-local runtime writes, not adopted here. test_fleet_hygiene::test_check_seat_flags_tracked_files_under_a_junctioned_skill_dir",
+     "check_text": ("fleet_hygiene", "The fix is index-only, surface-untrack.py --apply --commit")},
+    {"id": "EVO-hygiene-stale-memories-20261110", "element": "ai_darkhero: stale-memory lint (Anthropic Pokemon study: a wrong remembered route made Claude hit the same trap 3x then quit); 150 memory files, none checked against the tree", "verdict": "REFINE",
+     "requires": None, "detail": "fleet-hygiene.py stale_memories (check + `memories` subcommand, zero model tokens, ~6 s): every hub/seat Claude memory dir, backticked references that no longer resolve: bare .py/.ps1/.lean names found nowhere in the hub (pruned walk, _delete excluded), slash paths whose first segment exists in hub, seat or a seat's nested code root (first-level dir with .git/pyproject/package.json, e.g. ai_trader/sinopac-trading-system; 1.45.246 from ai_trader order 103: 187/232 flags were such paths), and --flags absent from the resolved engine source (trailing punctuation stripped from token and flag; 1.45.245 jci_taipei order 33 app/(public)). 1.45.247 (ai_trader order 104): dir/module.attr() resolves when dir/module.py exists and names attr; --flags are read only up to the next script token, so an inner `--cmd \"python x.py --flag\"` is not charged to the outer engine. Skips other machines, ~, URLs, elisions, _delete/_inbox (move by design) and lock/switch/log files. Summary count rides fames-converge every 20 h into hygiene.json and the f1s_daily hygiene line (過期記憶 N). Advisory only: the fix is editing or removing the memory, never recreating the file. Live 2026-11-10: 129 memory files / 307 references (e.g. cca-gate.py, tray/backup_sync.py, fames-gate-watch.py). Evidence card 2e993296a93d8e78 path in the proposal did not exist; the proposal stands on the live count. test_fleet_hygiene::test_stale_memories_flags_gone_engine_files_paths_and_flags",
+     "check_text": ("fleet_hygiene", "remove that memory, never to recreate the file")},
+    {"id": "EVO-ui-motion-numbers-20261110", "element": "ai_darkhero proposal 2026-11-10: transitions.dev / IG reel DfetS3zJH-I — asking a model for 'smoother' animation gives poor results; give it explicit values", "verdict": "REFINE",
+     "requires": None, "detail": "web-ui-taste step 2 said only 'add reduced-motion' and forbade transition: all, with no numbers; it now gives the values (dialog scale .96->1 + fade 250ms in / 150ms out, menu/popover .97->1 with transform-origin at the trigger, toast translateY(16px)->0 + blur(2px)->0, one easing curve, open slower than close, transform/opacity/filter only, all inside prefers-reduced-motion: no-preference); verification is the existing step-4 rule (ui-guideline-lint count non-increasing per change, jci/ziyaoastro at adoption)",
+     "check_text": ("skill_ui", "動畫給數字，不給形容詞")},
+    {"id": "EVO-prune-pinned-20261110", "element": "ai_trader proposal 2026-11-10: f1s_prune re-ordered the same hash-bound items (orders 93, 94, 106) that the order's own gate forbids deleting or merging", "verdict": "REFINE",
+     "requires": None, "detail": "f1s_prune.pinned_files: a file is pinned when a \"path.py\": \"<sha>\" literal names it (test pins), a module-level CODE_FILES/BOUND_FILES/GATE_FILES/*_identity list names it, or it hashes itself (a hashing function reading __file__, or a module constant naming its own path plus a hash call); dead functions in pinned files and duplicate groups wholly inside them go to code.pinned, not dead/duplicates, so orders, fingerprints and apply_safe see only actionable items and the order text states the pinned count. Live ai_trader scan: dead 2 -> 0, duplicates 13 -> 3, pinned 12 (evidence ai_trader/sinopac-trading-system/runtime/research/prune/order106.txt). test_f1s_prune::test_hash_pinned_files_report_pinned_not_dead_or_duplicate",
+     "check_text": ("f1s_prune", "more sit in hash-pinned files and are not listed")},
+    {"id": "EVO-fleet-bridge-20261110", "element": "operator 2026-11-10 「解決那邊同步的問題以及收集那邊 cwd 的資料來反向修正 f1s」: scar3's _bus/inbox/ai_darkhero held 27 ai_scar3 messages no engine relayed, and f1s-harvest only read the memory dirs / skills / lessons of the host it runs on", "verdict": "REFINE",
+     "requires": None, "detail": "fleet-bridge.py rides fames-converge on every host (fames_fleet._launch_bridge, detached like hygiene, 1 h self-throttle, zero model calls): a follower `export`s inbox messages addressed to seats it does not host plus one f1s-learn.json (seat memory files, non-canonical SKILL.md inventory, f1s_daily conversation lessons; republished only when its sha changes) to contributors/<slug>/ on the carrier through fleet-job-dispatch._publish (now also deletes when a doc is None); the authority `import`s the mail into its own _bus/inbox/<seat>/, deletes it from the carrier, and f1s-harvest.harvest_hosts() turns every other host's f1s-learn.json into memory/skill/conversation candidates with seat <seat>@<host>. Relayed local files move to _delete/<date>-bus-relayed/. altos picks the same lane up at its first converge after boot. test_fleet_bridge::test_follower_exports_and_curator_imports_mail_and_knowledge",
+     "check_text": ("fleet_bridge", "residue rule: moved, never unlinked")},
+    # f1s-evolve 2026-11-10: ai_darkhero proposal, article IG Dfiqhb1TCKj (card 98b81ad0a77d7865, Fable 5.2 pricing)
+    {"id": "EVO-fable52-seat-downgrade-rejected-20261110", "element": "ai_darkhero: migrate to Fable 5.2 when the picker shows it; move fable-5 seats in agent-pptt-overrides.json (curator etc.) to Opus 5.5 to cut the TOKEN WATCH fable 55M", "verdict": "INFO",
+     "requires": None, "detail": "rejected: the curator's fable-5 entry (agent-pptt-overrides.json:72 and :302) is an operator choice ('operator request 2026-07-21 (curator -> fable-5)'), and the charter preserves explicit model choices, so a tick may not rewrite it; Fable 5.2 and its $8/$40 price come from one unverified reel (the card itself says 'untrusted source statements'), and which seats spend the fable 55M is not measured; 'paid models only for architecture work' is already T1 free-runtime, and picker migration is already the model-switch memory; no text added. A seat downgrade is the operator's call with per-seat fable spend in hand"},
+    # f1s-evolve 2026-11-10: ai_wallpaper / ai_scar3 proposals from wiring the secondary host scar3
+    {"id": "EVO-product-output-ground-truth-20261110", "element": "ai_wallpaper scar3 8fc35b0: projector streaming-window e2e — page-level and title-only checks gave false FAILs; OBS GetSourceScreenshot of capture and Program (2 shots 0.7 s apart, bright>=8, motion>=0.3), PID-only window match, close->Program recovery poll: 5 player paths 32/32 PASS", "verdict": "REFINE",
+     "requires": None, "detail": "ztm-verify-before-done 'consumer-side loader' bullet extended to screen output: judge by the product's own final-output screenshot, not page state or window title; the projector-specific script stays in ai_wallpaper (evidence on scar3 temp, not readable from darkhero); black-screen root cause stays UNKNOWN as the seat reported",
+     "check_text": ("skill_verify", "判定看產品最終輸出的截圖")},
+    {"id": "EVO-hwwatch-host-guard-20261110", "element": "ai_scar3 msg 1793953124-ai_scar3-t: f1s_live.hardware_due alerted every scar3 chat (local curator ai_scar3, no D: drive, no HWiNFO) to heal darkhero's logger every 30 min", "verdict": "REFINE",
+     "requires": None, "detail": "hardware_due returns '' when HW_RING's drive does not exist on the host; darkhero (D: present) keeps the watch unchanged. test_f1s_live::HardwareWatchTests::test_a_host_without_the_sensor_drive_is_never_told",
+     "check_text": ("f1s_live", "host without the sensor drive")},
+    {"id": "EVO-scar3-receiver-unblock-20261110", "element": "ai_scar3 6c7a09f: darkhero_architecture_sync stopped since 10-28 on an older-but-verified FAMES (1.45.219 vs carrier 1.45.220)", "verdict": "INFO",
+     "requires": None, "detail": "fixed inside ai_scar3 (its own receiver script, pytest 72 passed, receipt ok=true fames 1.45.220); no hub engine shares that receiver code, altos follows via fames_fleet follow which already orders by version; no text added"},
+    {"id": "EVO-py311-junction-20261110", "element": "ai_wallpaper scar3 item 1: os.path.isjunction is 3.12+; scar3 runs 3.11.9", "verdict": "REFINE",
+     "requires": None, "detail": "fleet-skill-sync and fleet-residue-quarantine already had the reparse-tag fallback; f1s_control._is_junction and fleet-hygiene._is_junction silently fell back to islink (junctions missed on 3.11) and surface-untrack crashed; all three now read os.lstat().st_reparse_tag == IO_REPARSE_TAG_MOUNT_POINT. test_f1s_control + test_fleet_hygiene green",
+     "check_text": ("f1s_control", "IO_REPARSE_TAG_MOUNT_POINT   # 3.11-safe")},
+    {"id": "EVO-agc-lib-findall-20261110", "element": "ai_wallpaper scar3 item 2: agc_lib.latest_session_row unpacked `for k, v in re.findall(<one group>)`", "verdict": "REFINE",
+     "requires": None, "detail": "one capture group makes findall yield strings, so every log with a [tool: ...] tag raised ValueError; loop now takes the string (probe: tools {'Read': 2, 'Bash': 1}); same line as scar3 36d39f9a",
+     "check_text": ("agc_lib", "one capture group: findall yields strings")},
+    {"id": "EVO-harness-gitignore-20261110", "element": "ai_wallpaper scar3 item 3: hub .gitignore runtime/ hides _harness/runtime edits", "verdict": "INFO",
+     "requires": None, "detail": "rejected: on the hub _harness/runtime/*.py are tracked (git ls-files lists them; check-ignore matches nothing), so edits commit normally; the scar3 symptom is its branch state, and widening the ignore exception would start tracking runtime state; no text added"},
+    {"id": "EVO-skill-sync-deploy-dryrun-20261110", "element": "ai_wallpaper scar3 item 4: fleet-skill-sync deploy ignored --dry-run", "verdict": "REFINE",
+     "requires": None, "detail": "deploy has no side-effect-free path, so `deploy --dry-run` now refuses (rc 2, nothing written) instead of deploying; broadcast keeps its real dry-run",
+     "check_text": ("skill_sync_engine", "deploy has no dry-run path")},
+    {"id": "EVO-apply-curator-hardcode-20261110", "element": "ai_wallpaper scar3 item 5: f1s_apply AREA_SEAT / route(curator='ai_darkhero') and article_relay TOPIC_SEATS fail on scar3", "verdict": "INFO",
+     "requires": None, "detail": "rejected: the article/apply lane is darkhero-hosted (IG DM channel, seat profiles, curator orders all live here); add() refusing an absent seat is the correct guard, and swapping the curator for local_curator would route articles to seats scar3 does not host; follower knowledge already reaches it via fleet-bridge; no text added"},
+    {"id": "EVO-keypool-other-seats-20261110", "element": "ai_wallpaper scar3 item 6: keypool-tick refreshes availability for the curator seat only", "verdict": "INFO",
+     "requires": None, "detail": "deferred: widening the rider is a HubClock change (arming = operator); the per-seat path exists (AI_SEAT=<seat> api_registry.py sync --apply); no text added"},
+    {"id": "EVO-rogue-skill-surfaces-20261110", "element": "ai_wallpaper scar3 item 7: repo-schtasks-scripts=17 false hits from skill surfaces and charter text", "verdict": "INFO",
+     "requires": None, "detail": "covered: _scan_repo_scripts already skips .agents/.claude/.cursor/.fames.previous-*, treats .md as text and skips regex literals (f1s-fanout entry for scar3); followers get it from the runtime-sources release; no text added"},
+    {"id": "EVO-rogue-help-20261110", "element": "ai_wallpaper scar3 item 8: fleet-rogue-scheduler-sweep.py --help ran a real sweep and rewrote the registry", "verdict": "REFINE",
+     "requires": None, "detail": "main() prints the usage on -h/--help (rc 0) and refuses other arguments (rc 2) without building; every caller runs it argument-free. test_fleet_rogue_scheduler_sweep::test_help_prints_usage_and_never_sweeps",
+     "check_text": ("rogue_sweep", "must not run a real sweep and rewrite the registry")},
+    {"id": "EVO-precompact-exec-form-20261110", "element": "ai_wallpaper: precompact_hook_probe read only hook['command'], so exec-form PreCompact rows (pythonw.exe + script in args) reported not_armed", "verdict": "REFINE",
+     "requires": None, "detail": "probe joins command and args before matching the adapter name. test_fames_session_harness::test_precompact_hook_probe_reads_exec_form_args (the test the proposal asked for)",
+     "check_text": ("session_harness", "exec form: script in args")},
+    {"id": "EVO-prune-synced-copies-20261110", "element": "ai_scar3 1ee1146: f1s_prune counts refs per cwd; 12 'dead' publics in darkhero-synced tray modules are referenced by ai_darkhero/tray/tests (Lean PROVED erase_unreferenced_preserves_eval)", "verdict": "INFO",
+     "requires": None, "detail": "covered in part: f1s_prune.external_callers already checks other seats' imports before a public counts as dead; tests of a synced copy live on another host and are invisible to the follower's scan, so the follower keeping them (as ai_scar3 did) is the right outcome; the autologon item closed itself (scar3 sign-in works); no text added"},
 ]
 
 
@@ -1192,6 +1330,21 @@ def lean(path: Path, out: Path) -> dict:
                 if isinstance(t, dict) and not t.get("synthetic")]
     return {"verdict": doc.get("verdict"), "elapsed_s": doc.get("elapsed_s"), "theorems": theorems,
             "cautions": len(doc.get("cautions") or []), "receipt": str(out)}
+
+
+MODULES_RUN: dict = {}     # formal/<id>.lean modules added at run time from the f1s_formalize ledger
+FORMAL_LEDGER = HERE / "evidence" / "f1s-formal.json"
+FAITHFUL_MIN = 0.7
+
+
+def formal_ledger() -> dict:
+    """id -> ledger row for every f1s_formalize result that is PROVED, judged faithful and still on disk."""
+    try:
+        rows = json.loads(FORMAL_LEDGER.read_text(encoding="utf-8-sig"))["elements"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return {}
+    return {k: r for k, r in rows.items() if isinstance(r, dict) and r.get("verdict") == "PROVED"
+            and (r.get("faithful") or 0) >= FAITHFUL_MIN and r.get("file") and Path(r["file"]).is_file() and r.get("theorem")}
 
 
 def text_has(key: str, needle: str) -> bool:
@@ -1220,12 +1373,32 @@ def main() -> int:
             proofs[name] = {**prior, "reused": True}
         else:
             proofs[name] = {**lean(path, receipt), "reused": False}
+    # f1s_formalize.py (2026-11-09, Axiom's method): free-pool Lean formalizations of prose elements, kept only when
+    # the kernel said PROVED and a second route judged the statement faithful; re-proved here by hash like any module.
+    formal = formal_ledger()
+    for eid, frow in formal.items():
+        name = "Formal/" + Path(frow["file"]).stem
+        path = Path(frow["file"])
+        receipt = HERE / "evidence" / "formal" / f"{path.stem}.receipt.json"
+        prior = (previous.get("proofs") or {}).get(name) or {}
+        bound = ((previous.get("bound") or {}).get(name) or {}).get("sha256")
+        if (not force and prior.get("verdict") == "PROVED" and bound and bound == sha(path)
+                and receipt.is_file() and prior.get("theorems")):
+            proofs[name] = {**prior, "reused": True}
+        else:
+            receipt.parent.mkdir(parents=True, exist_ok=True)
+            proofs[name] = {**lean(path, receipt), "reused": False}
+        MODULES_RUN[name] = path
     proved = {t for p in proofs.values() for t in p["theorems"]}
     rows = []
     unresolved = 0
     for el in ELEMENTS:
         row = dict(el)
         req = el.get("requires")
+        frow = formal.get(el["id"])
+        if not req and frow and frow.get("theorem") in proved:      # root-namespace theorem, bound as is
+            row.update(verdict="FORMALIZED", lean_theorem=frow["theorem"], lean_ok=True,
+                       detail=f"f1s_formalize: {frow.get('kind')} proved round {frow.get('proved_round')}, faithful {frow.get('faithful')} -- {row.get('detail', '')}"[:600])
         if req:
             full = req if req.startswith("Fames.") else "Fames." + ("F1S." + req[8:] if req.startswith("F1SCore.") else req)
             row["lean_theorem"] = full
@@ -1263,7 +1436,7 @@ def main() -> int:
         "proofs": proofs, "claim_conformance_current": conf_ok, "unresolved": unresolved,
         "verdict_counts": {v: sum(1 for r in rows if r["verdict"] == v) for v in sorted({r["verdict"] for r in rows})},
         "elements": rows,
-        "bound": {k: {"path": str(p), "sha256": sha(p)} for k, p in {**MODULES, **TEXTS}.items()},
+        "bound": {k: {"path": str(p), "sha256": sha(p)} for k, p in {**MODULES, **MODULES_RUN, **TEXTS}.items()},
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")

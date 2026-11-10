@@ -28,8 +28,8 @@ parent_skill: aex-agent-evolution
 
 ## 何時用（強制）
 
-- 要在整台機器找檔案 / 副檔名 / 目錄 → **先用本技能，禁止 Grep 全盤掃**（TRN token 黑洞）
-- 卸載某工具後要證明「清乾淨了」→ 必須跑**兩半**，只跑 Everything 不算證據
+- 要在整台機器找檔案 / 副檔名 / 目錄 → **先用本技能，禁止 Grep 全盤掃**（TRN token 黑洞）（`everything-bg.py`）
+- 卸載某工具後要證明「清乾淨了」→ 必須跑**兩半**，只跑 Everything 不算證據（`mtm-everything-find.py claude-audit`）
 - 有人（含 operator）說「我用 everything.exe 掃過了，乾淨」→ 那句話只覆蓋檔案系統，見下方紅線
 - 找 hub 內檔案 → 一樣用本技能（`-path C:\ai_workspace` 收窄）
 
@@ -50,7 +50,7 @@ python %AI_WORKSPACE%\_skill\engines\mtm-everything-find.py doctor
 - **背景** = F1S 專用具名實例 `claude`：`es.exe -instance claude`，設定與資料庫在 `%LOCALAPPDATA%\Everything-claude`，無托盤、低優先權，經 `service_pipe_name=\\.\PIPE\Everything Service` 共用已安裝的服務（不需提權）。
 - 所有 agent 搜尋都經 `local-find.py::_everything_paths`，自動走背景實例；F1S SessionStart 鉤子會隱藏預熱它。
 - 管理：`python %AI_WORKSPACE%\_skill\engines\everything-bg.py status|ensure|stop`（status 的 `cpus` 必須是全核，被綁單核會餓死）。
-- 自己寫腳本直接叫 es.exe 時一律帶 `-instance claude`，不准打前景實例。
+- 自己寫腳本直接叫 es.exe 時一律帶 `-instance claude`，不准打前景實例。（`everything-bg.py` 固定該實例）
 
 ## 一鍵管線（優選）
 
@@ -108,7 +108,7 @@ python %AI_WORKSPACE%\_skill\engines\mtm-system-remnant.py surfaces
 - **生成的 .ps1：ASCII-only 註解 + UTF-8 BOM（`utf-8-sig`）。** PS 5.1 把無 BOM 的 .ps1 當 ANSI 讀，
   中文/em-dash/`·` 會變 mojibake。且**不准放 `#requires -RunAsAdministrator`**——它會連未提權的
   dry-run 都拒跑，提權檢查要放在 `-Apply` 分支內。
-- 檔案清除走 hub 慣例：**move 進 `_delete/<date>-<topic>/` + manifest，禁止 hard delete。**
+- 檔案清除走 hub 慣例：**move 進 `_delete/<date>-<topic>/` + manifest，禁止 hard delete。**（PROOF `decision` 紅線詞）
 - 不碰 `_secrets`、fracdigi vault、`~/.claude`（operator-gated）。
 
 ## 全艦套用（curator）

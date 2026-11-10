@@ -38,7 +38,7 @@ List all: `python -m edge_tts --list-voices | findstr zh-`.
 - DNSMOS (voice-mos.py) ranks speech-enhancement quality, not TTS naturalness; treat small gaps as noise.
 - `regen-audio.py` pins an ffprobe path under another user profile; `render-brief.mjs` resolves ffmpeg/ffprobe
   from PATH or the current user's WinGet packages instead — use that resolver when porting.
-- Narration text is sent to a Microsoft endpoint: never put secrets or unpublished personal data in it.
+- Narration text is sent to a Microsoft endpoint: never put secrets or unpublished personal data in it. (PROOF `secret_ask`)
 - A 403 handshake means the installed edge-tts is too old for the endpoint: upgrade the package first.
 - The endpoint sometimes returns `NoAudioReceived` for one request, and a resend of the same text can succeed.
   For multi-line scripts send one request per sentence, retry each up to about 8 times with backoff, and check

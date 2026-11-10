@@ -19,7 +19,6 @@ import argparse
 import json
 import os
 import re
-import sys
 
 # Load-bearing claim patterns
 _PATH = re.compile(r"(?i)(?:[A-Za-z]:\\|%AI_WORKSPACE%|/ai_workspace/|_skill/|_registry/|_temp/)")

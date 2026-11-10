@@ -78,8 +78,7 @@ Keywords examples: `google sso vercel` · `line webhook fly` · `meta oauth` · 
 
 ## Hard lines
 
-- OAuth／SSO Console UI = **Cursor Edge ONLY**（禁止本機 Chrome/Edge）  
-- **Never print** secret／cookie／API key **VALUES**（schema/counts only）  
+- **Never print** secret／cookie／API key **VALUES**（schema/counts only）（PROOF `secret_ask`）
 - Dedicated Google OAuth per seat（SSOT `fleet-oauth-clients.json`）；勿長期共用 career interim  
 - 一 seat 一對外 face（`github-links` + portal collapse）；fracdigi／jci 不擅自改  
 - 猜店名／coords／OAuth URI = P=0  
