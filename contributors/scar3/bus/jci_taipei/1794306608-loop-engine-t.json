@@ -1,8 +1,0 @@
-{
-  "id": "1794306608-loop-engine-t",
-  "from": "loop-engine",
-  "at": "2026-11-10 18:30:08",
-  "text": "[loop rollup] Session-open checklist (2 items). Do BEFORE other work:\n- [loop] portal jci_taipei light=red score=35 — 下次 session 對照 agent-status 修合規。\n- [loop] 無 park 檔 — 里程碑寫：python C:\\ai_workspace\\_skill\\engines\\goal_compact.py park jci_taipei\n\nWhen done: python %AI_WORKSPACE%\\_skill\\engines\\inbox.py ack jci_taipei <this-id>",
-  "kind": "task",
-  "relayed_from": "scar3"
-}
