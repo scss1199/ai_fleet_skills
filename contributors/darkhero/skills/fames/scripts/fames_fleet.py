@@ -5932,6 +5932,25 @@ def _launch_hygiene(workspace: Path, ok) -> str:
         return f"launch-failed:{type(exc).__name__}"
 
 
+def _launch_bridge(workspace: Path, ok) -> str:
+    """operator 2026-11-10: a follower's inbox mail for seats on other hosts and its cwd knowledge (memories,
+    local skills, conversation lessons) ride the carrier to the curator; the curator absorbs them. fleet-bridge.py
+    decides export (follower) vs import (authority) itself and throttles to one pass per hour."""
+    engine = workspace / "_skill" / "engines" / "fleet-bridge.py"
+    if not ok or not engine.is_file():
+        return "skipped" if ok else "not-converged"
+    try:
+        log = workspace / "_registry" / "fleet-bridge"
+        log.mkdir(parents=True, exist_ok=True)
+        out = open(log / "launch.log", "ab")
+        subprocess.Popen([sys.executable, str(engine), "run"], stdout=out, stderr=subprocess.STDOUT,
+                         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(subprocess, "DETACHED_PROCESS", 0),
+                         close_fds=True)
+        return "launched"
+    except (OSError, subprocess.SubprocessError) as exc:
+        return f"launch-failed:{type(exc).__name__}"
+
+
 def converge(
     workspace: Path,
     host: str,
@@ -5986,6 +6005,7 @@ def converge(
     }
     _write_json_atomic(workspace / CONVERGE_DIR / f"{key}.json", heartbeat)
     heartbeat["hygiene"] = _launch_hygiene(workspace, outcome.get("ok"))
+    heartbeat["bridge"] = _launch_bridge(workspace, outcome.get("ok"))
     return {
         "ok": bool(outcome.get("ok") and capability.get("ok")),
         "changed": bool(outcome.get("changed")),

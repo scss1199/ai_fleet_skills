@@ -89,6 +89,7 @@ TEXTS = {
     "curator_orders": HUB / "_skill" / "engines" / "curator_orders.py",
     "f1s_prune": HUB / "_skill" / "engines" / "f1s_prune.py",
     "fleet_hygiene": HUB / "_skill" / "engines" / "fleet-hygiene.py",
+    "fleet_bridge": HUB / "_skill" / "engines" / "fleet-bridge.py",
     "f1s_live": HUB / "_skill" / "engines" / "f1s_live.py",
     "f1s_pytest_guard": HUB / "_skill" / "engines" / "f1s_pytest_guard" / "f1s_pytest_guard.py",
     "pinned_drift": HUB / "_skill" / "engines" / "pinned_drift.py",
@@ -1265,6 +1266,9 @@ ELEMENTS = [
     {"id": "EVO-prune-pinned-20261110", "element": "ai_trader proposal 2026-11-10: f1s_prune re-ordered the same hash-bound items (orders 93, 94, 106) that the order's own gate forbids deleting or merging", "verdict": "REFINE",
      "requires": None, "detail": "f1s_prune.pinned_files: a file is pinned when a \"path.py\": \"<sha>\" literal names it (test pins), a module-level CODE_FILES/BOUND_FILES/GATE_FILES/*_identity list names it, or it hashes itself (a hashing function reading __file__, or a module constant naming its own path plus a hash call); dead functions in pinned files and duplicate groups wholly inside them go to code.pinned, not dead/duplicates, so orders, fingerprints and apply_safe see only actionable items and the order text states the pinned count. Live ai_trader scan: dead 2 -> 0, duplicates 13 -> 3, pinned 12 (evidence ai_trader/sinopac-trading-system/runtime/research/prune/order106.txt). test_f1s_prune::test_hash_pinned_files_report_pinned_not_dead_or_duplicate",
      "check_text": ("f1s_prune", "more sit in hash-pinned files and are not listed")},
+    {"id": "EVO-fleet-bridge-20261110", "element": "operator 2026-11-10 「解決那邊同步的問題以及收集那邊 cwd 的資料來反向修正 f1s」: scar3's _bus/inbox/ai_darkhero held 27 ai_scar3 messages no engine relayed, and f1s-harvest only read the memory dirs / skills / lessons of the host it runs on", "verdict": "REFINE",
+     "requires": None, "detail": "fleet-bridge.py rides fames-converge on every host (fames_fleet._launch_bridge, detached like hygiene, 1 h self-throttle, zero model calls): a follower `export`s inbox messages addressed to seats it does not host plus one f1s-learn.json (seat memory files, non-canonical SKILL.md inventory, f1s_daily conversation lessons; republished only when its sha changes) to contributors/<slug>/ on the carrier through fleet-job-dispatch._publish (now also deletes when a doc is None); the authority `import`s the mail into its own _bus/inbox/<seat>/, deletes it from the carrier, and f1s-harvest.harvest_hosts() turns every other host's f1s-learn.json into memory/skill/conversation candidates with seat <seat>@<host>. Relayed local files move to _delete/<date>-bus-relayed/. altos picks the same lane up at its first converge after boot. test_fleet_bridge::test_follower_exports_and_curator_imports_mail_and_knowledge",
+     "check_text": ("fleet_bridge", "residue rule: moved, never unlinked")},
 ]
 
 

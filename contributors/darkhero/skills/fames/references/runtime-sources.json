@@ -63,6 +63,7 @@
     "_skill/engines/f1s_live.py",
     "_skill/engines/fames-immediate-apply.py",
     "_skill/engines/fames_execution_evidence.py",
+    "_skill/engines/fleet-bridge.py",
     "_skill/engines/fleet-hygiene.py",
     "_skill/engines/fleet-job-dispatch.py",
     "_skill/engines/fleet-residue-quarantine.py",
