@@ -303,6 +303,43 @@ def orders_sig(hook, seat: str) -> str:
     return digest.hexdigest()[:16]
 
 
+def order_rows(hook, seat: str) -> list[str] | None:
+    """One key per thing in the order store an idle conversation of `seat` has work on: each of its own OPEN orders
+    and, for the curator, each other seat's answer waiting for review.  The order files' bytes also change when an
+    order is answered, closed or judged, and every such write woke the idle conversations watching the file: measured
+    2026-11-11 over two days, live wakes cost ai_darkhero 14.6M, ai_trader 7.8M and ai_nuwa 6.3M Opus-relative tokens
+    (f1s_waste), each wake re-reading the whole context.  None = a store this cannot read as orders: the caller wakes
+    as before."""
+    import hashlib
+    if not seat:
+        return []
+    try:
+        paths = list(hook._orders_files(seat))
+    except Exception:  # noqa: BLE001
+        return None
+    out = []
+    for path in paths:
+        try:
+            orders = json.loads(path.read_text(encoding="utf-8-sig")).get("orders")
+        except OSError:
+            continue                                        # no file = no orders
+        except (ValueError, AttributeError):
+            return None
+        if not isinstance(orders, list) or not all(isinstance(o, dict) for o in orders):
+            return None
+        own = path.stem == seat
+        for o in orders:
+            status = o.get("status")
+            if own and status == "open":
+                row = ["open", o.get("n"), o.get("issued_at"), o.get("reopened_at"), o.get("do"), o.get("freeze"), o.get("forbid")]
+            elif not own and status in ("done", "cannot"):
+                row = ["answer", o.get("n"), status, (o.get("answer") or {}).get("at")]
+            else:
+                continue
+            out.append(hashlib.sha256(json.dumps([path.stem, *row], ensure_ascii=False, default=str).encode("utf-8")).hexdigest()[:16])
+    return sorted(out)
+
+
 def contract_sig(hook, seat: str) -> str:
     """What an idle conversation must act on: the hot directive, the standing rules and this seat's orders. A release
     that changes none of them (engine code, a version bump) is recorded quietly instead of waking every idle
@@ -511,7 +548,9 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
              # "base" is the same without any orders: equal bases mean only the orders changed.
              "contract": (prior.get("contract") or None) if pending else contract_sig(hook, sig_seat),
              "base": (prior.get("base") or None) if pending else contract_sig(hook, ""),
-             "orders": (prior.get("orders") or None) if pending else orders_sig(hook, sig_seat)}
+             "orders": (prior.get("orders") or None) if pending else orders_sig(hook, sig_seat),
+             # None = not known: the first change wakes as before
+             "order_rows": prior.get("order_rows") if pending else order_rows(hook, sig_seat)}
     _write(path, state)
 
     def finish(code: int, why: str, text: str = "") -> tuple[int, str]:
@@ -568,13 +607,19 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
                 orders = orders_sig(hook, sig_seat)
                 review_only = bool(sig_seat) and sig_seat == curator and contract != state["contract"] and base == state["base"]
                 directive_only = contract != state["contract"] and orders == state.get("orders") and not review_only
-                if contract == state["contract"] or (review_only and not claim_review(session_id, sleep=sleep)):
-                    text = ""                              # nothing new, or another curator chat took this review
+                rows, known = order_rows(hook, sig_seat), state.get("order_rows")
+                grew = rows is None or known is None or bool(set(rows) - set(known))
+                if contract == state["contract"]:
+                    text = ""
+                elif base == state["base"] and not grew:
+                    text = ""                              # an order was answered, closed or judged: no new work here
+                elif review_only and not claim_review(session_id, sleep=sleep):
+                    text = ""                              # another curator chat took this review
                 elif directive_only and not upgrade_wake():
                     text = ""                              # an upgrade alone: the next prompt carries it, no wake
                 else:
                     text = hook.live_update(doc, event="IdleWake", watch_seat=sig_seat)
-                state["contract"], state["base"], state["orders"] = contract, base, orders
+                state["contract"], state["base"], state["orders"], state["order_rows"] = contract, base, orders, rows
                 if text:
                     return finish(2, "woke", HEAD + "\n" + text)
                 # Nothing it must act on (or nothing to say): record it, or the same change re-enters the settle loop
