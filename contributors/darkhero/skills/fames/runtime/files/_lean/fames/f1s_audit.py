@@ -1380,6 +1380,9 @@ ELEMENTS = [
     {"id": "EVO-children-do-not-ask-20261111", "element": "ai_nuwa 2026-11-11 (operator: 「子對話就不要問以下這種問題 就直接做…平行做完並檢驗」): the vamp-raise child posted an own_initiative card instead of running toe-box raise v4, and children ended turns on status-only waits", "verdict": "REFINE",
      "requires": None, "detail": "token-preflight fan-out item 3: a child runs the next approach inside its own brief (no card, no operator question), parallel per-item pipelines with reviewer on PASS and ship on ACCEPT, no status-only turn end, same-defect-twice stop reopened only by a dated operator quote, parent reads back each claimed deploy; red lines and operator-only decisions still stop. Not added to hot_directive (at its cap)",
      "check_text": ("skill_preflight", "Children do, not ask")},
+    {"id": "EVO-cjk-token-tax-measured-20261112", "element": "ai_darkhero 2026-11-12 F1S proposal (IG reel DfOFYUCpDCV, CLIP 長頸鹿=9 tokens vs giraffe=1): measure CJK token tax in injected hook text, move hook bodies to English if CJK costs materially more", "verdict": "REFINE",
+     "requires": None, "detail": "measurement adopted: audit-session-tax.py --script-cost least-squares fit of main-thread usage deltas (0 API calls, thinking/image calls skipped), tests _skill/tests/test_session_tax_script_cost.py; 2026-11-12 run: 1.229 tok/CJK char vs 0.45 tok/other char, hook text 807,758 CJK / 5,119,573 other chars. Rewrite NOT adopted: per meaning (~3 English chars per zh char) CJK is not materially costlier, CJK is ~30 % of hook tokens, and the operator-correction lines must stay verbatim; the CLIP figure is another tokenizer",
+     "check_text": ("skill_preflight", "Hook and directive bodies are not translated for token cost")},
 ]
 
 
