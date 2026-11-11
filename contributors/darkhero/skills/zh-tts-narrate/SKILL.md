@@ -54,5 +54,15 @@ VoiceStudio (debpalash/VoiceStudio, AGPL-3.0, from the 10-31 GitHub trending art
 Electron app with an `irm | iex` installer and model downloads, which is far heavier than the built-in voice.
 Voice cloning of any kind needs the speaker's consent first.
 
+OmniVoice candidate (not trialled; checked against the repos 2026-11-12). Its engine is k2-fsa/OmniVoice
+(Apache-2.0). The only route allowed without the Electron app is `pip install omnivoice` into the ai_demo venv,
+then `omnivoice-infer --model k2-fsa/OmniVoice --text ... --output x.wav`. That route is PyTorch, so pin CPU
+explicitly and never use `xpu`. Run it under load_grant like any heavy CPU job. Its language list has Mandarin
+`zh` but no zh-TW variant. The GGUF build (VoiceStudio docs/engines/omnivoice-gguf.md) ships only in the desktop
+installer or a source build. Its `auto` backend opens the first discrete Vulkan GPU, which is the A770 here, so
+`OMNIVOICE_DEVICE=cpu` plus `OMNIVOICE_GGUF_BACKEND=cpu` would be mandatory. Its weights are stated noncommercial,
+so it is not for jci marketing renders. Adopt it only after one zh-TW sentence beats SAPI by ear, with the receipt
+cited here.
+
 ## Evidence
 `ai_darkhero/evidence/ai-demo-pivot-20261011/` (render self-test 2026-10-11: 3 chapters narrated, 10.1 s MP4).
