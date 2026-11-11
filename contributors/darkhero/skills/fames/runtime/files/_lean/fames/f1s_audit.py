@@ -79,6 +79,7 @@ TEXTS = {
     "llm_engine": HUB / "_skill" / "engines" / "_llm.py",
     "load_guard": HUB / "ai_darkhero" / "tray" / "scripts" / "load_guard.py",
     "load_posture": HUB / "ai_darkhero" / "tray" / "load_posture.py",
+    "load_grant_lean": HUB / "_lean" / "fames" / "LoadGrant.lean",
     "f1s_posture": HUB / "_skill" / "engines" / "f1s_posture.py",
     "skill_jci_transfer": HUB / "_skill" / "fleet-skills" / "jci-drive-line-web-transfer" / "SKILL.md",
     "skill_line_ingest": HUB / "_skill" / "fleet-skills" / "line-oa-ingest" / "SKILL.md",
@@ -1342,6 +1343,11 @@ ELEMENTS = [
     {"id": "EVO-posture-supply-not-limits-20261111", "element": "ai_trader proposal 2026-11-11 part 5: sleep limits are not the bottleneck, supply is (f1s-posture.json 00:30-16:01: 0 jobs 34.2% 136.4 W n91, 1 job 52.1% 164.2 W n1209, 2 jobs 60.6% n42, 3 jobs 77.5% 201.5 W n12; 8/9 jobs 6-880 s, 7 repeat 20 h)", "verdict": "INFO",
      "requires": None, "detail": "agreed, no code: MAX_JOBS 8 / TARGET_CPU 85 stay; the fix is seats registering longer resumable jobs or shorter repeats, which the existing `f1s_posture.py orders` round already asks; the held_by reason (EVO-posture-held-by-20261111) keeps measuring it",
      "check_text": ("f1s_posture", "MAX_JOBS = 8")},
+    # curator 2026-11-11 (operator: 「重新思考該如何做到更完整的 f1s/lean 結合得到高效精準的系統」, Lean-as-gatekeeper article):
+    # the Lean layer covered what a reply may SAY (claims, phases, lanes, turn recovery) and nothing a job may DO.
+    {"id": "EVO-lean-action-kernel-load-grant-20261111", "element": "_lean/fames/LoadGrant.lean + load_grant_conformance.py + tests/test_load_grant_conformance.py: the power gate's pure decision (tray load_grant.decide) modelled in Lean and bound cell by cell", "verdict": "REFINE",
+     "requires": None, "detail": "first action-side kernel: 9 theorems over all inputs (a grant keeps judged level + settling + charge <= 250 W, judged by the window peak in an unsteady sleep window; charge <= the posture step limit and >= announced and measured step; no sensor / inside spacing / unsteady outside sleep / unsteady sleep with no peak reading = refused); 5760-cell table on both sides of every threshold compared with the running Python, receipt evidence/load-grant-conformance.json hash-bound to both files, seeded mismatch must exit 1. The first comparison caught the model granting at a 0 W peak where the engine refuses (max_w or 1e9); the model now mirrors the engine. Not adopted from the article: a C FFI / sidecar Lean call in front of every tool (hooks may not block tools, a Lean start costs 2-3 s; table conformance at ship time gives the same binding at 0 runtime cost). Scope: the decision only -- sensors, the file lock and the learned step stay in Python and are not proved",
+     "check_text": ("load_grant_lean", "theorem granted_within_budget")},
 ]
 
 
