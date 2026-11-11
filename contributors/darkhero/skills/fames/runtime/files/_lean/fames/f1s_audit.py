@@ -1355,6 +1355,9 @@ ELEMENTS = [
     {"id": "EVO-posture-supply-not-limits-20261111", "element": "ai_trader proposal 2026-11-11 part 5: sleep limits are not the bottleneck, supply is (f1s-posture.json 00:30-16:01: 0 jobs 34.2% 136.4 W n91, 1 job 52.1% 164.2 W n1209, 2 jobs 60.6% n42, 3 jobs 77.5% 201.5 W n12; 8/9 jobs 6-880 s, 7 repeat 20 h)", "verdict": "INFO",
      "requires": None, "detail": "agreed, no code: MAX_JOBS 8 / TARGET_CPU 85 stay; the fix is seats registering longer resumable jobs or shorter repeats, which the existing `f1s_posture.py orders` round already asks; the held_by reason (EVO-posture-held-by-20261111) keeps measuring it",
      "check_text": ("f1s_posture", "MAX_JOBS = 8")},
+    {"id": "EVO-trader-scope-machine-control-20261111", "element": "ai_trader 2026-11-11 (operator to the ai_trader Fable session): machine-wide control settings work (posture sleep/nap/awake, job queue, tray, load grant) belongs to ai_darkhero; ai_trader only researches investment; nap/three-state receipts 1794384133 / 1794387805 already shipped in 1.45.264-270", "verdict": "REFINE",
+     "requires": None, "detail": "no open item to integrate (EVO-posture-* rows above cover the shipped work); adopted as one line in the posture order every seat receives (f1s_posture.order_text) so other seats fill the queue and leave settings to the curator; ai_trader's own scope stays in its seat",
+     "check_text": ("f1s_posture", "do not propose or measure those settings")},
     # curator 2026-11-11 (operator: 「重新思考該如何做到更完整的 f1s/lean 結合得到高效精準的系統」, Lean-as-gatekeeper article):
     # the Lean layer covered what a reply may SAY (claims, phases, lanes, turn recovery) and nothing a job may DO.
     {"id": "EVO-lean-action-kernel-load-grant-20261111", "element": "_lean/fames/LoadGrant.lean + load_grant_conformance.py + tests/test_load_grant_conformance.py: the power gate's pure decision (tray load_grant.decide) modelled in Lean and bound cell by cell", "verdict": "REFINE",
