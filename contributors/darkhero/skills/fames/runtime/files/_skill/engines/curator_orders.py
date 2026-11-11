@@ -318,8 +318,8 @@ def reopen(seat: str, n: int, note: str, cwd: str | None = None) -> dict:
     return _curator_change(seat, n, cwd, "open", note)
 
 
-def close(seat: str, n: int, cwd: str | None = None) -> dict:
-    return _curator_change(seat, n, cwd, "closed")
+def close(seat: str, n: int, cwd: str | None = None, note: str = "") -> dict:
+    return _curator_change(seat, n, cwd, "closed", note)
 
 
 def out_of_scope(session_id: str | None) -> bool:
