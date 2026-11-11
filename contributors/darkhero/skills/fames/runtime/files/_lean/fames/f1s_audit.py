@@ -52,6 +52,7 @@ TEXTS = {
     "skill_gas": HUB / "_skill" / "fleet-skills" / "gas-google-sso-webapp" / "SKILL.md",
     "skill_mto": HUB / "_skill" / "fleet-skills" / "mtm-mto-first" / "SKILL.md",
     "skill_runtime": HUB / "_skill" / "fleet-skills" / "windows-runtime-pitfalls" / "SKILL.md",
+    "skill_ptt_sale": HUB / "ai_darkhero" / ".claude" / "skills" / "ptt-sale-post" / "SKILL.md",
     "skill_library": HUB / "_skill" / "fleet-skills" / "library-bookmark-coverage" / "SKILL.md",
     "harvest_engine": HUB / "_skill" / "engines" / "f1s-harvest.py",
     "sources_engine": HUB / "_skill" / "engines" / "f1s-sources.py",
@@ -1393,8 +1394,15 @@ ELEMENTS = [
     {"id": "EVO-zh-tts-omnivoice-candidate-20261112", "element": "ai_darkhero 2026-11-12 F1S proposal (card 2398236c471bd820, VoiceStudio reel): CPU-pinned OmniVoice GGUF behind edge-tts in zh-tts-narrate", "verdict": "REFINE",
      "requires": None, "detail": "repo check 2026-11-12 (VoiceStudio docs/engines/omnivoice-gguf.md, k2-fsa/OmniVoice README + languages.md): OMNIVOICE_DEVICE=cpu / OMNIVOICE_GGUF_BACKEND=cpu exist and auto opens the first discrete Vulkan GPU (A770); but the GGUF binary ships only in the desktop installer or a source build, its weights are stated noncommercial, Mandarin zh only (no zh-TW), OpenAI-compatible server UNKNOWN, cited docs/engines file was not in the hub. Skill records it as an untrialled candidate: pip omnivoice (Apache-2.0, PyTorch CPU, never xpu) under load_grant, GGUF only with both CPU env vars, not for jci marketing; SAPI stays the fallback until a by-ear receipt",
      "check_text": ("skill_zh_tts", "OmniVoice candidate (not trialled; checked against the repos 2026-11-12)")},
+    {"id": "EVO-ptt-serial-mask-20261112", "element": "ai_darkhero correction 05c5386d779b (ledger 1ceb1d82b9bd): Lightning 舊版 confirmed -> post; mask serial keep model number; own-use item -> delete the post", "verdict": "REFINE",
+     "requires": None, "detail": "ptt-sale-post step 2 already refused serial-without-card photos; adds: mask the serial on every photo, keep the model number, a confirmed spec is not re-asked, an own-use item is not posted and its live post is deleted (operator-ordered PTT post removal, not a file delete)",
+     "check_text": ("skill_ptt_sale", "Mask the serial number on every photo before upload and keep the product model number readable")},
+    {"id": "EVO-machine-control-owner-20261112", "element": "ai_trader memory feedback-machine-control-belongs-to-darkhero-20261111 (ledger f92b239bb8e3): power posture / queue / tray / load grant settings belong to ai_darkhero", "verdict": "REFINE",
+     "requires": None, "detail": "generalised to every seat in windows-runtime-pitfalls load-grant bullet: other seats request through load_grant.py wait/run and f1s_posture.py, and propose setting changes to ai_darkhero; matches the charter (load_grant is the one owner of every load increase); no red line touched",
+     "check_text": ("skill_runtime", "全機控制權歸 ai_darkhero（operator 2026-11-11）")},
+    {"id": "EVO-jci-yearbook71-sheet-covered-20261112", "element": "jci_taipei memory jci-yearbook71-sheet (ledger d11bcbfab3ab): upload local photos to Drive for links, never overwrite formula status columns, operator confirms row ownership", "verdict": "INFO",
+     "requires": None, "detail": "covered: jci-drive-line-web-transfer SKILL.md line 65 (收稿／名冊類 sheet, 2026-11-09 元月刊收稿表) already states all three points; no text added"},
 ]
-
 
 def sha(path: Path) -> str:
     try:

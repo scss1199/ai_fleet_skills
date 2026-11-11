@@ -243,6 +243,8 @@ parent_skill: ztm-verify-before-done
   或 `load_grant.py run --owner … --step … -- <cmd>`）。放行條件：近 60 s CPU+A770 功率 p90−p10 ≤ 30 W、這一步 ≤ 40 W、
   加上去 ≤ 250 W、距上一次放行 ≥ 20 s、感測紀錄是新的。超過 40 W 的工作要自己分段加，每段再申請；被拒就等，不要硬跑。
   托盤狀態列顯示目前功率與最新一次放行。
+  全機控制權歸 ai_darkhero（operator 2026-11-11）：電源姿態 sleep/nap/awake、夜間佇列、tray、load grant 的設定只由
+  ai_darkhero 改；其他 seat 只用 `load_grant.py wait/run` 與 `f1s_posture.py` 排隊申請，要改設定就向 ai_darkhero 提案，不自己動。
 
 ## 音訊擷取與通話偵測
 
