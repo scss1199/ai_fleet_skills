@@ -1325,6 +1325,9 @@ ELEMENTS = [
      "requires": None, "detail": "covered: fleet-wide the unit is f1s_apply.py (every article technique closes applied/covered/rejected with evidence or reason, settle inherits fates); the signal-class / resident-data-source half is trading-specific and stays in ai_trader's article_judgment.py; no text added"},
     {"id": "EVO-photo-asr-speed-20261111", "element": "ai_photo correction 525b314405d4 (ledger 0d90d48f5fa8): research faster audio transcription and compare with ai_theater", "verdict": "INFO",
      "requires": None, "detail": "rejected as F1S text: a seat task, not a technique; the generalizable half (check what another seat already built before writing) is already in f1s-reverse-learning's description, and transcription routing is in mtm-api-pool-offload; the task stays with ai_photo"},
+    {"id": "EVO-proof-node-test-20261111", "element": "ai_demo proposal 2026-11-11: PROOF tests_pass misses node:test (node --test tests/caption-verbatim.test.mjs, 'ℹ pass 2 / ℹ fail 0', blocked twice; tests_pass 10x/7d on ai_demo)", "verdict": "REFINE",
+     "requires": None, "detail": "claude-proof-hook SELFTEST_CMD/RUNNER_CMD gain `node --test` and `node <x>.test.[cm][jt]s`; TEST_FAIL gains node's 'ℹ fail N' / TAP '# fail N' and 'not ok N' so a failing run stays not green; a sed/grep read of a .test.mjs file still is not a run; tests/test_proof_node_test.py",
+     "check_text": ("proof_hook", r'r"\bnode(?:\.exe)?\s+(?:-\S+\s+)*--test\b|\bnode(?:\.exe)?\s+(?:-\S+\s+)*\S*\.test\.[cm]?[jt]s\b|"')},
 ]
 
 
