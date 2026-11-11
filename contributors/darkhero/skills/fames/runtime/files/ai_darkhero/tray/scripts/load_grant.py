@@ -37,7 +37,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TRAY = os.path.dirname(HERE)
 if TRAY not in sys.path:
     sys.path.insert(0, TRAY)
-import load_posture  # noqa: E402  (tray/load_posture.py: awake | nap | sleep | cooldown)
+import load_posture  # noqa: E402  (tray/load_posture.py: awake | nap | sleep)
 RING = "D:/__hwlog"
 STATE = os.path.join(TRAY, "state", "load_grant.json")
 LOCK = os.path.join(TRAY, "state", "load_grant.lock")
@@ -47,7 +47,7 @@ STABLE_SPREAD_W = 30.0
 BUDGET_W = 250.0
 MAX_STEP_W = 40.0
 # load posture (operator 2026-11-10, tray/load_posture.py): while the sleep overlay is up a job may step 60 W at a
-# time (budget, steadiness window and spacing unchanged); in the cooldown after sleep no new load is granted at all.
+# time (budget, steadiness window and spacing unchanged); nap and awake keep MAX_STEP_W.
 SLEEP_MAX_STEP_W = 60.0
 SPACING_S = 20.0
 STALE_S = 10.0
@@ -228,9 +228,7 @@ def decide(owner: str, step_w: float, power: dict, last: dict, now: float, measu
     """Pure decision (tested without sensors): {'ok': bool, 'reason': str, 'charged_w': float}. `measured_w` is what
     this owner's earlier grants really added (learned_step); it is charged when larger than what it announces.
     `pending` is granted load that has not shown up in the sensors yet (pending_w); it counts against the budget.
-    `posture` (load_posture.read()): 'sleep' widens the step to SLEEP_MAX_STEP_W, 'cooldown' refuses every grant."""
-    if posture == "cooldown":
-        return {"ok": False, "reason": "cooldown: sleep just ended, the operator is taking the box back; no new load"}
+    `posture` (load_posture.read()): 'sleep' widens the step to SLEEP_MAX_STEP_W; nap and awake use MAX_STEP_W."""
     limit = max_step_w(posture)
     if measured_w > step_w:
         if measured_w > limit:
@@ -241,11 +239,16 @@ def decide(owner: str, step_w: float, power: dict, last: dict, now: float, measu
         return {"ok": False, "reason": f"step {step_w:.0f} W > {limit:.0f} W: ramp in smaller steps"}
     if not power.get("ok"):
         return {"ok": False, "reason": power.get("reason", "power_unknown")}
+    level = power["now_w"]
     if power["spread_w"] > STABLE_SPREAD_W:
-        return {"ok": False, "reason": f"unsteady: {power['spread_w']} W spread in {WINDOW_S} s"}
-    if power["now_w"] + pending + step_w > BUDGET_W:
+        # sleep posture (operator 2026-11-11: fill the CPU at night): bursty CPU work never holds a 30 W window, so the
+        # gate stayed shut with 100 W of budget unused. There the budget is judged against the window's PEAK instead.
+        if posture != "sleep" or float(power.get("max_w") or 1e9) + pending + step_w > BUDGET_W:
+            return {"ok": False, "reason": f"unsteady: {power['spread_w']} W spread in {WINDOW_S} s"}
+        level = float(power["max_w"])
+    if level + pending + step_w > BUDGET_W:
         settling = f" + {pending:.0f} W still settling from earlier grants" if pending else ""
-        return {"ok": False, "reason": f"{power['now_w']} W{settling} + {step_w:.0f} W > budget {BUDGET_W:.0f} W"}
+        return {"ok": False, "reason": f"{level} W{settling} + {step_w:.0f} W > budget {BUDGET_W:.0f} W"}
     since = now - float(last.get("epoch") or 0)
     if since < SPACING_S:
         return {"ok": False, "reason": f"last grant {since:.0f} s ago to {last.get('owner')}"}

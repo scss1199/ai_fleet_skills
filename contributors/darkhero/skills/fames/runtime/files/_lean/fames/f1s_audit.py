@@ -78,6 +78,7 @@ TEXTS = {
     "skill_compose": HUB / "_skill" / "fleet-skills" / "chapter-compose" / "SKILL.md",
     "llm_engine": HUB / "_skill" / "engines" / "_llm.py",
     "load_guard": HUB / "ai_darkhero" / "tray" / "scripts" / "load_guard.py",
+    "load_posture": HUB / "ai_darkhero" / "tray" / "load_posture.py",
     "f1s_posture": HUB / "_skill" / "engines" / "f1s_posture.py",
     "skill_jci_transfer": HUB / "_skill" / "fleet-skills" / "jci-drive-line-web-transfer" / "SKILL.md",
     "skill_line_ingest": HUB / "_skill" / "fleet-skills" / "line-oa-ingest" / "SKILL.md",
@@ -1332,6 +1333,15 @@ ELEMENTS = [
     {"id": "EVO-posture-held-by-20261111", "element": "ai_trader proposal 2026-11-11: sleep posture does not fill the CPU (f1s-posture.json: sleep 680 min cpu 51.4% / 163.3 W / 0.98 jobs vs awake 51.1% / 166.8 W / 0.0); raise sleep concurrency above 1", "verdict": "REFINE",
      "requires": None, "detail": "the concurrency half is rejected: MAX_JOBS is already 8; the sleep samples ran 1 job 1210/1359 times because the queue is starved (8 short jobs on 20 h repeat, the one long job ai_ziyaoastro.yt-transcripts holds the window), so raising the cap changes nothing; adopted as a measurement: every sample keeps the tick's reason (why_key, digits folded) and verify/curator line print held_by, so the next window names the bottleneck instead of guessing; queue rc -1 / rc 1 stay with their owning seats; tests/test_f1s_posture.py",
      "check_text": ("f1s_posture", 'sample = [round(now), cur, round(cpu, 1), watts, n_run, why_key(step["why"])]')},
+    {"id": "EVO-posture-three-states-20261111", "element": "ai_trader proposal 2026-11-11 (operator approved 「照這組送出」): posture = sleep < nap < awake; nap entry = known phone on USB AND input idle 30 s, automatic; cooldown stops being a state; state table incl. remote idle = nap, remote operating = awake, failed phone scan / stale = awake", "verdict": "REFINE",
+     "requires": None, "detail": "adopted in tray/load_posture.decide: nap = idle >= NAP_IDLE_S (30 s) with a phone on USB (phone_presence state file fresh <= 120 s, else unknown = not a sign), a remote session or the nap overlay; any input = awake; leaving sleep steps down to nap (the buffer the 120 s cooldown was), the phone_back nap buffer is released on awake; scoped to the load posture word only -- the nap overlay (screens half off) is not auto-armed on 30 s idle, that stays nap_mode's own ladder and the operator's toggle. load_grant/load_guard 'cooldown' branches are now unreachable, rails untouched. tests/test_load_posture.py",
+     "check_text": ("load_posture", 'elif idle and (phone is True or remote or nap_on):')},
+    {"id": "EVO-posture-nap-tier-20261111", "element": "ai_trader proposal 2026-11-11: nap load tier in f1s_posture.plan -- start/resume only after 3 min continuous nap, at most 2 jobs, any input suspends all", "verdict": "REFINE",
+     "requires": None, "detail": "adopted: plan(since=posture_since) fills in nap only after NAP_HOLD_S 180 s (since unknown = never), cap NAP_MAX_JOBS 2, extra running jobs suspended on sleep -> nap; awake suspends all; A770 / watt rails and load_grant apply unchanged. 180 s / 2 are unmeasured proposals: re-measure nap minutes, CPU, W and yield seconds from f1s_posture.py status before tuning. tests/test_f1s_posture.py::test_plan_nap_tier_waits_the_hold_and_caps_jobs",
+     "check_text": ("f1s_posture", 'nap_ready = cur == "nap" and since > 0 and now - since >= NAP_HOLD_S')},
+    {"id": "EVO-posture-supply-not-limits-20261111", "element": "ai_trader proposal 2026-11-11 part 5: sleep limits are not the bottleneck, supply is (f1s-posture.json 00:30-16:01: 0 jobs 34.2% 136.4 W n91, 1 job 52.1% 164.2 W n1209, 2 jobs 60.6% n42, 3 jobs 77.5% 201.5 W n12; 8/9 jobs 6-880 s, 7 repeat 20 h)", "verdict": "INFO",
+     "requires": None, "detail": "agreed, no code: MAX_JOBS 8 / TARGET_CPU 85 stay; the fix is seats registering longer resumable jobs or shorter repeats, which the existing `f1s_posture.py orders` round already asks; the held_by reason (EVO-posture-held-by-20261111) keeps measuring it",
+     "check_text": ("f1s_posture", "MAX_JOBS = 8")},
 ]
 
 
