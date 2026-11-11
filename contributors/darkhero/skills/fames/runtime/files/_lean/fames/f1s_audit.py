@@ -78,6 +78,7 @@ TEXTS = {
     "skill_compose": HUB / "_skill" / "fleet-skills" / "chapter-compose" / "SKILL.md",
     "llm_engine": HUB / "_skill" / "engines" / "_llm.py",
     "load_guard": HUB / "ai_darkhero" / "tray" / "scripts" / "load_guard.py",
+    "f1s_posture": HUB / "_skill" / "engines" / "f1s_posture.py",
     "skill_jci_transfer": HUB / "_skill" / "fleet-skills" / "jci-drive-line-web-transfer" / "SKILL.md",
     "skill_line_ingest": HUB / "_skill" / "fleet-skills" / "line-oa-ingest" / "SKILL.md",
     "social_session": HUB / "ai_darkhero" / "line" / "social_session.py",
@@ -1328,6 +1329,9 @@ ELEMENTS = [
     {"id": "EVO-proof-node-test-20261111", "element": "ai_demo proposal 2026-11-11: PROOF tests_pass misses node:test (node --test tests/caption-verbatim.test.mjs, 'ℹ pass 2 / ℹ fail 0', blocked twice; tests_pass 10x/7d on ai_demo)", "verdict": "REFINE",
      "requires": None, "detail": "claude-proof-hook SELFTEST_CMD/RUNNER_CMD gain `node --test` and `node <x>.test.[cm][jt]s`; TEST_FAIL gains node's 'ℹ fail N' / TAP '# fail N' and 'not ok N' so a failing run stays not green; a sed/grep read of a .test.mjs file still is not a run; tests/test_proof_node_test.py",
      "check_text": ("proof_hook", r'r"\bnode(?:\.exe)?\s+(?:-\S+\s+)*--test\b|\bnode(?:\.exe)?\s+(?:-\S+\s+)*\S*\.test\.[cm]?[jt]s\b|"')},
+    {"id": "EVO-posture-held-by-20261111", "element": "ai_trader proposal 2026-11-11: sleep posture does not fill the CPU (f1s-posture.json: sleep 680 min cpu 51.4% / 163.3 W / 0.98 jobs vs awake 51.1% / 166.8 W / 0.0); raise sleep concurrency above 1", "verdict": "REFINE",
+     "requires": None, "detail": "the concurrency half is rejected: MAX_JOBS is already 8; the sleep samples ran 1 job 1210/1359 times because the queue is starved (8 short jobs on 20 h repeat, the one long job ai_ziyaoastro.yt-transcripts holds the window), so raising the cap changes nothing; adopted as a measurement: every sample keeps the tick's reason (why_key, digits folded) and verify/curator line print held_by, so the next window names the bottleneck instead of guessing; queue rc -1 / rc 1 stay with their owning seats; tests/test_f1s_posture.py",
+     "check_text": ("f1s_posture", 'sample = [round(now), cur, round(cpu, 1), watts, n_run, why_key(step["why"])]')},
 ]
 
 
