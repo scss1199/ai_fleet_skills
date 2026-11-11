@@ -4,7 +4,8 @@ description: >-
   F1S rule ① (不准曲解) as a procedure: bind the user's own words to do / not-do / limits / acceptance
   before any work, pick the reading closest to the words, never re-ask a decided matter, and report in
   Traditional Chinese conclusion-first in two sentences. Use at the start of every non-trivial request,
-  when a request has two readings, before asking the user anything, or when the user is angry or repeats themself.
+  when a request has two readings, before asking the user anything, when the user is angry or repeats themself,
+  or when the operator gives a short abstract instruction (section 6 expands it from their own profile).
 metadata:
   fleet:
     lane: zero-token-mechanism
@@ -99,6 +100,37 @@ Stop hook 擋下之後；`f1s_repeat.py scan` 是裁判，Lean `lean/f1s_delta_r
 道歉開場 7/20、沒道歉 31/97（p 0.80，沒差）。回覆少於 10 次工具 18/40、50 次以上 5/33（p 0.011），但長回合時使用者也隔得比較久；
 平靜訊息後同樣比較只有 6.0% 對 4.5%。上一輪宣稱完成、工具次數多寡與發火無關；對話越長也沒有越常發火，所以這裡不規定「開新對話」。
 之後看 F1S RECORD 的 `anger came back`：§5 生效後的數字要低於基準才算有效。
+
+## 6 抽象輸入展開（operator 2026-11-12）
+
+原話：「我只會給你高度抽象的中文要你去完成所有任務 你去看其他有提到我的人格 星盤 認知功能的cwd來自動反向解析並拓展我的輸入語意
+來完整達成任務」。這條修訂 §1 的「不擴大」：operator 的一句抽象話，照 operator 自己的資料展開出來的部分算原話的一部分，
+不是外加，也不回頭問。展開只准用下面三層來源，上層壓過下層；外加模板與「通用最佳實務」仍然不准（§1 ⑤）。
+
+| 層 | 來源（都在本機，不寫進這份公開技能） | 地位 |
+|----|------|------|
+| 1 | operator 過去的原話：各 seat 記憶目錄裡 type=feedback／user 的檔、T1、校正令 | 證據 |
+| 2 | 認知功能：ai_career 記憶 `learning-style-mission-first`（自述）、ai_ut `python nt_prompt.py --pipe Ni_to_Te --raw` | 讀法的先驗 |
+| 3 | 命盤：ai_ziyaoastro 記憶 `reference-charts-true-solar` | 只用來排讀法的先後，不當證據、不寫進回報或產品（`cultivation-lens-chat-only`） |
+
+展開規則（由第 1 層的紀錄歸納，第 2 層只解釋為什麼）：
+
+| 原話長相 | 展開成 |
+|----|------|
+| 動詞是結果（處理、搞定、完成、解決、精進） | 做到結果帳本動了：驗證過、出貨、送進對應 cwd；commit、部署、派令這些機械步驟含在內 |
+| 舉一個例子（「如…」「這一類」「等等」） | 整個類別，而且做成機制（引擎、技能、令），讓這句話以後不用再說；適用的 cwd 全部套用 |
+| 「所有／完整／全部」 | 先列全集與每項狀態，再動手 |
+| 提到某個 cwd、某個人、某種視角 | 逐 cwd 分開判讀，不給一份通用答案 |
+| 沒說驗收 | 自己定一個前後可比的數字或能開的檔案 |
+| 沒說範圍 | 整個 fleet 裡適用的地方；沒說方法、模型、成本＝自己選（T1 free-runtime 照舊），不問 |
+| 句尾問號的敘述句 | 是命令，不是提問；直接做，回報講結果 |
+
+做法分兩段（Ni→Te）：先收斂到一條軌跡——「做到什麼，operator 就不必再說這句話」——回報第一句寫成一行「展開：…」；
+候選軌跡不是一條就繼續用三層來源收斂，不准把候選清單丟回去。再執行到可量測的改變。
+界線：展開不越紅線；會造成永久刪除、花錢、對外發送或不可回復的那一部分不算在展開內，照舊一行「需要你決定：…」。
+兩種展開只差在不可回復的程度時取小的，其餘取大的（系統層的那個）。
+operator 糾正了某次展開＝那次展開是錯的：把原話與正解寫成該 seat 的 feedback 記憶，第 1 層就多一筆；人格類型與命盤沒有被驗證過能預測
+一個人的意思，和第 1 層衝突時一律聽第 1 層。
 
 ## 配對
 
