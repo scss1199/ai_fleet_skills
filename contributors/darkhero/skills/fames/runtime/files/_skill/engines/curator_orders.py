@@ -158,7 +158,9 @@ def _hub_rel(path: str) -> str:
     return rel
 
 
-def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None = None, routine: bool = False) -> dict:
+def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None = None, routine: bool = False,
+          ledger: bool = False) -> dict:
+    """ledger=True: an engine reads the answer back into its own table (f1s_fanout), so any answer closes the order."""
     cwd = cwd or os.getcwd()
     if not (do or "").strip():
         raise ValueError("an order needs its full prompt text (--do or --prompt-file)")
@@ -179,6 +181,8 @@ def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None 
              "freeze": [_hub_rel(p) for p in freeze], "forbid": list(forbid), "status": "open"}
     if routine and not freeze and not forbid:
         order["routine"] = True
+        if ledger:
+            order["ledger"] = True
     doc["orders"].append(order)
     _save(seat, doc)
     return order
@@ -218,6 +222,10 @@ def _accepted_mechanically(order: dict) -> bool:
     order and any reopened one still go to review, so the other kinds of defect keep being seen."""
     if not order.get("routine") or order.get("reopened_at") or order.get("n", 0) % REVIEW_SAMPLE == 0:
         return False
+    if order.get("ledger"):
+        # A self-review answer is read back by f1s_fanout.collect and reported as one table per version: 371 of them woke the
+        # curator once each in three days and none was reopened for its content (2026-11-11).
+        return True
     try:
         issued = time.mktime(time.strptime(order.get("issued_at", ""), "%Y-%m-%dT%H:%M:%S"))
     except ValueError:
@@ -236,8 +244,10 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
     """evidence -> done (note = the seat's counts / commit / what it left, read back by f1s_fanout.collect);
     reason -> cannot. One of the two; jci_taipei 2026-11-10 #24 had to park its counts in a scratchpad file."""
     cwd = cwd or os.getcwd()
+    if not evidence and not reason.strip():
+        reason = note      # `--note "no finding possible: <why>"` alone is the one-line answer the fan-out order asks for
     if bool(evidence) == bool(reason.strip()):
-        raise ValueError("answer with --evidence PATH... [--note TEXT] or --cannot REASON, not both")
+        raise ValueError("answer with --evidence PATH... [--note TEXT], --cannot REASON, or --note TEXT alone; not both")
     reason = (reason or note).strip()
     missing = [p for p in evidence if not os.path.exists(os.path.join(cwd, p))]
     if missing:
@@ -595,10 +605,10 @@ def main(argv=None) -> int:
     s = sub.add_parser("answer")
     s.add_argument("seat")
     s.add_argument("n", type=int)
-    g = s.add_mutually_exclusive_group(required=True)
+    g = s.add_mutually_exclusive_group()
     g.add_argument("--evidence", nargs="+")
     g.add_argument("--cannot")
-    s.add_argument("--note", default="", help="with --evidence: before -> after counts, commit, what was left and why")
+    s.add_argument("--note", default="", help="with --evidence: before -> after counts, commit, what was left and why; alone: a one-line answer")
     s = sub.add_parser("claim")
     s.add_argument("seat")
     s.add_argument("n", type=int)
