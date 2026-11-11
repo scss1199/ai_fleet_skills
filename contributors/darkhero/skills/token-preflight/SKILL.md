@@ -45,6 +45,14 @@ Two habits, mechanised by `_skill/engines/session-consolidate.py`:
    session's recap, pending ask, files and commits; the curator folds them into `goal_compact.py park <seat>
    "<milestone>"`, then `archive_session` the ones classified `archive:*` / `merge:absorb-recap`. `keep:pending-operator`
    sessions stay open; `noise:automated` (1-turn probes) are ignored. The engine never archives anything itself.
+3. **Children do, not ask (ai_nuwa, operator 2026-11-11 「子對話就不要問以下這種問題 就直接做…平行做完並檢驗」).**
+   A child session that finds the next approach for its own brief runs it: no `own_initiative` card, no operator
+   question. Independent per-item units inside the brief run as parallel background pipelines; a reviewer starts on
+   each PASS and the seat's own ship route on ACCEPT. A child never ends a turn on a status-only "waiting for X" note
+   (run-until-no-next-step applies to children: one background waiter, then continue). A child stopped by the same
+   defect twice resumes only when the parent forwards a dated operator quote. The parent reads back each claimed
+   deploy (live sha, receipt, acceptance file) before reporting it. Red lines and operator-only decisions still stop.
+   Evidence: C:/Users/sc/Downloads/_quick_output/20261111_nuwa_progress.txt.
 
 ## Every wake is a full cache read (F1S 2026-11-03, f1s_waste.py)
 
