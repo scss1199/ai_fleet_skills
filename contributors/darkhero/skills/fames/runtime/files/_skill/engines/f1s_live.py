@@ -417,6 +417,19 @@ def thrash_due(seat: str, curator: str, now: float | None = None) -> str:
             "its remaining steps. Read back a later compaction's preTokens near 270K and tell the operator.")
 
 
+def reason_due(seat: str, curator: str, session_id: str, now: float | None = None) -> str:
+    """For the curator seat: the five-axis brief f1s_reason keeps, handed to the conversation that holds the reasoning
+    loop (operator 2026-11-12 「這個對話建立一個持續且動態的推理…來動態升級整個f1s」).  f1s_reason.due bounds it: one
+    conversation, at most one wake per EVERY_S, and only when something came in.  A broken engine never costs the waiter."""
+    if not seat or seat != curator:
+        return ""
+    try:
+        import f1s_reason
+        return f1s_reason.due(session_id, now)
+    except Exception:
+        return ""
+
+
 def article_loop_due(seat: str, curator: str, session_id: str, now: float | None = None) -> str:
     """For the curator seat: the batch f1s_apply.loop_tick prepared, handed to one conversation once."""
     if not seat or seat != curator:
@@ -589,6 +602,9 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
         alert = article_loop_due(seat, curator, session_id)
         if alert:
             return finish(2, "article_loop", alert)
+        alert = reason_due(seat, curator, session_id)
+        if alert:
+            return finish(2, "reason", alert)
         if hook._midturn_pending(surface_id, session_id, seat=sig_seat) and not shipping():
             settled, last, ready = _now(), hook._midturn_sig(sig_seat), True
             while True:
