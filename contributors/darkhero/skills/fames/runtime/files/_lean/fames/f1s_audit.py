@@ -1402,6 +1402,8 @@ ELEMENTS = [
      "check_text": ("skill_runtime", "全機控制權歸 ai_darkhero（operator 2026-11-11）")},
     {"id": "EVO-jci-yearbook71-sheet-covered-20261112", "element": "jci_taipei memory jci-yearbook71-sheet (ledger d11bcbfab3ab): upload local photos to Drive for links, never overwrite formula status columns, operator confirms row ownership", "verdict": "INFO",
      "requires": None, "detail": "covered: jci-drive-line-web-transfer SKILL.md line 65 (收稿／名冊類 sheet, 2026-11-09 元月刊收稿表) already states all three points; no text added"},
+    {"id": "KB-article-proctor-standard", "element": "YouTube Media transcript: 驗收標準必須獨立於Agent之外，防止其透過修改測試程式來掩蓋錯誤", "verdict": "INFO",
+     "requires": None, "detail": "驗證標準須放Agent改不到的地方；人類監考官是F1S座位設計核心；與ClaimContract.claimState模型相符"},
 ]
 
 def sha(path: Path) -> str:
