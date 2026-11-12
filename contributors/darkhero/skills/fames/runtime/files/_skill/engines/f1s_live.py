@@ -425,6 +425,8 @@ def reason_due(seat: str, curator: str, session_id: str, now: float | None = Non
         return ""
     try:
         import f1s_reason
+        if str(f1s_reason.load().get("session") or ""):
+            f1s_reason.refresh(now)
         return f1s_reason.due(session_id, now)
     except Exception:
         return ""
