@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.45.293",
-  "skill_gen": "2026-11-13.8",
+  "version": "1.45.294",
+  "skill_gen": "2026-11-13.9",
   "execution_order": [
     "FP",
     "MTM",
@@ -24,7 +24,7 @@
   "source_git_commit": null,
   "files": {
     ".gitattributes": "448f5307a4b4eaab3e5e0615e1b57e125c2e6419d590025c4ac3d2e2c004955e",
-    "SKILL.md": "62acf02dde0e401b2113663bce758f96549abcac9128642d11a92b2c54a78511",
+    "SKILL.md": "1b7b8a9f19a538475065ab23d3ff91e949e47d46c4271943b464d2024ba067e2",
     "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
     "references/autonomous-knowledge.md": "b34ca6beb034909aaade75be4707c772e90155c6c12b8278c7b3964ec8238df5",
     "references/cases.json": "2ebbb062b8e58241dfd2a70ec423678c4c16e40303d436ffa6de6e5560f67a40",
@@ -35,7 +35,7 @@
     "references/minimal-context.md": "f5c24bd6cc37901d7e71187ef9d273a88676be4c1393faaedf1664ff794478da",
     "references/operator-manual.md": "ddfdafdb484c5233b59bf91d80f44a0060b161f822342db9669e7bcf63b0903c",
     "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
-    "references/protocols/fames-protocol.json": "45c9e897db70a61380771cd2b51c0b36498e23899bf98638213da1f8905d2414",
+    "references/protocols/fames-protocol.json": "522c4ef3d26e8f7498ef71cd3471abbec8477a088df4a3707368be0327946e47",
     "references/protocols/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
     "references/protocols/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
     "references/protocols/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -73,7 +73,7 @@
     "runtime/files/_lean/leanctl.py": "2cde11126976a17c88a927375b56c5c09a2115b7b0a6708ec8f563a068c7d7a3",
     "runtime/files/_registry/agent-surfaces.json": "b36cebd6b0f912587f117bc7df19c352496bbb6bcf7c9d3293b0940e951e8f60",
     "runtime/files/_registry/claude-remote-control.json": "44f271d7e0700238d5351698be0638cb1f798669d9f30c8aa3ad1c7d2fc2cfa2",
-    "runtime/files/_registry/fames-protocol.json": "45c9e897db70a61380771cd2b51c0b36498e23899bf98638213da1f8905d2414",
+    "runtime/files/_registry/fames-protocol.json": "522c4ef3d26e8f7498ef71cd3471abbec8477a088df4a3707368be0327946e47",
     "runtime/files/_registry/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
     "runtime/files/_registry/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
     "runtime/files/_registry/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -128,7 +128,7 @@
     "runtime/files/_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py": "494961f0f515265c9b05f4322e99154ec4e6d04c5b9dce6b4f8ddf230cb46ab1",
     "runtime/files/ai_darkhero/tray/load_posture.py": "665fd736a3d245bf50c5c7b7f8ecd1b4da23e176ee347ea001912f12116a0efb",
     "runtime/files/ai_darkhero/tray/scripts/load_grant.py": "00764dd7fbe47fa22c7cd658899b213cd514aa4fc3d6965463f4c8045ad58981",
-    "runtime/manifest.json": "a82af291857dab69bb722b6b6b5908c369f4267c53c7be26005108873912d48f",
+    "runtime/manifest.json": "d4f70c81b331f84994f353d1f30b9697c38f6c27b406cce456323c60b6ec8913",
     "scripts/adaptive_response_controller.py": "07a19c6e0bda90f25800617a274d5f641709676d0d71cdfae8e17dec91e0d911",
     "scripts/claude_live_ab.py": "3aaa4276c505e1eceea33207c6c4baeb190b6319b737f081fd53fbc055834261",
     "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
@@ -143,5 +143,5 @@
     "scripts/test_work_efficiency.py": "e4250ba4c05f616c79cf97182507d1ff3585487c788546151a97b2dad74f0536",
     "scripts/work_efficiency.py": "42d41b64b8075280b1212625b46a25ab32bba35d27f5c019cf79dde02552022e"
   },
-  "package_sha": "262a597440689e0ef746eb6e821055e772e6a4a1a688837b69dd0ae971549516"
+  "package_sha": "1c43d942d918b5bc82077fbeb8c086a8ff1e268639dbf50515736afa9e5c16a0"
 }
