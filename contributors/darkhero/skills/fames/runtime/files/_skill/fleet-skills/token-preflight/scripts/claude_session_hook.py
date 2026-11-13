@@ -450,6 +450,11 @@ CONTRACT_LINE_PREFIXES=("TOKEN CORE ","FAMES CORE:","HARD INVARIANTS:","OPERATOR
 # number is a new line and goes out. Order and review lines (CURATOR ...) are never dropped: a wake must carry its order.
 STATUS_LINE_PREFIXES=("TOKEN WATCH ","F1S REUSE ","F1S NIGHT","F1S RECURRENCE ","SESSION ARCHIVE DUE ","ARTICLE RELAY ",
                       "F1S 各 cwd 用量","F1S 文章回饋","回報: python ")
+# Counters that drift on every look. Replay of the same 7 days after the cut above: 117K tokens were a line that
+# differed from one already held only in its digits (TOKEN WATCH 58K, ARTICLE RELAY 10K, F1S NIGHT 10K). These compare
+# with digits blanked, so the line goes out again when its words change (a seat enters OVER SHARE, the posture flips),
+# not when 361/416 becomes 365/420. Other status lines still compare whole: there a number is the news.
+DRIFT_LINE_PREFIXES=("TOKEN WATCH ","F1S NIGHT","ARTICLE RELAY ")
 
 
 def _contract_dedup(surface_id: str, session_id: str, text: str, *, agent_id: str="", reset: bool=False) -> str:
@@ -476,7 +481,8 @@ def _contract_dedup(surface_id: str, session_id: str, text: str, *, agent_id: st
         kept=[]
         for line in text.split("\n"):
             if line.strip().startswith(CONTRACT_LINE_PREFIXES+STATUS_LINE_PREFIXES):
-                digest=hashlib.sha256(line.strip().encode("utf-8")).hexdigest()[:32]
+                shape=re.sub(r"\d+(\.\d+)?","#",line.strip()) if line.strip().startswith(DRIFT_LINE_PREFIXES) else line.strip()
+                digest=hashlib.sha256(shape.encode("utf-8")).hexdigest()[:32]
                 if digest in held:
                     continue
                 held.add(digest)
