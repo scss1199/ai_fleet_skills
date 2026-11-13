@@ -231,7 +231,14 @@ def _commit_time(cwd: str, ref: str) -> float | None:
     return float(out) if run.returncode == 0 and out.isdigit() else None
 
 
-def _accepted_mechanically(order: dict) -> bool:
+def _seat_commit_time(seat: str, cwd: str, ref: str) -> float | None:
+    """A seat's commit, looked up where the answer was typed and then in the seat's own repository: a shell drifted to
+    the hub root had `commit:<sha>` refused though the commit existed (jci_taipei #62, 2026-11-13)."""
+    found = _commit_time(cwd, ref)
+    return found if found is not None else _commit_time(os.path.join(str(HUB), seat), ref)
+
+
+def _accepted_mechanically(order: dict, seat: str = "") -> bool:
     """A machine-issued order answered with evidence written after it was issued closes without waking the curator: 68 such
     reviews cost 0.2M each and reopened 4, two of them for stale evidence, which this checks (2026-11-03). Every REVIEW_SAMPLE-th
     order and any reopened one still go to review, so the other kinds of defect keep being seen."""
@@ -247,7 +254,7 @@ def _accepted_mechanically(order: dict) -> bool:
         return False
     for path in order["answer"]["evidence"]:
         if path.startswith(COMMIT):
-            if (_commit_time(order["answer"].get("from") or HUB, path[len(COMMIT):]) or 0) >= issued:
+            if (_seat_commit_time(seat, order["answer"].get("from") or str(HUB), path[len(COMMIT):]) or 0) >= issued:
                 return True
             continue
         try:
@@ -270,7 +277,7 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
     reason = (reason or note).strip()
     # `commit:<sha>` is evidence too: seats were writing a one-off runtime/curator-<n>.txt per order only to have a path
     # to name (2026-11-13: ai_trader, ai_photo, sdnext_a770), and nothing ever read those files again.
-    missing = [p for p in evidence if (_commit_time(cwd, p[len(COMMIT):]) is None if p.startswith(COMMIT)
+    missing = [p for p in evidence if (_seat_commit_time(seat, cwd, p[len(COMMIT):]) is None if p.startswith(COMMIT)
                                        else not os.path.exists(os.path.join(cwd, p)))]
     if missing:
         raise ValueError(f"evidence path not found: {missing}")
@@ -291,7 +298,7 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
         # The answering conversation owns the order from now on: when the curator reopens it, only that
         # conversation is pushed to finish it (jci_taipei 2026-10-28: #5 reopened pushed every jci_taipei session).
         order["owner"] = {"session": sid, "from": os.path.abspath(cwd), "at": _now(), "by": "answer"}
-    if _accepted_mechanically(order):
+    if _accepted_mechanically(order, seat):
         order.update(status="closed", closed_at=_now(), closed_from=MECHANICAL)
     _save(seat, doc)
     return order
