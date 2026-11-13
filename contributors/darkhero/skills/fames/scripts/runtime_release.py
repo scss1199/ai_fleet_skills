@@ -18,6 +18,7 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import shutil
 import subprocess
 import uuid
 
@@ -233,22 +234,27 @@ def build(workspace, package_root, source_paths) -> dict:
         for relative, row in files.items():
             if _sha(_read_file(_beneath(workspace, relative))) != row['sha256']:
                 raise ReleaseError('source_changed_during_build', relative)
+        incoming = None
         if previous:
-            backup = _existing_build_backup(workspace, previous)
-            if backup is None:
-                backup = _beneath(workspace, '_registry/fames-runtime-build-backups/' + previous['release_sha256'] + '/' + uuid.uuid4().hex)
-                retired = backup
-            else:
-                # The same bytes are already held by a verified backup; the retired tree is
-                # quarantined for the operator instead of growing a second registry copy.
-                retired = _beneath(workspace, '_delete/' + dt.date.today().isoformat() + '-fames-runtime-build-redundant/'
-                                   + previous['release_sha256'] + '/' + uuid.uuid4().hex)
-            retired.parent.mkdir(parents=True, exist_ok=True)
-            os.replace(runtime, retired)
+            # One retained backup: the release this build replaces. It is verified before the one it supersedes
+            # is dropped, so a previous tree is on disk at every moment; older releases live in git history.
+            # 2026-11-13: one uuid tree per release plus a _delete copy per rebuild was ~85 files a build.
+            slot = _beneath(workspace, BUILD_BACKUP)
+            incoming = backup = slot.with_name(slot.name + '.incoming')
+            if incoming.exists():  # a build stopped between the swap and the promotion below: finish it first
+                _verify_runtime(incoming)
+                _promote_build_backup(incoming, slot)
+            incoming.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(runtime, incoming)
         os.replace(stage, runtime)
         final = verify(package)
         if not final['ok']:
             return {**final, 'state': 'UNKNOWN_BUILD_READBACK', 'retained_backup': str(backup) if backup else None}
+        if incoming:
+            if _verify_runtime(incoming)['release_sha256'] != previous['release_sha256']:
+                raise ReleaseError('build_backup_readback_failed')
+            _promote_build_backup(incoming, slot)
+            backup = slot
         return {'ok': True, 'state': 'BUILT', 'release_sha256': manifest['release_sha256'],
                 'generation': manifest['generation'], 'file_count': len(files),
                 'retained_backup': str(backup) if backup else None, 'native_activation': 'UNKNOWN'}
@@ -257,18 +263,13 @@ def build(workspace, package_root, source_paths) -> dict:
                 'retained_backup': str(backup) if backup else None}
 
 
-def _existing_build_backup(workspace: Path, previous: dict) -> Path | None:
-    """A verified earlier backup of exactly this release (content-addressed release_sha256)."""
-    parent = _beneath(workspace, '_registry/fames-runtime-build-backups/' + previous['release_sha256'])
-    if not parent.is_dir():
-        return None
-    for candidate in sorted(parent.iterdir()):
-        try:
-            if candidate.is_dir() and _verify_runtime(candidate)['release_sha256'] == previous['release_sha256']:
-                return candidate
-        except Exception:
-            continue
-    return None
+BUILD_BACKUP = '_registry/fames-runtime-build-backups/previous'
+
+
+def _promote_build_backup(incoming: Path, slot: Path) -> None:
+    if slot.exists():
+        shutil.rmtree(slot)
+    os.replace(incoming, slot)
 
 
 @contextlib.contextmanager
@@ -398,31 +399,10 @@ def _previous(path: Path) -> dict | None:
     return doc
 
 
-def _archive_previous_receipt(workspace: Path, previous: bytes, fallback_attempt: str) -> None:
-    """One archive per attempt, named by the archived receipt's own attempt_id.
-
-    A later snapshot of the same attempt replaces its earlier one (APPLYING -> final), and
-    identical bytes are never rewritten. attempt+uuid names had grown to 5080 files by 2026-10-31.
-    """
-    attempt = fallback_attempt
-    try:
-        candidate = json.loads(previous).get('attempt_id')
-        if isinstance(candidate, str) and re.fullmatch(r'[0-9a-f]{32}', candidate):
-            attempt = candidate
-    except (ValueError, AttributeError):
-        pass
-    archive = _beneath(workspace, '_registry/fames-runtime-receipts/' + attempt + '.previous.json')
-    if archive.exists() and _sha(_read_file(archive)) == _sha(previous):
-        return
-    temporary = archive.with_name(archive.name + '.' + uuid.uuid4().hex + '.stage')
-    _write_new(temporary, previous)
-    os.replace(temporary, archive)
-
-
 def _persist_receipt(workspace: Path, receipt: dict) -> None:
     path = _beneath(workspace, '_registry/fames-runtime-release.json')
-    if path.exists():
-        _archive_previous_receipt(workspace, _read_file(path), receipt['attempt_id'])
+    # The receipt is one overwritten record. Its per-attempt `.previous.json` archive (5,080 files by 10-31,
+    # ~97 a day after) had no reader: _previous() reads this file only.
     _atomic_json(path, receipt)
     if json.loads(path.read_bytes()) != receipt:
         raise ReleaseError('installation_receipt_readback_failed')
