@@ -112,7 +112,7 @@ _ANTI_CREATE = ("rename", "with_name", "replace(", "+ \"", "f\"", "f'", "+ '", "
 # (fames_turn_binding.expire) bounds them itself, so about 1,600 files a day stop passing through _delete.
 STATE_TTL = (
     {"root": "_registry/fames-hot", "kind": "files", "ttl": 7,
-     "exclude": ("midturn-", "ship-state", "hw-watch", "review-claim", "capture-")},
+     "exclude": ("midturn-", "wait-", "ship-state", "hw-watch", "review-claim", "capture-")},  # midturn-/wait-: the session hook expires its own
     {"root": "ai_darkhero/evidence/fames-fleet-20260924/runtime-release-tests", "kind": "dirs", "ttl": 1},  # the test moved to pytest's temp root on 10-31
     {"root": "_registry/mtm-audit", "kind": "files", "ttl": 7, "exclude": ("latest", "waste-report", "git-ship-latest")},  # per-run copies, 1,570 nobody read
     {"root": "_registry/fames-runtime-receipts", "kind": "newest", "keep": 3},

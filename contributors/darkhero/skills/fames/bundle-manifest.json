@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.45.290",
-  "skill_gen": "2026-11-13.5",
+  "version": "1.45.291",
+  "skill_gen": "2026-11-13.6",
   "execution_order": [
     "FP",
     "MTM",
@@ -24,7 +24,7 @@
   "source_git_commit": null,
   "files": {
     ".gitattributes": "448f5307a4b4eaab3e5e0615e1b57e125c2e6419d590025c4ac3d2e2c004955e",
-    "SKILL.md": "92105e62f9373ff4a63760ed43ba7ee1f783843e3f08446350f76d9573695bcf",
+    "SKILL.md": "3b9ea826ffadc7bbecd117b130cb608d71b310b2fa50489c6dc9ef8d57226fed",
     "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
     "references/autonomous-knowledge.md": "b34ca6beb034909aaade75be4707c772e90155c6c12b8278c7b3964ec8238df5",
     "references/cases.json": "2ebbb062b8e58241dfd2a70ec423678c4c16e40303d436ffa6de6e5560f67a40",
@@ -35,7 +35,7 @@
     "references/minimal-context.md": "f5c24bd6cc37901d7e71187ef9d273a88676be4c1393faaedf1664ff794478da",
     "references/operator-manual.md": "ddfdafdb484c5233b59bf91d80f44a0060b161f822342db9669e7bcf63b0903c",
     "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
-    "references/protocols/fames-protocol.json": "de0716a25aade8f9f1c1ef7536b96ff0d66809f0a728efab0ee6088ecfd41982",
+    "references/protocols/fames-protocol.json": "32ba9de381f2ad68570ed9a5d4147e0e4959c5981d98165cd3d727d4cdfff67f",
     "references/protocols/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
     "references/protocols/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
     "references/protocols/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -49,7 +49,7 @@
     "runtime/files/_harness/runtime/fames_capabilities.py": "c55ad66713d987b3087a9b9e346ef3a67ff254126ece45cb2f0dcdee6db0d359",
     "runtime/files/_harness/runtime/fames_phase_runtime.py": "632b16f663be49f8f651f00ad305d00d088936eacabe40b14a9bd5ded1d788a8",
     "runtime/files/_harness/runtime/fames_session_harness.py": "293ed239ca2a7644cfff33135d4763c804c1663dbdc9bef64f09473f6a63c355",
-    "runtime/files/_harness/runtime/fames_turn_binding.py": "cd7dff469ce556828ca5babc104baaf0182bdfa722b2e2cd0fd25f47a0c6a0f7",
+    "runtime/files/_harness/runtime/fames_turn_binding.py": "9d35a926947ade854c703eb90aebd73a2aa1974a85146ea37da0543b9399f3d3",
     "runtime/files/_harness/runtime/jev_phase_advisor.py": "3512af5166341135e29f083b807a6e159286d2e04599ef15c914c1df45752d40",
     "runtime/files/_harness/runtime/jev_skill_advisor.py": "438e0e7c39ee6105483d1e9f689de582161e0464c36d69939498f6afbfbd9057",
     "runtime/files/_harness/runtime/jev_task_projection.py": "b902a14055a9c411fe502e6557775720e83f63c66d93a7043cfe364cafe66c4c",
@@ -73,7 +73,7 @@
     "runtime/files/_lean/leanctl.py": "2cde11126976a17c88a927375b56c5c09a2115b7b0a6708ec8f563a068c7d7a3",
     "runtime/files/_registry/agent-surfaces.json": "b36cebd6b0f912587f117bc7df19c352496bbb6bcf7c9d3293b0940e951e8f60",
     "runtime/files/_registry/claude-remote-control.json": "44f271d7e0700238d5351698be0638cb1f798669d9f30c8aa3ad1c7d2fc2cfa2",
-    "runtime/files/_registry/fames-protocol.json": "de0716a25aade8f9f1c1ef7536b96ff0d66809f0a728efab0ee6088ecfd41982",
+    "runtime/files/_registry/fames-protocol.json": "32ba9de381f2ad68570ed9a5d4147e0e4959c5981d98165cd3d727d4cdfff67f",
     "runtime/files/_registry/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
     "runtime/files/_registry/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
     "runtime/files/_registry/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -106,7 +106,7 @@
     "runtime/files/_skill/engines/fames-immediate-apply.py": "7473fb1f1d9494798f02403e15456a150e38cda9fdc79156c464faf10c052be6",
     "runtime/files/_skill/engines/fames_execution_evidence.py": "47f1ef6470401c155a88355816e2a13377e8d6730a440b9d7032a0a391bbacf5",
     "runtime/files/_skill/engines/fleet-bridge.py": "e6429442f85994d5426df6dc6310ccaa9acb6bfae03c8ebaf388205ba95cd22e",
-    "runtime/files/_skill/engines/fleet-hygiene.py": "321e5c45a737eb26c2718e6bfd5f7cb878b0dacd2abe26aef679a5e9cecea2b2",
+    "runtime/files/_skill/engines/fleet-hygiene.py": "989a2f865ab84bb36760aefcc93021ebf8db3fa85abaab20cadd2c7482ab6d92",
     "runtime/files/_skill/engines/fleet-job-dispatch.py": "aaa480f0d82a4186e8876cb97f09687c7af66b792626e0ddf9c45a4140558976",
     "runtime/files/_skill/engines/fleet-residue-quarantine.py": "afb050756694ebf9286bd23aafba19812baac72cecb3de87be8e4b93db99f9f3",
     "runtime/files/_skill/engines/fleet-rogue-scheduler-sweep.py": "cabd10d3d31f555f31ada1e289df627dc10b25b2e41e9320f7a0632f55e8c7fb",
@@ -125,10 +125,10 @@
     "runtime/files/_skill/engines/sync-cursor-hooks.py": "a6d43d99a31d1673ff3ba4c0df30dddd8620482274d0634a8b62fafc55284d28",
     "runtime/files/_skill/engines/token-onboard.py": "b36201e60c667dadc26f06f211b8b9fc7275a778035d980143f19f4721dbfb39",
     "runtime/files/_skill/engines/websearch.py": "fe9f331cd3ea3f168a1745c07339fbaa376072a5851890e9728e259d9370dce5",
-    "runtime/files/_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py": "71ec7ab14b047827dd4ce4298a3aa274016203d51e76017959aaba2dc0318a1c",
+    "runtime/files/_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py": "494961f0f515265c9b05f4322e99154ec4e6d04c5b9dce6b4f8ddf230cb46ab1",
     "runtime/files/ai_darkhero/tray/load_posture.py": "665fd736a3d245bf50c5c7b7f8ecd1b4da23e176ee347ea001912f12116a0efb",
     "runtime/files/ai_darkhero/tray/scripts/load_grant.py": "00764dd7fbe47fa22c7cd658899b213cd514aa4fc3d6965463f4c8045ad58981",
-    "runtime/manifest.json": "f5eb13c6b1350c7c87505ffcde2355d716683ae354cf8a3fc8af82cdfddcfb93",
+    "runtime/manifest.json": "cc1980391e49e62f1a457a80d5d6200edd65e5ba8a270ac77becfa5fe1cdb30a",
     "scripts/adaptive_response_controller.py": "07a19c6e0bda90f25800617a274d5f641709676d0d71cdfae8e17dec91e0d911",
     "scripts/claude_live_ab.py": "3aaa4276c505e1eceea33207c6c4baeb190b6319b737f081fd53fbc055834261",
     "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
@@ -143,5 +143,5 @@
     "scripts/test_work_efficiency.py": "e4250ba4c05f616c79cf97182507d1ff3585487c788546151a97b2dad74f0536",
     "scripts/work_efficiency.py": "42d41b64b8075280b1212625b46a25ab32bba35d27f5c019cf79dde02552022e"
   },
-  "package_sha": "d3049f50fd14c8fab822ec71e680f29c5c74f7d7527d69a4e1eedfb5d7aa507a"
+  "package_sha": "f0a639a360dbb7e9680bb0d3424a35508e19990cb735ffcd500a3bb1b349529d"
 }

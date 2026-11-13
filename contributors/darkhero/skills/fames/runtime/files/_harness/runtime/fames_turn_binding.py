@@ -21,12 +21,14 @@ EXPIRE_EVERY = 3600
 EXPIRE_MARK = '.expired'
 
 
-def expire(root, *, seconds=KEEP_SECONDS, every=EXPIRE_EVERY, limit=256, now=None):
+def expire(root, *, seconds=KEEP_SECONDS, every=EXPIRE_EVERY, limit=256, now=None, prefixes=(), files_only=False):
     """The writer bounds its own store: drop entries of `root` nothing wrote to for `seconds`.
 
     Per-prompt state was left for a sweeper that moved about 1,600 files a day into _delete for a person to purge.
     Runs at most once per `every` seconds per store (one overwritten mark file), removes at most `limit` entries,
-    and never raises: admission must not fail on housekeeping. Returns the number removed."""
+    and never raises: admission must not fail on housekeeping. Returns the number removed.
+    prefixes: only entries whose name starts with one of them (a store shared with files that must stay).
+    files_only: leave sub-folders alone (a store that keeps a shared folder beside its per-chat files)."""
     root = Path(root)
     now = time.time() if now is None else now
     mark = root / EXPIRE_MARK
@@ -45,9 +47,11 @@ def expire(root, *, seconds=KEEP_SECONDS, every=EXPIRE_EVERY, limit=256, now=Non
                 if removed >= limit:
                     break
                 try:
-                    if entry.name == EXPIRE_MARK or entry.is_symlink():
+                    if entry.name == EXPIRE_MARK or entry.is_symlink() or (prefixes and not entry.name.startswith(tuple(prefixes))):
                         continue
                     if entry.is_dir():
+                        if files_only:
+                            continue
                         with os.scandir(entry.path) as inner:
                             newest = max([e.stat().st_mtime for e in inner] or [entry.stat().st_mtime])
                         if now - newest >= seconds:
