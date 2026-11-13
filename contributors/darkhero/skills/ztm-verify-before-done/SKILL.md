@@ -105,6 +105,11 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 非 trivial 的改碼在宣稱完成前，交給沒寫這段程式的 subagent 走技能 `independent-review`
 （生成者不得是自己產出的唯一裁判）；審查結果與 diff 一起引用。
 
+成果完成後另開挑錯路線（Felix Rieseberg 影片 qMccUXYIpQ0，F1S 2026-11-14 吸收）：非 trivial 交付宣稱完成前，
+`f1s_parallel.py plan --units`（2–3 個 unit，prompt 都是「證明這份成果錯」＋成果與驗收項，verifier null）→ `run` 交免費池不同路線；
+本對話當評審逐條判定成立／不成立，成立者修完重跑，只剩雞毛蒜皮（措辭、風格、與驗收無關）＝放行。挑錯結果是草稿，判定要回原文核對；
+密鑰、proprietary 內容（UT.xlsx）不進挑錯 prompt。這道不取代 `independent-review` 與 PROOF。
+
 ## 重犯的錯誤改成機械檢查（kyloren_bot 83845712，Uncle Bob）
 
 同一種錯誤第二次出現時，加一道機械檢查（測試、lint、依賴規則檔、hook 的判斷類別），不要再加一段散文規則；

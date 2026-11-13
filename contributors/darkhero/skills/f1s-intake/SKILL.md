@@ -103,6 +103,10 @@ Stop hook 擋下之後；`f1s_repeat.py scan` 是裁判，Lean `lean/f1s_delta_r
 平靜訊息後同樣比較只有 6.0% 對 4.5%。上一輪宣稱完成、工具次數多寡與發火無關；對話越長也沒有越常發火，所以這裡不規定「開新對話」。
 之後看 F1S RECORD 的 `anger came back`：§5 生效後的數字要低於基準才算有效。
 
+未說出口的原則（影片 qMccUXYIpQ0，F1S 2026-11-14 吸收）：curator 定期用免費池讀 `_registry/f1s-daily/state.json` 全部 corrections，
+歸納成原則，每條附一個機械檢查並比對 T1／技能找缺口，以 `f1s_apply.py add` 記帳由 f1s-evolve 判定；原則是審查標準的草稿，
+不自動進 T1（紅線只由 operator 改）。
+
 ## 6 抽象輸入展開（operator 2026-11-12）
 
 原話：「我只會給你高度抽象的中文要你去完成所有任務 你去看其他有提到我的人格 星盤 認知功能的cwd來自動反向解析並拓展我的輸入語意
