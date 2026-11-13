@@ -522,7 +522,7 @@ def _waiting_techniques(seat: str) -> str:
     if not waiting:
         return ""
     return (f"ARTICLE TECHNIQUES — {waiting} waiting for this seat: f1s_apply.py list --seat {seat}, apply and measure the worthwhile ones, "
-            "f1s_apply.py close <id> applied|covered --evidence <path> or rejected --note <why>.")
+            "f1s_apply.py close <id> applied|covered --evidence <path> or rejected --note <why>; an opinion with nothing to take apart: nouse --note <why> (not handed on).")
 
 
 def _fanout_line() -> str:
