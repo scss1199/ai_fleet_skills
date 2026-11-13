@@ -977,8 +977,10 @@ DEPLOY = re.compile(
 )
 GIT_FAIL = re.compile(r"(?im)^\s*(?:!\s+\[rejected\]|fatal:|error:|remote:\s*error|Permission denied)|nothing to commit|rejected")
 CMD_FAIL = re.compile(r"(?im)^\s*(?:error|fatal|exception|traceback|failed)\b|\bexit(?:ed)?\s+(?:code|status)\s+[1-9]")
-SELFTEST_CMD = re.compile(r"(?i)(?:self-?tests?|tests?_[\w-]+|[\w-]+_tests?|run_tests?)\.(?:py|js|ts|sh|ps1)\b|\bpytest\b|\bunittest\b|\bnpm\s+test\b|\bcargo\s+test\b|\bgo\s+test\b")
-TEST_FAIL = re.compile(r"(?i)\b[1-9]\d*\s+(?:failed|failures?|errors?)\b|\bFAILED\b|RESULT\s+FAIL|AssertionError|Traceback")
+SELFTEST_CMD = re.compile(r"(?i)(?:self-?tests?|tests?_[\w-]+|[\w-]+_tests?|run_tests?)\.(?:py|js|ts|sh|ps1)\b|\bpytest\b|\bunittest\b|\bnpm\s+test\b|\bcargo\s+test\b|\bgo\s+test\b|"
+                          r"\bnode(?:\.exe)?\s+(?:-\S+\s+)*--test\b|[\w-]+\.test\.[cm]?[jt]s\b")
+TEST_FAIL = re.compile(r"(?i)\b[1-9]\d*\s+(?:failed|failures?|errors?)\b|\bFAILED\b|RESULT\s+FAIL|AssertionError|Traceback|"
+                       r"(?:^|\n)\s*(?:ℹ|#)\s*fail\s+[1-9]|(?:^|\n)\s*not ok\s+\d")
 TEST_OK = re.compile(r"(?i)\b[1-9]\d*\s+passed\b|\bok\b|RESULT\s+PASS|\bpass(?:ed)?\b|✓|全部通過")
 # A pytest summary line ("20 passed in 21.53s", "3 passed, 1 skipped in 0.4s") is distinctive enough to count
 # even when it reaches the transcript through a pipe, a subshell or a `tail` of the background task's output file
@@ -986,7 +988,10 @@ TEST_OK = re.compile(r"(?i)\b[1-9]\d*\s+passed\b|\bok\b|RESULT\s+PASS|\bpass(?:e
 # was read with `tail -4 file`, and the command of that read carried no test-runner token).
 PYTEST_SUMMARY = re.compile(r"(?i)\b[1-9]\d*\s+passed\b[^\n]{0,80}?\bin\s+\d+(?:\.\d+)?\s*s\b")
 # a command that RUNS a test runner (SELFTEST_CMD also matches a mere `sed -n 1,80p tests/test_x.py`)
+# node:test (f1s-evolve 2026-11-11, ai_demo: `node --test tests/caption-verbatim.test.mjs` -> "ℹ pass 2 / ℹ fail 0"
+# was blocked as no test run; a failing run prints "ℹ fail N" / TAP "not ok N", caught by TEST_FAIL above)
 RUNNER_CMD = re.compile(r"(?i)\bpytest\b|\bunittest\b|\bnpm\s+test\b|\bcargo\s+test\b|\bgo\s+test\b|"
+                        r"\bnode(?:\.exe)?\s+(?:-\S+\s+)*--test\b|\bnode(?:\.exe)?\s+(?:-\S+\s+)*\S*\.test\.[cm]?[jt]s\b|"
                         r"(?:python[\w.]*|node|bash|sh|pwsh|powershell)(?:\.exe)?\s+(?:-\S+\s+)*\S*(?:self-?tests?|tests?_[\w-]+|[\w-]+_tests?|run_tests?)\.(?:py|js|ts|sh|ps1)\b")
 # Background-task completion rows: the client writes them as plain `user` rows WITHOUT isMeta, so until
 # 2026-10-30 each one opened a new "turn" and every Bash result before it (the test run itself) fell out of the

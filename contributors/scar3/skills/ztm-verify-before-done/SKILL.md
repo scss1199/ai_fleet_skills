@@ -51,6 +51,16 @@ parent_skill: aex-agent-evolution
   fames-phase 3,103 個 session 目錄、_bus/inbox/ai_workspace 11k 封沒人收的警報、_logs 4.7k 個 goal .bak）。
   `.MIGRATED-bak` 只用在一次性遷移使用者資料；備份整棵樹只在那棵樹不在 git 時。測試只寫 tmp_path，禁止寫進 repo 的
   evidence/（「Deliberately retained」fixture 一天 28k 檔）。警報只送有 charter 的 seat，同一 pid 只送一次。
+- ⑥-搬到 `_delete` 不算修好（operator 2026-11-13「盡可能連搬到_delete的這個過程都變少」）：10-31 那條規則留了「登記 TTL」
+  這個出口，結果寫入端照寫、掃帚照搬，11-12 一天進 `_delete` 5,685 個檔（hygiene 3,749、inbox 1,837），仍要使用者手動清。
+  判準改成量測值：`python _skill/engines/f1s_reuse.py tick` 記錄的 `delete_inflow`（每天進 `_delete` 的檔數，依類別）要下降；
+  TTL 只留給真的有讀者、但會過期的資料。寫檔前先問這四句，任一句答不出就不寫：
+  (1) 下一次執行會不會讀它？會→固定檔名覆寫同一格；不會→把值回傳或寫進既有帳本的一列，不開檔。
+  (2) 內容是不是某個 `_registry` 狀態檔已經有的？是→不寄訊息、不另存；通知的冷卻記在寄件引擎自己的狀態，
+      不靠「收件匣還在不在」判斷（收件匣會被自動 ack 清掉，於是每 15 分鐘重寄：loop-engine、fleet-mandatory-tick）。
+  (3) 是不是工具自己會重建的快取（`__pycache__`、`.ruff_cache`）？使用中的快取是持續檔，不搬；只有閒置 14 天的才算殘留。
+  (4) 是不是為了「留證據」？證據用 commit、測試路徑、既有收據；對話中的試算、探針腳本、一次性輸出寫 session scratchpad，
+      不寫進 cwd。`f1s_reuse.py born` 列出的每一族（PER_RUN＝有寫入程式、NO_WRITER＝對話手寫）都修寫入端，不修檔案。
   機械檢查：`fleet-hygiene.py producers`（state 目錄 >1000 個項目或 ≥100 個備份命名＝點名寫入引擎；
   程式碼掃 `MIGRATED-bak` rename／uuid 備份／retained fixture）每 20 h 隨 fames-converge 跑並發布 hygiene.json；
   到期的引擎狀態由同一引擎依 STATE_TTL 搬進 _delete（有 manifest）。新寫一個會重複產生檔案的功能前，先決定它的
@@ -97,6 +107,9 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 同一種錯誤第二次出現時，加一道機械檢查（測試、lint、依賴規則檔、hook 的判斷類別），不要再加一段散文規則；
 長規則文件會被模型當成建議。非 trivial 的邏輯可加 mutation test 當驗證的一部分。
 
+給人看的對外文字（履歷、面試稿、PTT 售文、行銷文案）交出前可選跑 `python %AI_WORKSPACE%\_skill\engines\prose-slop-lint.py <file-or-dir> [--last 10] --summary`：
+0-token 抓 AI 腔（套話開場、「不是 X 而是 Y」、一行多個破折號、三連列舉、buzzword），只標行號，改寫仍由該 seat 判斷；以前後 count 比較。（Stop Slop，ai_darkhero 2026-11-11）
+
 ## 即時擷取不能無人看管（operator 2026-10-24，jci_taipei 數位第八次會議漏錄 55 分鐘）
 
 錄會議、字幕側錄、直播／串流下載這類**錯過就無法重來**的擷取，「開了」不等於「錄到了」，「會一直跑到結束」更不是完成：
@@ -118,6 +131,8 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 
 - 綠測試要測到真實成果，不是測到容易過的替身。改碼後說「修好」的那個測試，必須會因為這個 bug 變紅（修 bug 段），（Lean `ClaimContract.lean` fix_claim_needs_test_after_write）
   否則它證明不了任何事——一個對不上目標的檢查，過了也是 UNKNOWN。
+- 驗收標準放在做事的人改不到的地方：同一個變更裡同時放寬測試、門檻或預期值，又宣稱修好，這個綠不算數；
+  要改驗收就另起一步、寫明理由，宣稱只能用改之前的驗收（kyloren 卡 8f8d9476b6ad71eb，AI agent 交易系統「人當監考官」）。
 - 驗證要包含消費端實際用的 loader 或它的 log，不能只靠自家的離線解析器：東西被回報「空」或「壞」時，先讀使用端自己的
   執行 log，再掃檔案（ai_nuwa #12：Q05 離線 UnityPy 與渲染全過，但遊戲 BepInEx/LogOutput.log 顯示 Unity 拒載；
   根因是重壓後 UnityFS 檔頭總大小沒更新，離線讀取器不看這欄，全庫掃出 103 個；commit 0a6c243、tests/test_empty_item_check.py）。

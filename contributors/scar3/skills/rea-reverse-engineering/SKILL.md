@@ -53,3 +53,25 @@ npx -y rea-agents@6.8.0 analyze-javascript-application "<absolute path to app or
   並寫出 limitations；沒有執行驗證的行為寫 UNKNOWN。
 - 加殼的程式和伺服器端邏輯通常拆不出來，這時照實寫 UNKNOWN，不要用猜的補。
 - 分析在本機跑，但結果一旦貼進對話就會送到模型供應商：只把需要的片段帶進對話。
+
+## 同一套做法用在自己的原始碼（f1s_rea，2026-11-13）
+
+REA 讀的是 binary 與 JavaScript；F1S 與各 cwd 是 Python，工具用不上，做法照用：從實際會跑的成品往回拆、每一步附
+證據、列出重建必須保留的義務、重建後用比對判定。文件、註解、docstring 都不算證據。零模型呼叫。
+
+```bash
+E=C:/ai_workspace/_skill/engines/f1s_rea.py
+python "$E" map <seat|hub>     # 每個 .py 分成 live／skill／test_only／orphan，另列 untested（會跑但沒有測試點名）
+python "$E" why <file>         # 從入口到這個檔的 file:line 鏈；沒有鏈就是 orphan
+python "$E" ledger <file>      # 重寫必須保留的義務：CLI 子命令、store、呼叫者、測試
+python "$E" order [seat ...]   # 每個 cwd 一張完整的拆解重整令（預設全部 live cwd）
+python "$E" status             # 各 root 的數字與上次到這次的變化
+```
+
+- 入口＝`~/.claude/settings.json`、`_registry/hosts.json`、各 cwd 的 settings／hooks／.cmd／.ps1（run），以及技能、章程、
+  記憶、`ztm-task-routes.json`（skill）。.ps1／.cmd 也是圖上的節點，所以經 wrapper 啟動的檔算得到。
+- 故意高估：別的資料夾有同名檔也算走得到，所以 orphan 是安全的說法，live 不是「真的有在用」的證明。
+- orphan 動手前再用 `git grep -F "<檔名>"` 看一次註冊表與發行清單；確定沒人用才移到 `_delete/<日期>-rea/`，不永久刪除。
+- untested 是「高信任環境」的量法（文章 De50l2uz7yu）：agent 改一個沒有測試點名的 live 檔時無法自己驗證，
+  先補測它實際產出的測試，再談放手讓 agent 自己跑。
+- 金鑰區不開：路徑含 `env`、`secrets`、`_secrets` 的檔不列入也不讀。

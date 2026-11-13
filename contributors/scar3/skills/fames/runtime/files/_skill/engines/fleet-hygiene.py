@@ -60,6 +60,7 @@ LIVE = ("aex-loop", "hubclock", "supervisor")   # coordination names that keep o
 STALE_ROOTS = ("_temp", os.path.join("_downloads", "distill"), os.path.join("_downloads", "acquire"))
 BACKUP_ROOTS = (os.path.join("_registry", "fleet-skill-export-backups"), os.path.join("_registry", "fames-runtime-build-backups"))
 KEEP_NEWEST = 3
+CACHE_IDLE_D = 14
 MAX_MOVES = 4000
 NEVER = ("_secrets", "_delete", "_registry", "_bus", os.path.join("fracdigi", "env"), os.path.join("ai_trader", "quant"),
          os.path.join("_lean", "toolchains"), os.path.join("_lean", "hubmath"))
@@ -98,7 +99,6 @@ WRITERS = (  # longest matching prefix wins; extend when a new producer is found
     ("_registry/f1s-parallel", "_skill/engines/f1s_parallel.py (one store per seat + ledger.jsonl; no per-plan files)"),
     ("_registry", "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"),
     ("evidence/fames-fleet-20260924", "_lean/fames/tests/test_phase_contract.py proof_fixture (test writes into the repo)"),
-    ("evidence/jev-adoption-20260922", "static test fixtures read by _harness/tests/test_jev_skill_advisor.py (data, not residue)"),
     ("_registry/f1s-sources", "_skill/engines/f1s-sources.py / knowledge-consolidate.py content store (data, not residue)"),
 )
 # Engine code that spells the retention antipattern; a hit is a finding for the file's owner, never an edit.
@@ -108,14 +108,12 @@ _ANTI_CREATE = ("rename", "with_name", "replace(", "+ \"", "f\"", "f'", "+ '", "
 # Expired engine state the sweep retires into _delete (class expired_state). kind: "files" = direct files older than
 # ttl days; "dirs" = direct subdirs whose newest file is older than ttl; "named" = entries whose name matches `re`
 # (RETENTION_RE by default), older than ttl when given; "newest" = everything but the newest `keep` entries.
+# fames-phase, fames-turn/<surface>, its by-prompt folders and intake-locks left this table on 2026-11-13: their writer
+# (fames_turn_binding.expire) bounds them itself, so about 1,600 files a day stop passing through _delete.
 STATE_TTL = (
     {"root": "_registry/fames-hot", "kind": "files", "ttl": 7,
-     "exclude": ("midturn-", "ship-state", "hw-watch", "review-claim", "capture-")},
-    {"root": "_registry/fames-phase", "kind": "dirs", "ttl": 7},
-    {"root": "_registry/fames-turn/*/by-prompt", "kind": "dirs", "ttl": 7},
+     "exclude": ("midturn-", "wait-", "ship-state", "hw-watch", "review-claim", "capture-")},  # midturn-/wait-: the session hook expires its own
     {"root": "ai_darkhero/evidence/fames-fleet-20260924/runtime-release-tests", "kind": "dirs", "ttl": 1},  # the test moved to pytest's temp root on 10-31
-    {"root": "_registry/fames-turn/claude", "kind": "files", "ttl": 7},       # per-session binding + its lock, 1,946 in 14 days
-    {"root": "_registry/fames-turn/intake-locks", "kind": "files", "ttl": 7},
     {"root": "_registry/mtm-audit", "kind": "files", "ttl": 7, "exclude": ("latest", "waste-report", "git-ship-latest")},  # per-run copies, 1,570 nobody read
     {"root": "_registry/fames-runtime-receipts", "kind": "newest", "keep": 3},
     {"root": "_registry/ship-queue", "kind": "named"},
@@ -609,6 +607,20 @@ def _size(p: Path) -> int:
     return total
 
 
+def _cache_idle(path: Path, now: float) -> bool:
+    """A tool cache nothing has written for CACHE_IDLE_D days. A cache in use is a file that keeps being read: moving it
+    made the interpreter rebuild it the same day, and the copy sat in _delete (2026-11-12: about 1,000 files a day)."""
+    cut = now - CACHE_IDLE_D * 86400
+    for dp, _dns, fns in os.walk(path):
+        for f in fns:
+            try:
+                if os.stat(os.path.join(dp, f), follow_symlinks=False).st_mtime > cut:
+                    return False
+            except OSError:
+                continue
+    return True
+
+
 def candidates(hub: Path, now: float | None = None) -> list[tuple[str, Path, int]]:
     """(class, path, bytes) for everything the sweep may move; ordered caches, temp files, stale entries, old backups."""
     now = now or _now()
@@ -623,7 +635,8 @@ def candidates(hub: Path, now: float | None = None) -> list[tuple[str, Path, int
                 if d in PRUNE or _is_junction(str(full)):
                     continue
                 if d in CACHE_DIRS:
-                    out.append(("cache_dir", full, _size(full)))
+                    if _cache_idle(full, now):
+                        out.append(("cache_dir", full, _size(full)))
                     continue
                 keep.append(d)
             dns[:] = keep

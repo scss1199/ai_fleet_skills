@@ -38,7 +38,8 @@ def write(path, data):
     # Serialize the entire stage/replace/readback transaction, including between
     # processes; unique staging alone would still race destination readback.
     binding = load(Path(__file__).with_name('fames_turn_binding.py'))
-    with binding.locked(path.with_suffix('.write.lock')):
+    # One retained lock per goal folder, not one per receipt (2026-11-13: 3 of every 11 files were locks).
+    with binding.locked(path.with_name('write.lock')):
         path.parent.mkdir(parents=True, exist_ok=True)
         stage = path.with_suffix('.tmp')
         stage.write_text(json.dumps(data, indent=2, ensure_ascii=True)+'\n', encoding='utf-8')
@@ -185,8 +186,17 @@ def advance(workspace, turn_path, phase, *, previous_guard=None, extra_refs=(), 
     except Exception as exc:
         advice = {'state': 'UNKNOWN', 'reason': type(exc).__name__, 'api_calls': 0,
                   'phase_advance_authorized': False}
-    write(folder / (phase.lower() + '-advice.json'), advice)
+    # 2026-11-13: 1,362 advice files on disk, every one api_calls 0 with no recommendation and no reader. The file
+    # is written only when the provider answered or bound a skill; a no-recommendation result replaces an earlier
+    # recommendation for the same phase so a stale one never outlives it, and otherwise leaves nothing.
+    target = folder / (phase.lower() + '-advice.json')
+    if advice_carries_recommendation(advice) or target.is_file():
+        write(target, advice)
     return guard, ref('previous_guard', path)
+
+def advice_carries_recommendation(advice):
+    return isinstance(advice, dict) and (advice.get('state') == 'PHASE_ADVICE_BOUND'
+                                         or (type(advice.get('api_calls')) is int and advice['api_calls'] > 0))
 
 def begin_turn(workspace, turn):
     with phase_transaction(workspace, turn):
@@ -213,6 +223,7 @@ def _begin_turn_unlocked(workspace, turn):
             'package_sha', 'prompt_identity', 'session_identity_sha', 'prompt_contract_identity',
             'work_contract', 'generated', 'native_intake_observed_ns', 'local_skill_route')
     write(snapshot, {k: turn.get(k) for k in keys})
+    binding.expire(folder.parent)     # goal folders of prompts that ended a week ago; nothing replays them
     guards, previous = {}, None
     for phase in ('FP', 'MTM'):
         try:
