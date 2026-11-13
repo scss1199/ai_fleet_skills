@@ -449,7 +449,10 @@ CONTRACT_LINE_PREFIXES=("TOKEN CORE ","FAMES CORE:","HARD INVARIANTS:","OPERATOR
 # 48K, SESSION ARCHIVE DUE 25K), and each copy is re-read by every later call. An unchanged one is dropped; a changed
 # number is a new line and goes out. Order and review lines (CURATOR ...) are never dropped: a wake must carry its order.
 STATUS_LINE_PREFIXES=("TOKEN WATCH ","F1S REUSE ","F1S NIGHT","F1S RECURRENCE ","SESSION ARCHIVE DUE ","ARTICLE RELAY ",
-                      "F1S 各 cwd 用量","F1S 文章回饋","回報: python ")
+                      "F1S 各 cwd 用量","F1S 文章回饋","回報: python ",
+                      # same replay, third pass: 92K more were these reminders said again word for word
+                      "FAMES ROUTE ","FAMES PHASE GATE ","AGC LANE ","Read the compact instead","STALE CLAIMS ",
+                      "UNCLAIMED ORDERS ","ARTICLE TECHNIQUES ")
 # Counters that drift on every look. Replay of the same 7 days after the cut above: 117K tokens were a line that
 # differed from one already held only in its digits (TOKEN WATCH 58K, ARTICLE RELAY 10K, F1S NIGHT 10K). These compare
 # with digits blanked, so the line goes out again when its words change (a seat enters OVER SHARE, the posture flips),
