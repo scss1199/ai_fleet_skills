@@ -50,6 +50,8 @@ STALE_OWNER_AFTER_S = 6 * 3600  # owner transcript silent this long: the claim b
 CLAUDE_PROJECTS = os.path.join(os.path.expanduser("~"), ".claude", "projects")
 CURATOR_FALLBACK = "ai_darkhero"
 REVIEW_SAMPLE = 8       # one routine order in this many still gets the curator's review
+REVIEW_BATCH = 8        # answers with fresh evidence that wake an idle curator chat together (wake_queue)
+REVIEW_BATCH_H = 6.0    # ... or the oldest of them waiting this many hours
 MECHANICAL = "mechanical"
 ACTIVE = ("open", "done", "cannot")  # freeze / forbid hold until the curator closes the order
 PROTECTED = ("logioptionsplus", "optionsplusupdater")  # T1 protect-logi-options-plus: never a forbid target
@@ -248,11 +250,16 @@ def _accepted_mechanically(order: dict, seat: str = "") -> bool:
         # A self-review answer is read back by f1s_fanout.collect and reported as one table per version: 371 of them woke the
         # curator once each in three days and none was reopened for its content (2026-11-11).
         return True
+    return _evidence_fresh(order, seat)
+
+
+def _evidence_fresh(order: dict, seat: str = "") -> bool:
+    """True when at least one evidence path or commit of the answer was written after the order was issued."""
     try:
         issued = time.mktime(time.strptime(order.get("issued_at", ""), "%Y-%m-%dT%H:%M:%S"))
     except ValueError:
         return False
-    for path in order["answer"]["evidence"]:
+    for path in (order.get("answer") or {}).get("evidence") or ():
         if path.startswith(COMMIT):
             if (_seat_commit_time(seat, order["answer"].get("from") or str(HUB), path[len(COMMIT):]) or 0) >= issued:
                 return True
@@ -471,9 +478,10 @@ def injection(seat: str, session_id: str = "") -> str:
         unclaimed = _unclaimed_orders()
         if not queue:
             return "\n".join(t for t in (techniques, unclaimed) if t)
-        rows = "; ".join(f"{s}#{o['n']} {o['status']} {o['title']}" for s, o in queue[:6])
-        return "\n".join(t for t in (f"CURATOR REVIEW — {len(queue)} answered order(s): {rows}. Check each answer, then "
-                                     f"curator_orders.py close <seat> <n> or reopen <seat> <n> --note TEXT.", techniques, unclaimed) if t)
+        rows = "; ".join(f"{s}#{o['n']} {review_flag(o, s)} {o['title']}" for s, o in queue[:6])
+        return "\n".join(t for t in (f"CURATOR REVIEW — {len(queue)} answered order(s): {rows}. `curator_orders.py review` "
+                                     f"prints each answer's evidence and note; then close <seat> <n> [<n> ...] or "
+                                     f"reopen <seat> <n> --note TEXT.", techniques, unclaimed) if t)
     orders = open_orders(seat)
     kids = archive_due(session_id, own=True)
     if not orders:
@@ -592,6 +600,48 @@ def review_queue() -> list[tuple[str, dict]]:
             if o.get("status") in ("done", "cannot") and (s, o.get("n")) not in judged]
 
 
+def review_flag(order: dict, seat: str = "") -> str:
+    """What the curator has to judge in an answered order: `cannot` (a reason, no evidence), `reopened` (sent back before),
+    `stale` (no evidence newer than the order), else `fresh`."""
+    if order.get("status") == "cannot":
+        return "cannot"
+    if order.get("reopened_at"):
+        return "reopened"
+    return "fresh" if _evidence_fresh(order, seat) else "stale"
+
+
+def wake_queue(batch: int = REVIEW_BATCH, hours: float = REVIEW_BATCH_H, now: float | None = None) -> list[tuple[str, dict]]:
+    """The review queue when it is worth waking an idle curator chat, else []. Every answer used to wake it within 2 minutes
+    (90 answers in 4 days, 0.16M each) and 2 of 86 answers with evidence were reopened (2026-11-14): an answer with fresh
+    evidence now waits for the next prompt, until `batch` of them wait or the oldest has waited `hours`. `cannot`, `stale`
+    and `reopened` answers wake at once. batch 0 = every answer wakes, as before."""
+    queue = review_queue()
+    if not queue or not batch:
+        return queue
+    now = time.time() if now is None else now
+    waited = []
+    for seat, order in queue:
+        if review_flag(order, seat) != "fresh":
+            return queue
+        try:
+            waited.append(now - time.mktime(time.strptime((order.get("answer") or {}).get("at") or "", "%Y-%m-%dT%H:%M:%S")))
+        except ValueError:
+            return queue
+    return queue if len(queue) >= batch or max(waited) >= hours * 3600 else []
+
+
+def review_table() -> list[str]:
+    """One line per answered order with what the review needs (flag, evidence, the seat's note), so the curator reads the
+    queue in one call instead of a `list` per seat."""
+    rows = []
+    for seat, order in review_queue():
+        ans = order.get("answer") or {}
+        evid = ", ".join(p if p.startswith(COMMIT) else os.path.basename(p) for p in ans.get("evidence") or ()) or "-"
+        rows.append(f"{seat}#{order['n']} {review_flag(order, seat)} | {order.get('title', '')[:60]} | {evid[:80]} | "
+                    f"{' '.join((ans.get('reason') or '').split())[:160]}")
+    return rows
+
+
 def _active() -> list[tuple[str, dict]]:
     return [(s, o) for s in _seats_with_orders() for o in load(s)["orders"] if o.get("status") in ACTIVE]
 
@@ -658,8 +708,12 @@ def main(argv=None) -> int:
     s.add_argument("--note", required=True)
     s = sub.add_parser("close")
     s.add_argument("seat")
-    s.add_argument("n", type=int)
+    s.add_argument("n", type=int, nargs="+")
+    sub.add_parser("review")
     a = ap.parse_args(argv)
+    if a.cmd == "review":
+        print("\n".join(review_table()) or "review queue empty")
+        return 0
     try:
         if a.cmd == "issue":
             out = issue(a.seat, a.title, a.do if a.do is not None else open(a.prompt_file, encoding="utf-8-sig").read(), a.freeze, a.forbid)
@@ -676,7 +730,8 @@ def main(argv=None) -> int:
         elif a.cmd == "reopen":
             out = reopen(a.seat, a.n, a.note)
         else:
-            out = close(a.seat, a.n)
+            out = [{k: close(a.seat, n).get(k) for k in ("n", "status", "title")} for n in a.n]
+            out = out[0] if len(out) == 1 else out
     except (PermissionError, ValueError) as exc:
         print(f"refused: {exc}")
         return 2

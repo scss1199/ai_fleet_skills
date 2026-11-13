@@ -513,6 +513,15 @@ def hardware_due(seat: str, curator: str, now: float | None = None) -> str:
             "hwlog_autostart.py --request-restart), read back a segment younger than 10 s, and tell the operator.")
 
 
+def review_batch() -> int:
+    """How many fresh-evidence answers wake the curator together; `live_wake.review_batch: 0` = each answer wakes."""
+    try:
+        cfg = json.loads(CONFIG.read_text(encoding="utf-8-sig")).get("live_wake") or {}
+        return int(cfg.get("review_batch", 8))
+    except (OSError, ValueError, AttributeError, TypeError):
+        return 8
+
+
 def review_queue() -> list | None:
     """The answered orders waiting for the curator as [seat, n, status, answer time] rows; None when unreadable."""
     try:
@@ -520,7 +529,8 @@ def review_queue() -> list | None:
                                                       HUB / "_skill" / "engines" / "curator_orders.py")
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
-        return [[s, o.get("n"), o.get("status"), (o.get("answer") or {}).get("at")] for s, o in mod.review_queue()]
+        # wake_queue is empty while only answers with fresh evidence wait (they ride the next prompt, in one batch)
+        return [[s, o.get("n"), o.get("status"), (o.get("answer") or {}).get("at")] for s, o in mod.wake_queue(review_batch())]
     except Exception:  # noqa: BLE001 - no queue known: claim_review wakes as before
         return None
 
