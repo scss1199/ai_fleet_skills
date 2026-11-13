@@ -444,6 +444,12 @@ MIDTURN_WATCH=("_registry/fames-protocol.json","_registry/rules-blueprint.json",
 MIDTURN_HEAD="F1S MID-TURN UPDATE (an upgrade landed while this task was running; apply it from the next step)"
 CONTRACT_LINE_PREFIXES=("TOKEN CORE ","FAMES CORE:","HARD INVARIANTS:","OPERATOR RED LINES:","SEAL-AP-1:",
                         "Task intake binds goal identity","Apply this contract to the current prompt")
+# Status lines whose text only changes when their numbers do. Measured 2026-11-13 over 7 days of every cwd: 906K of the
+# 3,059K injected tokens were a line the same conversation already held verbatim (回報 110K, TOKEN WATCH 108K, F1S REUSE
+# 48K, SESSION ARCHIVE DUE 25K), and each copy is re-read by every later call. An unchanged one is dropped; a changed
+# number is a new line and goes out. Order and review lines (CURATOR ...) are never dropped: a wake must carry its order.
+STATUS_LINE_PREFIXES=("TOKEN WATCH ","F1S REUSE ","F1S NIGHT","F1S RECURRENCE ","SESSION ARCHIVE DUE ","ARTICLE RELAY ",
+                      "F1S 各 cwd 用量","F1S 文章回饋","回報: python ")
 
 
 def _contract_dedup(surface_id: str, session_id: str, text: str, *, agent_id: str="", reset: bool=False) -> str:
@@ -469,7 +475,7 @@ def _contract_dedup(surface_id: str, session_id: str, text: str, *, agent_id: st
                 held=set()
         kept=[]
         for line in text.split("\n"):
-            if line.strip().startswith(CONTRACT_LINE_PREFIXES):
+            if line.strip().startswith(CONTRACT_LINE_PREFIXES+STATUS_LINE_PREFIXES):
                 digest=hashlib.sha256(line.strip().encode("utf-8")).hexdigest()[:32]
                 if digest in held:
                     continue
