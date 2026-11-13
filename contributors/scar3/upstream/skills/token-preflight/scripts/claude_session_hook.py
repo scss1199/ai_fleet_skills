@@ -18,6 +18,25 @@ CODEX_STATUS=HUB/"_registry"/"token-preflight"/"codex-hook-status.json"
 MACHINE_EVENT_TAGS=("<task-notification>","<side-sessions-event>","<ci-monitor-event>","<cross-session-message")
 
 
+def _bound(root: Path, prefixes: tuple = (), files_only: bool = False) -> None:
+    """This hook writes one small record per conversation; it also drops the ones no chat touched for a week.
+
+    The stat of one mark file is the whole cost on all but one call an hour; housekeeping never fails a hook."""
+    try:
+        import time
+        try:
+            if time.time() - (root / ".expired").stat().st_mtime < 3600:
+                return
+        except OSError:
+            pass
+        spec = importlib.util.spec_from_file_location("fames_turn_binding_bound", HUB / "_harness" / "runtime" / "fames_turn_binding.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        module.expire(root, prefixes=prefixes, files_only=files_only)
+    except Exception:
+        pass
+
+
 def _read_hook_input(stream) -> dict:
     """Decode Claude's UTF-8 hook pipe independently of Windows cp950."""
     raw = stream.buffer.read() if hasattr(stream, "buffer") else stream.read()
@@ -213,6 +232,7 @@ def _t1_refresh(surface_id: str, session_id: str, *, at_start: bool) -> str:
             stage.write_text(json.dumps({"t1_sha256": digest, "at": datetime.now(timezone.utc).isoformat()}),
                              encoding="utf-8")
             os.replace(stage, record)
+            _bound(T1_DELIVERY)
         if at_start or last == digest:
             return ""
         return "STANDING RULES UPDATED (current T1, applies from this turn):\n" + text
@@ -325,6 +345,7 @@ def _charter_refresh(surface_id: str, session_id: str, cwd: str, *, at_start: bo
             stage.write_text(json.dumps({"files": loaded, "cwd": anchor,
                                          "at": datetime.now(timezone.utc).isoformat()}), encoding="utf-8")
             os.replace(stage, record)
+            _bound(CHARTER_DELIVERY, files_only=True)
         if at_start or last == current:
             return ""
         if last is None:
@@ -458,6 +479,7 @@ def _contract_dedup(surface_id: str, session_id: str, text: str, *, agent_id: st
         stage=path.with_name(path.name+f".{os.getpid()}.tmp")
         stage.write_text(json.dumps({"lines":sorted(held),"at":datetime.now(timezone.utc).isoformat()}),encoding="utf-8")
         os.replace(stage,path)
+        _bound(path.parent)
         return "\n".join(kept).strip()
     except Exception:
         return text
@@ -518,6 +540,7 @@ def _midturn_changed(surface_id: str, session_id: str, *, record_only: bool=Fals
         path.write_text(json.dumps({"sig":sig,"at":datetime.now(timezone.utc).isoformat(),"session_id":session_id,
                                     "surface":surface_id,"agent_id":agent_id or None,"seat":seat or None,
                                     "cwd":cwd or None,"event":event or None}),encoding="utf-8")
+        _bound(path.parent,("midturn-","wait-"))
         return seen is not None and seen != sig and not record_only
     except Exception:
         return False
