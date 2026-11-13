@@ -417,10 +417,12 @@ def token_watch(now: float | None = None, spawn=None, line_fn=None) -> str:
         return ""
 
 
-def archive_due(session_id: str = "", now: float | None = None, spawn=None) -> str:
+def archive_due(session_id: str = "", now: float | None = None, spawn=None, own: bool = False) -> str:
     """operator 2026-11-06 「注意f1s是否能自動關閉並整併已經沒有任務或沒有意義的子對話」: the curator conversation sees the
     sessions session-consolidate.py `due` found (ended 沒有下一步 or stale, no open ask) and archives them; the scan
-    re-runs hidden every 30 min. Never lists the asking conversation itself. Fail-open: no file, no line."""
+    re-runs hidden every 30 min. Never lists the asking conversation itself. Fail-open: no file, no line.
+    own (operator 2026-11-13, every cwd): only the sessions this conversation started itself, so a seat's chat closes
+    its own finished children without waiting for the curator."""
     now = time.time() if now is None else now
     _refresh_archive_due(now, spawn)
     try:
@@ -431,10 +433,13 @@ def archive_due(session_id: str = "", now: float | None = None, spawn=None) -> s
     except (OSError, ValueError, AttributeError):
         return ""
     rows = [r for r in rows if r.get("session_id") != session_id and r.get("host_id") and r.get("host_id") != session_id]
+    if own:
+        rows = [r for r in rows if session_id and session_id in (r.get("parent"), r.get("parent_session"))]
     if not rows:
         return ""
     items = "; ".join(f"{r['host_id']} ({r.get('reason')}, {str(r.get('title') or '')[:30]})" for r in rows[:8])
-    return (f"SESSION ARCHIVE DUE — {len(rows)} conversation(s) have no task left: {items}. Archive each with "
+    whose = "conversation(s) you started are confirmed complete" if own else "conversation(s) have no task left"
+    return (f"SESSION ARCHIVE DUE — {len(rows)} {whose}: {items}. Archive each with "
             f"archive_session (reason = its reason); a reopened one comes back on its next order.")
 
 
@@ -463,8 +468,9 @@ def injection(seat: str, session_id: str = "") -> str:
         return "\n".join(t for t in (f"CURATOR REVIEW — {len(queue)} answered order(s): {rows}. Check each answer, then "
                                      f"curator_orders.py close <seat> <n> or reopen <seat> <n> --note TEXT.", techniques, unclaimed) if t)
     orders = open_orders(seat)
+    kids = archive_due(session_id, own=True)
     if not orders:
-        return ""
+        return kids
     lines = [f"CURATOR ORDERS — {curator()}（F1S 校正令）優先於本 cwd 自己的決定；紅線與 operator 本人指令仍在其上。"
              "每一令就是完整提示詞：直接開始執行，不等 operator 開口，先處理，再做其他事："]
     for o in orders:
@@ -478,7 +484,7 @@ def injection(seat: str, session_id: str = "") -> str:
                  f"| --cannot \"<原因>\"（answer 的對話成為該令的負責對話；接手前先 claim {seat} <n>，已有負責對話就不要接）。"
                  "交給別的對話（如 Fable）時，交付物是檔案列（依 item id 冪等、寫前讀回）；send_message 只是通知，"
                  "回 undelivered/queued 是排隊不是遺失，不要重送")
-    return "\n".join(lines)
+    return "\n".join(lines + ([kids] if kids else []))
 
 
 def _brief(orders: list[dict]) -> list[dict]:
