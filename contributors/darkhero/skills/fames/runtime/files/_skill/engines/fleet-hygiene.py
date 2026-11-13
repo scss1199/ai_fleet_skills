@@ -25,6 +25,7 @@ What one run does (zero model tokens, bounded, reversible):
   python fleet-hygiene.py status
   python fleet-hygiene.py memories       # stale memories: Claude memory files naming an engine file, hub path or
                                          # flag that no longer exists (fix or remove the memory, not the file)
+  python fleet-hygiene.py cves           # runtime CVEs per cwd (Node security releases, OSV for venvs; network)
   python fleet-hygiene.py fleet          # curator: every host's latest hygiene.json from the carrier clone
 """
 from __future__ import annotations
@@ -507,6 +508,135 @@ def stale_memories(hub: Path, root: Path | None = None) -> list[dict]:
     return out
 
 
+# ------------------------------------------------------------------ runtime CVEs (ai_darkhero proposal 2026-11-13)
+# The CVE-2026-111497 sweep (local Node 24.14.1, three cwds on node:22-alpine, brotli 1.2.0) was done by hand; the
+# same comparison is mechanical: Node lines against nodejs.org/dist/index.json (its `security` flag), seat Python
+# environments against OSV, fixed version from PyPI. Advisory finding only; the upgrade stays the seat's work.
+NODE_INDEX = "https://nodejs.org/dist/index.json"
+OSV_BATCH = "https://api.osv.dev/v1/querybatch"
+PYPI_JSON = "https://pypi.org/pypi/{}/json"
+NODE_PIN_FILES = (".nvmrc", ".node-version")
+FROM_NODE_RE = re.compile(r"^\s*FROM\s+(?:--\S+\s+)*node:(\S+)", re.I | re.M)
+RUNTIME_DEPTH = 3
+
+
+def _fetch_json(url: str, body: dict | None = None, timeout: int = 20):
+    import urllib.request
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json", "User-Agent": "fleet-hygiene"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 - fixed https feeds above
+        return json.loads(r.read().decode("utf-8"))
+
+
+def _ver(s: str) -> tuple[int, ...] | None:
+    m = re.match(r"v?(\d+)(?:\.(\d+))?(?:\.(\d+))?", s.strip())
+    return tuple(int(g) for g in m.groups() if g is not None) if m else None
+
+
+def _seat_node_specs(seat: Path) -> list[tuple[str, str]]:
+    """(source, spec) for every Dockerfile FROM node:<tag> and .nvmrc/.node-version within RUNTIME_DEPTH."""
+    out = []
+    base = len(seat.parts)
+    for dp, dns, fns in os.walk(seat):
+        dns[:] = [d for d in dns if d not in PRUNE and d not in CACHE_DIRS and not _is_junction(os.path.join(dp, d))
+                  and len(Path(dp).parts) - base < RUNTIME_DEPTH]
+        for f in fns:
+            p = Path(dp) / f
+            if f.lower().startswith("dockerfile"):
+                out += [(str(p.relative_to(seat)), "node:" + t) for t in FROM_NODE_RE.findall(_read_src(p))]
+            elif f in NODE_PIN_FILES:
+                out.append((str(p.relative_to(seat)), _read_src(p).strip()))
+    return list(dict.fromkeys(out))   # a multi-stage Dockerfile names the same tag once per stage
+
+
+def node_delta(spec: str, index: list[dict]) -> dict | None:
+    """One Node spec against the release index: floating tag -> rebuild row; pinned -> vulnerable when a security
+    release in the same major line is newer. None = nothing to report."""
+    tag = spec.split(":", 1)[1] if spec.startswith("node:") else spec
+    v = _ver(tag.split("-", 1)[0])
+    if not v:
+        return None
+    line = [e for e in index if (_ver(e.get("version", "")) or (0,))[0] == v[0]]
+    if not line:
+        return {"spec": spec, "status": "unknown_line"}
+    latest = max(line, key=lambda e: _ver(e["version"]))["version"]
+    if len(v) < 3:   # node:22-alpine floats: safe only once the image is rebuilt after the security release
+        sec = [e for e in line if e.get("security")]
+        return {"spec": spec, "status": "floating", "latest": latest,
+                "last_security": max(sec, key=lambda e: _ver(e["version"]))["version"] if sec else None}
+    newer_sec = [e for e in line if e.get("security") and _ver(e["version"]) > v]
+    if not newer_sec:
+        return None
+    return {"spec": spec, "status": "vulnerable", "fixed": max(newer_sec, key=lambda e: _ver(e["version"]))["version"],
+            "latest": latest}
+
+
+def _site_packages(seat: Path) -> list[Path]:
+    out = []
+    for venv in (".venv", "venv"):
+        for sp in ((seat / venv / "Lib" / "site-packages"), *sorted((seat / venv / "lib").glob("python3*/site-packages"))):
+            if sp.is_dir():
+                out.append(sp)
+    return out
+
+
+def _dists(paths: list[str] | None) -> dict[str, str]:
+    from importlib import metadata
+    got = {}
+    for d in metadata.distributions(**({"path": paths} if paths else {})):
+        name = (d.metadata["Name"] or "").strip()
+        if name and d.version:
+            got.setdefault(name.lower(), d.version)
+    return got
+
+
+def python_vulns(pkgs: dict[str, str], fetch=None) -> list[dict]:
+    fetch = fetch or _fetch_json
+    names = sorted(pkgs)
+    if not names:
+        return []
+    res = fetch(OSV_BATCH, {"queries": [{"package": {"name": n, "ecosystem": "PyPI"}, "version": pkgs[n]} for n in names]})
+    out = []
+    for n, r in zip(names, res.get("results") or []):
+        ids = [v.get("id") for v in (r or {}).get("vulns") or []]
+        if ids:
+            try:
+                latest = fetch(PYPI_JSON.format(n))["info"]["version"]
+            except Exception as exc:  # noqa: BLE001
+                latest = f"UNKNOWN: {type(exc).__name__}"
+            out.append({"package": n, "version": pkgs[n], "vulns": ids[:8], "latest": latest})
+    return out
+
+
+def runtime_cves(hub: Path, fetch=None, local_node: str | None = None) -> list[dict] | str:
+    """One row per cwd (plus `<host>` for the local node / hub python) with a vulnerable or floating runtime."""
+    fetch = fetch or _fetch_json
+    try:
+        index = fetch(NODE_INDEX)
+    except Exception as exc:  # noqa: BLE001 - offline: UNKNOWN, never a pass
+        return f"UNKNOWN: node index {type(exc).__name__}"
+    if local_node is None:
+        try:
+            local_node = subprocess.run(["node", "--version"], capture_output=True, text=True, timeout=15,
+                                        creationflags=NW).stdout.strip()
+        except (OSError, subprocess.SubprocessError):
+            local_node = ""
+    rows = []
+    host_node = [d for d in [node_delta(local_node, index)] if local_node and d]
+    host_py = python_vulns(_dists(None), fetch)
+    if host_node or host_py:
+        rows.append({"cwd": "<host>", "node": [{"source": "node --version", **d} for d in host_node], "python": host_py})
+    for seat in seats(hub):
+        node = [{"source": src, **d} for src, spec in _seat_node_specs(seat) for d in [node_delta(spec, index)] if d]
+        py = []
+        sps = _site_packages(seat)
+        if sps:
+            py = python_vulns(_dists([str(p) for p in sps]), fetch)
+        if node or py:
+            rows.append({"cwd": seat.name, "node": node, "python": py})
+    return rows
+
+
 def check(hub: Path, now: float | None = None) -> dict:
     now = now or _now()
     rows = [check_seat(s, now) for s in seats(hub)]
@@ -522,10 +652,14 @@ def check(hub: Path, now: float | None = None) -> dict:
         anti = retention_antipatterns(hub)
     except Exception as exc:  # noqa: BLE001
         anti = f"UNKNOWN: {type(exc).__name__}"
+    try:
+        cves = runtime_cves(hub)
+    except Exception as exc:  # noqa: BLE001
+        cves = f"UNKNOWN: {type(exc).__name__}"
     return {"seats": rows, "scheduled_tasks": scheduled_task_findings(hub),
             "counts": {k: sum(1 for r in rows if r["activity"] == k) for k in ("ACTIVE", "IDLE", "DORMANT")},
             "violations": sum(len(r["findings"]) for r in rows),
-            "producers": leaks, "retention_antipatterns": anti, "stale_memories": mems}
+            "producers": leaks, "retention_antipatterns": anti, "stale_memories": mems, "runtime_cves": cves}
 
 
 # ------------------------------------------------------------------ sweep
@@ -858,6 +992,7 @@ def run(hub: Path = HUB, host: str | None = None, apply: bool = False, force: bo
                            "producer_leaks": chk["producers"] if isinstance(chk["producers"], str) else len(chk["producers"]),
                            "retention_antipatterns": chk["retention_antipatterns"] if isinstance(chk["retention_antipatterns"], str) else len(chk["retention_antipatterns"]),
                            "stale_memories": chk["stale_memories"] if isinstance(chk["stale_memories"], str) else len(chk["stale_memories"]),
+                           "runtime_cves": chk["runtime_cves"] if isinstance(chk["runtime_cves"], str) else len(chk["runtime_cves"]),
                            "moved": sw["moved"], "planned_bytes": sw["planned_bytes"], "applied": apply}}
         doc["seconds"] = round(time.time() - t0, 1)
         _save(OUT / f"{host}.json", doc)
@@ -903,6 +1038,7 @@ def main(argv=None) -> int:
     r.add_argument("--max-moves", type=int, help=f"cap on entries moved in this run (default {MAX_MOVES}); backlog runs raise it")
     sub.add_parser("status")
     sub.add_parser("fleet")
+    sub.add_parser("cves", help="runtime CVE rows: Node lines vs nodejs.org security releases, seat venvs vs OSV")
     sub.add_parser("memories", help="memories naming engine files, paths or flags that no longer exist")
     pr = sub.add_parser("producers", help="name the engines that keep filling state dirs (no move)")
     pr.add_argument("--cap", type=int, default=PRODUCER_CAP)
@@ -914,6 +1050,8 @@ def main(argv=None) -> int:
     elif a.cmd == "producers":
         out = {"producers": producers(HUB, a.cap), "retention_antipatterns": retention_antipatterns(HUB),
                "expired_state_planned": len(expired_state(HUB))}
+    elif a.cmd == "cves":
+        out = runtime_cves(HUB)
     elif a.cmd == "memories":
         out = stale_memories(HUB)
     elif a.cmd == "status":

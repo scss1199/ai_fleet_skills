@@ -53,6 +53,12 @@ SETTLE_S = 15.0        # a release rewrites several watched files; wake once, af
 SETTLE_MAX_S = 180.0
 LIFETIME_S = 70 * 3600  # wired with timeout 259200 s (72 h); exit cleanly before the host kills the hook
 MAX_WAKES_PER_DAY = 24
+# The prompt cache of an idle conversation lasts one hour. Measured 2026-11-13 over 7 days (446 live wakes, 81.4M
+# Opus-relative): of 298 wakes that landed inside the hour 5 rewrote the cache, of 121 that landed later all 121 did,
+# 180K each (the whole context at 1.25x), 21.8M in all. A self-review or prune order is not worth that: it reaches the
+# conversation free at its next prompt, and f1s_fanout's sweep settles an unclaimed one mechanically.
+COLD_AFTER_S = 55 * 60
+DEFER_RE = re.compile(r"self-review|\bprune\b", re.I)
 SHIP_STATE = HUB / "_registry" / "fames-hot" / "ship-state.json"  # written by ship-f1s.py around its steps
 SHIP_MAX_S = 3600.0
 # Hardware watch for the curator seat (operator standing mandate 2026-10-24: darkhero's hardware stability is the
@@ -121,6 +127,25 @@ def enabled() -> bool:
         return cfg.get("enabled", True) is not False
     except (OSError, ValueError, AttributeError):
         return True
+
+
+def cold_after_s() -> float:
+    """Idle seconds after which a deferrable order no longer wakes; `live_wake.cold_after_min: 0` wakes as before."""
+    try:
+        cfg = json.loads(CONFIG.read_text(encoding="utf-8-sig")).get("live_wake") or {}
+        return float(cfg.get("cold_after_min", COLD_AFTER_S / 60)) * 60
+    except (OSError, ValueError, AttributeError, TypeError):
+        return COLD_AFTER_S
+
+
+def cold_deferrable(titles: dict | None, known, idle_s: float) -> bool:
+    """True when every row that is new since the last delivery is a self-review or prune order and the conversation
+    has been idle past the cache lifetime. Anything unknown (no titles, no prior rows, nothing new) wakes as before."""
+    limit = cold_after_s()
+    if not limit or idle_s <= limit or titles is None or known is None:
+        return False
+    new = set(titles) - set(known)
+    return bool(new) and all(DEFER_RE.search(titles[k] or "") for k in new)
 
 
 def wait_path(hook, surface_id: str, session_id: str) -> Path:
@@ -304,7 +329,12 @@ def orders_sig(hook, seat: str) -> str:
 
 
 def order_rows(hook, seat: str) -> list[str] | None:
-    """One key per thing in the order store an idle conversation of `seat` has work on: each of its own OPEN orders
+    rows = order_titles(hook, seat)
+    return None if rows is None else sorted(rows)
+
+
+def order_titles(hook, seat: str) -> dict | None:
+    """Key -> order title (empty for a review row). One key per thing in the order store an idle conversation of `seat` has work on: each of its own OPEN orders
     and, for the curator, each other seat's answer waiting for review.  The order files' bytes also change when an
     order is answered, closed or judged, and every such write woke the idle conversations watching the file: measured
     2026-11-11 over two days, live wakes cost ai_darkhero 14.6M, ai_trader 7.8M and ai_nuwa 6.3M Opus-relative tokens
@@ -312,12 +342,12 @@ def order_rows(hook, seat: str) -> list[str] | None:
     as before."""
     import hashlib
     if not seat:
-        return []
+        return {}
     try:
         paths = list(hook._orders_files(seat))
     except Exception:  # noqa: BLE001
         return None
-    out = []
+    out = {}
     for path in paths:
         try:
             orders = json.loads(path.read_text(encoding="utf-8-sig")).get("orders")
@@ -336,8 +366,9 @@ def order_rows(hook, seat: str) -> list[str] | None:
                 row = ["answer", o.get("n"), status, (o.get("answer") or {}).get("at")]
             else:
                 continue
-            out.append(hashlib.sha256(json.dumps([path.stem, *row], ensure_ascii=False, default=str).encode("utf-8")).hexdigest()[:16])
-    return sorted(out)
+            key = hashlib.sha256(json.dumps([path.stem, *row], ensure_ascii=False, default=str).encode("utf-8")).hexdigest()[:16]
+            out[key] = str(o.get("title") or "") if own else ""
+    return out
 
 
 def contract_sig(hook, seat: str) -> str:
@@ -625,7 +656,8 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
                 orders = orders_sig(hook, sig_seat)
                 review_only = bool(sig_seat) and sig_seat == curator and contract != state["contract"] and base == state["base"]
                 directive_only = contract != state["contract"] and orders == state.get("orders") and not review_only
-                rows, known = order_rows(hook, sig_seat), state.get("order_rows")
+                titles, known = order_titles(hook, sig_seat), state.get("order_rows")
+                rows = None if titles is None else sorted(titles)
                 grew = rows is None or known is None or bool(set(rows) - set(known))
                 if contract == state["contract"]:
                     text = ""
@@ -635,6 +667,9 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
                     text = ""                              # another curator chat took this review
                 elif directive_only and not upgrade_wake():
                     text = ""                              # an upgrade alone: the next prompt carries it, no wake
+                elif base == state["base"] and cold_deferrable(titles, known, _now() - start):
+                    text = ""                              # cache gone, only self-review/prune: the next prompt carries it
+                    state["cold_held"] = int(state.get("cold_held") or 0) + 1
                 else:
                     text = hook.live_update(doc, event="IdleWake", watch_seat=sig_seat)
                 state["contract"], state["base"], state["orders"], state["order_rows"] = contract, base, orders, rows
