@@ -60,6 +60,7 @@ LIVE = ("aex-loop", "hubclock", "supervisor")   # coordination names that keep o
 STALE_ROOTS = ("_temp", os.path.join("_downloads", "distill"), os.path.join("_downloads", "acquire"))
 BACKUP_ROOTS = (os.path.join("_registry", "fleet-skill-export-backups"), os.path.join("_registry", "fames-runtime-build-backups"))
 KEEP_NEWEST = 3
+CACHE_IDLE_D = 14
 MAX_MOVES = 4000
 NEVER = ("_secrets", "_delete", "_registry", "_bus", os.path.join("fracdigi", "env"), os.path.join("ai_trader", "quant"),
          os.path.join("_lean", "toolchains"), os.path.join("_lean", "hubmath"))
@@ -608,6 +609,20 @@ def _size(p: Path) -> int:
     return total
 
 
+def _cache_idle(path: Path, now: float) -> bool:
+    """A tool cache nothing has written for CACHE_IDLE_D days. A cache in use is a file that keeps being read: moving it
+    made the interpreter rebuild it the same day, and the copy sat in _delete (2026-11-12: about 1,000 files a day)."""
+    cut = now - CACHE_IDLE_D * 86400
+    for dp, _dns, fns in os.walk(path):
+        for f in fns:
+            try:
+                if os.stat(os.path.join(dp, f), follow_symlinks=False).st_mtime > cut:
+                    return False
+            except OSError:
+                continue
+    return True
+
+
 def candidates(hub: Path, now: float | None = None) -> list[tuple[str, Path, int]]:
     """(class, path, bytes) for everything the sweep may move; ordered caches, temp files, stale entries, old backups."""
     now = now or _now()
@@ -622,7 +637,8 @@ def candidates(hub: Path, now: float | None = None) -> list[tuple[str, Path, int
                 if d in PRUNE or _is_junction(str(full)):
                     continue
                 if d in CACHE_DIRS:
-                    out.append(("cache_dir", full, _size(full)))
+                    if _cache_idle(full, now):
+                        out.append(("cache_dir", full, _size(full)))
                     continue
                 keep.append(d)
             dns[:] = keep

@@ -415,8 +415,17 @@ def _api_pool_status(
 def _atomic_write(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_suffix(path.suffix + f".{os.getpid()}.tmp")
-    temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    os.replace(temp, path)
+    try:
+        temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        os.replace(temp, path)
+    except OSError:
+        # A reader holding the target makes the replace fail on Windows; the staged copy must not outlive the call
+        # (seven sessions.json.<pid>.tmp, 21 MB, sat in fames-hot on 2026-11-13).
+        try:
+            temp.unlink()
+        except OSError:
+            pass
+        raise
 
 
 # Hot-refresh state: ONE file for every session (operator 2026-11-01 「人不會去讀就是垃圾」). It used to be one

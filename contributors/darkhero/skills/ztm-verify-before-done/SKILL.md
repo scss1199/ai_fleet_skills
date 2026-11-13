@@ -51,6 +51,16 @@ parent_skill: aex-agent-evolution
   fames-phase 3,103 個 session 目錄、_bus/inbox/ai_workspace 11k 封沒人收的警報、_logs 4.7k 個 goal .bak）。
   `.MIGRATED-bak` 只用在一次性遷移使用者資料；備份整棵樹只在那棵樹不在 git 時。測試只寫 tmp_path，禁止寫進 repo 的
   evidence/（「Deliberately retained」fixture 一天 28k 檔）。警報只送有 charter 的 seat，同一 pid 只送一次。
+- ⑥-搬到 `_delete` 不算修好（operator 2026-11-13「盡可能連搬到_delete的這個過程都變少」）：10-31 那條規則留了「登記 TTL」
+  這個出口，結果寫入端照寫、掃帚照搬，11-12 一天進 `_delete` 5,685 個檔（hygiene 3,749、inbox 1,837），仍要使用者手動清。
+  判準改成量測值：`python _skill/engines/f1s_reuse.py tick` 記錄的 `delete_inflow`（每天進 `_delete` 的檔數，依類別）要下降；
+  TTL 只留給真的有讀者、但會過期的資料。寫檔前先問這四句，任一句答不出就不寫：
+  (1) 下一次執行會不會讀它？會→固定檔名覆寫同一格；不會→把值回傳或寫進既有帳本的一列，不開檔。
+  (2) 內容是不是某個 `_registry` 狀態檔已經有的？是→不寄訊息、不另存；通知的冷卻記在寄件引擎自己的狀態，
+      不靠「收件匣還在不在」判斷（收件匣會被自動 ack 清掉，於是每 15 分鐘重寄：loop-engine、fleet-mandatory-tick）。
+  (3) 是不是工具自己會重建的快取（`__pycache__`、`.ruff_cache`）？使用中的快取是持續檔，不搬；只有閒置 14 天的才算殘留。
+  (4) 是不是為了「留證據」？證據用 commit、測試路徑、既有收據；對話中的試算、探針腳本、一次性輸出寫 session scratchpad，
+      不寫進 cwd。`f1s_reuse.py born` 列出的每一族（PER_RUN＝有寫入程式、NO_WRITER＝對話手寫）都修寫入端，不修檔案。
   機械檢查：`fleet-hygiene.py producers`（state 目錄 >1000 個項目或 ≥100 個備份命名＝點名寫入引擎；
   程式碼掃 `MIGRATED-bak` rename／uuid 備份／retained fixture）每 20 h 隨 fames-converge 跑並發布 hygiene.json；
   到期的引擎狀態由同一引擎依 STATE_TTL 搬進 _delete（有 manifest）。新寫一個會重複產生檔案的功能前，先決定它的

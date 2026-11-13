@@ -216,6 +216,21 @@ def owned_by_other(order: dict, session_id: str) -> bool:
     return bool(owner) and bool(session_id) and owner != session_id
 
 
+COMMIT = "commit:"
+
+
+def _commit_time(cwd: str, ref: str) -> float | None:
+    """Commit time of `ref` in the repository holding cwd; None when it is not a commit there."""
+    import subprocess  # noqa: PLC0415
+    try:
+        run = subprocess.run(["git", "-C", cwd, "show", "-s", "--format=%ct", ref + "^{commit}"], capture_output=True, text=True,
+                             timeout=30, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    except (OSError, subprocess.SubprocessError):
+        return None
+    out = run.stdout.strip()
+    return float(out) if run.returncode == 0 and out.isdigit() else None
+
+
 def _accepted_mechanically(order: dict) -> bool:
     """A machine-issued order answered with evidence written after it was issued closes without waking the curator: 68 such
     reviews cost 0.2M each and reopened 4, two of them for stale evidence, which this checks (2026-11-03). Every REVIEW_SAMPLE-th
@@ -231,6 +246,10 @@ def _accepted_mechanically(order: dict) -> bool:
     except ValueError:
         return False
     for path in order["answer"]["evidence"]:
+        if path.startswith(COMMIT):
+            if (_commit_time(order["answer"].get("from") or HUB, path[len(COMMIT):]) or 0) >= issued:
+                return True
+            continue
         try:
             if os.path.getmtime(path) >= issued:
                 return True
@@ -249,7 +268,10 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
     if bool(evidence) == bool(reason.strip()):
         raise ValueError("answer with --evidence PATH... [--note TEXT], --cannot REASON, or --note TEXT alone; not both")
     reason = (reason or note).strip()
-    missing = [p for p in evidence if not os.path.exists(os.path.join(cwd, p))]
+    # `commit:<sha>` is evidence too: seats were writing a one-off runtime/curator-<n>.txt per order only to have a path
+    # to name (2026-11-13: ai_trader, ai_photo, sdnext_a770), and nothing ever read those files again.
+    missing = [p for p in evidence if (_commit_time(cwd, p[len(COMMIT):]) is None if p.startswith(COMMIT)
+                                       else not os.path.exists(os.path.join(cwd, p)))]
     if missing:
         raise ValueError(f"evidence path not found: {missing}")
     doc = load(seat)
@@ -263,7 +285,8 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
         _require_curator(cwd, f"answers order #{n} owned by conversation {owner_of(order)[:8]}")
     order["status"] = "done" if evidence else "cannot"
     order["answer"] = {"at": _now(), "from": os.path.abspath(cwd), "session": sid,
-                       "evidence": [os.path.abspath(os.path.join(cwd, p)) for p in evidence], "reason": reason}
+                       "evidence": [p if p.startswith(COMMIT) else os.path.abspath(os.path.join(cwd, p)) for p in evidence],
+                       "reason": reason}
     if sid and not owner_of(order):
         # The answering conversation owns the order from now on: when the curator reopens it, only that
         # conversation is pushed to finish it (jci_taipei 2026-10-28: #5 reopened pushed every jci_taipei session).
@@ -450,7 +473,8 @@ def injection(seat: str, session_id: str = "") -> str:
             lines.append(f"#{o['n']} {o['title']}: 由對話 {owner_of(o)[:8]} 負責中，本對話讀過即可，不要 answer、不要停工{extra}")
         else:
             lines.append(f"#{o['n']} {o['title']}: {o['do']}{extra}")
-    lines.append(f"回報: python {HUB}/_skill/engines/curator_orders.py answer {seat} <n> --evidence <path> [--note \"計數前後、commit、留下什麼\"] "
+    lines.append(f"回報: python {HUB}/_skill/engines/curator_orders.py answer {seat} <n> --evidence <commit:SHA 或既有的程式／測試檔路徑；不要為了回報新開檔> "
+                 f"[--note \"計數前後、留下什麼\"] "
                  f"| --cannot \"<原因>\"（answer 的對話成為該令的負責對話；接手前先 claim {seat} <n>，已有負責對話就不要接）。"
                  "交給別的對話（如 Fable）時，交付物是檔案列（依 item id 冪等、寫前讀回）；send_message 只是通知，"
                  "回 undelivered/queued 是排隊不是遺失，不要重送")

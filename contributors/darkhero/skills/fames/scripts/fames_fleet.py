@@ -1158,7 +1158,6 @@ def goal_compact(
     workspace = Path(workspace)
     agent = str(agent or "").strip()
     now = datetime.now(timezone.utc)
-    stamp = now.strftime("%Y%m%dT%H%M%SZ")
     unknown: dict = {
         "ok": False, "state": "UNKNOWN", "agent": agent, "trigger": trigger, "reason": reason,
         "written": False, "errors": [], "quota_cost": {"metered_calls": 0, "model_tokens_external": 0},
@@ -1172,7 +1171,8 @@ def goal_compact(
     compact_path = Path(source_md) if source_md else workspace / "_registry" / "agc-compact" / f"{agent}.md"
     ledger_path = workspace / "_registry" / "agc-compact" / f"{agent}.orthogonal.md"
     evidence_dir = workspace / "_registry" / "fames-evidence"
-    evidence_path = evidence_dir / f"agc-{stamp}-{agent}.json"
+    # One record per agent, overwritten: the stamped copy (agc-<stamp>-<agent>.json) held the same bytes and nothing read it
+    # (2,712 files by 2026-11-13).  The compact and its ledger carry the history.
     latest_path = evidence_dir / f"agc-{agent}-latest.json"
     unknown["compact_path"] = _gc_rel(workspace, compact_path)
     try:
@@ -1280,19 +1280,16 @@ def goal_compact(
         and (previous.get("state_before") or {}).get("sha256") == before_sha
         and previous.get("result_identity") == result_identity
     )
-    stamped = changed and not repeat
     planned_writes: list[str] = []
     if write:
         if ledger_sections:
             planned_writes.append(f"write:{_gc_rel(workspace, ledger_path)}")
         if changed:
             planned_writes.append(f"write:{_gc_rel(workspace, compact_path)}")
-        if stamped:
-            planned_writes.append(f"write:{_gc_rel(workspace, evidence_path)}")
         planned_writes.append(f"write:{_gc_rel(workspace, latest_path)}")
     all_reads = set(reads) | set(reads_after)
     authority_before = sorted(all_reads | {
-        f"write:{_gc_rel(workspace, path)}" for path in (compact_path, ledger_path, evidence_path, latest_path)
+        f"write:{_gc_rel(workspace, path)}" for path in (compact_path, ledger_path, latest_path)
     })
     authority_after = sorted(all_reads | set(planned_writes))
     record: dict = {
@@ -1341,7 +1338,7 @@ def goal_compact(
         "changed": changed,
         "repeat_of_latest": bool(repeat),
         "written": False,
-        "evidence_path": _gc_rel(workspace, evidence_path if stamped else latest_path),
+        "evidence_path": _gc_rel(workspace, latest_path),
         "latest_path": _gc_rel(workspace, latest_path),
         "ledger_path": _gc_rel(workspace, ledger_path),
         "ok": True,
@@ -1378,8 +1375,6 @@ def goal_compact(
             if hashlib.sha256(compact_path.read_bytes()).hexdigest() != result_identity:
                 return _gc_unknown(record, ["compact re-read sha mismatch after write"])
         record["written"] = True
-        if stamped:
-            _write_json_atomic(evidence_path, record)
         _write_json_atomic(latest_path, record)
     except OSError as exc:
         return _gc_unknown(record, [f"write failed: {exc.__class__.__name__}"])
