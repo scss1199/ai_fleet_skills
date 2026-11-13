@@ -36,8 +36,11 @@ Two habits, mechanised by `_skill/engines/session-consolidate.py`:
 
 1. **Fan-out.** When intake yields two or more independent, separately verifiable problems — or a Claude Code
    home-page style suggestion such as 「繼續 `<branch>` 上進行中的工作：查看未提交的變更…」 — open one session per
-   item in the same turn (`start_session`, `user_asked` when the operator asked, `own_initiative` card otherwise; a
-   session opened for another seat's cwd is detached to top level right after it starts). The parent only folds
+   item in the same turn and let it start at once (operator 2026-11-13 「不要問"新增工作階段" 直接開子對話開始任務」:
+   never an `offer` or `own_initiative` card, which waits for a click). On the operator's own message use
+   `start_session` with `user_asked`; on a turn the app refuses starts (session events, hooks, ticks) use a
+   headless `f1s_station.py run` child with the brief embedded in the prompt, or a curator order sent into the
+   seat's open chat. A session opened for another seat's cwd is detached to top level right after it starts. The parent only folds
    results back in after reading the child's commit, tests or files. `session-consolidate.py wip` lists every repo's
    uncommitted / unpushed / unmerged-branch work as such suggestions, routed to the owning seat (cwd basename);
    `plan --seat <seat>` turns them plus the seat's pending sessions into briefs.

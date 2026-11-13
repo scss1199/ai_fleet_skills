@@ -533,7 +533,8 @@ def _unclaimed_orders() -> str:
     lines = []
     if rows:
         lines.append(f"UNCLAIMED ORDERS — {len(rows)} open with no conversation: {'; '.join(rows[:6])}. Send each into that seat's main chat "
-                     "(send_message, or start_session + detach, then deliver), or measure and close them yourself.")
+                     "(send_message; no open chat: f1s_station.py run in that cwd with the order text in the prompt, the station "
+                     "cannot read outside its cwd), or measure and close them yourself. Never a session card that waits for a click.")
     if stale:
         lines.append(f"STALE CLAIMS — {len(stale)} open order(s) whose owning conversation wrote nothing for "
                      f"{STALE_OWNER_AFTER_S // 3600}h+: {'; '.join(stale[:6])}. list_sessions first (host_gone is not dead); "
