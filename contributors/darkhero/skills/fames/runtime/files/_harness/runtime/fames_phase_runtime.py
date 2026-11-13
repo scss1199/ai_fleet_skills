@@ -223,6 +223,7 @@ def _begin_turn_unlocked(workspace, turn):
             'package_sha', 'prompt_identity', 'session_identity_sha', 'prompt_contract_identity',
             'work_contract', 'generated', 'native_intake_observed_ns', 'local_skill_route')
     write(snapshot, {k: turn.get(k) for k in keys})
+    binding.expire(folder.parent)     # goal folders of prompts that ended a week ago; nothing replays them
     guards, previous = {}, None
     for phase in ('FP', 'MTM'):
         try:

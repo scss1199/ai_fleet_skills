@@ -1105,6 +1105,7 @@ def turn_context(
     binding = _load_engine(Path(__file__).parent, 'fames_turn_binding.py', 'fames_intake_transaction')
     identity = hashlib.sha256(f"{surface_id}\0{session_id}".encode("utf-8")).hexdigest()
     lock_path = workspace / '_registry/fames-turn/intake-locks' / (identity + '.lock')
+    binding.expire(lock_path.parent)   # one retained lock per chat; the writer drops those of chats a week gone
     with binding.locked(lock_path, timeout_seconds=15):
         return _turn_context_unlocked(
             agent, seat_root, prompt=prompt, surface_id=surface_id, session_id=session_id,

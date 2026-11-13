@@ -10,11 +10,57 @@ import importlib.util
 import json
 import os
 import re
+import shutil
 import time
 from datetime import datetime
 from pathlib import Path
 
 HEX = re.compile(r"[0-9a-f]{64}")
+KEEP_SECONDS = 7 * 86400      # per-prompt state is replayed for 24 h at most; a week covers a chat resumed late
+EXPIRE_EVERY = 3600
+EXPIRE_MARK = '.expired'
+
+
+def expire(root, *, seconds=KEEP_SECONDS, every=EXPIRE_EVERY, limit=256, now=None):
+    """The writer bounds its own store: drop entries of `root` nothing wrote to for `seconds`.
+
+    Per-prompt state was left for a sweeper that moved about 1,600 files a day into _delete for a person to purge.
+    Runs at most once per `every` seconds per store (one overwritten mark file), removes at most `limit` entries,
+    and never raises: admission must not fail on housekeeping. Returns the number removed."""
+    root = Path(root)
+    now = time.time() if now is None else now
+    mark = root / EXPIRE_MARK
+    removed = 0
+    try:
+        if now - mark.stat().st_mtime < every:
+            return 0
+    except OSError:
+        pass
+    try:
+        root.mkdir(parents=True, exist_ok=True)
+        mark.write_text('', encoding='utf-8')
+        os.utime(mark, (now, now))
+        with os.scandir(root) as entries:
+            for entry in entries:
+                if removed >= limit:
+                    break
+                try:
+                    if entry.name == EXPIRE_MARK or entry.is_symlink():
+                        continue
+                    if entry.is_dir():
+                        with os.scandir(entry.path) as inner:
+                            newest = max([e.stat().st_mtime for e in inner] or [entry.stat().st_mtime])
+                        if now - newest >= seconds:
+                            shutil.rmtree(entry.path, ignore_errors=True)
+                            removed += 1
+                    elif now - entry.stat().st_mtime >= seconds:
+                        os.unlink(entry.path)
+                        removed += 1
+                except OSError:
+                    continue
+    except OSError:
+        pass
+    return removed
 
 
 def load(path):
@@ -111,6 +157,7 @@ def preserve(root, receipt):
             if not history.exists():
                 write(history, previous)
         write(path, receipt)
+    expire(path.parent.parent)        # by-prompt/<session> folders no prompt was written to for a week
     return path
 
 
@@ -120,6 +167,7 @@ def publish_latest(path, receipt):
         previous = read(path)
         if not previous or order(previous) <= order(receipt):
             write(path, receipt)
+    expire(path.parent)               # <session>.json and its lock of chats that ended a week ago
 
 
 def select(root, surface, session, prompt):

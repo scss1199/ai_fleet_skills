@@ -108,14 +108,12 @@ _ANTI_CREATE = ("rename", "with_name", "replace(", "+ \"", "f\"", "f'", "+ '", "
 # Expired engine state the sweep retires into _delete (class expired_state). kind: "files" = direct files older than
 # ttl days; "dirs" = direct subdirs whose newest file is older than ttl; "named" = entries whose name matches `re`
 # (RETENTION_RE by default), older than ttl when given; "newest" = everything but the newest `keep` entries.
+# fames-phase, fames-turn/<surface>, its by-prompt folders and intake-locks left this table on 2026-11-13: their writer
+# (fames_turn_binding.expire) bounds them itself, so about 1,600 files a day stop passing through _delete.
 STATE_TTL = (
     {"root": "_registry/fames-hot", "kind": "files", "ttl": 7,
      "exclude": ("midturn-", "ship-state", "hw-watch", "review-claim", "capture-")},
-    {"root": "_registry/fames-phase", "kind": "dirs", "ttl": 7},
-    {"root": "_registry/fames-turn/*/by-prompt", "kind": "dirs", "ttl": 7},
     {"root": "ai_darkhero/evidence/fames-fleet-20260924/runtime-release-tests", "kind": "dirs", "ttl": 1},  # the test moved to pytest's temp root on 10-31
-    {"root": "_registry/fames-turn/claude", "kind": "files", "ttl": 7},       # per-session binding + its lock, 1,946 in 14 days
-    {"root": "_registry/fames-turn/intake-locks", "kind": "files", "ttl": 7},
     {"root": "_registry/mtm-audit", "kind": "files", "ttl": 7, "exclude": ("latest", "waste-report", "git-ship-latest")},  # per-run copies, 1,570 nobody read
     {"root": "_registry/fames-runtime-receipts", "kind": "newest", "keep": 3},
     {"root": "_registry/ship-queue", "kind": "named"},
