@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "scar3",
-  "at": "2026-11-10T13:45:18",
+  "at": "2026-11-13T21:03:36",
   "hub": "C:\\ai_workspace",
-  "seconds": 91.3,
+  "seconds": 118.7,
   "check": {
     "seats": [
       {
@@ -32,7 +32,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-10",
+        "newest_file": "2026-11-13",
         "activity": "ACTIVE"
       },
       {
@@ -46,7 +46,7 @@
           "charter_missing:CLAUDE.md,AGENTS.md,.cursor\\hooks.json"
         ],
         "repo": "hub",
-        "newest_file": "2026-11-10",
+        "newest_file": "2026-11-13",
         "activity": "ACTIVE"
       },
       {
@@ -54,7 +54,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-10",
+        "newest_file": "2026-11-13",
         "activity": "ACTIVE"
       },
       {
@@ -69,7 +69,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-10",
+        "newest_file": "2026-11-13",
         "activity": "ACTIVE"
       },
       {
@@ -86,7 +86,7 @@
         "worktrees_prunable": 1,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-10",
+        "newest_file": "2026-11-13",
         "activity": "ACTIVE"
       },
       {
@@ -140,7 +140,7 @@
       },
       {
         "file": "_skill/engines/fames-immediate-apply.py",
-        "line": 138,
+        "line": 139,
         "kind": "uuid_named_copy",
         "text": "target = workspace / '_registry/fames-phase-history' / ('recovery-' + uuid.uuid4().hex + '.json')"
       },
@@ -164,21 +164,9 @@
       },
       {
         "file": "_skill/fleet-skills/fames/scripts/fames_fleet.py",
-        "line": 5481,
+        "line": 5476,
         "kind": "uuid_named_copy",
         "text": "backup = destination.parent / f\".{destination.name}.previous-{uuid.uuid4().hex}\""
-      },
-      {
-        "file": "_skill/fleet-skills/fames/scripts/runtime_release.py",
-        "line": 239,
-        "kind": "uuid_named_copy",
-        "text": "backup = _beneath(workspace, '_registry/fames-runtime-build-backups/' + previous['release_sha256'] + '/' + uuid.uuid4().hex)"
-      },
-      {
-        "file": "_skill/fleet-skills/fames/scripts/runtime_release.py",
-        "line": 245,
-        "kind": "uuid_named_copy",
-        "text": "+ previous['release_sha256'] + '/' + uuid.uuid4().hex)"
       }
     ],
     "stale_memories": [
@@ -203,27 +191,31 @@
   },
   "sweep": {
     "applied": true,
-    "planned": 119,
-    "planned_bytes": 12703850,
+    "planned": 73,
+    "planned_bytes": 6555084,
     "by_class": {
-      "cache_dir": {
-        "count": 22,
-        "bytes": 9087323
+      "stale": {
+        "count": 1,
+        "bytes": 4124002
       },
       "expired_state": {
-        "count": 97,
-        "bytes": 3616527
+        "count": 61,
+        "bytes": 2428789
+      },
+      "orphan_inbox": {
+        "count": 11,
+        "bytes": 2293
       }
     },
     "skipped": {
       "git_tracked": 284,
-      "protected": 67
+      "protected": 0
     },
-    "moved": 119,
+    "moved": 73,
     "engine": "fleet-residue-quarantine.py",
     "errors": []
   },
-  "delete_bytes": 9885154221,
+  "delete_bytes": 9891784913,
   "summary": {
     "seats": 7,
     "violations": 4,
@@ -234,10 +226,10 @@
     },
     "scheduled_task_findings": 0,
     "producer_leaks": 2,
-    "retention_antipatterns": 9,
+    "retention_antipatterns": 7,
     "stale_memories": 2,
-    "moved": 119,
-    "planned_bytes": 12703850,
+    "moved": 73,
+    "planned_bytes": 6555084,
     "applied": true
   }
 }
