@@ -452,7 +452,7 @@ STATUS_LINE_PREFIXES=("TOKEN WATCH ","F1S REUSE ","F1S NIGHT","F1S RECURRENCE ",
                       "F1S 各 cwd 用量","F1S 文章回饋","回報: python ",
                       # same replay, third pass: 92K more were these reminders said again word for word
                       "FAMES ROUTE ","FAMES PHASE GATE ","AGC LANE ","Read the compact instead","STALE CLAIMS ",
-                      "UNCLAIMED ORDERS ","ARTICLE TECHNIQUES ")
+                      "UNCLAIMED ORDERS ","ARTICLE TECHNIQUES ","F1S EXPAND BASE")
 # Counters that drift on every look. Replay of the same 7 days after the cut above: 117K tokens were a line that
 # differed from one already held only in its digits (TOKEN WATCH 58K, ARTICLE RELAY 10K, F1S NIGHT 10K). These compare
 # with digits blanked, so the line goes out again when its words change (a seat enters OVER SHARE, the posture flips),
@@ -780,6 +780,22 @@ def _curator_orders(agent: str, session_id: str = "") -> str:
         return ""
 
 
+def _expand_frame(prompt: str) -> str:
+    """operator 2026-11-14: a short abstract sentence arrives already unfolded - the readings its wording fires, each
+    with how many of the operator's own past sentences back it, plus the unsaid defaults and limits (the standing line
+    goes out once per conversation). "" for a concrete prompt or on any error (_skill/engines/f1s_expand.py)."""
+    path = HUB / "_skill" / "engines" / "f1s_expand.py"
+    try:
+        spec = importlib.util.spec_from_file_location("fames_hook_f1s_expand", path)
+        if not (prompt or "").strip() or not path.is_file() or spec is None or spec.loader is None:
+            return ""
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return str(module.frame(prompt) or "")
+    except Exception:
+        return ""
+
+
 def _article_seen(prompt: str) -> str:
     """operator 2026-11-03: a link pasted into any seat answers what already happened to it, so nothing is read twice.
     "" without a link, for an unknown link or on any error (_skill/engines/f1s_apply.py). Never raises."""
@@ -922,7 +938,8 @@ def main():
                        _charter_refresh(surface_id, session_id, cwd, at_start=False, transcript_path=transcript_path),
                        _proof_carry(session_id), "" if machine_event else _proof_recurrence(cwd),
                        "" if machine_event else _article_relay(agent, cwd, session_id),
-                       "" if machine_event else _article_seen(prompt)):
+                       "" if machine_event else _article_seen(prompt),
+                       "" if machine_event else _expand_frame(prompt)):
             if update:
                 context=(context+"\n"+update).strip()
     else:

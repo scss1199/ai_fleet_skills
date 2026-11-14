@@ -83,7 +83,7 @@ Stop hook 擋下之後；`f1s_repeat.py scan` 是裁判，Lean `lean/f1s_delta_r
   （「接下來我會…」「如上所述」）。
 - 結尾一行狀態：「沒有下一步」或「需要你決定：…」，不再加結語。
 - 語氣只講事實：不討好（不附和、不恭維使用者）、不示弱（不自貶、不道歉鋪陳）、不誇示（不自誇成果、不加形容詞放大），
-  數字與路徑自己說話（ai_career operator 2026-11-13「不用討好 不用示弱 不用誇示 只講事實 簡短 符合ENTJ」）。
+  數字與路徑自己說話（ai_career operator 2026-11-13「不用討好 不用示弱 不用誇示 只講事實 簡短」）。
 
 ## 5 使用者發火＝失敗紀錄（operator 2026-11-03，ai_hgame 對話 435ab01c）
 
@@ -137,6 +137,8 @@ Stop hook 擋下之後；`f1s_repeat.py scan` 是裁判，Lean `lean/f1s_delta_r
 兩種展開只差在不可回復的程度時取小的，其餘取大的（系統層的那個）。
 operator 糾正了某次展開＝那次展開是錯的：把原話與正解寫成該 seat 的 feedback 記憶，第 1 層就多一筆；人格類型與命盤沒有被驗證過能預測
 一個人的意思，和第 1 層衝突時一律聽第 1 層。
+
+機械版（2026-11-14）：`_skill/engines/f1s_expand.py` 不呼叫模型，每則抽象 prompt 由 prompt hook 注入 `F1S EXPAND`（這則觸發的讀法＋各有幾則 operator 原話佐證；`F1S EXPAND BASE` 的預設與界線每段對話送一次），所以不必先載入本技能。寫校正令或派 station 給沒有 hook 的讀者時用 `python _skill/engines/f1s_expand.py expand "<原話>"` 產出有界線的完整提示詞。注入的是讀法不是指令：原話優先；永久刪除、花錢、對外發送、金鑰、A770 負載永遠不屬於展開。
 
 ## 配對
 
