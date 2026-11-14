@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "scar3",
-  "at": "2026-11-13T21:03:36",
+  "at": "2026-11-15T02:10:30",
   "hub": "C:\\ai_workspace",
-  "seconds": 118.7,
+  "seconds": 154.9,
   "check": {
     "seats": [
       {
@@ -32,8 +32,9 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
-        "activity": "ACTIVE"
+        "newest_file": "2026-11-15",
+        "activity": "ACTIVE",
+        "stale_agent_worktrees": []
       },
       {
         "seat": "ai_darkhero",
@@ -46,7 +47,7 @@
           "charter_missing:CLAUDE.md,AGENTS.md,.cursor\\hooks.json"
         ],
         "repo": "hub",
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-15",
         "activity": "ACTIVE"
       },
       {
@@ -54,7 +55,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-15",
         "activity": "ACTIVE"
       },
       {
@@ -69,8 +70,9 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
-        "activity": "ACTIVE"
+        "newest_file": "2026-11-15",
+        "activity": "ACTIVE",
+        "stale_agent_worktrees": []
       },
       {
         "seat": "ai_wallpaper",
@@ -86,8 +88,9 @@
         "worktrees_prunable": 1,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
-        "activity": "ACTIVE"
+        "newest_file": "2026-11-15",
+        "activity": "ACTIVE",
+        "stale_agent_worktrees": []
       },
       {
         "seat": "sdnext_a770",
@@ -105,6 +108,7 @@
       }
     ],
     "scheduled_tasks": [],
+    "hub_stale_agent_worktrees": [],
     "counts": {
       "ACTIVE": 5,
       "IDLE": 0,
@@ -128,7 +132,7 @@
     "retention_antipatterns": [
       {
         "file": "_skill/engines/claude-proof-hook.py",
-        "line": 572,
+        "line": 573,
         "kind": "migrated_bak_loop",
         "text": "(\"migrated-bak\", re.compile(r\"MIGRATED-bak\"), re.compile(r\"(?i)rename|replace|move|copy|with_name|with_suffix|\\+\\s*['\\\"]|f['\\\"]\"),"
       },
@@ -187,35 +191,577 @@
           "tests/test_tray_obs_gate.py"
         ]
       }
+    ],
+    "runtime_cves": [
+      {
+        "cwd": "<host>",
+        "node": [
+          {
+            "source": "node --version",
+            "spec": "v24.15.0",
+            "status": "vulnerable",
+            "fixed": "v24.22.3",
+            "latest": "v24.22.3"
+          }
+        ],
+        "python": [
+          {
+            "package": "accelerate",
+            "version": "1.12.0",
+            "vulns": [
+              "GHSA-4j2p-28q2-5m79",
+              "PYSEC-2026-3804"
+            ],
+            "latest": "1.15.0"
+          },
+          {
+            "package": "aiohttp",
+            "version": "3.13.3",
+            "vulns": [
+              "GHSA-2fqr-mr3j-6wp8",
+              "GHSA-2g87-pp6c-29x5",
+              "GHSA-2vrm-gr82-f7m5",
+              "GHSA-3wq7-rqq7-wx6j",
+              "GHSA-494j-54xm-rwp3",
+              "GHSA-4fvr-rgm6-gqmc",
+              "GHSA-4m7w-qmgq-4wj5",
+              "GHSA-5wr8-gcqf-gqf3"
+            ],
+            "latest": "3.14.5"
+          },
+          {
+            "package": "anyio",
+            "version": "4.12.1",
+            "vulns": [
+              "GHSA-5p39-cfhj-2xmp",
+              "GHSA-82r6-8w77-94w6",
+              "PYSEC-2026-4024",
+              "PYSEC-2026-4025"
+            ],
+            "latest": "4.16.0"
+          },
+          {
+            "package": "bleach",
+            "version": "6.3.0",
+            "vulns": [
+              "GHSA-8rfp-98v4-mmr6",
+              "GHSA-g75f-g53v-794x",
+              "GHSA-gj48-438w-jh9v"
+            ],
+            "latest": "6.4.0"
+          },
+          {
+            "package": "certifi",
+            "version": "2026.1.4",
+            "vulns": [
+              "GHSA-6q48-6c7w-9gw2",
+              "PYSEC-2026-4320"
+            ],
+            "latest": "2026.10.23"
+          },
+          {
+            "package": "cryptography",
+            "version": "48.0.0",
+            "vulns": [
+              "GHSA-537c-gmf6-5ccf",
+              "GHSA-g6cj-pr64-35w5",
+              "GHSA-jwv3-5hgf-82ww",
+              "GHSA-m2h6-j472-rp4c",
+              "PYSEC-2026-3552",
+              "PYSEC-2026-3553",
+              "PYSEC-2026-3554"
+            ],
+            "latest": "50.0.2"
+          },
+          {
+            "package": "diffusers",
+            "version": "0.37.0.dev0",
+            "vulns": [
+              "GHSA-7wx4-6vff-v64p",
+              "GHSA-98h9-4798-4q5v",
+              "PYSEC-2026-2446",
+              "PYSEC-2026-40",
+              "PYSEC-2026-41"
+            ],
+            "latest": "0.43.0"
+          },
+          {
+            "package": "filelock",
+            "version": "3.20.0",
+            "vulns": [
+              "GHSA-69hj-f68j-2879",
+              "GHSA-8mx5-7m5m-r77g",
+              "GHSA-qmgc-5h2g-mvrw",
+              "GHSA-w853-jp5j-5j7f",
+              "PYSEC-2026-1374",
+              "PYSEC-2026-1375"
+            ],
+            "latest": "4.2.10"
+          },
+          {
+            "package": "fsspec",
+            "version": "2025.12.0",
+            "vulns": [
+              "GHSA-27vj-qcqg-25rc",
+              "PYSEC-2026-4217"
+            ],
+            "latest": "2026.9.0"
+          },
+          {
+            "package": "gitpython",
+            "version": "3.1.46",
+            "vulns": [
+              "GHSA-239g-whfq-7xj9",
+              "GHSA-23mf-xhv8-69c2",
+              "GHSA-284h-m62q-gf8w",
+              "GHSA-2f96-g7mh-g2hx",
+              "GHSA-3f7w-8rr8-f37f",
+              "GHSA-3rp5-jjmw-4wv2",
+              "GHSA-3wxw-xv34-2frg",
+              "GHSA-4gmw-gg2m-w46p"
+            ],
+            "latest": "3.2.1"
+          },
+          {
+            "package": "gradio",
+            "version": "3.43.2",
+            "vulns": [
+              "GHSA-26jh-r8g2-6fpr",
+              "GHSA-279j-x4gx-hfrh",
+              "GHSA-34rf-p3r3-58x2",
+              "GHSA-37qc-qgx6-9xjv",
+              "GHSA-39mp-8hj3-5c49",
+              "GHSA-3c67-5hwx-f6wx",
+              "GHSA-3gf9-wv65-gwh9",
+              "GHSA-48cq-79qq-6f7x"
+            ],
+            "latest": "6.32.0"
+          },
+          {
+            "package": "h2",
+            "version": "4.3.0",
+            "vulns": [
+              "GHSA-6hr6-w5qg-qmwg",
+              "PYSEC-2026-3628"
+            ],
+            "latest": "4.4.1"
+          },
+          {
+            "package": "hpack",
+            "version": "4.1.0",
+            "vulns": [
+              "GHSA-8v8h-hg4w-mvq2",
+              "PYSEC-2026-4053"
+            ],
+            "latest": "4.2.0"
+          },
+          {
+            "package": "idna",
+            "version": "3.11",
+            "vulns": [
+              "GHSA-65pc-fj4g-8rjx",
+              "PYSEC-2026-215"
+            ],
+            "latest": "3.20"
+          },
+          {
+            "package": "jupyter_server",
+            "version": "2.17.0",
+            "vulns": [
+              "GHSA-24qx-w28j-9m6p",
+              "GHSA-5789-5fc7-67v3",
+              "GHSA-5mrq-x3x5-8v8f",
+              "GHSA-c3mw-737p-c7g2",
+              "GHSA-fcw5-x6j4-ccmp",
+              "GHSA-qh7q-6qm3-653w",
+              "PYSEC-2026-2187",
+              "PYSEC-2026-2532"
+            ],
+            "latest": "2.21.1"
+          },
+          {
+            "package": "jupyterlab",
+            "version": "4.5.3",
+            "vulns": [
+              "GHSA-3325-v43h-43rv",
+              "GHSA-37w4-hwhx-4rc4",
+              "GHSA-3jqq-pw4j-pqcj",
+              "GHSA-6966-vjj6-99xv",
+              "GHSA-89vp-jrxv-24w8",
+              "GHSA-gx64-gj6p-pc4c",
+              "GHSA-h5v5-8746-g7mm",
+              "GHSA-mqcg-5x36-vfcg"
+            ],
+            "latest": "4.6.6"
+          },
+          {
+            "package": "mistune",
+            "version": "3.2.0",
+            "vulns": [
+              "GHSA-2hm2-hc3v-44h9",
+              "GHSA-4j32-57v6-6g45",
+              "GHSA-58cw-g322-p94v",
+              "GHSA-6269-cqxg-mhhv",
+              "GHSA-8c25-4j27-2rv3",
+              "GHSA-8g87-j6q8-g93x",
+              "GHSA-8mp2-v27r-99xp",
+              "GHSA-8mpj-m6qm-5qr8"
+            ],
+            "latest": "3.4.0"
+          },
+          {
+            "package": "msgpack",
+            "version": "1.2.0",
+            "vulns": [
+              "GHSA-6v7p-g79w-8964",
+              "GHSA-j586-36cw-2gc2",
+              "PYSEC-2026-3625"
+            ],
+            "latest": "1.2.4"
+          },
+          {
+            "package": "multidict",
+            "version": "6.7.1",
+            "vulns": [
+              "GHSA-54p9-h82j-f925",
+              "PYSEC-2026-4244"
+            ],
+            "latest": "7.2.1"
+          },
+          {
+            "package": "nbconvert",
+            "version": "7.16.6",
+            "vulns": [
+              "GHSA-4c99-qj7h-p3vg",
+              "GHSA-7jqv-fw35-gmx9",
+              "GHSA-9754-6rhw-gj3h",
+              "GHSA-pjvx-prjx-h659",
+              "GHSA-xm59-rqc7-hhvf",
+              "PYSEC-2026-1691",
+              "PYSEC-2026-2229",
+              "PYSEC-2026-2230"
+            ],
+            "latest": "7.17.2"
+          },
+          {
+            "package": "notebook",
+            "version": "7.5.3",
+            "vulns": [
+              "GHSA-6966-vjj6-99xv",
+              "GHSA-mqcg-5x36-vfcg",
+              "GHSA-rch3-82jr-f9w9",
+              "PYSEC-2026-2681",
+              "PYSEC-2026-2682",
+              "PYSEC-2026-4112"
+            ],
+            "latest": "7.6.5"
+          },
+          {
+            "package": "onnx",
+            "version": "1.20.1",
+            "vulns": [
+              "GHSA-3r9x-f23j-gc73",
+              "GHSA-48m4-24cq-37qf",
+              "GHSA-538c-55jv-c5g9",
+              "GHSA-6pwm-x34p-fvj2",
+              "GHSA-cmw6-hcpp-c6jp",
+              "GHSA-hqmj-h5c6-369m",
+              "GHSA-hwpq-hmq9-wj77",
+              "GHSA-m4pr-6v3c-6fgr"
+            ],
+            "latest": "1.23.2"
+          },
+          {
+            "package": "orjson",
+            "version": "3.11.5",
+            "vulns": [
+              "GHSA-hx9q-6w63-j58v"
+            ],
+            "latest": "3.13.0"
+          },
+          {
+            "package": "pi_heif",
+            "version": "0.22.0",
+            "vulns": [
+              "GHSA-5gjj-6r7v-ph3x",
+              "PYSEC-2026-2248"
+            ],
+            "latest": "1.4.0"
+          },
+          {
+            "package": "pillow",
+            "version": "10.4.0",
+            "vulns": [
+              "GHSA-22hg-r758-rrw9",
+              "GHSA-24rc-8hj2-v98c",
+              "GHSA-254f-3936-288h",
+              "GHSA-27h8-gf7j-v5hc",
+              "GHSA-332p-7hrc-92wf",
+              "GHSA-3j72-p6qg-6xp7",
+              "GHSA-4558-3h8r-v8xp",
+              "GHSA-45hq-cxwh-f6vc"
+            ],
+            "latest": "13.0.0"
+          },
+          {
+            "package": "pip",
+            "version": "26.1.2",
+            "vulns": [
+              "GHSA-qwm4-qh6w-59xr",
+              "PYSEC-2026-3721"
+            ],
+            "latest": "26.3"
+          },
+          {
+            "package": "protobuf",
+            "version": "4.25.3",
+            "vulns": [
+              "GHSA-7gcm-g887-7qv7",
+              "GHSA-8qvm-5x2c-j2w7",
+              "PYSEC-2026-1805",
+              "PYSEC-2026-1806"
+            ],
+            "latest": "7.36.2"
+          },
+          {
+            "package": "pydantic-settings",
+            "version": "2.14.1",
+            "vulns": [
+              "GHSA-4xgf-cpjx-pc3j"
+            ],
+            "latest": "2.16.3"
+          },
+          {
+            "package": "pygments",
+            "version": "2.19.2",
+            "vulns": [
+              "GHSA-5239-wwwm-4pmq",
+              "PYSEC-2026-2987"
+            ],
+            "latest": "2.21.0"
+          },
+          {
+            "package": "pyjwt",
+            "version": "2.12.1",
+            "vulns": [
+              "GHSA-2gx3-rcp4-g85q",
+              "GHSA-42vr-xj54-vc7v",
+              "GHSA-993g-76c3-p5m4",
+              "GHSA-9v7f-9g4p-ffgj",
+              "GHSA-ffc3-869f-jxw9",
+              "GHSA-fhv5-28vv-h8m8",
+              "GHSA-gvp8-978c-rx2q",
+              "GHSA-hxm8-2xgr-2p9m"
+            ],
+            "latest": "2.15.1"
+          },
+          {
+            "package": "pylint",
+            "version": "4.0.4",
+            "vulns": [
+              "GHSA-22qq-2fwx-7p67"
+            ],
+            "latest": "4.1.3"
+          },
+          {
+            "package": "pypdf",
+            "version": "6.12.2",
+            "vulns": [
+              "GHSA-23w6-3w8w-8484",
+              "GHSA-39mj-jf6j-2qj3",
+              "GHSA-42gh-23hr-vphw",
+              "GHSA-4vqv-7265-gm2w",
+              "GHSA-52x6-gq3r-vpf4",
+              "GHSA-55h5-xmcq-c37v",
+              "GHSA-5849-834g-hvw5",
+              "GHSA-5hx5-vpf9-5wcv"
+            ],
+            "latest": "7.1.0"
+          },
+          {
+            "package": "python-multipart",
+            "version": "0.0.22",
+            "vulns": [
+              "GHSA-5rvq-cxj2-64vf",
+              "GHSA-6jv3-5f52-599m",
+              "GHSA-mj87-hwqh-73pj",
+              "GHSA-pp6c-gr5w-3c5g",
+              "GHSA-v9pg-7xvm-68hf",
+              "GHSA-vffw-93wf-4j4q",
+              "PYSEC-2026-3036",
+              "PYSEC-2026-3037"
+            ],
+            "latest": "0.0.33"
+          },
+          {
+            "package": "pytorch-lightning",
+            "version": "2.6.0",
+            "vulns": [
+              "GHSA-75m9-98v2-hjpm",
+              "PYSEC-2026-3043",
+              "PYSEC-2026-3967"
+            ],
+            "latest": "2.6.6"
+          },
+          {
+            "package": "rembg",
+            "version": "2.0.72",
+            "vulns": [
+              "GHSA-3wqj-33cg-xc48",
+              "GHSA-55v6-g8pm-pw4c",
+              "GHSA-qr6x-7v33-6qmg",
+              "PYSEC-2026-2274"
+            ],
+            "latest": "2.0.87"
+          },
+          {
+            "package": "requests",
+            "version": "2.32.4",
+            "vulns": [
+              "GHSA-gc5v-m9x4-r6x2",
+              "PYSEC-2026-2275"
+            ],
+            "latest": "2.34.2"
+          },
+          {
+            "package": "setuptools",
+            "version": "69.5.1",
+            "vulns": [
+              "GHSA-5rjg-fvgr-3xxf",
+              "GHSA-cx63-2mw6-8hw5",
+              "GHSA-h35f-9h28-mq5c",
+              "GHSA-xmj3-9gf7-h52w",
+              "PYSEC-2025-49",
+              "PYSEC-2026-1918",
+              "PYSEC-2026-3447"
+            ],
+            "latest": "84.2.1"
+          },
+          {
+            "package": "soupsieve",
+            "version": "2.8.3",
+            "vulns": [
+              "GHSA-2wc2-fm75-p42x",
+              "GHSA-4j63-6c4x-wfg4",
+              "GHSA-6655-6qjp-jx7x",
+              "GHSA-7g44-g9rc-x53w",
+              "GHSA-836r-79rf-4m37",
+              "GHSA-gjv8-xp57-g29c",
+              "GHSA-j934-xhv5-fg8f",
+              "GHSA-mmhr-3c5m-f64f"
+            ],
+            "latest": "4.1.1"
+          },
+          {
+            "package": "starlette",
+            "version": "0.50.0",
+            "vulns": [
+              "GHSA-82w8-qh3p-5jfq",
+              "GHSA-86qp-5c8j-p5mr",
+              "GHSA-jp82-jpqv-5vv3",
+              "GHSA-wqp7-x3pw-xc5r",
+              "GHSA-x746-7m8f-x49c",
+              "PYSEC-2026-161",
+              "PYSEC-2026-2280",
+              "PYSEC-2026-2281"
+            ],
+            "latest": "1.10.0"
+          },
+          {
+            "package": "torch",
+            "version": "2.9.1+cu128",
+            "vulns": [
+              "GHSA-63cw-57p8-fm3p",
+              "GHSA-qfhq-4f3w-5fph",
+              "GHSA-rrmf-rvhw-rf47",
+              "PYSEC-2026-139",
+              "PYSEC-2026-2286"
+            ],
+            "latest": "2.15.0"
+          },
+          {
+            "package": "tornado",
+            "version": "6.5.4",
+            "vulns": [
+              "GHSA-3hv7-mjh2-fv65",
+              "GHSA-3x9g-8vmp-wqvf",
+              "GHSA-5cjw-f85j-cv6r",
+              "GHSA-78cv-mqj4-43f7",
+              "GHSA-8423-8fgw-73vq",
+              "GHSA-c2m8-h5v5-343r",
+              "GHSA-chx6-46f5-w4vp",
+              "GHSA-cx3h-4qpv-8hc9"
+            ],
+            "latest": "6.6.1"
+          },
+          {
+            "package": "transformers",
+            "version": "4.57.5",
+            "vulns": [
+              "GHSA-29pf-2h5f-8g72",
+              "GHSA-69w3-r845-3855",
+              "GHSA-fgcw-684q-jj6r",
+              "GHSA-x9r9-c232-4q39",
+              "GHSA-xrqw-3rrv-vx5w",
+              "PYSEC-2025-217",
+              "PYSEC-2026-2288",
+              "PYSEC-2026-2289"
+            ],
+            "latest": "5.23.0"
+          },
+          {
+            "package": "urllib3",
+            "version": "1.26.19",
+            "vulns": [
+              "GHSA-2xpw-w6gg-jr37",
+              "GHSA-38jv-5279-wg99",
+              "GHSA-8988-9cw3-xx77",
+              "GHSA-gm62-xv2j-4w53",
+              "GHSA-pq67-6m6q-mj2v",
+              "GHSA-qccp-gfcp-xxvc",
+              "GHSA-vxq7-64xx-v4gw",
+              "PYSEC-2026-141"
+            ],
+            "latest": "2.8.0"
+          },
+          {
+            "package": "virtualenv",
+            "version": "20.36.1",
+            "vulns": [
+              "GHSA-394h-qwmc-48pf",
+              "GHSA-43mp-35q3-x3fq",
+              "GHSA-494p-63j8-28p3",
+              "GHSA-558c-9hv2-4prj",
+              "GHSA-5vjq-rrrf-7h2q",
+              "GHSA-6w3r-xr62-4xcp",
+              "GHSA-8rjx-v5ww-45pp",
+              "GHSA-94p9-xgh2-xp45"
+            ],
+            "latest": "21.15.6"
+          }
+        ]
+      }
     ]
   },
   "sweep": {
     "applied": true,
-    "planned": 73,
-    "planned_bytes": 6555084,
+    "planned": 13,
+    "planned_bytes": 2705,
     "by_class": {
-      "stale": {
-        "count": 1,
-        "bytes": 4124002
-      },
-      "expired_state": {
-        "count": 61,
-        "bytes": 2428789
-      },
       "orphan_inbox": {
-        "count": 11,
-        "bytes": 2293
+        "count": 13,
+        "bytes": 2705
       }
     },
     "skipped": {
       "git_tracked": 284,
       "protected": 0
     },
-    "moved": 73,
+    "moved": 13,
     "engine": "fleet-residue-quarantine.py",
     "errors": []
   },
-  "delete_bytes": 9891784913,
+  "delete_bytes": 9891805949,
   "summary": {
     "seats": 7,
     "violations": 4,
@@ -228,8 +774,9 @@
     "producer_leaks": 2,
     "retention_antipatterns": 7,
     "stale_memories": 2,
-    "moved": 73,
-    "planned_bytes": 6555084,
+    "runtime_cves": 1,
+    "moved": 13,
+    "planned_bytes": 2705,
     "applied": true
   }
 }
