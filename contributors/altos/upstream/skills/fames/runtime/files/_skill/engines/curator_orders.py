@@ -50,6 +50,8 @@ STALE_OWNER_AFTER_S = 6 * 3600  # owner transcript silent this long: the claim b
 CLAUDE_PROJECTS = os.path.join(os.path.expanduser("~"), ".claude", "projects")
 CURATOR_FALLBACK = "ai_darkhero"
 REVIEW_SAMPLE = 8       # one routine order in this many still gets the curator's review
+REVIEW_BATCH = 8        # answers with fresh evidence that wake an idle curator chat together (wake_queue)
+REVIEW_BATCH_H = 6.0    # ... or the oldest of them waiting this many hours
 MECHANICAL = "mechanical"
 ACTIVE = ("open", "done", "cannot")  # freeze / forbid hold until the curator closes the order
 PROTECTED = ("logioptionsplus", "optionsplusupdater")  # T1 protect-logi-options-plus: never a forbid target
@@ -158,7 +160,9 @@ def _hub_rel(path: str) -> str:
     return rel
 
 
-def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None = None, routine: bool = False) -> dict:
+def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None = None, routine: bool = False,
+          ledger: bool = False) -> dict:
+    """ledger=True: an engine reads the answer back into its own table (f1s_fanout), so any answer closes the order."""
     cwd = cwd or os.getcwd()
     if not (do or "").strip():
         raise ValueError("an order needs its full prompt text (--do or --prompt-file)")
@@ -179,6 +183,8 @@ def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None 
              "freeze": [_hub_rel(p) for p in freeze], "forbid": list(forbid), "status": "open"}
     if routine and not freeze and not forbid:
         order["routine"] = True
+        if ledger:
+            order["ledger"] = True
     doc["orders"].append(order)
     _save(seat, doc)
     return order
@@ -212,17 +218,52 @@ def owned_by_other(order: dict, session_id: str) -> bool:
     return bool(owner) and bool(session_id) and owner != session_id
 
 
-def _accepted_mechanically(order: dict) -> bool:
+COMMIT = "commit:"
+
+
+def _commit_time(cwd: str, ref: str) -> float | None:
+    """Commit time of `ref` in the repository holding cwd; None when it is not a commit there."""
+    import subprocess  # noqa: PLC0415
+    try:
+        run = subprocess.run(["git", "-C", cwd, "show", "-s", "--format=%ct", ref + "^{commit}"], capture_output=True, text=True,
+                             timeout=30, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    except (OSError, subprocess.SubprocessError):
+        return None
+    out = run.stdout.strip()
+    return float(out) if run.returncode == 0 and out.isdigit() else None
+
+
+def _seat_commit_time(seat: str, cwd: str, ref: str) -> float | None:
+    """A seat's commit, looked up where the answer was typed and then in the seat's own repository: a shell drifted to
+    the hub root had `commit:<sha>` refused though the commit existed (jci_taipei #62, 2026-11-13)."""
+    found = _commit_time(cwd, ref)
+    return found if found is not None else _commit_time(os.path.join(str(HUB), seat), ref)
+
+
+def _accepted_mechanically(order: dict, seat: str = "") -> bool:
     """A machine-issued order answered with evidence written after it was issued closes without waking the curator: 68 such
     reviews cost 0.2M each and reopened 4, two of them for stale evidence, which this checks (2026-11-03). Every REVIEW_SAMPLE-th
     order and any reopened one still go to review, so the other kinds of defect keep being seen."""
     if not order.get("routine") or order.get("reopened_at") or order.get("n", 0) % REVIEW_SAMPLE == 0:
         return False
+    if order.get("ledger"):
+        # A self-review answer is read back by f1s_fanout.collect and reported as one table per version: 371 of them woke the
+        # curator once each in three days and none was reopened for its content (2026-11-11).
+        return True
+    return _evidence_fresh(order, seat)
+
+
+def _evidence_fresh(order: dict, seat: str = "") -> bool:
+    """True when at least one evidence path or commit of the answer was written after the order was issued."""
     try:
         issued = time.mktime(time.strptime(order.get("issued_at", ""), "%Y-%m-%dT%H:%M:%S"))
     except ValueError:
         return False
-    for path in order["answer"]["evidence"]:
+    for path in (order.get("answer") or {}).get("evidence") or ():
+        if path.startswith(COMMIT):
+            if (_seat_commit_time(seat, order["answer"].get("from") or str(HUB), path[len(COMMIT):]) or 0) >= issued:
+                return True
+            continue
         try:
             if os.path.getmtime(path) >= issued:
                 return True
@@ -236,10 +277,15 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
     """evidence -> done (note = the seat's counts / commit / what it left, read back by f1s_fanout.collect);
     reason -> cannot. One of the two; jci_taipei 2026-11-10 #24 had to park its counts in a scratchpad file."""
     cwd = cwd or os.getcwd()
+    if not evidence and not reason.strip():
+        reason = note      # `--note "no finding possible: <why>"` alone is the one-line answer the fan-out order asks for
     if bool(evidence) == bool(reason.strip()):
-        raise ValueError("answer with --evidence PATH... [--note TEXT] or --cannot REASON, not both")
+        raise ValueError("answer with --evidence PATH... [--note TEXT], --cannot REASON, or --note TEXT alone; not both")
     reason = (reason or note).strip()
-    missing = [p for p in evidence if not os.path.exists(os.path.join(cwd, p))]
+    # `commit:<sha>` is evidence too: seats were writing a one-off runtime/curator-<n>.txt per order only to have a path
+    # to name (2026-11-13: ai_trader, ai_photo, sdnext_a770), and nothing ever read those files again.
+    missing = [p for p in evidence if (_seat_commit_time(seat, cwd, p[len(COMMIT):]) is None if p.startswith(COMMIT)
+                                       else not os.path.exists(os.path.join(cwd, p)))]
     if missing:
         raise ValueError(f"evidence path not found: {missing}")
     doc = load(seat)
@@ -253,12 +299,13 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
         _require_curator(cwd, f"answers order #{n} owned by conversation {owner_of(order)[:8]}")
     order["status"] = "done" if evidence else "cannot"
     order["answer"] = {"at": _now(), "from": os.path.abspath(cwd), "session": sid,
-                       "evidence": [os.path.abspath(os.path.join(cwd, p)) for p in evidence], "reason": reason}
+                       "evidence": [p if p.startswith(COMMIT) else os.path.abspath(os.path.join(cwd, p)) for p in evidence],
+                       "reason": reason}
     if sid and not owner_of(order):
         # The answering conversation owns the order from now on: when the curator reopens it, only that
         # conversation is pushed to finish it (jci_taipei 2026-10-28: #5 reopened pushed every jci_taipei session).
         order["owner"] = {"session": sid, "from": os.path.abspath(cwd), "at": _now(), "by": "answer"}
-    if _accepted_mechanically(order):
+    if _accepted_mechanically(order, seat):
         order.update(status="closed", closed_at=_now(), closed_from=MECHANICAL)
     _save(seat, doc)
     return order
@@ -308,8 +355,8 @@ def reopen(seat: str, n: int, note: str, cwd: str | None = None) -> dict:
     return _curator_change(seat, n, cwd, "open", note)
 
 
-def close(seat: str, n: int, cwd: str | None = None) -> dict:
-    return _curator_change(seat, n, cwd, "closed")
+def close(seat: str, n: int, cwd: str | None = None, note: str = "") -> dict:
+    return _curator_change(seat, n, cwd, "closed", note)
 
 
 def out_of_scope(session_id: str | None) -> bool:
@@ -384,10 +431,12 @@ def token_watch(now: float | None = None, spawn=None, line_fn=None) -> str:
         return ""
 
 
-def archive_due(session_id: str = "", now: float | None = None, spawn=None) -> str:
+def archive_due(session_id: str = "", now: float | None = None, spawn=None, own: bool = False) -> str:
     """operator 2026-11-06 「注意f1s是否能自動關閉並整併已經沒有任務或沒有意義的子對話」: the curator conversation sees the
     sessions session-consolidate.py `due` found (ended 沒有下一步 or stale, no open ask) and archives them; the scan
-    re-runs hidden every 30 min. Never lists the asking conversation itself. Fail-open: no file, no line."""
+    re-runs hidden every 30 min. Never lists the asking conversation itself. Fail-open: no file, no line.
+    own (operator 2026-11-13, every cwd): only the sessions this conversation started itself, so a seat's chat closes
+    its own finished children without waiting for the curator."""
     now = time.time() if now is None else now
     _refresh_archive_due(now, spawn)
     try:
@@ -398,10 +447,13 @@ def archive_due(session_id: str = "", now: float | None = None, spawn=None) -> s
     except (OSError, ValueError, AttributeError):
         return ""
     rows = [r for r in rows if r.get("session_id") != session_id and r.get("host_id") and r.get("host_id") != session_id]
+    if own:
+        rows = [r for r in rows if session_id and session_id in (r.get("parent"), r.get("parent_session"))]
     if not rows:
         return ""
     items = "; ".join(f"{r['host_id']} ({r.get('reason')}, {str(r.get('title') or '')[:30]})" for r in rows[:8])
-    return (f"SESSION ARCHIVE DUE — {len(rows)} conversation(s) have no task left: {items}. Archive each with "
+    whose = "conversation(s) you started are confirmed complete" if own else "conversation(s) have no task left"
+    return (f"SESSION ARCHIVE DUE — {len(rows)} {whose}: {items}. Archive each with "
             f"archive_session (reason = its reason); a reopened one comes back on its next order.")
 
 
@@ -426,12 +478,14 @@ def injection(seat: str, session_id: str = "") -> str:
         unclaimed = _unclaimed_orders()
         if not queue:
             return "\n".join(t for t in (techniques, unclaimed) if t)
-        rows = "; ".join(f"{s}#{o['n']} {o['status']} {o['title']}" for s, o in queue[:6])
-        return "\n".join(t for t in (f"CURATOR REVIEW — {len(queue)} answered order(s): {rows}. Check each answer, then "
-                                     f"curator_orders.py close <seat> <n> or reopen <seat> <n> --note TEXT.", techniques, unclaimed) if t)
+        rows = "; ".join(f"{s}#{o['n']} {review_flag(o, s)} {o['title']}" for s, o in queue[:6])
+        return "\n".join(t for t in (f"CURATOR REVIEW — {len(queue)} answered order(s): {rows}. `curator_orders.py review` "
+                                     f"prints each answer's evidence and note; then close <seat> <n> [<n> ...] or "
+                                     f"reopen <seat> <n> --note TEXT.", techniques, unclaimed) if t)
     orders = open_orders(seat)
+    kids = archive_due(session_id, own=True)
     if not orders:
-        return ""
+        return kids
     lines = [f"CURATOR ORDERS — {curator()}（F1S 校正令）優先於本 cwd 自己的決定；紅線與 operator 本人指令仍在其上。"
              "每一令就是完整提示詞：直接開始執行，不等 operator 開口，先處理，再做其他事："]
     for o in orders:
@@ -440,11 +494,12 @@ def injection(seat: str, session_id: str = "") -> str:
             lines.append(f"#{o['n']} {o['title']}: 由對話 {owner_of(o)[:8]} 負責中，本對話讀過即可，不要 answer、不要停工{extra}")
         else:
             lines.append(f"#{o['n']} {o['title']}: {o['do']}{extra}")
-    lines.append(f"回報: python {HUB}/_skill/engines/curator_orders.py answer {seat} <n> --evidence <path> [--note \"計數前後、commit、留下什麼\"] "
+    lines.append(f"回報: python {HUB}/_skill/engines/curator_orders.py answer {seat} <n> --evidence <commit:SHA 或既有的程式／測試檔路徑；不要為了回報新開檔> "
+                 f"[--note \"計數前後、留下什麼\"] "
                  f"| --cannot \"<原因>\"（answer 的對話成為該令的負責對話；接手前先 claim {seat} <n>，已有負責對話就不要接）。"
                  "交給別的對話（如 Fable）時，交付物是檔案列（依 item id 冪等、寫前讀回）；send_message 只是通知，"
                  "回 undelivered/queued 是排隊不是遺失，不要重送")
-    return "\n".join(lines)
+    return "\n".join(lines + ([kids] if kids else []))
 
 
 def _brief(orders: list[dict]) -> list[dict]:
@@ -467,7 +522,7 @@ def _waiting_techniques(seat: str) -> str:
     if not waiting:
         return ""
     return (f"ARTICLE TECHNIQUES — {waiting} waiting for this seat: f1s_apply.py list --seat {seat}, apply and measure the worthwhile ones, "
-            "f1s_apply.py close <id> applied|covered --evidence <path> or rejected --note <why>.")
+            "f1s_apply.py close <id> applied|covered --evidence <path> or rejected --note <why>; an opinion with nothing to take apart: nouse --note <why> (not handed on).")
 
 
 def _fanout_line() -> str:
@@ -499,7 +554,8 @@ def _unclaimed_orders() -> str:
     lines = []
     if rows:
         lines.append(f"UNCLAIMED ORDERS — {len(rows)} open with no conversation: {'; '.join(rows[:6])}. Send each into that seat's main chat "
-                     "(send_message, or start_session + detach, then deliver), or measure and close them yourself.")
+                     "(send_message; no open chat: f1s_station.py run in that cwd with the order text in the prompt, the station "
+                     "cannot read outside its cwd), or measure and close them yourself. Never a session card that waits for a click.")
     if stale:
         lines.append(f"STALE CLAIMS — {len(stale)} open order(s) whose owning conversation wrote nothing for "
                      f"{STALE_OWNER_AFTER_S // 3600}h+: {'; '.join(stale[:6])}. list_sessions first (host_gone is not dead); "
@@ -542,6 +598,48 @@ def review_queue() -> list[tuple[str, dict]]:
     judged = _judged_by_control_loop()
     return [(s, o) for s in _seats_with_orders() for o in load(s)["orders"]
             if o.get("status") in ("done", "cannot") and (s, o.get("n")) not in judged]
+
+
+def review_flag(order: dict, seat: str = "") -> str:
+    """What the curator has to judge in an answered order: `cannot` (a reason, no evidence), `reopened` (sent back before),
+    `stale` (no evidence newer than the order), else `fresh`."""
+    if order.get("status") == "cannot":
+        return "cannot"
+    if order.get("reopened_at"):
+        return "reopened"
+    return "fresh" if _evidence_fresh(order, seat) else "stale"
+
+
+def wake_queue(batch: int = REVIEW_BATCH, hours: float = REVIEW_BATCH_H, now: float | None = None) -> list[tuple[str, dict]]:
+    """The review queue when it is worth waking an idle curator chat, else []. Every answer used to wake it within 2 minutes
+    (90 answers in 4 days, 0.16M each) and 2 of 86 answers with evidence were reopened (2026-11-14): an answer with fresh
+    evidence now waits for the next prompt, until `batch` of them wait or the oldest has waited `hours`. `cannot`, `stale`
+    and `reopened` answers wake at once. batch 0 = every answer wakes, as before."""
+    queue = review_queue()
+    if not queue or not batch:
+        return queue
+    now = time.time() if now is None else now
+    waited = []
+    for seat, order in queue:
+        if review_flag(order, seat) != "fresh":
+            return queue
+        try:
+            waited.append(now - time.mktime(time.strptime((order.get("answer") or {}).get("at") or "", "%Y-%m-%dT%H:%M:%S")))
+        except ValueError:
+            return queue
+    return queue if len(queue) >= batch or max(waited) >= hours * 3600 else []
+
+
+def review_table() -> list[str]:
+    """One line per answered order with what the review needs (flag, evidence, the seat's note), so the curator reads the
+    queue in one call instead of a `list` per seat."""
+    rows = []
+    for seat, order in review_queue():
+        ans = order.get("answer") or {}
+        evid = ", ".join(p if p.startswith(COMMIT) else os.path.basename(p) for p in ans.get("evidence") or ()) or "-"
+        rows.append(f"{seat}#{order['n']} {review_flag(order, seat)} | {order.get('title', '')[:60]} | {evid[:80]} | "
+                    f"{' '.join((ans.get('reason') or '').split())[:160]}")
+    return rows
 
 
 def _active() -> list[tuple[str, dict]]:
@@ -595,10 +693,10 @@ def main(argv=None) -> int:
     s = sub.add_parser("answer")
     s.add_argument("seat")
     s.add_argument("n", type=int)
-    g = s.add_mutually_exclusive_group(required=True)
+    g = s.add_mutually_exclusive_group()
     g.add_argument("--evidence", nargs="+")
     g.add_argument("--cannot")
-    s.add_argument("--note", default="", help="with --evidence: before -> after counts, commit, what was left and why")
+    s.add_argument("--note", default="", help="with --evidence: before -> after counts, commit, what was left and why; alone: a one-line answer")
     s = sub.add_parser("claim")
     s.add_argument("seat")
     s.add_argument("n", type=int)
@@ -610,8 +708,12 @@ def main(argv=None) -> int:
     s.add_argument("--note", required=True)
     s = sub.add_parser("close")
     s.add_argument("seat")
-    s.add_argument("n", type=int)
+    s.add_argument("n", type=int, nargs="+")
+    sub.add_parser("review")
     a = ap.parse_args(argv)
+    if a.cmd == "review":
+        print("\n".join(review_table()) or "review queue empty")
+        return 0
     try:
         if a.cmd == "issue":
             out = issue(a.seat, a.title, a.do if a.do is not None else open(a.prompt_file, encoding="utf-8-sig").read(), a.freeze, a.forbid)
@@ -628,7 +730,8 @@ def main(argv=None) -> int:
         elif a.cmd == "reopen":
             out = reopen(a.seat, a.n, a.note)
         else:
-            out = close(a.seat, a.n)
+            out = [{k: close(a.seat, n).get(k) for k in ("n", "status", "title")} for n in a.n]
+            out = out[0] if len(out) == 1 else out
     except (PermissionError, ValueError) as exc:
         print(f"refused: {exc}")
         return 2

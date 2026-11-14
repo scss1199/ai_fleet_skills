@@ -51,6 +51,16 @@ parent_skill: aex-agent-evolution
   fames-phase 3,103 個 session 目錄、_bus/inbox/ai_workspace 11k 封沒人收的警報、_logs 4.7k 個 goal .bak）。
   `.MIGRATED-bak` 只用在一次性遷移使用者資料；備份整棵樹只在那棵樹不在 git 時。測試只寫 tmp_path，禁止寫進 repo 的
   evidence/（「Deliberately retained」fixture 一天 28k 檔）。警報只送有 charter 的 seat，同一 pid 只送一次。
+- ⑥-搬到 `_delete` 不算修好（operator 2026-11-13「盡可能連搬到_delete的這個過程都變少」）：10-31 那條規則留了「登記 TTL」
+  這個出口，結果寫入端照寫、掃帚照搬，11-12 一天進 `_delete` 5,685 個檔（hygiene 3,749、inbox 1,837），仍要使用者手動清。
+  判準改成量測值：`python _skill/engines/f1s_reuse.py tick` 記錄的 `delete_inflow`（每天進 `_delete` 的檔數，依類別）要下降；
+  TTL 只留給真的有讀者、但會過期的資料。寫檔前先問這四句，任一句答不出就不寫：
+  (1) 下一次執行會不會讀它？會→固定檔名覆寫同一格；不會→把值回傳或寫進既有帳本的一列，不開檔。
+  (2) 內容是不是某個 `_registry` 狀態檔已經有的？是→不寄訊息、不另存；通知的冷卻記在寄件引擎自己的狀態，
+      不靠「收件匣還在不在」判斷（收件匣會被自動 ack 清掉，於是每 15 分鐘重寄：loop-engine、fleet-mandatory-tick）。
+  (3) 是不是工具自己會重建的快取（`__pycache__`、`.ruff_cache`）？使用中的快取是持續檔，不搬；只有閒置 14 天的才算殘留。
+  (4) 是不是為了「留證據」？證據用 commit、測試路徑、既有收據；對話中的試算、探針腳本、一次性輸出寫 session scratchpad，
+      不寫進 cwd。`f1s_reuse.py born` 列出的每一族（PER_RUN＝有寫入程式、NO_WRITER＝對話手寫）都修寫入端，不修檔案。
   機械檢查：`fleet-hygiene.py producers`（state 目錄 >1000 個項目或 ≥100 個備份命名＝點名寫入引擎；
   程式碼掃 `MIGRATED-bak` rename／uuid 備份／retained fixture）每 20 h 隨 fames-converge 跑並發布 hygiene.json；
   到期的引擎狀態由同一引擎依 STATE_TTL 搬進 _delete（有 manifest）。新寫一個會重複產生檔案的功能前，先決定它的
@@ -61,6 +71,9 @@ parent_skill: aex-agent-evolution
   只有使用者能做的步驟（開戶 KYC、入金、登入終端機）時照 f1s-intake §3 寫一行等它發生，其餘自己能做的
   （連線層、demo 真送單、對帳、復原）繼續做到帳本會動為止（ai_trader owner 2026-10-29
   「只要 50 美金才具備操作意義 否則半年都在講幹話」）。
+  沒有真錢在風險裡（demo／模擬帳戶／紙上交易）時，「怕虧、等確認、條件不夠好」都不是沒去跑的理由：照規則送單、
+  記結果，沒跑就寫卡在哪個工具或權限，沒有這種卡點就是推託（ai_trader operator 2026-11-13「目前根本就沒有用真的現金
+  你推託都是假貨」）。
 - 「一次能跑幾個」這類容量問題先量再答，答案是三層最小值：技術（先量傳輸層再猜瓶頸——同一程序對 N 個項目扇出 1→N
   量每輪毫秒，再量 k 個程序同掛的總吞吐與每程序減速）、資源（每項最小保證金／配額／VRAM 加總，對照手上有的）、
   期望值（規則在單一項目上的 t）；多開只是把負期望乘以 N。探測失敗記到項目名＋錯誤碼，「N 筆失敗」不算量測
@@ -91,6 +104,11 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 
 非 trivial 的改碼在宣稱完成前，交給沒寫這段程式的 subagent 走技能 `independent-review`
 （生成者不得是自己產出的唯一裁判）；審查結果與 diff 一起引用。
+
+成果完成後另開挑錯路線（Felix Rieseberg 影片 qMccUXYIpQ0，F1S 2026-11-14 吸收）：非 trivial 交付宣稱完成前，
+`f1s_parallel.py plan --units`（2–3 個 unit，prompt 都是「證明這份成果錯」＋成果與驗收項，verifier null）→ `run` 交免費池不同路線；
+本對話當評審逐條判定成立／不成立，成立者修完重跑，只剩雞毛蒜皮（措辭、風格、與驗收無關）＝放行。挑錯結果是草稿，判定要回原文核對；
+密鑰、proprietary 內容（UT.xlsx）不進挑錯 prompt。這道不取代 `independent-review` 與 PROOF。
 
 ## 重犯的錯誤改成機械檢查（kyloren_bot 83845712，Uncle Bob）
 

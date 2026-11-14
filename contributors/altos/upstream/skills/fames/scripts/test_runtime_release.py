@@ -145,59 +145,49 @@ def test_managed_update_retains_exact_backups_and_build_tree(lab):
     assert row['backup_sha256'] == hashlib.sha256(old).hexdigest()
 
 
-def test_receipt_archive_keeps_one_file_per_attempt_and_skips_identical_bytes(lab):
+def test_receipt_is_one_overwritten_record_with_no_per_attempt_archive(lab):
     _, source, package, target = lab
     build(lab)
     first = release.apply(target, package)
-    archives = target / '_registry/fames-runtime-receipts'
     assert first['ok']
-    # The final persist of an attempt archives that attempt's own APPLYING snapshot: one file.
-    assert [p.name for p in archives.iterdir()] == [first['attempt_id'] + '.previous.json']
-    assert json.loads((archives / (first['attempt_id'] + '.previous.json')).read_bytes())['state'] == 'APPLYING'
     put(source, PATH_A, b'new_a = 2\n')
     build(lab)
     second = release.apply(target, package)
     assert second['ok']
-    assert sorted(p.name for p in archives.iterdir()) == sorted(
-        attempt + '.previous.json' for attempt in (first['attempt_id'], second['attempt_id']))
-    assert json.loads((archives / (first['attempt_id'] + '.previous.json')).read_bytes())['state'] == 'INSTALLED'
-    snapshot = archives / (second['attempt_id'] + '.previous.json')
-    assert json.loads(snapshot.read_bytes())['state'] == 'APPLYING'
     current = json.loads((target / '_registry/fames-runtime-release.json').read_bytes())
+    assert current['attempt_id'] == second['attempt_id'] and current['state'] == 'INSTALLED'
     release._persist_receipt(target, current)
-    assert json.loads(snapshot.read_bytes()) == current
-    stamp = snapshot.stat().st_mtime_ns
-    release._persist_receipt(target, current)
-    assert len(list(archives.iterdir())) == 2 and snapshot.stat().st_mtime_ns == stamp
-    assert not list(archives.glob('*.stage'))
+    # Nothing reads a `.previous.json` copy; two applies and a re-persist leave no archive and no staging file.
+    assert not (target / '_registry/fames-runtime-receipts').exists()
+    assert not [p.name for p in (target / '_registry').iterdir() if p.name.endswith(('.stage', '.previous.json'))]
 
 
-def test_identical_release_is_backed_up_once(lab):
+def test_build_keeps_one_previous_release_and_sends_nothing_to_delete(lab):
     root, source, package, target = lab
     first = build(lab)
-    put(source, PATH_A, b'new_a = 2\n')
-    second = build(lab)
-    backup = Path(second['retained_backup'])
-    assert backup.parent.name == first['release_sha256']
-    pristine = root / 'retained-first-release'
-    shutil.copytree(backup, pristine)
-    # A checkout restores the older runtime tree; rebuilding must not copy it into the registry again.
-    (package / 'runtime').rename(root / 'retained-second-release')
-    shutil.copytree(pristine, package / 'runtime')
-    third = build(lab)
-    assert third['release_sha256'] == second['release_sha256']
-    assert Path(third['retained_backup']) == backup
-    assert list(backup.parent.iterdir()) == [backup]
-    redundant = [p.parent for p in (source / '_delete').rglob('manifest.json')]
-    assert len(redundant) == 1 and release._verify_runtime(redundant[0])['release_sha256'] == first['release_sha256']
-    # A corrupted backup is not trusted as the retained copy: a fresh backup is made.
-    (backup / 'files' / PATH_A).write_bytes(b'corrupted copy')
-    (package / 'runtime').rename(root / 'retained-third-release')
-    shutil.copytree(pristine, package / 'runtime')
-    fourth = build(lab)
-    assert Path(fourth['retained_backup']) != backup and Path(fourth['retained_backup']).parent == backup.parent
-    assert release._verify_runtime(Path(fourth['retained_backup']))['release_sha256'] == first['release_sha256']
-    assert len(list(backup.parent.iterdir())) == 2
+    assert first.get('retained_backup') is None
+    slot = source / '_registry/fames-runtime-build-backups/previous'
+    seen = [first]
+    for value in (b'new_a = 2\n', b'new_a = 3\n', b'new_a = 4\n'):
+        put(source, PATH_A, value)
+        seen.append(build(lab))
+        assert seen[-1]['state'] == 'BUILT' and Path(seen[-1]['retained_backup']) == slot
+        # The slot holds exactly the release this build replaced, verified, and is the only entry.
+        assert release._verify_runtime(slot)['release_sha256'] == seen[-2]['release_sha256']
+        assert [p.name for p in slot.parent.iterdir()] == ['previous']
+    assert not (source / '_delete').exists()
+    # An unchanged build is a no-op: no new generation, slot untouched.
+    stamp = (slot / 'manifest.json').stat().st_mtime_ns
+    again = build(lab)
+    assert again['state'] == 'UNCHANGED' and again['generation'] == seen[-1]['generation']
+    assert (slot / 'manifest.json').stat().st_mtime_ns == stamp
+    # A build that stopped before promoting its backup is finished by the next build, not left beside the slot.
+    interrupted = slot.with_name('previous.incoming')
+    shutil.copytree(package / 'runtime', interrupted)
+    put(source, PATH_A, b'new_a = 5\n')
+    last = build(lab)
+    assert last['state'] == 'BUILT' and [p.name for p in slot.parent.iterdir()] == ['previous']
+    assert release._verify_runtime(slot)['release_sha256'] == seen[-1]['release_sha256']
 
 
 def test_changed_managed_file_is_never_overwritten(lab):
