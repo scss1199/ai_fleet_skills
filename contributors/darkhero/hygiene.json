@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "dark-hero-z790",
-  "at": "2026-11-13T12:01:05",
+  "at": "2026-11-14T08:13:14",
   "hub": "C:\\ai_workspace",
-  "seconds": 342.9,
+  "seconds": 316.8,
   "check": {
     "seats": [
       {
@@ -20,7 +20,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 1,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -28,7 +28,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -43,24 +43,24 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
         "seat": "ai_darkhero",
         "missing": [],
         "findings": [
-          "dirty_files:1007"
+          "dirty_files:1017"
         ],
         "repo": "own",
-        "dirty": 1007,
+        "dirty": 1017,
         "unpushed": 0,
         "last_commit": "2026-11-13",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -75,7 +75,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -85,29 +85,30 @@
         "repo": "own",
         "dirty": 0,
         "unpushed": 0,
-        "last_commit": "2026-11-11",
+        "last_commit": "2026-11-13",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
         "seat": "ai_guitar",
         "missing": [],
         "findings": [
+          "dirty_files:52",
           "tracked_junction_files:162"
         ],
         "repo": "own",
-        "dirty": 48,
+        "dirty": 52,
         "unpushed": 0,
         "last_commit": "2026-10-27",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 162,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -124,7 +125,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 1,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -146,7 +147,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -161,7 +162,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -176,7 +177,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -186,14 +187,14 @@
           "worktrees:7"
         ],
         "repo": "own",
-        "dirty": 24,
+        "dirty": 1,
         "unpushed": 0,
-        "last_commit": "2026-11-13",
+        "last_commit": "2026-11-14",
         "worktrees": 7,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -208,7 +209,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -216,7 +217,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -228,12 +229,12 @@
         "repo": "own",
         "dirty": 8,
         "unpushed": 0,
-        "last_commit": "2026-11-05",
+        "last_commit": "2026-11-13",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 2,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -241,7 +242,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -256,7 +257,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -264,14 +265,14 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 7,
+        "dirty": 2,
         "unpushed": 0,
-        "last_commit": "2026-11-12",
+        "last_commit": "2026-11-13",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -279,14 +280,14 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 11,
+        "dirty": 3,
         "unpushed": 0,
-        "last_commit": "2026-11-03",
+        "last_commit": "2026-11-13",
         "worktrees": 1,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -301,7 +302,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -309,14 +310,14 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 3,
+        "dirty": 10,
         "unpushed": 0,
-        "last_commit": "2026-11-06",
+        "last_commit": "2026-11-14",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -324,7 +325,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -338,11 +339,11 @@
         "dirty": 68,
         "unpushed": 0,
         "last_commit": "2026-11-13",
-        "worktrees": 0,
+        "worktrees": 1,
         "worktrees_prunable": 0,
         "worktrees_orphan": 12,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       },
       {
@@ -350,7 +351,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-13",
+        "newest_file": "2026-11-14",
         "activity": "ACTIVE"
       }
     ],
@@ -360,20 +361,8 @@
       "IDLE": 0,
       "DORMANT": 1
     },
-    "violations": 9,
+    "violations": 10,
     "producers": [
-      {
-        "dir": "_registry/fames-runtime-receipts",
-        "entries": 102,
-        "retention_named": 102,
-        "writer": "_skill/fleet-skills/fames/scripts/runtime_release.py _persist_receipt"
-      },
-      {
-        "dir": "_registry/fames-evidence",
-        "entries": 2814,
-        "retention_named": 5,
-        "writer": "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"
-      },
       {
         "dir": "_logs",
         "entries": 2794,
@@ -381,34 +370,22 @@
         "writer": "_skill/engines/goal-field.py / seal-generation-lock.py / scf-residual.py goal backups"
       },
       {
-        "dir": "_registry/fames-turn/claude",
-        "entries": 1200,
+        "dir": "ai_darkhero/_registry/kyloren-knowledge-social/consolidate/cards",
+        "entries": 1226,
         "retention_named": 0,
-        "writer": "_harness/runtime/fames_turn_binding.py (by-prompt archive)"
+        "writer": "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"
       },
       {
         "dir": "_inbox/_digested/2026-06-04-auto",
         "entries": 1170,
         "retention_named": 0,
         "writer": "_skill/engines/inbox digest (SUBMIT receipts auto-digested)"
-      },
-      {
-        "dir": "_registry/fames-hot",
-        "entries": 1116,
-        "retention_named": 0,
-        "writer": "_harness/runtime/fames_session_harness.py (hot_refresh / turn_context per-session state)"
-      },
-      {
-        "dir": "ai_darkhero/_registry/kyloren-knowledge-social/consolidate/cards",
-        "entries": 1070,
-        "retention_named": 0,
-        "writer": "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"
       }
     ],
     "retention_antipatterns": [
       {
         "file": "_skill/engines/claude-proof-hook.py",
-        "line": 572,
+        "line": 573,
         "kind": "migrated_bak_loop",
         "text": "(\"migrated-bak\", re.compile(r\"MIGRATED-bak\"), re.compile(r\"(?i)rename|replace|move|copy|with_name|with_suffix|\\+\\s*['\\\"]|f['\\\"]\"),"
       },
@@ -420,7 +397,7 @@
       },
       {
         "file": "_skill/engines/fames-immediate-apply.py",
-        "line": 138,
+        "line": 139,
         "kind": "uuid_named_copy",
         "text": "target = workspace / '_registry/fames-phase-history' / ('recovery-' + uuid.uuid4().hex + '.json')"
       },
@@ -471,54 +448,373 @@
       },
       {
         "seat": "ai_nuwa",
+        "memory": "C:\\Users\\sc\\.claude\\projects\\C--ai-workspace-ai-nuwa\\memory\\feedback_review_model_ab.md",
+        "stale": [
+          "runtime/review_model_ab.jsonl"
+        ]
+      },
+      {
+        "seat": "ai_nuwa",
         "memory": "C:\\Users\\sc\\.claude\\projects\\C--ai-workspace-ai-nuwa\\memory\\project_q04_bow_heel_cup.md",
         "stale": [
           "recipes/batches/20261111/q04_bow_v1.json"
         ]
       }
+    ],
+    "runtime_cves": [
+      {
+        "cwd": "<host>",
+        "node": [
+          {
+            "source": "node --version",
+            "spec": "v24.22.1",
+            "status": "vulnerable",
+            "fixed": "v24.22.3",
+            "latest": "v24.22.3"
+          }
+        ],
+        "python": [
+          {
+            "package": "aiohttp",
+            "version": "3.14.3",
+            "vulns": [
+              "GHSA-2g87-pp6c-29x5",
+              "GHSA-494j-54xm-rwp3",
+              "GHSA-5wr8-gcqf-gqf3",
+              "GHSA-6cjc-53gc-5rqm",
+              "GHSA-9xw5-w5jj-pvcg",
+              "GHSA-f9xw-jh8m-3mwq",
+              "GHSA-gx76-c99x-2c96",
+              "GHSA-pqxq-w44r-73xw"
+            ],
+            "latest": "3.14.5"
+          },
+          {
+            "package": "brotlicffi",
+            "version": "1.2.0.2",
+            "vulns": [
+              "GHSA-9v8h-qqgm-4m35",
+              "PYSEC-2026-4323"
+            ],
+            "latest": "1.2.1.0"
+          },
+          {
+            "package": "certifi",
+            "version": "2026.7.22",
+            "vulns": [
+              "GHSA-6q48-6c7w-9gw2",
+              "PYSEC-2026-4320"
+            ],
+            "latest": "2026.10.23"
+          },
+          {
+            "package": "deep-translator",
+            "version": "1.11.4",
+            "vulns": [
+              "PYSEC-2022-252"
+            ],
+            "latest": "1.11.4"
+          },
+          {
+            "package": "diffusers",
+            "version": "0.38.0.dev0",
+            "vulns": [
+              "GHSA-7wx4-6vff-v64p",
+              "GHSA-98h9-4798-4q5v",
+              "PYSEC-2026-2446",
+              "PYSEC-2026-40",
+              "PYSEC-2026-41"
+            ],
+            "latest": "0.43.0"
+          },
+          {
+            "package": "dnspython",
+            "version": "2.8.0",
+            "vulns": [
+              "GHSA-45c3-73f7-pv4m",
+              "GHSA-vvf4-9x63-8xvv"
+            ],
+            "latest": "2.9.2"
+          },
+          {
+            "package": "filelock",
+            "version": "3.25.2",
+            "vulns": [
+              "GHSA-567q-5qvw-pf92",
+              "GHSA-69hj-f68j-2879",
+              "GHSA-8mx5-7m5m-r77g",
+              "GHSA-9vhv-jxww-xfm5",
+              "GHSA-cwqr-hh33-gh44",
+              "GHSA-fq56-3cx3-fjxp",
+              "GHSA-j8f7-rjxc-mr56",
+              "GHSA-rfpc-qcw5-3pc4"
+            ],
+            "latest": "4.2.10"
+          },
+          {
+            "package": "gradio",
+            "version": "3.43.2",
+            "vulns": [
+              "GHSA-26jh-r8g2-6fpr",
+              "GHSA-279j-x4gx-hfrh",
+              "GHSA-34rf-p3r3-58x2",
+              "GHSA-37qc-qgx6-9xjv",
+              "GHSA-39mp-8hj3-5c49",
+              "GHSA-3c67-5hwx-f6wx",
+              "GHSA-3gf9-wv65-gwh9",
+              "GHSA-48cq-79qq-6f7x"
+            ],
+            "latest": "6.32.0"
+          },
+          {
+            "package": "js2py",
+            "version": "0.74",
+            "vulns": [
+              "GHSA-h95x-26f3-88hr",
+              "PYSEC-2026-1476"
+            ],
+            "latest": "0.74"
+          },
+          {
+            "package": "mcp",
+            "version": "1.29.1",
+            "vulns": [
+              "GHSA-5h93-6whr-6q8j",
+              "GHSA-84m7-p3x7-pcfv",
+              "GHSA-rwrf-2pqf-9j8j",
+              "GHSA-w4fh-qvv9-3v23"
+            ],
+            "latest": "2.3.0"
+          },
+          {
+            "package": "multidict",
+            "version": "6.7.1",
+            "vulns": [
+              "GHSA-54p9-h82j-f925",
+              "PYSEC-2026-4244"
+            ],
+            "latest": "7.2.1"
+          },
+          {
+            "package": "oauthlib",
+            "version": "3.3.1",
+            "vulns": [
+              "GHSA-3jp2-3mrg-2vxc",
+              "GHSA-7984-qgvg-3j9c",
+              "GHSA-hj66-6f7g-4r5v",
+              "GHSA-xpv3-w29h-x7cv",
+              "PYSEC-2026-4113",
+              "PYSEC-2026-4114"
+            ],
+            "latest": "4.0.1"
+          },
+          {
+            "package": "opentelemetry-api",
+            "version": "1.45.1",
+            "vulns": [
+              "GHSA-mf5v-w3w3-f6cg"
+            ],
+            "latest": "1.45.2"
+          },
+          {
+            "package": "pillow",
+            "version": "12.2.0",
+            "vulns": [
+              "GHSA-22hg-r758-rrw9",
+              "GHSA-24rc-8hj2-v98c",
+              "GHSA-254f-3936-288h",
+              "GHSA-27h8-gf7j-v5hc",
+              "GHSA-332p-7hrc-92wf",
+              "GHSA-3j72-p6qg-6xp7",
+              "GHSA-4558-3h8r-v8xp",
+              "GHSA-45hq-cxwh-f6vc"
+            ],
+            "latest": "13.0.0"
+          },
+          {
+            "package": "pypdf",
+            "version": "6.14.2",
+            "vulns": [
+              "GHSA-23w6-3w8w-8484",
+              "GHSA-39mj-jf6j-2qj3",
+              "GHSA-42gh-23hr-vphw",
+              "GHSA-4vqv-7265-gm2w",
+              "GHSA-5849-834g-hvw5",
+              "GHSA-5hx5-vpf9-5wcv",
+              "GHSA-5jq2-8x83-x246",
+              "GHSA-62m5-6wh8-28x7"
+            ],
+            "latest": "7.1.0"
+          },
+          {
+            "package": "setuptools",
+            "version": "69.5.1",
+            "vulns": [
+              "GHSA-5rjg-fvgr-3xxf",
+              "GHSA-cx63-2mw6-8hw5",
+              "GHSA-h35f-9h28-mq5c",
+              "GHSA-xmj3-9gf7-h52w",
+              "PYSEC-2025-49",
+              "PYSEC-2026-1918",
+              "PYSEC-2026-3447"
+            ],
+            "latest": "84.2.1"
+          },
+          {
+            "package": "soupsieve",
+            "version": "2.10",
+            "vulns": [
+              "GHSA-6655-6qjp-jx7x",
+              "GHSA-7g44-g9rc-x53w",
+              "GHSA-mmhr-3c5m-f64f"
+            ],
+            "latest": "4.1"
+          },
+          {
+            "package": "torch",
+            "version": "2.11.0+xpu",
+            "vulns": [
+              "GHSA-rrmf-rvhw-rf47"
+            ],
+            "latest": "2.15.0"
+          },
+          {
+            "package": "transformers",
+            "version": "5.5.0.dev0",
+            "vulns": [
+              "GHSA-fgcw-684q-jj6r",
+              "GHSA-x9r9-c232-4q39",
+              "GHSA-xrqw-3rrv-vx5w",
+              "PYSEC-2026-3929",
+              "PYSEC-2026-4174"
+            ],
+            "latest": "5.23.0"
+          }
+        ]
+      },
+      {
+        "cwd": "ai_career",
+        "node": [
+          {
+            "source": "match-app-web\\Dockerfile",
+            "spec": "node:22-alpine",
+            "status": "floating",
+            "latest": "v22.23.5",
+            "last_security": "v22.23.5"
+          }
+        ],
+        "python": []
+      },
+      {
+        "cwd": "ai_demo",
+        "node": [],
+        "python": [
+          {
+            "package": "certifi",
+            "version": "2026.7.22",
+            "vulns": [
+              "GHSA-6q48-6c7w-9gw2",
+              "PYSEC-2026-4320"
+            ],
+            "latest": "2026.10.23"
+          },
+          {
+            "package": "pip",
+            "version": "25.0.1",
+            "vulns": [
+              "GHSA-4xh5-x5gv-qwph",
+              "GHSA-58qw-9mgm-455v",
+              "GHSA-6vgw-5pg2-w6jp",
+              "GHSA-jp4c-xjxw-mgf9",
+              "GHSA-qwm4-qh6w-59xr",
+              "GHSA-wf93-45jw-7689",
+              "PYSEC-2026-1795",
+              "PYSEC-2026-1796"
+            ],
+            "latest": "26.3"
+          }
+        ]
+      },
+      {
+        "cwd": "ai_photo",
+        "node": [],
+        "python": [
+          {
+            "package": "setuptools",
+            "version": "78.1.0",
+            "vulns": [
+              "GHSA-5rjg-fvgr-3xxf",
+              "GHSA-h35f-9h28-mq5c",
+              "GHSA-xmj3-9gf7-h52w",
+              "PYSEC-2025-49",
+              "PYSEC-2026-3447"
+            ],
+            "latest": "84.2.1"
+          }
+        ]
+      },
+      {
+        "cwd": "ai_ut",
+        "node": [
+          {
+            "source": "web\\Dockerfile",
+            "spec": "node:22-alpine",
+            "status": "floating",
+            "latest": "v22.23.5",
+            "last_security": "v22.23.5"
+          }
+        ],
+        "python": []
+      },
+      {
+        "cwd": "ai_ziyaoastro",
+        "node": [
+          {
+            "source": "Dockerfile",
+            "spec": "node:22-alpine",
+            "status": "floating",
+            "latest": "v22.23.5",
+            "last_security": "v22.23.5"
+          }
+        ],
+        "python": []
+      }
     ]
   },
   "sweep": {
     "applied": true,
-    "planned": 260,
-    "planned_bytes": 25544909,
+    "planned": 1,
+    "planned_bytes": 3771622,
     "by_class": {
-      "stale": {
-        "count": 1,
-        "bytes": 111
-      },
       "backup": {
-        "count": 8,
-        "bytes": 16672485
-      },
-      "expired_state": {
-        "count": 251,
-        "bytes": 8872313
+        "count": 1,
+        "bytes": 3771622
       }
     },
     "skipped": {
-      "git_tracked": 488,
-      "protected": 1256
+      "git_tracked": 487,
+      "protected": 0
     },
-    "moved": 260,
+    "moved": 1,
     "engine": "fleet-residue-quarantine.py",
     "errors": []
   },
-  "delete_bytes": 29558691883,
+  "delete_bytes": 39329643082,
   "summary": {
     "seats": 25,
-    "violations": 9,
+    "violations": 10,
     "activity": {
       "ACTIVE": 24,
       "IDLE": 0,
       "DORMANT": 1
     },
     "scheduled_task_findings": 0,
-    "producer_leaks": 7,
+    "producer_leaks": 3,
     "retention_antipatterns": 9,
-    "stale_memories": 2,
-    "moved": 260,
-    "planned_bytes": 25544909,
+    "stale_memories": 3,
+    "runtime_cves": 6,
+    "moved": 1,
+    "planned_bytes": 3771622,
     "applied": true
   }
 }
