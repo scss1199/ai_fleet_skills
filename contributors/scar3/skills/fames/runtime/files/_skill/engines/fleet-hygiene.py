@@ -25,6 +25,7 @@ What one run does (zero model tokens, bounded, reversible):
   python fleet-hygiene.py status
   python fleet-hygiene.py memories       # stale memories: Claude memory files naming an engine file, hub path or
                                          # flag that no longer exists (fix or remove the memory, not the file)
+  python fleet-hygiene.py cves           # runtime CVEs per cwd (Node security releases, OSV for venvs; network)
   python fleet-hygiene.py fleet          # curator: every host's latest hygiene.json from the carrier clone
 """
 from __future__ import annotations
@@ -50,6 +51,7 @@ THROTTLE_S = 20 * 3600
 STALE_S = 7 * 86400
 ACTIVE_D, IDLE_D = 7, 30
 WORKTREE_MAX = 3            # extra worktrees per repo before it is a finding (each is a full working-tree copy)
+WORKTREE_ORPHAN_D = 7       # a .claude/worktrees/<name> dir git no longer lists, untouched this long, is residue (class orphan_worktree)
 SEAT_RE = re.compile(r"^(ai_[a-z0-9_]+|jci_[a-z0-9_]+|sdnext_[a-z0-9_]+|fracdigi)$")
 CHARTER = ("CLAUDE.md", "AGENTS.md", os.path.join(".cursor", "hooks.json"))
 SKILL_SURFACES = (".agents/skills", ".claude/skills", ".cursor/skills")   # each <name> may be a junction to fleet-skills
@@ -243,15 +245,11 @@ def check_seat(seat: Path, now: float) -> dict:
         row["last_commit"] = last.stdout.strip()[:10] if last.returncode == 0 and last.stdout.strip() else None
         # agent worktrees (Claude .claude/worktrees, Codex ~/.codex/worktrees) are full copies that nobody removes;
         # the 11-04 article found 37 of them holding 585 GB. Count them; `prunable` = directory already gone.
-        wt = _git(seat, "worktree", "list", "--porcelain")
-        if wt.returncode == 0:
-            blocks = [b for b in wt.stdout.split("\n\n") if b.strip()]
+        blocks = _worktree_blocks(seat)
+        if blocks is not None:
             row["worktrees"] = max(len(blocks) - 1, 0)
             row["worktrees_prunable"] = sum(1 for b in blocks if "\nprunable" in b)
-            known = {os.path.normcase(os.path.normpath(b.split("\n", 1)[0][len("worktree "):])) for b in blocks}
-            wt_dir = seat / ".claude" / "worktrees"
-            row["worktrees_orphan"] = sum(1 for d in (wt_dir.iterdir() if wt_dir.is_dir() else ())
-                                          if d.is_dir() and os.path.normcase(os.path.normpath(str(d))) not in known)
+            row["worktrees_orphan"] = len(_orphan_worktree_dirs(seat, blocks))
         else:
             row["worktrees"] = "UNKNOWN"
         # tracked files under a junctioned skill dir: every fleet-skill push dirties them (ai_trader 2026-11-10, 14 files).
@@ -278,7 +276,91 @@ def check_seat(seat: Path, now: float) -> dict:
         row["findings"].append(f"orphan_worktree_dirs:{row['worktrees_orphan']}")
     if isinstance(row.get("worktrees"), int) and row["worktrees"] >= WORKTREE_MAX:
         row["findings"].append(f"worktrees:{row['worktrees']}")
+    if own and blocks is not None:
+        row["stale_agent_worktrees"] = stale_agent_worktrees(seat, blocks, now)
+        if row["stale_agent_worktrees"]:
+            row["findings"].append(f"stale_agent_worktree:{len(row['stale_agent_worktrees'])}")
     return row
+
+
+def _lock_pid_alive(block: str) -> bool:
+    """A `locked ... (pid N)` worktree whose pid still runs belongs to a live agent; unreadable = alive (fail-safe)."""
+    m = re.search(r"\nlocked[^\n]*\(pid (\d+)\)", block)
+    if not m:
+        return "\nlocked" in block and "(pid" not in block   # a lock with no pid is someone's deliberate hold
+    try:
+        import psutil
+        return psutil.pid_exists(int(m.group(1)))
+    except Exception:  # noqa: BLE001
+        return True
+
+
+def stale_agent_worktrees(repo: Path, blocks: list[str], now: float) -> list[dict]:
+    """Registered .claude/worktrees copies holding nothing unique: clean once gitlink drift is ignored (2026-11-14: the
+    hub index tracks nested seats as gitlinks, so every hub copy shows ' M ai_nuwa' and Claude Code's auto-clean never
+    fires; 3 copies x 3.7 GB sat 2-7 weeks), HEAD merged into the main tree's HEAD, older than WORKTREE_ORPHAN_D days,
+    no live lock pid. Advisory only: the recipe moves the copy to _delete and prunes; the seat runs it."""
+    main_head = blocks[0].split("\nHEAD ", 1)[1].split("\n", 1)[0] if "\nHEAD " in blocks[0] else ""
+    agent_root = os.path.normcase(str(repo / ".claude" / "worktrees"))
+    out = []
+    for b in blocks[1:]:
+        path = Path(b.split("\n", 1)[0][len("worktree "):])
+        if "\nprunable" in b or not os.path.normcase(os.path.normpath(str(path))).startswith(agent_root):
+            continue
+        head = b.split("\nHEAD ", 1)[1].split("\n", 1)[0] if "\nHEAD " in b else ""
+        if not head or not main_head or _lock_pid_alive(b):
+            continue
+        ts = _git(repo, "log", "-1", "--format=%ct", head)
+        try:
+            age_d = (now - max(int(ts.stdout.strip()), (path / ".git").stat().st_mtime)) / 86400
+        except (ValueError, OSError):
+            continue
+        if age_d < WORKTREE_ORPHAN_D or _git(repo, "merge-base", "--is-ancestor", head, main_head).returncode != 0:
+            continue
+        st = _git(path, "status", "--porcelain", "--ignore-submodules=all", timeout=300)
+        if st.returncode != 0 or st.stdout.strip():
+            continue
+        out.append({"path": str(path), "age_d": round(age_d), "bytes": _size(path),
+                    "recipe": f"move {path} to _delete/<date>-worktrees, then git -C {repo} worktree prune"})
+    return out
+
+
+def _worktree_blocks(seat: Path) -> list[str] | None:
+    """`git worktree list --porcelain` blocks (first = the main tree), None when git cannot answer."""
+    wt = _git(seat, "worktree", "list", "--porcelain")
+    if wt.returncode != 0:
+        return None
+    return [b for b in wt.stdout.split("\n\n") if b.strip()]
+
+
+def _orphan_worktree_dirs(seat: Path, blocks: list[str]) -> list[Path]:
+    """Dirs under <seat>/.claude/worktrees that git no longer lists: the agent copy stayed after its registration went."""
+    known = {os.path.normcase(os.path.normpath(b.split("\n", 1)[0][len("worktree "):])) for b in blocks}
+    wt_dir = seat / ".claude" / "worktrees"
+    return [d for d in (sorted(wt_dir.iterdir()) if wt_dir.is_dir() else ())
+            if d.is_dir() and not _is_junction(str(d)) and os.path.normcase(os.path.normpath(str(d))) not in known]
+
+
+def orphan_worktrees(hub: Path, now: float | None = None) -> list[tuple[str, Path, int]]:
+    """(orphan_worktree, dir, bytes) for every unregistered agent worktree copy untouched for WORKTREE_ORPHAN_D days.
+    2026-11-14: jci_taipei kept 12 such dirs (6.8 GB, 15-65 days old) while check_seat only counted them; a registered
+    worktree, however old, stays the seat's (`git worktree remove` is its call)."""
+    now = now or _now()
+    cut = now - WORKTREE_ORPHAN_D * 86400
+    out: list[tuple[str, Path, int]] = []
+    for seat in seats(hub):
+        if not (seat / ".git").exists():
+            continue
+        blocks = _worktree_blocks(seat)
+        if blocks is None:
+            continue
+        for d in _orphan_worktree_dirs(seat, blocks):
+            try:
+                if _newest_mtime(d) < cut:
+                    out.append(("orphan_worktree", d, _size(d)))
+            except OSError:
+                continue
+    return out
 
 
 def scheduled_task_findings(hub: Path) -> list[str] | str:
@@ -507,6 +589,135 @@ def stale_memories(hub: Path, root: Path | None = None) -> list[dict]:
     return out
 
 
+# ------------------------------------------------------------------ runtime CVEs (ai_darkhero proposal 2026-11-13)
+# The CVE-2026-111497 sweep (local Node 24.14.1, three cwds on node:22-alpine, brotli 1.2.0) was done by hand; the
+# same comparison is mechanical: Node lines against nodejs.org/dist/index.json (its `security` flag), seat Python
+# environments against OSV, fixed version from PyPI. Advisory finding only; the upgrade stays the seat's work.
+NODE_INDEX = "https://nodejs.org/dist/index.json"
+OSV_BATCH = "https://api.osv.dev/v1/querybatch"
+PYPI_JSON = "https://pypi.org/pypi/{}/json"
+NODE_PIN_FILES = (".nvmrc", ".node-version")
+FROM_NODE_RE = re.compile(r"^\s*FROM\s+(?:--\S+\s+)*node:(\S+)", re.I | re.M)
+RUNTIME_DEPTH = 3
+
+
+def _fetch_json(url: str, body: dict | None = None, timeout: int = 20):
+    import urllib.request
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json", "User-Agent": "fleet-hygiene"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 - fixed https feeds above
+        return json.loads(r.read().decode("utf-8"))
+
+
+def _ver(s: str) -> tuple[int, ...] | None:
+    m = re.match(r"v?(\d+)(?:\.(\d+))?(?:\.(\d+))?", s.strip())
+    return tuple(int(g) for g in m.groups() if g is not None) if m else None
+
+
+def _seat_node_specs(seat: Path) -> list[tuple[str, str]]:
+    """(source, spec) for every Dockerfile FROM node:<tag> and .nvmrc/.node-version within RUNTIME_DEPTH."""
+    out = []
+    base = len(seat.parts)
+    for dp, dns, fns in os.walk(seat):
+        dns[:] = [d for d in dns if d not in PRUNE and d not in CACHE_DIRS and not _is_junction(os.path.join(dp, d))
+                  and len(Path(dp).parts) - base < RUNTIME_DEPTH]
+        for f in fns:
+            p = Path(dp) / f
+            if f.lower().startswith("dockerfile"):
+                out += [(str(p.relative_to(seat)), "node:" + t) for t in FROM_NODE_RE.findall(_read_src(p))]
+            elif f in NODE_PIN_FILES:
+                out.append((str(p.relative_to(seat)), _read_src(p).strip()))
+    return list(dict.fromkeys(out))   # a multi-stage Dockerfile names the same tag once per stage
+
+
+def node_delta(spec: str, index: list[dict]) -> dict | None:
+    """One Node spec against the release index: floating tag -> rebuild row; pinned -> vulnerable when a security
+    release in the same major line is newer. None = nothing to report."""
+    tag = spec.split(":", 1)[1] if spec.startswith("node:") else spec
+    v = _ver(tag.split("-", 1)[0])
+    if not v:
+        return None
+    line = [e for e in index if (_ver(e.get("version", "")) or (0,))[0] == v[0]]
+    if not line:
+        return {"spec": spec, "status": "unknown_line"}
+    latest = max(line, key=lambda e: _ver(e["version"]))["version"]
+    if len(v) < 3:   # node:22-alpine floats: safe only once the image is rebuilt after the security release
+        sec = [e for e in line if e.get("security")]
+        return {"spec": spec, "status": "floating", "latest": latest,
+                "last_security": max(sec, key=lambda e: _ver(e["version"]))["version"] if sec else None}
+    newer_sec = [e for e in line if e.get("security") and _ver(e["version"]) > v]
+    if not newer_sec:
+        return None
+    return {"spec": spec, "status": "vulnerable", "fixed": max(newer_sec, key=lambda e: _ver(e["version"]))["version"],
+            "latest": latest}
+
+
+def _site_packages(seat: Path) -> list[Path]:
+    out = []
+    for venv in (".venv", "venv"):
+        for sp in ((seat / venv / "Lib" / "site-packages"), *sorted((seat / venv / "lib").glob("python3*/site-packages"))):
+            if sp.is_dir():
+                out.append(sp)
+    return out
+
+
+def _dists(paths: list[str] | None) -> dict[str, str]:
+    from importlib import metadata
+    got = {}
+    for d in metadata.distributions(**({"path": paths} if paths else {})):
+        name = (d.metadata["Name"] or "").strip()
+        if name and d.version:
+            got.setdefault(name.lower(), d.version)
+    return got
+
+
+def python_vulns(pkgs: dict[str, str], fetch=None) -> list[dict]:
+    fetch = fetch or _fetch_json
+    names = sorted(pkgs)
+    if not names:
+        return []
+    res = fetch(OSV_BATCH, {"queries": [{"package": {"name": n, "ecosystem": "PyPI"}, "version": pkgs[n]} for n in names]})
+    out = []
+    for n, r in zip(names, res.get("results") or []):
+        ids = [v.get("id") for v in (r or {}).get("vulns") or []]
+        if ids:
+            try:
+                latest = fetch(PYPI_JSON.format(n))["info"]["version"]
+            except Exception as exc:  # noqa: BLE001
+                latest = f"UNKNOWN: {type(exc).__name__}"
+            out.append({"package": n, "version": pkgs[n], "vulns": ids[:8], "latest": latest})
+    return out
+
+
+def runtime_cves(hub: Path, fetch=None, local_node: str | None = None) -> list[dict] | str:
+    """One row per cwd (plus `<host>` for the local node / hub python) with a vulnerable or floating runtime."""
+    fetch = fetch or _fetch_json
+    try:
+        index = fetch(NODE_INDEX)
+    except Exception as exc:  # noqa: BLE001 - offline: UNKNOWN, never a pass
+        return f"UNKNOWN: node index {type(exc).__name__}"
+    if local_node is None:
+        try:
+            local_node = subprocess.run(["node", "--version"], capture_output=True, text=True, timeout=15,
+                                        creationflags=NW).stdout.strip()
+        except (OSError, subprocess.SubprocessError):
+            local_node = ""
+    rows = []
+    host_node = [d for d in [node_delta(local_node, index)] if local_node and d]
+    host_py = python_vulns(_dists(None), fetch)
+    if host_node or host_py:
+        rows.append({"cwd": "<host>", "node": [{"source": "node --version", **d} for d in host_node], "python": host_py})
+    for seat in seats(hub):
+        node = [{"source": src, **d} for src, spec in _seat_node_specs(seat) for d in [node_delta(spec, index)] if d]
+        py = []
+        sps = _site_packages(seat)
+        if sps:
+            py = python_vulns(_dists([str(p) for p in sps]), fetch)
+        if node or py:
+            rows.append({"cwd": seat.name, "node": node, "python": py})
+    return rows
+
+
 def check(hub: Path, now: float | None = None) -> dict:
     now = now or _now()
     rows = [check_seat(s, now) for s in seats(hub)]
@@ -522,10 +733,19 @@ def check(hub: Path, now: float | None = None) -> dict:
         anti = retention_antipatterns(hub)
     except Exception as exc:  # noqa: BLE001
         anti = f"UNKNOWN: {type(exc).__name__}"
-    return {"seats": rows, "scheduled_tasks": scheduled_task_findings(hub),
+    try:
+        cves = runtime_cves(hub)
+    except Exception as exc:  # noqa: BLE001
+        cves = f"UNKNOWN: {type(exc).__name__}"
+    try:   # the hub is a repo but not a seat; its agent worktrees are the 3.7 GB copies
+        hub_blocks = _worktree_blocks(hub)
+        hub_wt = stale_agent_worktrees(hub, hub_blocks, now) if hub_blocks else []
+    except Exception as exc:  # noqa: BLE001
+        hub_wt = f"UNKNOWN: {type(exc).__name__}"
+    return {"seats": rows, "scheduled_tasks": scheduled_task_findings(hub), "hub_stale_agent_worktrees": hub_wt,
             "counts": {k: sum(1 for r in rows if r["activity"] == k) for k in ("ACTIVE", "IDLE", "DORMANT")},
             "violations": sum(len(r["findings"]) for r in rows),
-            "producers": leaks, "retention_antipatterns": anti, "stale_memories": mems}
+            "producers": leaks, "retention_antipatterns": anti, "stale_memories": mems, "runtime_cves": cves}
 
 
 # ------------------------------------------------------------------ sweep
@@ -565,7 +785,7 @@ class Tracked:
 def _never(hub: Path, path: Path, cls: str = "") -> bool:
     rel = str(path.relative_to(hub)).lower() if str(path).lower().startswith(str(hub).lower()) else str(path).lower()
     low = path.name.lower()
-    if cls in ("expired_state", "orphan_inbox"):
+    if cls in ("expired_state", "orphan_inbox", "orphan_worktree"):
         # explicitly listed engine state: only the untouchable trees and live lock/pid files are refused
         if low.endswith((".lock", ".pid")) and path.is_file():
             return True
@@ -669,6 +889,7 @@ def candidates(hub: Path, now: float | None = None) -> list[tuple[str, Path, int
         for e in entries[KEEP_NEWEST:]:
             out.append(("backup", e, _size(e)))
     out.extend(expired_state(hub, now))
+    out.extend(orphan_worktrees(hub, now))
     return out[:MAX_MOVES]
 
 
@@ -763,7 +984,8 @@ def sweep(hub: Path, apply: bool, now: float | None = None, tracked=None) -> dic
             skipped["protected"] += 1
             continue
         try:
-            if tracked(p):
+            # an orphan worktree is outside git's registry by definition; its own nested index proves nothing
+            if cls != "orphan_worktree" and tracked(p):
                 skipped["git_tracked"] += 1
                 continue
         except Exception:  # noqa: BLE001
@@ -858,6 +1080,7 @@ def run(hub: Path = HUB, host: str | None = None, apply: bool = False, force: bo
                            "producer_leaks": chk["producers"] if isinstance(chk["producers"], str) else len(chk["producers"]),
                            "retention_antipatterns": chk["retention_antipatterns"] if isinstance(chk["retention_antipatterns"], str) else len(chk["retention_antipatterns"]),
                            "stale_memories": chk["stale_memories"] if isinstance(chk["stale_memories"], str) else len(chk["stale_memories"]),
+                           "runtime_cves": chk["runtime_cves"] if isinstance(chk["runtime_cves"], str) else len(chk["runtime_cves"]),
                            "moved": sw["moved"], "planned_bytes": sw["planned_bytes"], "applied": apply}}
         doc["seconds"] = round(time.time() - t0, 1)
         _save(OUT / f"{host}.json", doc)
@@ -903,6 +1126,7 @@ def main(argv=None) -> int:
     r.add_argument("--max-moves", type=int, help=f"cap on entries moved in this run (default {MAX_MOVES}); backlog runs raise it")
     sub.add_parser("status")
     sub.add_parser("fleet")
+    sub.add_parser("cves", help="runtime CVE rows: Node lines vs nodejs.org security releases, seat venvs vs OSV")
     sub.add_parser("memories", help="memories naming engine files, paths or flags that no longer exist")
     pr = sub.add_parser("producers", help="name the engines that keep filling state dirs (no move)")
     pr.add_argument("--cap", type=int, default=PRODUCER_CAP)
@@ -914,6 +1138,8 @@ def main(argv=None) -> int:
     elif a.cmd == "producers":
         out = {"producers": producers(HUB, a.cap), "retention_antipatterns": retention_antipatterns(HUB),
                "expired_state_planned": len(expired_state(HUB))}
+    elif a.cmd == "cves":
+        out = runtime_cves(HUB)
     elif a.cmd == "memories":
         out = stale_memories(HUB)
     elif a.cmd == "status":

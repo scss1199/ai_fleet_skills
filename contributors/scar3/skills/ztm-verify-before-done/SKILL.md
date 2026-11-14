@@ -71,6 +71,9 @@ parent_skill: aex-agent-evolution
   只有使用者能做的步驟（開戶 KYC、入金、登入終端機）時照 f1s-intake §3 寫一行等它發生，其餘自己能做的
   （連線層、demo 真送單、對帳、復原）繼續做到帳本會動為止（ai_trader owner 2026-10-29
   「只要 50 美金才具備操作意義 否則半年都在講幹話」）。
+  沒有真錢在風險裡（demo／模擬帳戶／紙上交易）時，「怕虧、等確認、條件不夠好」都不是沒去跑的理由：照規則送單、
+  記結果，沒跑就寫卡在哪個工具或權限，沒有這種卡點就是推託（ai_trader operator 2026-11-13「目前根本就沒有用真的現金
+  你推託都是假貨」）。
 - 「一次能跑幾個」這類容量問題先量再答，答案是三層最小值：技術（先量傳輸層再猜瓶頸——同一程序對 N 個項目扇出 1→N
   量每輪毫秒，再量 k 個程序同掛的總吞吐與每程序減速）、資源（每項最小保證金／配額／VRAM 加總，對照手上有的）、
   期望值（規則在單一項目上的 t）；多開只是把負期望乘以 N。探測失敗記到項目名＋錯誤碼，「N 筆失敗」不算量測
@@ -101,6 +104,11 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
 
 非 trivial 的改碼在宣稱完成前，交給沒寫這段程式的 subagent 走技能 `independent-review`
 （生成者不得是自己產出的唯一裁判）；審查結果與 diff 一起引用。
+
+成果完成後另開挑錯路線（Felix Rieseberg 影片 qMccUXYIpQ0，F1S 2026-11-14 吸收）：非 trivial 交付宣稱完成前，
+`f1s_parallel.py plan --units`（2–3 個 unit，prompt 都是「證明這份成果錯」＋成果與驗收項，verifier null）→ `run` 交免費池不同路線；
+本對話當評審逐條判定成立／不成立，成立者修完重跑，只剩雞毛蒜皮（措辭、風格、與驗收無關）＝放行。挑錯結果是草稿，判定要回原文核對；
+密鑰、proprietary 內容（UT.xlsx）不進挑錯 prompt。這道不取代 `independent-review` 與 PROOF。
 
 ## 重犯的錯誤改成機械檢查（kyloren_bot 83845712，Uncle Bob）
 

@@ -62,6 +62,7 @@ DEFAULTS = {
     "max_blocks_per_session": 12,
     "classes": {
         "popup_gate": True,       # 2026-10-31: visible windows / focus steal from a tool call (red line)
+        "blast_radius_gate": True, # 2026-11-13: destructive shell commands denied with what they would hit
         "tests_pass": True, "pushed": True, "committed": True, "deployed": True,
         "verified": True, "completion": True, "measurement": True,
         # 2026-10-13 (operator: 「藉由 LEAN … 直接杜絕任何可能的說謊與假裝」): the classes that escaped
@@ -664,6 +665,209 @@ def _junk_writer_gate(doc: dict, tool: str, ti: dict) -> dict | None:
                                    "permissionDecisionReason": reason}}
 
 
+# ---------------------------------------------------------------------------------------------
+# Blast radius gate (2026-11-13, from the Claude Code Mods "Blast Radius" example, card cbaf56ee1d4af72c):
+# a shell command that would destroy work is denied BEFORE it runs, and the denial names what it would
+# have hit.  The red lines it enforces already existed (permanent deletion is the operator's act; pushes go
+# through git_smart.py, never --force; _registry working copies carry live uncommitted state) but nothing
+# checked them at PreToolUse: the auto-mode classifier rows do not run under bypass permissions.
+# Fail-open on any error.  Kill switch: _registry/proof.json classes.blast_radius_gate=false.
+# ---------------------------------------------------------------------------------------------
+BLAST_WALK_CAP = 3000
+BLAST_DELETE_EXEMPT = re.compile(
+    r"(?i)[\\/](_delete|__pycache__|\.pytest_cache|\.mypy_cache|\.ruff_cache|\.cache|node_modules|dist|build|"
+    r"tmp|temp|scratchpad|pytest-of-[^\\/]*|\.git[\\/]worktrees)([\\/]|$)|[\\/]AppData[\\/]Local[\\/]Temp([\\/]|$)")
+BLAST_GIT_RULES = [
+    ("force-push", re.compile(r"\bgit\b[^\n;&|]*\bpush\b[^\n;&|]*\s(?:--force(?:-with-lease|-if-includes)?(?:=\S*)?|-f|-[a-eg-zA-Z]*f[a-zA-Z]*)(?=\s|$)"),
+     "a force push rewrites the remote (red line: pushes go through git_smart.py, never --force)"),
+    ("reset-hard", re.compile(r"\bgit\b[^\n;&|]*\breset\b[^\n;&|]*\s--hard\b"),
+     "git reset --hard discards every uncommitted change in the tree"),
+    ("git-clean", re.compile(r"\bgit\b[^\n;&|]*\bclean\b[^\n;&|]*\s-[a-zA-Z]*[fxX][a-zA-Z]*(?=\s|$)"),
+     "git clean -f deletes untracked files permanently"),
+]
+BLAST_DISCARD = re.compile(r"\bgit\b[^\n;&|]*\b(?:checkout\s+(?:--\s+)?|restore\s+(?:--worktree\s+|--source\S*\s+)*)(?P<args>[^\n;&|]*)")
+BLAST_SH_RM = re.compile(r"(?<![\w.-])rm\s+(?P<args>[^\n;&|]+)")
+BLAST_PS_RM = re.compile(r"(?i)(?<![\w.-])(?:Remove-Item|ri|rmdir|rd|del|erase)\s+(?P<args>[^\n;&|]+)")
+BLAST_CMD_RM = re.compile(r"(?i)(?<![\w.-])(?:rmdir|rd|del|erase)\s+(?P<args>[^\n;&|]*/[sS]\b[^\n;&|]*)")
+BLAST_PY_RMTREE = re.compile(r"shutil\.rmtree\(\s*(?:r|u|rb)?[\"']([^\"']+)[\"']")
+BLAST_REASON = (
+    "PROOF blast radius: {what}. Red lines: permanent deletion is the operator's act (sessions move files into "
+    "_delete/ or use the migration rename); pushes go through git_smart.py and never --force; _registry working "
+    "copies are live uncommitted state. Use mv / Move-Item into _delete/, `git stash`, or name the exact files; "
+    "nothing here was run. Kill switch: _registry/proof.json classes.blast_radius_gate=false."
+)
+
+
+def _blast_tokens(args: str) -> list[str]:
+    """Shell/PowerShell argument words with quotes removed; flags dropped (keeps -Path/-LiteralPath values)."""
+    out, keep_next = [], False
+    for m in re.finditer(r"\"([^\"]*)\"|'([^']*)'|(\S+)", args):
+        tok = m.group(1) if m.group(1) is not None else (m.group(2) if m.group(2) is not None else m.group(3))
+        tok = tok.strip('"\'')                         # -c "rm -rf x": the closing quote rides on the last word
+        if keep_next:
+            out.append(tok)
+            keep_next = False
+            continue
+        if re.match(r"(?i)^-(?:path|literalpath|lp)$", tok):
+            keep_next = True
+            continue
+        pv = re.match(r"(?i)^-(?:path|literalpath|lp)[:=](.+)$", tok)
+        if pv:
+            out.append(pv.group(1))
+            continue
+        if tok.startswith(("-", "/")) and not re.match(r"^/[a-zA-Z]/", tok) and not tok.startswith("//"):
+            continue
+        if tok in ("2>/dev/null", "2>&1", "&&", "||"):
+            continue
+        out.append(tok)
+    return out
+
+
+def _blast_dir_report(p: Path) -> tuple[int, list[str]] | None:
+    """(file count up to BLAST_WALK_CAP, up to 5 sample relative paths) for an existing non-exempt directory."""
+    try:
+        if not p.is_dir() or p.is_symlink():
+            return None
+    except OSError:
+        return None
+    if BLAST_DELETE_EXEMPT.search(str(p).replace("\\", "/") + "/"):
+        return None
+    n, sample = 0, []
+    try:
+        for root, dirs, files in os.walk(p):
+            for f in files:
+                n += 1
+                if len(sample) < 5:
+                    sample.append(str(Path(root, f).relative_to(p)).replace("\\", "/"))
+                if n >= BLAST_WALK_CAP:
+                    return n, sample
+    except OSError:
+        pass
+    return n, sample
+
+
+def _blast_quoted_prose(live: str, idx: int) -> bool:
+    """True when `idx` sits inside an unclosed quote on its line and that quote is prose (a commit message, a --why,
+    an inbox note), not a command string handed to `-c` / `-Command`.  2026-11-13: the gate's own ship command was
+    denied for the words `rm -r` inside its --why."""
+    line_start = live.rfind("\n", 0, idx) + 1
+    before = live[line_start:idx]
+    for q in ('"', "'"):
+        if before.count(q) % 2 == 1:
+            opener = before.rfind(q)
+            if re.search(r"(?i)-(?:c|command|e|eval)\s*$", before[:opener]):
+                return False                          # `bash -c "rm -rf x"` is a command, judge it
+            return True
+    return False
+
+
+def _blast_delete_targets(live: str) -> list[str]:
+    """Targets of recursive delete commands in `live` (shell rm -r, PowerShell -Recurse, cmd /s, shutil.rmtree)."""
+    targets: list[str] = []
+    live = re.sub(r"\bgit\b[^\n;&|]*", " ", live)        # `git rm -r --cached` is index work; nothing on disk is lost
+    for m in BLAST_SH_RM.finditer(live):
+        if _blast_quoted_prose(live, m.start()):
+            continue
+        args = m.group("args")
+        flags = "".join(t for t in args.split() if t.startswith("-") and not t.startswith("--"))
+        if "r" in flags or "R" in flags or "--recursive" in args:
+            targets += _blast_tokens(args)
+    for m in BLAST_PS_RM.finditer(live):
+        if _blast_quoted_prose(live, m.start()):
+            continue
+        if re.search(r"(?i)(^|\s)-rec(?:urse)?\b", m.group("args")):
+            targets += _blast_tokens(m.group("args"))
+    for m in BLAST_CMD_RM.finditer(live):
+        targets += _blast_tokens(m.group("args"))
+    targets += BLAST_PY_RMTREE.findall(live)
+    return [t for t in targets if t]
+
+
+def _blast_git_status(cwd: str, paths: list[str] | None = None) -> list[str]:
+    """`git status --porcelain` lines for cwd (optionally limited to paths); [] when not a repo or on error."""
+    try:
+        import subprocess
+        cmd = ["git", "-C", cwd, "status", "--porcelain", "--untracked-files=normal", "--"] + list(paths or [])
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=8, encoding="utf-8", errors="replace",
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        return [l for l in (r.stdout or "").splitlines() if l.strip()]
+    except Exception:  # noqa: BLE001 - fail-open: the gate must never crash the hook
+        return []
+
+
+def blast_radius_violations(tool: str, ti: dict, cwd: str = "") -> list[tuple[str, str]]:
+    """[(rule, what)] for a shell command that would destroy work; [] when clean or nothing would be hit."""
+    if tool not in ("Bash", "PowerShell"):
+        return []
+    live = _popup_live_text(str(ti.get("command") or ""))
+    if not live.strip():
+        return []
+    out: list[tuple[str, str]] = []
+    cwd = cwd or os.getcwd()
+    unquoted = re.sub(r"\"[^\"]*\"|'[^']*'", '""', live)
+    for rule, pat, why in BLAST_GIT_RULES:
+        m = pat.search(unquoted)
+        if not m:
+            continue
+        what = f"{why}: `{unquoted[max(0, m.start()):m.end() + 20].strip()[:110]}`"
+        if rule in ("reset-hard", "git-clean"):
+            lines = _blast_git_status(cwd)
+            if lines:
+                what += f" -> {len(lines)} uncommitted entr{'y' if len(lines) == 1 else 'ies'} lost, e.g. " + \
+                        "; ".join(l.strip()[:60] for l in lines[:5])
+        out.append((rule, what))
+    for m in BLAST_DISCARD.finditer(unquoted):
+        if "--staged" in m.group("args") and "--worktree" not in m.group("args"):
+            continue                                  # index only: the working copy is untouched
+        toks = [t for t in m.group("args").split() if not t.startswith("-")]
+        hit = [t for t in toks if "_registry" in t.replace("\\", "/") or t in (".", "*", ":/")]
+        if not hit:
+            continue
+        lines = _blast_git_status(cwd, [t for t in hit if t not in ("*", ":/")] or None)
+        what = f"discarding working copies ({', '.join(hit[:3])}) throws away live state"
+        if lines:
+            what += f" -> {len(lines)} entr{'y' if len(lines) == 1 else 'ies'}, e.g. " + \
+                    "; ".join(l.strip()[:60] for l in lines[:5])
+        out.append(("discard-working-copy", what))
+    for raw in _blast_delete_targets(live):
+        try:
+            resolved = str(_win_path(raw, cwd))
+            if any(ch in raw for ch in "*?"):
+                import glob
+                cands = [Path(g) for g in glob.glob(resolved)[:50]]
+            else:
+                cands = [Path(resolved)]
+        except (OSError, ValueError):
+            continue
+        for p in cands:
+            rep = _blast_dir_report(p)
+            if rep is None:
+                continue
+            n, sample = rep
+            size = f"{n}{'+' if n >= BLAST_WALK_CAP else ''} file{'s' if n != 1 else ''}"
+            out.append(("recursive-delete", f"`{raw}` is an existing directory ({size}: {', '.join(sample) or 'empty'}) "
+                                            f"and recursive deletion is permanent"))
+    return out
+
+
+def _blast_radius_gate(doc: dict, tool: str, ti: dict) -> dict | None:
+    try:
+        hits = blast_radius_violations(tool, ti, str(doc.get("cwd") or ""))
+    except Exception:  # noqa: BLE001 - fail-open
+        return None
+    if not hits:
+        return None
+    what = "; ".join(h[1] for h in hits[:3])
+    _log({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "session_id": str(doc.get("session_id") or ""),
+          "event": "PreToolUse", "tool": tool, "matched": "blast_radius_gate", "rules": [h[0] for h in hits],
+          "what": what[:400], "verdict": "deny", "cwd": str(doc.get("cwd") or "")})
+    reason = BLAST_REASON.format(what=what[:500])
+    if "cursor_version" in doc or str(doc.get("hook_event_name") or "") == "preToolUse":
+        return {"permission": "deny", "user_message": reason, "agent_message": reason}
+    return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                   "permissionDecisionReason": reason}}
+
+
 def pre_tool_use(doc: dict, cfg: dict) -> dict | None:
     """Deny the CREATION of an unrequested .md / .json before it is written.  One gate for Claude Code
     (`PreToolUse`), Codex (`PreToolUse`, same reply shape) and Cursor (`preToolUse`, `permission` reply).
@@ -676,6 +880,10 @@ def pre_tool_use(doc: dict, cfg: dict) -> dict | None:
             return gated
     if (cfg.get("classes") or {}).get("popup_gate", True):
         gated = _popup_gate(doc, tool0, ti0)
+        if gated:
+            return gated
+    if (cfg.get("classes") or {}).get("blast_radius_gate", True):
+        gated = _blast_radius_gate(doc, tool0, ti0)
         if gated:
             return gated
     if (cfg.get("classes") or {}).get("junk_writer_gate", True):
