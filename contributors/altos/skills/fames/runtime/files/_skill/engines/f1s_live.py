@@ -148,6 +148,69 @@ def cold_deferrable(titles: dict | None, known, idle_s: float) -> bool:
     return bool(new) and all(DEFER_RE.search(titles[k] or "") for k in new)
 
 
+STATION_OVER_K = 80     # a conversation holding more context than this is not woken for a routine order
+TAIL_BYTES = 262144
+
+
+def station_over_tokens() -> int:
+    """`live_wake.station_over_k`: context size (K tokens) above which a routine order goes to a lean station instead of
+    waking the conversation; 0 wakes as before.  Measured 2026-11-14 over two days: 52 of 52 live wakes landed in a
+    conversation holding 99K-213K, 11.3M Opus-relative tokens, to do work a 50K station does."""
+    try:
+        cfg = json.loads(CONFIG.read_text(encoding="utf-8-sig")).get("live_wake") or {}
+        return int(float(cfg.get("station_over_k", STATION_OVER_K)) * 1000)
+    except (OSError, ValueError, AttributeError, TypeError):
+        return STATION_OVER_K * 1000
+
+
+def context_tokens(transcript: Path) -> int:
+    """What the next call of this conversation would re-read: the last main-chain model call's whole input. 0 = unknown."""
+    try:
+        with transcript.open("rb") as fh:
+            fh.seek(max(0, _size(transcript) - TAIL_BYTES))
+            data = fh.read()
+    except OSError:
+        return 0
+    for raw in reversed(data.split(b"\n")):
+        if b'"usage"' not in raw:
+            continue
+        try:
+            row = json.loads(raw.decode("utf-8-sig"))
+            usage = row["message"]["usage"]
+        except (ValueError, UnicodeDecodeError, KeyError, TypeError):
+            continue
+        if row.get("type") != "assistant" or row.get("isSidechain") or not isinstance(usage, dict):
+            continue
+        return sum(int(usage.get(k) or 0) for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
+    return 0
+
+
+def station_route(index: dict | None, known, context: int) -> tuple[list[int], int] | None:
+    """(order numbers a lean station takes, orders held for the next prompt) when the conversation is over the size
+    limit and every row new since the last delivery is one of the seat's own machine-issued (routine) open orders that
+    no conversation owns.  A self-review needs the conversation's own history, so it is held, not sent.  None = wake as
+    before: under the limit, switched off, anything unknown, or a new row that is a real task, a review or a freeze."""
+    limit = station_over_tokens()
+    if not limit or context < limit or index is None or known is None:
+        return None
+    new = [index[k] for k in set(index) - set(known)]
+    if not new or not all(o.get("routine") for o in new):
+        return None
+    held = [o for o in new if o.get("ledger") or "self-review" in (o.get("title") or "").lower()]
+    return sorted(o["n"] for o in new if o not in held), len(held)
+
+
+def spawn_station(seat: str, cwd: str, n: int) -> None:
+    """Hand one order to f1s_station in a detached, windowless process (pythonw + CREATE_NO_WINDOW)."""
+    import subprocess
+    exe = os.path.join(os.path.dirname(sys.executable), "pythonw.exe") if os.name == "nt" else sys.executable
+    if not os.path.exists(exe):
+        exe = sys.executable
+    argv = [exe, str(HUB / "_skill" / "engines" / "f1s_station.py"), "order", "--seat", seat, "--cwd", cwd, "--n", str(n)]
+    subprocess.Popen(argv, cwd=cwd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     creationflags=0x08000000 | 0x00000008 if os.name == "nt" else 0, close_fds=True)
+
+
 def wait_path(hook, surface_id: str, session_id: str) -> Path:
     return hook._midturn_path(surface_id, session_id).with_name(
         hook._midturn_path(surface_id, session_id).name.replace("midturn-", "wait-", 1))
@@ -334,6 +397,11 @@ def order_rows(hook, seat: str) -> list[str] | None:
 
 
 def order_titles(hook, seat: str) -> dict | None:
+    index = order_index(hook, seat)
+    return None if index is None else {k: v["title"] for k, v in index.items()}
+
+
+def order_index(hook, seat: str) -> dict | None:
     """Key -> order title (empty for a review row). One key per thing in the order store an idle conversation of `seat` has work on: each of its own OPEN orders
     and, for the curator, each other seat's answer waiting for review.  The order files' bytes also change when an
     order is answered, closed or judged, and every such write woke the idle conversations watching the file: measured
@@ -367,7 +435,10 @@ def order_titles(hook, seat: str) -> dict | None:
             else:
                 continue
             key = hashlib.sha256(json.dumps([path.stem, *row], ensure_ascii=False, default=str).encode("utf-8")).hexdigest()[:16]
-            out[key] = str(o.get("title") or "") if own else ""
+            out[key] = {"title": str(o.get("title") or "") if own else "", "n": o.get("n"),
+                        "routine": own and o.get("routine") is True and not (o.get("owner") or {}).get("session")
+                        and not o.get("reopened_at") and isinstance(o.get("n"), int),
+                        "ledger": bool(o.get("ledger"))}
     return out
 
 
@@ -666,7 +737,8 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
                 orders = orders_sig(hook, sig_seat)
                 review_only = bool(sig_seat) and sig_seat == curator and contract != state["contract"] and base == state["base"]
                 directive_only = contract != state["contract"] and orders == state.get("orders") and not review_only
-                titles, known = order_titles(hook, sig_seat), state.get("order_rows")
+                index, known = order_index(hook, sig_seat), state.get("order_rows")
+                titles = None if index is None else {k: v["title"] for k, v in index.items()}
                 rows = None if titles is None else sorted(titles)
                 grew = rows is None or known is None or bool(set(rows) - set(known))
                 if contract == state["contract"]:
@@ -680,6 +752,15 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
                 elif base == state["base"] and cold_deferrable(titles, known, _now() - start):
                     text = ""                              # cache gone, only self-review/prune: the next prompt carries it
                     state["cold_held"] = int(state.get("cold_held") or 0) + 1
+                elif base == state["base"] and (route := station_route(index, known, context_tokens(transcript))) is not None:
+                    text = ""                              # too large to wake for a routine order: a lean station does it
+                    for n in route[0]:
+                        try:
+                            spawn_station(sig_seat, cwd, n)
+                        except OSError:
+                            pass                           # the order stays open: the next prompt carries it
+                    state["station_sent"] = int(state.get("station_sent") or 0) + len(route[0])
+                    state["station_held"] = int(state.get("station_held") or 0) + route[1]
                 else:
                     text = hook.live_update(doc, event="IdleWake", watch_seat=sig_seat)
                 state["contract"], state["base"], state["orders"], state["order_rows"] = contract, base, orders, rows

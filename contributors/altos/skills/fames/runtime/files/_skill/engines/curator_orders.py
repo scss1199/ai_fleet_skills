@@ -467,7 +467,35 @@ def open_orders(seat: str, session_id: str | None = None) -> list[dict]:
     return [o for o in orders if not owned_by_other(o, session_id)]
 
 
+STATION_SESSION = "station-"   # f1s_station.order answers under this id: the order was done outside every conversation
+STATION_LINE_S = 24 * 3600
+
+
+def station_line(seat: str, now: float | None = None) -> str:
+    """One line for the seat's conversations: the orders a lean station did for them in the last day (f1s_live sends a
+    routine order there when the conversation is too large to wake). The hook shows an unchanged line once."""
+    now = time.time() if now is None else now
+    done = []
+    for o in load(seat)["orders"]:
+        ans = o.get("answer") or {}
+        if not str(ans.get("session") or "").startswith(STATION_SESSION):
+            continue
+        try:
+            at = time.mktime(time.strptime(ans.get("at", ""), "%Y-%m-%dT%H:%M:%S"))
+        except ValueError:
+            continue
+        if now - at <= STATION_LINE_S:
+            done.append(f"#{o.get('n')} {o.get('title')} ({o.get('status')}): {str(ans.get('reason') or '')[:160]}")
+    return ("STATION DONE — 精簡站已代本 cwd 做完（不必重做；有疑問再看證據）: " + "; ".join(done)) if done else ""
+
+
 def injection(seat: str, session_id: str = "") -> str:
+    if out_of_scope(session_id):
+        return ""
+    return "\n".join(t for t in (_injection(seat, session_id), station_line(seat)) if t)
+
+
+def _injection(seat: str, session_id: str = "") -> str:
     """Context text for a session in `seat`: its open orders, or the curator's review queue. An order another
     conversation owns is one line (read it, do not answer it); the owner and unowned orders get the full text."""
     if out_of_scope(session_id):

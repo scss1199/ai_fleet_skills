@@ -452,7 +452,7 @@ STATUS_LINE_PREFIXES=("TOKEN WATCH ","F1S REUSE ","F1S NIGHT","F1S RECURRENCE ",
                       "F1S 各 cwd 用量","F1S 文章回饋","回報: python ",
                       # same replay, third pass: 92K more were these reminders said again word for word
                       "FAMES ROUTE ","FAMES PHASE GATE ","AGC LANE ","Read the compact instead","STALE CLAIMS ",
-                      "UNCLAIMED ORDERS ","ARTICLE TECHNIQUES ","F1S EXPAND BASE")
+                      "UNCLAIMED ORDERS ","ARTICLE TECHNIQUES ","F1S EXPAND BASE","STATION DONE ")
 # Counters that drift on every look. Replay of the same 7 days after the cut above: 117K tokens were a line that
 # differed from one already held only in its digits (TOKEN WATCH 58K, ARTICLE RELAY 10K, F1S NIGHT 10K). These compare
 # with digits blanked, so the line goes out again when its words change (a seat enters OVER SHARE, the posture flips),
