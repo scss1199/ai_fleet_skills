@@ -492,7 +492,42 @@ def station_line(seat: str, now: float | None = None) -> str:
 def injection(seat: str, session_id: str = "") -> str:
     if out_of_scope(session_id):
         return ""
-    return "\n".join(t for t in (_injection(seat, session_id), station_line(seat)) if t)
+    return "\n".join(t for t in (_injection(seat, session_id), station_line(seat), handoff_line(seat, session_id)) if t)
+
+
+HANDOFF_OVER_K = 150
+
+
+def handoff_line(seat: str, session_id: str = "", context: int | None = None, over: int | None = None) -> str:
+    """operator 2026-11-14: the ai_darkhero main chat spent 17.4M in two days, 692 calls at 160K each, most of them tool calls.
+    Once this conversation holds more than `live_wake.handoff_over_k` (K tokens, default 150, 0 = off) every prompt says so
+    with the two existing ways out: a lean station for the execution, or AGC park and a new chat. Advisory, never blocks;
+    f1s_waste.py counts what still ran here as `fat_exec`. "" below the line, unknown, or right after a compaction."""
+    try:
+        if over is None:
+            import json as _json
+            with open(os.path.join(HUB, "_registry", "run-until-done.json"), encoding="utf-8-sig") as fh:
+                over = int(float((_json.load(fh).get("live_wake") or {}).get("handoff_over_k", HANDOFF_OVER_K)) * 1000)
+    except (OSError, ValueError, TypeError, AttributeError):
+        over = HANDOFF_OVER_K * 1000
+    try:
+        if context is None:
+            import glob as _glob
+            from pathlib import Path as _Path
+            found = _glob.glob(os.path.join(CLAUDE_PROJECTS, "*", f"{session_id}.jsonl")) if session_id and session_id.replace("-", "").isalnum() else []
+            if not found:
+                return ""
+            import f1s_live
+            context = f1s_live.context_tokens(_Path(found[0]), settled=True)
+    except Exception:
+        return ""
+    if not over or context <= over:
+        return ""
+    cwd = os.path.join(HUB, seat).replace(os.sep, "/")
+    return (f"FAT CHAT {context // 1000}K > {over // 1000}K: every tool call here re-reads {context // 1000}K. Hand execution to a lean "
+            f"station (about 30K, one result row back): `python _skill/engines/f1s_station.py run --cwd {cwd} --tools Read,Grep,Glob,Bash,Edit,Write "
+            f"--prompt-file <brief>`; or park (`python _skill/engines/goal_compact.py park {seat}`) and go on in a new chat. "
+            "Keep decisions and the reply here.")
 
 
 def _injection(seat: str, session_id: str = "") -> str:

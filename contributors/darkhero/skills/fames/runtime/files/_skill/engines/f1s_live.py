@@ -163,8 +163,9 @@ def station_over_tokens() -> int:
         return STATION_OVER_K * 1000
 
 
-def context_tokens(transcript: Path) -> int:
-    """What the next call of this conversation would re-read: the last main-chain model call's whole input. 0 = unknown."""
+def context_tokens(transcript: Path, settled: bool = False) -> int:
+    """What the next call of this conversation would re-read: the last main-chain model call's whole input. 0 = unknown.
+    `settled`: 0 as well when a compaction came after that call (the size it shows is the one the compaction removed)."""
     try:
         with transcript.open("rb") as fh:
             fh.seek(max(0, _size(transcript) - TAIL_BYTES))
@@ -172,6 +173,8 @@ def context_tokens(transcript: Path) -> int:
     except OSError:
         return 0
     for raw in reversed(data.split(b"\n")):
+        if settled and b'"compact_boundary"' in raw and b'"subtype"' in raw and b'"usage"' not in raw:
+            return 0
         if b'"usage"' not in raw:
             continue
         try:
