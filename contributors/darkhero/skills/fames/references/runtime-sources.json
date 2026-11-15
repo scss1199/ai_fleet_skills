@@ -50,6 +50,7 @@
     "_skill/engines/_projects.py",
     "_skill/engines/_secrets.py",
     "_skill/engines/api_budget.py",
+    "_skill/engines/apply_seat_budget.py",
     "_skill/engines/claim-linter.py",
     "_skill/engines/claude-claim-integrity-hook.py",
     "_skill/engines/claude-proof-hook.py",
