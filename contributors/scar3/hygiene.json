@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "scar3",
-  "at": "2026-11-15T23:54:48",
+  "at": "2026-11-16T02:07:32",
   "hub": "C:\\ai_workspace",
-  "seconds": 159.9,
+  "seconds": 76.1,
   "check": {
     "seats": [
       {
@@ -25,14 +25,14 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 1,
+        "dirty": 3,
         "unpushed": 0,
         "last_commit": "2026-11-10",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-15",
+        "newest_file": "2026-11-16",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -55,7 +55,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-15",
+        "newest_file": "2026-11-16",
         "activity": "ACTIVE"
       },
       {
@@ -63,14 +63,14 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 2,
+        "dirty": 18,
         "unpushed": 0,
         "last_commit": "2026-11-10",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-15",
+        "newest_file": "2026-11-16",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -81,14 +81,14 @@
           "prunable_worktrees:1"
         ],
         "repo": "own",
-        "dirty": 0,
+        "dirty": 2,
         "unpushed": 0,
         "last_commit": "2026-11-10",
         "worktrees": 1,
         "worktrees_prunable": 1,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-15",
+        "newest_file": "2026-11-16",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -756,7 +756,14 @@
     "engine": null,
     "errors": []
   },
-  "delete_bytes": 9891813437,
+  "seat_budget": {
+    "ok": true,
+    "applied": true,
+    "seats": 4,
+    "deny_rows": 0,
+    "pins_moved": 0
+  },
+  "delete_bytes": 9891817297,
   "summary": {
     "seats": 7,
     "violations": 4,
@@ -770,6 +777,7 @@
     "retention_antipatterns": 7,
     "stale_memories": 2,
     "runtime_cves": 1,
+    "seat_budget": "applied seats=4 deny+0 pins->sonnet 0",
     "moved": 0,
     "planned_bytes": 0,
     "applied": true
