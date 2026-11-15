@@ -86,6 +86,9 @@ parent_skill: aex-agent-evolution
 
 - 瀏覽器：能預先排好的 2 步以上動作合成一次 `browser_batch` 或一段 `javascript_exec`；平行的 agent 各用自己的分頁，不動使用者正在看的分頁。
 - 換模型或 effort 只在新對話的邊界做，不在對話中途換（思考區塊與快取綁定原本的模型與 context）；不把會變的資料（日期、狀態）塞進 system prompt。
+  使用者要「開一個 <模型> 來接手／重新統整」時（ai_ziyaoastro 2026-11-14「把 ledger 那步也做完 然後開一個fable5.2…你自己就封存」）：
+  先把手上做到一半的那步做完並讀回，再 `goal_compact.py park`，把新對話開在點名的模型上、帶 park 摘要與剩下的步驟，
+  確認新對話已收到後才 `archive_session` 自己；不在舊對話裡換模型續跑，也不把交接留給使用者按。
 - 無人看管的 xhigh／max 長跑，先寫明 token 或回合上限再開始。
 - 大型工具輸出（log、清單、截圖）留在檔案，只把路徑和摘要帶進 context。
 
