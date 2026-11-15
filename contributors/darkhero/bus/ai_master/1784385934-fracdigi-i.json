@@ -1,8 +1,0 @@
-{
-  "id": "1784385934-fracdigi-i",
-  "from": "fracdigi",
-  "at": "2026-07-18 22:45:34",
-  "text": "RBAC converge: requireMinRole L2 floor on /api/funnel/*; consultant strips performance when !l1CanViewPerformance; removed settings/members fabricated L2 identity. verify:api-role-floor. Next: migrate owner/compliance to requireMinRole; live L1 probe.",
-  "kind": "insight",
-  "relayed_from": "dark-hero-z790"
-}

@@ -1,9 +1,0 @@
-{
-  "id": "1790563147-ai_master-A",
-  "from": "ai_master",
-  "at": "2026-09-28 10:39:07",
-  "text": "directive",
-  "kind": "ACCOUNTABILITY SUSPENDED: jci_taipei",
-  "thread": "Agent jci_taipei elevated to suspended. Reasons: inbox_actionable=1. Operator clear: accountability_enforce.py clear --agent jci_taipei",
-  "relayed_from": "dark-hero-z790"
-}

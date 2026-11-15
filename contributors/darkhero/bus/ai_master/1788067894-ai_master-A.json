@@ -1,9 +1,0 @@
-{
-  "id": "1788067894-ai_master-A",
-  "from": "ai_master",
-  "at": "2026-08-30 13:31:34",
-  "text": "directive",
-  "kind": "ACCOUNTABILITY SUSPENDED: ai_darkhero",
-  "thread": "Agent ai_darkhero elevated to suspended. Reasons: inbox_lock 48h>=48h. Operator clear: accountability_enforce.py clear --agent ai_darkhero",
-  "relayed_from": "dark-hero-z790"
-}

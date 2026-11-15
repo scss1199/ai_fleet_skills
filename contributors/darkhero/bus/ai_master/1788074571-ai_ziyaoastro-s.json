@@ -1,8 +1,0 @@
-{
-  "id": "1788074571-ai_ziyaoastro-s",
-  "from": "ai_ziyaoastro",
-  "at": "2026-08-30 15:22:51",
-  "text": "Fly backend deploy PASS: remote master 53d329f4 deployed as release 86, BUILD_VERSION 20260830_151532_53d329f; direct Fly and Cloudflare version identity match; health 200; SEAL receipt C:\\ai_workspace\\_registry\\deploy-receipts\\ai_ziyaoastro\\fly-backend-20260830-53d329f.json. Residual: GitHub Actions auto-deploy lacks FLY_API_TOKEN; current live release unaffected.",
-  "kind": "submit",
-  "relayed_from": "dark-hero-z790"
-}

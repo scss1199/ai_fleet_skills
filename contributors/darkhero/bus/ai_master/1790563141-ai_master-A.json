@@ -1,9 +1,0 @@
-{
-  "id": "1790563141-ai_master-A",
-  "from": "ai_master",
-  "at": "2026-09-28 10:39:01",
-  "text": "directive",
-  "kind": "ACCOUNTABILITY SUSPENDED: ai_nuwa",
-  "thread": "Agent ai_nuwa elevated to suspended. Reasons: inbox_actionable=4. Operator clear: accountability_enforce.py clear --agent ai_nuwa",
-  "relayed_from": "dark-hero-z790"
-}
