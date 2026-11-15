@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261115T174616Z-a6034836",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Run exactly these commands in C:\\ai_workspace and report their output lines verbatim, nothing else, change nothing else:\n1. python _skill\\engines\\apply_seat_budget.py\n2. python _skill\\engines\\apply_seat_budget.py --dry-run\n3. python _skill\\engines\\f1s_waste.py measure --days 7\n4. python _skill\\engines\\f1s_waste.py status\nIf a command fails, quote the error text. Do not install anything, do not create scheduled tasks, do not open visible windows.\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-11-15T17:46:16+00:00",
+  "expires_at": "2026-11-17T17:46:16+00:00"
+}
