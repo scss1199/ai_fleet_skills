@@ -522,12 +522,15 @@ def thrash_due(seat: str, curator: str, now: float | None = None) -> str:
             "its remaining steps. Read back a later compaction's preTokens near 270K and tell the operator.")
 
 
-def reason_due(seat: str, curator: str, session_id: str, now: float | None = None) -> str:
+def reason_due(seat: str, curator: str, session_id: str, now: float | None = None, context: int = 0) -> str:
     """For the curator seat: the five-axis brief f1s_reason keeps, handed to the conversation that holds the reasoning
     loop (operator 2026-11-12 「這個對話建立一個持續且動態的推理…來動態升級整個f1s」).  f1s_reason.due bounds it: one
     conversation, at most one wake per EVERY_S, and only when something came in.  A broken engine never costs the waiter."""
     if not seat or seat != curator:
         return ""
+    over = station_over_tokens()
+    if over and context >= over:
+        return ""                                          # a wake here re-reads the whole chat: a lean chat takes the cycle
     try:
         import f1s_reason
         if str(f1s_reason.load().get("session") or ""):
@@ -719,7 +722,7 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
         alert = article_loop_due(seat, curator, session_id)
         if alert:
             return finish(2, "article_loop", alert)
-        alert = reason_due(seat, curator, session_id)
+        alert = reason_due(seat, curator, session_id, context=context_tokens(transcript))
         if alert:
             return finish(2, "reason", alert)
         if hook._midturn_pending(surface_id, session_id, seat=sig_seat) and not shipping():
