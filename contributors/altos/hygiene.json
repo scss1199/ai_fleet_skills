@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "desktop-rsniapr",
-  "at": "2026-11-14T11:53:10",
+  "at": "2026-11-15T23:54:54",
   "hub": "C:\\ai_workspace",
-  "seconds": 35.4,
+  "seconds": 37.6,
   "check": {
     "seats": [
       {
@@ -18,8 +18,9 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-14",
-        "activity": "ACTIVE"
+        "newest_file": "2026-11-15",
+        "activity": "ACTIVE",
+        "stale_agent_worktrees": []
       },
       {
         "seat": "ai_darkhero",
@@ -34,7 +35,8 @@
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
         "newest_file": "2026-11-14",
-        "activity": "ACTIVE"
+        "activity": "ACTIVE",
+        "stale_agent_worktrees": []
       },
       {
         "seat": "ai_roas",
@@ -48,7 +50,7 @@
         ],
         "repo": "hub",
         "newest_file": "2026-10-16",
-        "activity": "IDLE"
+        "activity": "DORMANT"
       },
       {
         "seat": "jci_taipei",
@@ -68,7 +70,8 @@
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
         "newest_file": "2026-09-21",
-        "activity": "DORMANT"
+        "activity": "DORMANT",
+        "stale_agent_worktrees": []
       },
       {
         "seat": "jci_taipei_cf_stage_bead917",
@@ -102,7 +105,8 @@
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
         "newest_file": "2026-08-27",
-        "activity": "DORMANT"
+        "activity": "DORMANT",
+        "stale_agent_worktrees": []
       },
       {
         "seat": "jci_taipei_plaud_flow",
@@ -122,14 +126,16 @@
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
         "newest_file": "2026-08-27",
-        "activity": "DORMANT"
+        "activity": "DORMANT",
+        "stale_agent_worktrees": []
       }
     ],
     "scheduled_tasks": [],
+    "hub_stale_agent_worktrees": [],
     "counts": {
       "ACTIVE": 2,
-      "IDLE": 1,
-      "DORMANT": 4
+      "IDLE": 0,
+      "DORMANT": 5
     },
     "violations": 8,
     "producers": [],
@@ -270,20 +276,15 @@
   },
   "sweep": {
     "applied": true,
-    "planned": 67,
-    "planned_bytes": 2677307,
-    "by_class": {
-      "expired_state": {
-        "count": 67,
-        "bytes": 2677307
-      }
-    },
+    "planned": 0,
+    "planned_bytes": 0,
+    "by_class": {},
     "skipped": {
       "git_tracked": 0,
       "protected": 0
     },
-    "moved": 67,
-    "engine": "fleet-residue-quarantine.py",
+    "moved": 0,
+    "engine": null,
     "errors": []
   },
   "delete_bytes": 325996362,
@@ -292,16 +293,16 @@
     "violations": 8,
     "activity": {
       "ACTIVE": 2,
-      "IDLE": 1,
-      "DORMANT": 4
+      "IDLE": 0,
+      "DORMANT": 5
     },
     "scheduled_task_findings": 0,
     "producer_leaks": 0,
     "retention_antipatterns": 8,
     "stale_memories": 2,
     "runtime_cves": 2,
-    "moved": 67,
-    "planned_bytes": 2677307,
+    "moved": 0,
+    "planned_bytes": 0,
     "applied": true
   }
 }
