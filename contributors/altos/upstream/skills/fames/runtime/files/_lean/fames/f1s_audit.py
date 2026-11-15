@@ -1443,6 +1443,11 @@ ELEMENTS = [
      "requires": None, "detail": "rejected as already covered: ztm-verify-before-done ⑥ 搬到 _delete 不算修好 quotes this exact correction with the four write-before questions, delete_inflow gauge and f1s_reuse.py born/tick; the REA half is f1s_rea.py map/why/ledger/order; no new text"},
     {"id": "EVO-jci-yearbook71-sheet-20261114", "element": "jci_taipei 2026-11-14 F1S proposal (ledger d11bcbfab3ab): reverse-learn memory jci-yearbook71-sheet (upload local photos to Drive yourself, status column is a formula, attribution needs operator)", "verdict": "INFO",
      "requires": None, "detail": "rejected as already covered: jci-drive-line-web-transfer SKILL.md 收稿／名冊類 sheet line (formula columns not overwritten, upload + link, attribution confirmed by operator, gviz read-back, 2026-11-09 元月刊收稿表) carries the same three points; seat-specific, no fleet text added"},
+    {"id": "EVO-unauth-ratelimit-probe-20261116", "element": "ai_darkhero 2026-11-16 article autopilot rows 3c39232eb8 / c1ed82841b / b3b4c8f8f9 / 77d3fc8c71 (Lovable DB exposure, API rate limiting)", "verdict": "REFINE",
+     "requires": None, "detail": "web-ui-taste gains a pre-done probe: unauthenticated curl to data APIs expects 401/403, the public client key read-only query on sensitive tables expects denial or 0 rows, login/OTP burst just past the limit expects 429; own sites only, no load testing; weakens nothing",
+     "check_text": ("skill_ui", "未登入存取與限流探測")},
+    {"id": "EVO-codex-security-wallet-reject-20261116", "element": "ai_darkhero 2026-11-16 article autopilot rows a4306880d6 (Codex Security scan) / 36c599a3ab (agent sub-wallet spend cap)", "verdict": "INFO",
+     "requires": None, "detail": "rejected: Codex Security runs on paid OpenAI Codex access and dependency CVEs are already covered by fleet-hygiene.py cves; no seat lets an agent spend money (花錢 is operator-only), so a sub-wallet cap has nothing to bound; no new text"},
     {"id": "KB-article-proctor-standard", "element": "YouTube Media transcript: 驗收標準必須獨立於Agent之外，防止其透過修改測試程式來掩蓋錯誤", "verdict": "INFO",
      "requires": None, "detail": "驗證標準須放Agent改不到的地方；人類監考官是F1S座位設計核心；與ClaimContract.claimState模型相符"},
 ]
