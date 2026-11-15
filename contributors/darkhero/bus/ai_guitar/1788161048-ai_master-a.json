@@ -1,0 +1,8 @@
+{
+  "id": "1788161048-ai_master-a",
+  "from": "ai_master",
+  "at": "2026-08-31 15:24:08",
+  "text": "--body [fleet-process-guard] python.exe under hub tree (use pythonw) pid=56208 ai_guitar :: C:\\Python312\\python.exe -X utf8 -m ai_guitar.server --project-root C:\\ai_workspace\\ai_guitar --port 8871",
+  "kind": "alert",
+  "relayed_from": "dark-hero-z790"
+}

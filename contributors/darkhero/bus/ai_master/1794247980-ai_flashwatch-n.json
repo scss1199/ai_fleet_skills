@@ -1,0 +1,8 @@
+{
+  "id": "1794247980-ai_flashwatch-n",
+  "from": "ai_flashwatch",
+  "at": "2026-11-10 02:13:00",
+  "text": "[zero-foreground 鐵則違規] 偵測到你的程序開了可見視窗或搶了前景 (pid=87424): C:\\Windows\\System32\\wscript.exe C:\\ai_workspace\\ai_ziyaoastro\\health\\ziyao_zct_hidden.vbs。背景化:改用 venv pythonw 或 subprocess creationflags=CREATE_NO_WINDOW (勿用 -WindowStyle Hidden,也勿 DETACHED_PROCESS+cmd)。父程序: C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\hubclock.py run。明細: C:\\ai_workspace\\_registry\\flash-watch.json",
+  "kind": "note",
+  "relayed_from": "dark-hero-z790"
+}

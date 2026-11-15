@@ -1,0 +1,9 @@
+{
+  "id": "1783170181-ai_master-A",
+  "from": "ai_master",
+  "at": "2026-07-04 21:03:01",
+  "text": "directive",
+  "kind": "ACCOUNTABILITY SUSPENDED: fracdigi",
+  "thread": "Agent fracdigi elevated to suspended. Reasons: score=190>=140. Operator clear: accountability_enforce.py clear --agent fracdigi",
+  "relayed_from": "dark-hero-z790"
+}
