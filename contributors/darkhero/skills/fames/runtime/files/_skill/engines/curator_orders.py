@@ -530,6 +530,60 @@ def handoff_line(seat: str, session_id: str = "", context: int | None = None, ov
             "Keep decisions and the reply here.")
 
 
+DELIVER_RECENT_S = 3 * 86400
+
+
+def _handoff_over() -> int:
+    try:
+        with open(os.path.join(HUB, "_registry", "run-until-done.json"), encoding="utf-8-sig") as fh:
+            return int(float((json.load(fh).get("live_wake") or {}).get("handoff_over_k", HANDOFF_OVER_K)) * 1000)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return HANDOFF_OVER_K * 1000
+
+
+def delivery_line(seat: str, over: int | None = None, now: float | None = None, sizes: dict | None = None) -> str:
+    """Where a new order's prompt goes, decided from the seat's own transcripts at no model cost. 2026-11-16: jci_taipei's
+    `wake` was four orders the curator sent (send_message) into its 180-197K main chat, 143 calls at that size; the rule
+    "send it to the seat's main conversation" picked the most expensive chat the seat had. Each chat the seat used in the
+    last three days is listed with what its next call re-reads: one under `live_wake.handoff_over_k` may take the message,
+    and when every one is over it (or none exists) the prompt starts a new chat in that cwd. `sizes` = {session id: tokens}
+    for tests; 0 = unknown (just compacted) and is not offered."""
+    over = _handoff_over() if over is None else over
+    if not over:
+        return ""
+    now = time.time() if now is None else now
+    if sizes is None:
+        sizes = {}
+        try:
+            import glob as _glob
+            from pathlib import Path as _Path
+            import f1s_live
+            for path in _glob.glob(os.path.join(CLAUDE_PROJECTS, "C--ai-workspace-" + seat.replace("_", "-"), "*.jsonl")):
+                if now - os.path.getmtime(path) > DELIVER_RECENT_S:
+                    continue
+                with open(path, "rb") as fh:                 # a headless station's transcript: nothing can message it
+                    if b'"sdk-cli"' in fh.read(65536):
+                        continue
+                sizes[os.path.basename(path)[:-6]] = f1s_live.context_tokens(_Path(path), settled=True)
+        except Exception:
+            return ""
+    cwd = os.path.join(HUB, seat).replace(os.sep, "/")
+    lean = sorted((tokens, sid) for sid, tokens in sizes.items() if 0 < tokens <= over)
+    fat = sorted(((tokens, sid) for sid, tokens in sizes.items() if tokens > over), reverse=True)
+    new_chat = (f"start a new chat in {cwd} with this order's full prompt (start_session user_asked, fresh, use_worktree false; "
+                "detach it), then `deliver --session <its id>`")
+    if lean:
+        text = "DELIVER — send_message only to a chat under the line: " + ", ".join(f"{sid[:8]} {t // 1000}K" for t, sid in lean[:4])
+        if fat:
+            text += "; never to " + ", ".join(f"{sid[:8]} {t // 1000}K" for t, sid in fat[:4]) + f" (over {over // 1000}K: every call re-reads it)"
+        return text + f"; or {new_chat}."
+    if fat:
+        return ("DELIVER — NEW CHAT: every chat " + seat + " used in three days is over " + f"{over // 1000}K ("
+                + ", ".join(f"{sid[:8]} {t // 1000}K" for t, sid in fat[:4]) + "); do not send_message there, each tool call would "
+                f"re-read all of it. {new_chat[0].upper() + new_chat[1:]}. The seat's hooks also show the order at its next prompt.")
+    return f"DELIVER — NEW CHAT: {seat} has no chat of known size in three days; {new_chat}."
+
+
 def _injection(seat: str, session_id: str = "") -> str:
     """Context text for a session in `seat`: its open orders, or the curator's review queue. An order another
     conversation owns is one line (read it, do not answer it); the owner and unowned orders get the full text."""
@@ -801,6 +855,8 @@ def main(argv=None) -> int:
     if isinstance(out, dict) and "do" in out:      # the seat already holds the order's text; this line only confirms the step
         out = {k: out.get(k) for k in ("n", "status", "title")}
     print(json.dumps(out, ensure_ascii=False, indent=None if a.cmd == "list" else 2))
+    if a.cmd == "issue" and (line := delivery_line(a.seat)):
+        print(line)
     return 0
 
 
