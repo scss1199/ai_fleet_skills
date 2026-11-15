@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261115T160407Z-c4119645",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Fleet curator ai_darkhero, operator request 2026-11-16: read-only check of this host's Windows automatic sign-in. Change nothing, write no files. The result is published to a public repo, so never print a user name, email, password or any secret value.\nRun these and answer with exactly one line each, prefixed ALTOS-LOGON:\n1. reg query \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\" /v AutoAdminLogon  -> print only the value (0, 1 or missing).\n2. reg query the same key /v DefaultUserName -> print only \"DefaultUserName set\" or \"DefaultUserName missing\".\n3. reg query the same key /v DefaultPassword -> print only \"plaintext DefaultPassword present\" or \"no plaintext DefaultPassword\" (never the value).\n4. reg query \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\PasswordLess\\Device\" /v DevicePasswordLessBuildVersion -> print only the value or \"missing\".\n5. hostname is not needed. Last boot time: print the output of: powershell -NoProfile -Command \"(Get-Date) - (Get-Uptime)\" formatted as a timestamp, or \"unknown\".\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-11-15T16:04:07+00:00",
+  "expires_at": "2026-11-17T16:04:07+00:00"
+}
