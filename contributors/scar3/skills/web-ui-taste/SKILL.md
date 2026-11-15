@@ -77,6 +77,14 @@ route handler 只能用單參數 lambda；寫成兩個參數時 Playwright 會�
 ② 背景 `fetch(..., {cache:"no-store"})` 重新驗證；③ 合併時 API 回空也不把畫面清掉，等真資料到了再換。
 API 端加 `Cache-Control: private, stale-while-revalidate=<秒>`。範例：`jci_taipei_website/lib/jci-inbox-cache.ts`。
 
+## 未登入存取與限流探測（2026-11-16，文章 Lovable 資料庫外洩／API 限流）
+
+有資料庫或 API 的站，宣稱完成前用 curl 不帶 cookie／token 打三件事，結果貼進回報：
+① 每支資料 API 與管理頁未登入回 401／403（不是 200 加空陣列）；② 前端看得到的公開金鑰
+（Supabase anon key、Firebase config）直接查敏感表要被拒或回 0 列，用唯讀 GET，不寫不刪；
+③ 登入、寄驗證碼類 API 連打超過上限要回 429。只打自己的站（browser-login-handoff 第 0 步），
+不壓測正式環境，次數只到剛好超過上限。
+
 ## 紅線
 
 - 零彈窗：不准 alert/confirm/prompt/window.open（`zt-popup-gate.py gate <repo>` 出貨前跑）。

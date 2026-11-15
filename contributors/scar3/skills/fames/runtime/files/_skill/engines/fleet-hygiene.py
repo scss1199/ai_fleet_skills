@@ -1041,6 +1041,24 @@ def publish(hub: Path, host: str, doc: dict) -> dict:
         return {"ok": False, "error": f"{type(exc).__name__}: {exc}"[:200]}
 
 
+def seat_budget(hub: Path, apply: bool) -> dict:
+    """apply_seat_budget.py in-process (altos has no SSH and no Claude auth; this pass is what runs there). Fail-open."""
+    import contextlib
+    import io
+    try:
+        asb = _module("apply_seat_budget.py")
+        if asb is None:
+            return {"ok": False, "error": "apply_seat_budget.py missing or broken on this host"}
+        stats: dict = {}
+        with contextlib.redirect_stdout(io.StringIO()):
+            out = asb.main(str(hub), asb.PROJECTS, not apply, stats)
+        pins = stats.get("pins") or {}
+        return {"ok": True, "applied": apply, "seats": len(out), "deny_rows": sum(len(v) for v in out.values()),
+                "pins_moved": sum(len(v) for v in pins.values())}
+    except Exception as exc:  # noqa: BLE001 - recorded, never raised
+        return {"ok": False, "error": f"{type(exc).__name__}: {exc}"[:200]}
+
+
 def run(hub: Path = HUB, host: str | None = None, apply: bool = False, force: bool = False, do_publish: bool = True,
         now: float | None = None) -> dict:
     now = now or _now()
@@ -1073,15 +1091,16 @@ def run(hub: Path = HUB, host: str | None = None, apply: bool = False, force: bo
         t0 = time.time()
         chk = check(hub, now)
         sw = sweep(hub, apply, now)
+        sb = seat_budget(hub, apply)
         doc = {"schema": "fleet-hygiene/1", "host": host, "at": _iso(now), "hub": str(hub), "seconds": None,
-               "check": chk, "sweep": sw, "delete_bytes": delete_bytes(hub),
+               "check": chk, "sweep": sw, "seat_budget": sb, "delete_bytes": delete_bytes(hub),
                "summary": {"seats": len(chk["seats"]), "violations": chk["violations"], "activity": chk["counts"],
                            "scheduled_task_findings": chk["scheduled_tasks"] if isinstance(chk["scheduled_tasks"], str) else len(chk["scheduled_tasks"]),
                            "producer_leaks": chk["producers"] if isinstance(chk["producers"], str) else len(chk["producers"]),
                            "retention_antipatterns": chk["retention_antipatterns"] if isinstance(chk["retention_antipatterns"], str) else len(chk["retention_antipatterns"]),
                            "stale_memories": chk["stale_memories"] if isinstance(chk["stale_memories"], str) else len(chk["stale_memories"]),
                            "runtime_cves": chk["runtime_cves"] if isinstance(chk["runtime_cves"], str) else len(chk["runtime_cves"]),
-                           "moved": sw["moved"], "planned_bytes": sw["planned_bytes"], "applied": apply}}
+                           "seat_budget": (f"{'applied' if sb['applied'] else 'planned'} seats={sb['seats']} deny+{sb['deny_rows']} pins->sonnet {sb['pins_moved']}" if sb.get("ok") else "error: " + str(sb.get("error"))), "moved": sw["moved"], "planned_bytes": sw["planned_bytes"], "applied": apply}}
         doc["seconds"] = round(time.time() - t0, 1)
         _save(OUT / f"{host}.json", doc)
         with open(OUT / "history.jsonl", "a", encoding="utf-8") as fh:
