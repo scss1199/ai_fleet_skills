@@ -5,8 +5,8 @@
   "role": "downstream_curator",
   "machine": "scar3",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
-  "generated_at": "2026-11-15T18:32:23Z",
-  "manifest_sha": "79ba7912bf7c3802",
+  "generated_at": "2026-11-15T19:34:04Z",
+  "manifest_sha": "8d5993c7b714315e",
   "required": [
     "fames",
     "independent-review",
@@ -46,7 +46,7 @@
     },
     {
       "name": "aex-agent-evolution",
-      "sha": "30b5e0e5feb8a450",
+      "sha": "4a9c3001cffd495a",
       "required": true,
       "lane": "zero-token-mechanism",
       "package_sha": "494cc8b0af44e5ec2bc4a55b3528c42f38e266716d50fcb35773ca6ead15a3dd",
@@ -456,12 +456,12 @@
       "sha": "79932ca06332f37c",
       "required": false,
       "lane": null,
-      "package_sha": "13ce7fcb1d5983ed72d5a878b32991712f451aadb1b43a9a1e8d49ffacffcae5",
+      "package_sha": "e6103c76a63a91e6af3f28c89fb5f035a6c370e123e695e03de40b5d9e651547",
       "files": {
         "SKILL.md": "b5197acc05f5bc9524b2a5ecd61a8a45f7d6e15720532df62e12677e2af392f7",
         "agents/openai.yaml": "3b3a5bb4f3fc5b43bd8242ef17dec4e8503111acc39ca46ef8c6019f83342002",
         "references/line-api-boundaries.md": "c5f8bb100756aa34dd2266601caf25bd16bcd339dbc96858602f000895e4d516",
-        "scripts/fetch_public_social.mjs": "21569d6a98596fa3ff36076a5da900066052fb1f11954ec5363202edd71017b9",
+        "scripts/fetch_public_social.mjs": "00181a1a3e0a2d2020990ff9fd6ae2a0a14e64b189aa75dd3b22d94323374e0a",
         "scripts/inspect_line_inbox.py": "460168215f3ecf231dbd202d87922dd1a234530deaf14937b7df23c0c6f10fa1",
         "scripts/test_inspect_line_inbox.py": "de695f9296a1d47af6721aa16b8aff95d6fb4642719db8a9ce771ec1d34f36e8"
       }
@@ -652,7 +652,7 @@
     },
     {
       "name": "sso-browser-session",
-      "sha": "eb24ce01497fe449",
+      "sha": "ca55894ff9304f05",
       "required": false,
       "lane": "zero-token-mechanism",
       "package_sha": "6e56b3586f80a38dffa6647c4331dd716d7496f5db6c619d76ee46a402ddbe96",
@@ -677,12 +677,12 @@
     },
     {
       "name": "typesafe-jev",
-      "sha": "16250e7f72bd17b2",
+      "sha": "96077011f49580fb",
       "required": false,
       "lane": null,
-      "package_sha": "a990b027402d514db2c9e9d59aa2388834708645b6450fec44af455f8f12f953",
+      "package_sha": "b9865d9ce6e191f9b6471e10ba63291cdcd357d7adf074ed0ff45598e6cac606",
       "files": {
-        "SKILL.md": "16250e7f72bd17b2a4c7029879f73b4256ff4eff6d3a040bf424f16aca87f081"
+        "SKILL.md": "2f24243a0bd6390c42d0448c989b88868d34aa5f4e5b5ce0cbf4d316bbbb573e"
       }
     },
     {
@@ -801,7 +801,7 @@
     },
     {
       "name": "ztm-oauth-redirect-fleet",
-      "sha": "98d8d2abb7f4b81d",
+      "sha": "38482e844475ac22",
       "required": false,
       "lane": "zero-token-mechanism",
       "package_sha": "d5ccb533ca7aad7a390cb238939c7176bb8b6625241fc68d81a885a5d7fce4fa",
