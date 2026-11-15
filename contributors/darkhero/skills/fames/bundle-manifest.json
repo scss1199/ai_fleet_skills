@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.45.318",
-  "skill_gen": "2026-11-16.2",
+  "version": "1.45.319",
+  "skill_gen": "2026-11-16.3",
   "execution_order": [
     "FP",
     "MTM",
@@ -24,7 +24,7 @@
   "source_git_commit": null,
   "files": {
     ".gitattributes": "448f5307a4b4eaab3e5e0615e1b57e125c2e6419d590025c4ac3d2e2c004955e",
-    "SKILL.md": "cc1969a5a486e2b8989ecf19063df2d46b0c05b2ef100eb914dab615b647f12b",
+    "SKILL.md": "1976511d15ff886bfc5bae43be227e738e0b2297168b82ae732729cf3e54de31",
     "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
     "references/autonomous-knowledge.md": "b34ca6beb034909aaade75be4707c772e90155c6c12b8278c7b3964ec8238df5",
     "references/cases.json": "2ebbb062b8e58241dfd2a70ec423678c4c16e40303d436ffa6de6e5560f67a40",
@@ -35,7 +35,7 @@
     "references/minimal-context.md": "f5c24bd6cc37901d7e71187ef9d273a88676be4c1393faaedf1664ff794478da",
     "references/operator-manual.md": "ddfdafdb484c5233b59bf91d80f44a0060b161f822342db9669e7bcf63b0903c",
     "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
-    "references/protocols/fames-protocol.json": "2ec595209278aa1bbe24ae96656a4d860919ddc147c8ee9753dd5c5d9840d7e5",
+    "references/protocols/fames-protocol.json": "f8a978e1756a0fc7174dcb338ab2493ace7530681243a7eb9606a696e934d0d9",
     "references/protocols/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
     "references/protocols/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
     "references/protocols/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -64,7 +64,7 @@
     "runtime/files/_lean/fames/FamesTurnRecovery.lean": "c7535908561b0d13ddf1533ec6e178785d46f933611bcc670a8728f075f8b6c3",
     "runtime/files/_lean/fames/claim_conformance.py": "47bb78d57a08d6f5aa9a185e4b383a017fdfc9c193686c69f5fc9ca2df555dec",
     "runtime/files/_lean/fames/conformance.py": "be37ceac19048f17a563248064026548cd3e45a90753df7846156bfe0550eee8",
-    "runtime/files/_lean/fames/f1s_audit.py": "5f56f731ac419ea1dc6d6e2e58f59d3d5e2ed9ac9bb18d0e1d66deecfeb0c717",
+    "runtime/files/_lean/fames/f1s_audit.py": "baf94150f96fcf621fabd535b4dd2f15ee5d6864a762b6f8abd831d556893a8d",
     "runtime/files/_lean/fames/lean_gate.py": "6eb82287a898c3225d859eaf28d74eb42f78aa12727a523b6f294e29c01052ab",
     "runtime/files/_lean/fames/phase_conformance.py": "ba60fd7f4aa8f850968239279dfa354ba0ce4a53243c383aeec873af65e1f989",
     "runtime/files/_lean/fames/phase_contract.py": "6b03b9d4fe4569cf69bbb14b23ff7244710bae4181f08f9027887c448e6e5726",
@@ -73,7 +73,7 @@
     "runtime/files/_lean/leanctl.py": "2cde11126976a17c88a927375b56c5c09a2115b7b0a6708ec8f563a068c7d7a3",
     "runtime/files/_registry/agent-surfaces.json": "b36cebd6b0f912587f117bc7df19c352496bbb6bcf7c9d3293b0940e951e8f60",
     "runtime/files/_registry/claude-remote-control.json": "44f271d7e0700238d5351698be0638cb1f798669d9f30c8aa3ad1c7d2fc2cfa2",
-    "runtime/files/_registry/fames-protocol.json": "2ec595209278aa1bbe24ae96656a4d860919ddc147c8ee9753dd5c5d9840d7e5",
+    "runtime/files/_registry/fames-protocol.json": "f8a978e1756a0fc7174dcb338ab2493ace7530681243a7eb9606a696e934d0d9",
     "runtime/files/_registry/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
     "runtime/files/_registry/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
     "runtime/files/_registry/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -106,7 +106,7 @@
     "runtime/files/_skill/engines/fames-immediate-apply.py": "eec944d2d859e9b4018b8b220dd4c92614bce9757bc82fd29a1d2f2029c27c28",
     "runtime/files/_skill/engines/fames_execution_evidence.py": "47f1ef6470401c155a88355816e2a13377e8d6730a440b9d7032a0a391bbacf5",
     "runtime/files/_skill/engines/fleet-bridge.py": "e6429442f85994d5426df6dc6310ccaa9acb6bfae03c8ebaf388205ba95cd22e",
-    "runtime/files/_skill/engines/fleet-hygiene.py": "f2d2a0721eb1959b4c28efea9cb056ed373bf66e8d7c332f5b269352b2115f58",
+    "runtime/files/_skill/engines/fleet-hygiene.py": "af548f5e4d65ac2bd06a8eab263e57b501f9a65cece9bc70367229aa28191b99",
     "runtime/files/_skill/engines/fleet-job-dispatch.py": "aaa480f0d82a4186e8876cb97f09687c7af66b792626e0ddf9c45a4140558976",
     "runtime/files/_skill/engines/fleet-residue-quarantine.py": "afb050756694ebf9286bd23aafba19812baac72cecb3de87be8e4b93db99f9f3",
     "runtime/files/_skill/engines/fleet-rogue-scheduler-sweep.py": "cabd10d3d31f555f31ada1e289df627dc10b25b2e41e9320f7a0632f55e8c7fb",
@@ -128,7 +128,7 @@
     "runtime/files/_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py": "136ca04fa1ee9442444026bdb0784e784e055ed7d4dff438f53c75d3da0b142a",
     "runtime/files/ai_darkhero/tray/load_posture.py": "665fd736a3d245bf50c5c7b7f8ecd1b4da23e176ee347ea001912f12116a0efb",
     "runtime/files/ai_darkhero/tray/scripts/load_grant.py": "00764dd7fbe47fa22c7cd658899b213cd514aa4fc3d6965463f4c8045ad58981",
-    "runtime/manifest.json": "1dd90946463b06ef9841eef3a14c1632d990f23d0b240acdbff219969839b1bc",
+    "runtime/manifest.json": "ae768f27be065cf36368b3623295cb056de1ac3feb180445622f40553a0d6260",
     "scripts/adaptive_response_controller.py": "07a19c6e0bda90f25800617a274d5f641709676d0d71cdfae8e17dec91e0d911",
     "scripts/claude_live_ab.py": "3aaa4276c505e1eceea33207c6c4baeb190b6319b737f081fd53fbc055834261",
     "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
@@ -143,5 +143,5 @@
     "scripts/test_work_efficiency.py": "e4250ba4c05f616c79cf97182507d1ff3585487c788546151a97b2dad74f0536",
     "scripts/work_efficiency.py": "42d41b64b8075280b1212625b46a25ab32bba35d27f5c019cf79dde02552022e"
   },
-  "package_sha": "1fec5a8ebcc7cccedde42e6a884ee7b4ca47f1f2fee162b19f1332f300a750e9"
+  "package_sha": "d31424cd09d5cbc2fc95ded86e248eb754e8a5aa6ea6275d838c4f458732c2e8"
 }

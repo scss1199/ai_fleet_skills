@@ -2,8 +2,8 @@
 
 - **Seat:** `ai_darkhero`
 - **Machine:** `darkhero`
-- **Generated:** 2026-11-15T16:57:42Z
+- **Generated:** 2026-11-15T17:52:46Z
 - **Skills:** 58
-- **Manifest SHA:** `b5cdf932a8acb988`
+- **Manifest SHA:** `7064d17945b69f2b`
 
 Shared repo layout: `contributors/darkhero/` · `contributors/scar3/` · `contributors/altos/`
