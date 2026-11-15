@@ -353,13 +353,29 @@ def _seat_cwd(seat: str, cfg: dict) -> tuple[str, str | None]:
     return (cand if os.path.isdir(cand) else root), None
 
 
-def run_local(prompt: str, seat: str = "ai_darkhero", cfg: dict | None = None, lane: str = "auto") -> tuple[str, str | None]:
+INTERPRET_MODEL = "fable"      # the CLI alias follows the newest model of that family
+
+
+def interpret_model(cfg: dict | None = None) -> str:
+    """The model that reads articles and decides what they change (operator 2026-11-12: 「文章解讀…會影響到架構與架構升級
+    工具升級 思考升級…這一類的任務統一用當下最聰明的模型如現在的Fable5.2」).  One owner of the name: `exec.interpret_model`
+    in claude-remote-control.json when the operator names another, else INTERPRET_MODEL."""
+    cfg = load_cfg() if cfg is None else cfg
+    return str(((cfg.get("exec") or {}).get("interpret_model")) or INTERPRET_MODEL)
+
+
+def run_local(prompt: str, seat: str = "ai_darkhero", cfg: dict | None = None, lane: str = "auto",
+              model: str | None = None) -> tuple[str, str | None]:
     """Run the local Claude CLI headlessly. Returns (text, err) like the bridge's _run_agent.
 
     lane: "anthropic" (subscription / API key only), "gateway" (free-provider gateway only), or "auto":
     Anthropic first, then the gateway when the credential is absent / unverified or the run hit a quota
     marker — the Anthropic quota running out is not a reason to stop (operator 2026-10-14)."""
     cfg = cfg or load_cfg()
+    if model:
+        # a named model is the point of the run: out of quota it fails and the caller keeps the work, it is never
+        # answered by whatever free model the gateway would pick
+        return _run_lane(prompt, seat, cfg, "anthropic", model=model)
     if lane == "auto":
         text, err = _run_lane(prompt, seat, cfg, "anthropic")
         if err is None:
@@ -408,7 +424,7 @@ def run_bounded(argv: list, *, input: str, cwd: str, env: dict, timeout: float) 
     return subprocess.CompletedProcess(argv, proc.returncode, out, err)
 
 
-def _run_lane(prompt: str, seat: str, cfg: dict, lane: str) -> tuple[str, str | None]:
+def _run_lane(prompt: str, seat: str, cfg: dict, lane: str, model: str | None = None) -> tuple[str, str | None]:
     if not cfg.get("enabled", True):
         return "", "claude_local_disabled"
     ex = cfg.get("exec") or {}
@@ -438,6 +454,8 @@ def _run_lane(prompt: str, seat: str, cfg: dict, lane: str) -> tuple[str, str | 
     argv = [cli, "-p", "--output-format", str(ex.get("output_format") or "text")]
     if lane == "gateway":
         argv += ["--model", gateway_cfg(cfg)["model"]]
+    elif model:
+        argv += ["--model", model]
     mode = ex.get("permission_mode")
     if mode:
         argv += ["--permission-mode", str(mode)]
@@ -552,6 +570,9 @@ def main() -> int:
     r.add_argument("--lane", choices=["auto", "anthropic", "gateway"], default="auto",
                    help="auto = Anthropic first, free-provider gateway when absent/unverified/out of quota")
     r.add_argument("--prompt-file")
+    r.add_argument("--model", help="run on this model (Anthropic lane only, no gateway fallback)")
+    r.add_argument("--interpret", action="store_true",
+                   help="article interpretation: run on interpret_model() (the smartest current model)")
     args = ap.parse_args()
 
     cfg = load_cfg()
@@ -572,7 +593,8 @@ def main() -> int:
             prompt = fh.read()
     else:
         prompt = sys.stdin.read()
-    text, err = run_local(prompt, args.seat, cfg, lane=getattr(args, "lane", "auto") or "auto")
+    model = args.model or (interpret_model(cfg) if args.interpret else None)
+    text, err = run_local(prompt, args.seat, cfg, lane=getattr(args, "lane", "auto") or "auto", model=model)
     if err:
         print(err, file=sys.stderr)
         if text:

@@ -415,8 +415,17 @@ def _api_pool_status(
 def _atomic_write(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_suffix(path.suffix + f".{os.getpid()}.tmp")
-    temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    os.replace(temp, path)
+    try:
+        temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        os.replace(temp, path)
+    except OSError:
+        # A reader holding the target makes the replace fail on Windows; the staged copy must not outlive the call
+        # (seven sessions.json.<pid>.tmp, 21 MB, sat in fames-hot on 2026-11-13).
+        try:
+            temp.unlink()
+        except OSError:
+            pass
+        raise
 
 
 # Hot-refresh state: ONE file for every session (operator 2026-11-01 「人不會去讀就是垃圾」). It used to be one
@@ -580,7 +589,8 @@ def precompact_hook_probe(settings_path: Path | None = None) -> dict[str, Any]:
     for row in rows if isinstance(rows, list) else []:
         for hook in (row.get("hooks") or []) if isinstance(row, dict) else []:
             if isinstance(hook, dict) and hook.get("type") == "command":
-                commands.append(str(hook.get("command") or ""))
+                args = hook.get("args") if isinstance(hook.get("args"), list) else []   # exec form: script in args
+                commands.append(" ".join(str(part) for part in [hook.get("command") or "", *args]))
     armed = any(AGC_PRECOMPACT_ADAPTER in command for command in commands)
     return {
         "armed": armed,
@@ -1095,6 +1105,7 @@ def turn_context(
     binding = _load_engine(Path(__file__).parent, 'fames_turn_binding.py', 'fames_intake_transaction')
     identity = hashlib.sha256(f"{surface_id}\0{session_id}".encode("utf-8")).hexdigest()
     lock_path = workspace / '_registry/fames-turn/intake-locks' / (identity + '.lock')
+    binding.expire(lock_path.parent)   # one retained lock per chat; the writer drops those of chats a week gone
     with binding.locked(lock_path, timeout_seconds=15):
         return _turn_context_unlocked(
             agent, seat_root, prompt=prompt, surface_id=surface_id, session_id=session_id,

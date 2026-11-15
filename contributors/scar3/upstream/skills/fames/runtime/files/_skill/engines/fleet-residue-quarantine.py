@@ -80,8 +80,11 @@ def _sha256(path: Path) -> str:
 def _is_junction(path: str) -> bool:
     try:
         return os.path.isjunction(path)
-    except AttributeError:  # Python < 3.12
-        return False
+    except AttributeError:  # Python < 3.12 (scar3 3.11.9, altos 3.10): probe the reparse tag directly
+        try:
+            return os.lstat(path).st_reparse_tag == stat.IO_REPARSE_TAG_MOUNT_POINT
+        except (OSError, AttributeError):
+            return False
 
 
 def _make_writable(func, path, _exc) -> None:
@@ -246,7 +249,6 @@ def verify(bucket_name: str, workspace: Path | None = None) -> dict:
 
 def selftest() -> int:
     """Discriminating controls: a real move, and two refusals that must abort."""
-    import ast
     import tempfile
 
     results: list[dict] = []

@@ -55,6 +55,32 @@ AGENT_TOOLS = {"Agent", "Task"}
 ANGER = re.compile(r"廢物|智障|白癡|白痴|腦殘|靠北|媽的|他媽|幹你|屁話|屁用|起訴|法律途徑|垃圾模型|耍我|你到底|到底要|講幾次|說幾次|有沒有搞懂")
 ANGER_MAX_CHARS = 1500
 ANGER_RULE_SINCE = "2026-11-03T10:00"  # UTC, transcript timestamps; f1s-intake §5 took effect here
+# Operator 2026-11-09 (「一樣的東西要講兩次以上」): 81% of repeated prose followed a PROOF block, so the three Stop-hook
+# messages now ask for the delta only (FAMES 1.45.227). This counts, per era, whether a turn still says a sentence twice.
+REPEAT_RULE_SINCE = "2026-11-09T10:40"  # UTC; hub 74025635bc
+
+
+def repeat_facts(turns: list) -> dict:
+    """Per era, [turns, turns with a repeated sentence, repeated chars, of which right after a Stop-hook block]."""
+    try:
+        spec = importlib.util.spec_from_file_location("f1s_repeat", HUB / "_skill" / "engines" / "f1s_repeat.py")
+        rep = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(rep)
+    except Exception:  # noqa: BLE001 - no scanner, no fact
+        return {}
+    out = {"before": [0, 0, 0, 0], "since": [0, 0, 0, 0]}
+    for prompt, body in turns:
+        era = "since" if str(prompt.get("timestamp") or "")[:16] >= REPEAT_RULE_SINCE else "before"
+        evs = list(rep.turns([prompt] + list(body)))
+        if not evs:
+            continue
+        _, dup, cause = rep.measure(evs[0])
+        out[era][0] += 1
+        if dup:
+            out[era][1] += 1
+            out[era][2] += dup
+            out[era][3] += sum(v for k, v in cause.items() if k.startswith("after "))
+    return out
 
 
 def anger_facts(hook, turns: list) -> dict:
@@ -207,7 +233,8 @@ def audit_transcript(hook, path: Path, cfg: dict) -> dict:
                                 earlier.append(ln.strip())
     return {"turns": judged, "blocked": blocked, "per_class": dict(per_class), "worst": worst,
             "first": first_ts, "last": last_ts, "decisions": len(earlier), "tool_calls": tool_calls, "flipflop": flipflop,
-            "skill_loads": dict(skills), "anger": anger_facts(hook, turns), "compact_thrash": compact_thrash, **subagent_facts(rows)}
+            "skill_loads": dict(skills), "anger": anger_facts(hook, turns), "repeat": repeat_facts(turns),
+            "compact_thrash": compact_thrash, **subagent_facts(rows)}
 
 
 def load_state() -> dict:
@@ -273,6 +300,9 @@ def run(full: bool = False) -> dict:
         for era, counts in (s.get("anger") or {}).items():
             total = agg.setdefault("anger", {}).setdefault(era, [0, 0, 0, 0])
             agg["anger"][era] = [a + b for a, b in zip(total, counts)]
+        for era, counts in (s.get("repeat") or {}).items():
+            total = agg.setdefault("repeat", {}).setdefault(era, [0, 0, 0, 0])
+            agg["repeat"][era] = [a + b for a, b in zip(total, counts)]
         if len(agg["worst"]) < WORST_KEEP:
             agg["worst"].extend(s.get("worst") or [])
     for agg in seats.values():
@@ -367,9 +397,12 @@ def record_line(seat: str) -> str:
     sk = doc.get("skill_loads") or {}
     anger = agg.get("anger") or {}
     old, new = anger.get("before") or [0, 0, 0, 0], anger.get("since") or [0, 0, 0, 0]
+    rep = agg.get("repeat") or {}
+    ro, rn = rep.get("before") or [0, 0, 0, 0], rep.get("since") or [0, 0, 0, 0]
     return (f"F1S RECORD — {seat}: {agg['blocked']}/{agg['turns']} turns would block ({top or 'none'}); "
             f"{agg.get('tool_calls_per_turn')} tool calls/turn, {agg.get('flipflop', 0)} 你說得對 openers; "
             f"anger came back {new[1]}/{new[0]} since f1s-intake §5 (before {old[1]}/{old[0]}); "
+            f"said a sentence twice {rn[1]}/{rn[0]} turns since the delta-reply fix (before {ro[1]}/{ro[0]}, {ro[3] // 1024} KB after hook blocks); "
             f"autocompact thrash stops {agg.get('compact_thrash', 0)} (fleet {sum(int(a.get('compact_thrash') or 0) for a in (doc.get('seats') or {}).values())}); "
             f"{'UNKNOWN' if agg.get('subagents_per_turn') is None else agg['subagents_per_turn']} subagents/turn "
             f"({int(agg.get('subagent_result_bytes') or 0) // 1024} KB back into context); "

@@ -126,6 +126,7 @@ def ensure_conformance(workspace):
             staged = path.with_suffix('.tmp')
             staged.write_bytes(data)
             staged.replace(path)
+            _spent(target)
         if not gate.binding_status().get("all_bound"):
             result = subprocess.run([sys.executable, "-B", str(root / "conformance.py")],
                 capture_output=True, timeout=600, creationflags=0x08000000 if os.name == "nt" else 0)
@@ -142,13 +143,24 @@ def ensure_conformance(workspace):
             if result.returncode != 0 or not recovery.conformance_status(target).get('ok'):
                 return {'ok': False, 'state': 'UNKNOWN', 'reason': 'native_recovery_conformance_failed'}
             if recovery_path.is_file():
-                shutil.copy2(recovery_path, target.with_name(target.stem + '-previous.json'))
+                shutil.copy2(recovery_path, target.with_name('recovery-previous.json'))
             shutil.copy2(target, recovery_path)
+            _spent(target)
         return {"ok": True, "state": "PASS", "receipt": str(path), "reused_phase_proof": phase_current,
                 'native_recovery_conformance': str(recovery_path),
                 "native_adoption": "UNKNOWN"}
     except Exception as exc:
         return {"ok": False, "state": "UNKNOWN", "reason": type(exc).__name__}
+
+
+def _spent(target):
+    """A proof run writes to its own uuid file so two applies never share one; once its bytes are the canonical
+    receipt that file is a second copy nobody reads (48 a day went to _delete). A failed run keeps its file: the
+    error names it."""
+    try:
+        Path(target).unlink()
+    except OSError:
+        pass
 
 
 def apply(workspace=WORKSPACE):
