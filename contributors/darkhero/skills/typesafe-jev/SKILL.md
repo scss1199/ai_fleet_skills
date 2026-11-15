@@ -1,7 +1,5 @@
-<!-- fleet-import: typesafe-ai/skills/typesafe-ai as typesafe-jev · vetted 2026-10-31 · scripts/ NOT imported -->
-
 ---
-name: typesafe-ai
+name: typesafe-jev
 license: MIT
 description: >
   TypeSafe integration craft for System One models (sometimes called Decision Models) such as Jev,
@@ -11,6 +9,7 @@ description: >
   brittle heuristic with a typed question; or when brainstorming where programmable common sense
   fits in an app.
 ---
+<!-- fleet-import: typesafe-ai/skills/typesafe-ai as typesafe-jev · vetted 2026-10-31 · scripts/ NOT imported -->
 
 # Build with TypeSafe
 
