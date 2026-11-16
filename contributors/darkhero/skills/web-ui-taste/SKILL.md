@@ -4,7 +4,7 @@ description: >-
   F1S route for building or changing any fleet web UI (jci website, ziyaoastro, accountancy GAS app,
   portals, tray/console pages) so it does not look cheap and passes the Web Interface Guidelines: pick a
   design system (DESIGN.md), apply taste/art direction, turn a reference image into code, run the
-  mechanical guideline lint, and verify with phone + desktop screenshots in the built-in browser. Use
+  mechanical guideline lint, run the zero-token runtime probe, and verify with phone + desktop screenshots in the built-in browser. Use
   before claiming any frontend change done, when asked to "make it look better", review UI/UX or
   accessibility, or when a reference screenshot/design is given.
 metadata:
@@ -55,6 +55,19 @@ Playwright CLI = `microsoft/playwright-cli`（Apache-2.0）。F1S 只取做法�
    `[...document.querySelectorAll('input,select,textarea')].filter(e=>e.type!=='hidden'&&!e.labels?.length&&!e.getAttribute('aria-label')&&!e.getAttribute('aria-labelledby')).length`
    必須是 0（2026-10-16 ziyaoastro 的聊天輸入框就是這樣抓到的）。
    GAS 前端用專案自帶的 `local-gas-mock.js` 預覽；測試帳號只用專案 mock 檔裡的值。
+
+## Runtime probe (zero tokens)
+
+宣稱完成前先跑（headless Chromium，手機 390x844 加桌面 1366x900，不寫檔、不呼叫模型）：
+
+```bash
+python C:\ai_workspace\_skill\engines\web-runtime-probe.py <local or deployed url> [--json]
+```
+
+- 回報 console 錯誤、pageerror、>=400 請求、TTFB／load、LCP、CLS、手機橫向溢位，每個網址加 viewport 一行 green／yellow／red。
+- red 必須修完才能宣稱完成（exit 1）；yellow 要修或寫明理由。只打自己的站首頁（GET），不登入。
+- 內建瀏覽器只留給探針判斷不了的事：視覺品味、互動、來回點擊。
+- 絕不安裝或呼叫 chrome-devtools MCP（會開可見 Chrome 搶前景，約 26 個工具 schema 也會加重每個 context）；探針就是它的零 token 替代。
 
 ## 來回點擊驗證（反向學習自 ai_ziyaoastro 2026-10-29「來回按幾次不同功能就在那轉圈圈」）
 
