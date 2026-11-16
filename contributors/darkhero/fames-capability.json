@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-16T17:46:05.280641+00:00",
+  "observed_at": "2026-11-16T18:25:04.531773+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,8 +353,15 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "UNKNOWN",
-    "native_events": [],
+    "native_state": "OBSERVED_PARTIAL_POPULATION",
+    "native_events": [
+      {
+        "agent": "ai_ziyaoastro",
+        "surface": "claude",
+        "observed_at": "2026-11-17T02:15:52+08:00",
+        "receipt_sha256": "f72724fa9f42c933c38fce40c8c0a35850dbc0725b0231759570d91ec87aed35"
+      }
+    ],
     "runtime_release_sha256": "afd23e796b5724607b4870b1bf27aaf41d6c642e99b7306d120ea6847d7deedf"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
