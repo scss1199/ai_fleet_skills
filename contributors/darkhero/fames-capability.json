@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-16T11:52:02.153321+00:00",
+  "observed_at": "2026-11-16T12:22:02.572374+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -360,6 +360,12 @@
         "surface": "claude",
         "observed_at": "2026-11-16T19:45:35+08:00",
         "receipt_sha256": "b7c327e18d78b5746f52a4572e6f7420720f77fdacd58a683b0c90796cd1d50b"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-16T20:18:32+08:00",
+        "receipt_sha256": "7297fc7d9fa1a11b5c140d307f8b33914f6bae81f555611ed22bb88ef9dd743a"
       }
     ],
     "runtime_release_sha256": "bb32bb7b2fa080e9447507ac51eb0b8ce7999308117b65588592a3f5fe4145ee"
