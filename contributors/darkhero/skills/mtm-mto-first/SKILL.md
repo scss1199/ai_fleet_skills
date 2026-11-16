@@ -50,7 +50,7 @@ parent_skill: aex-agent-evolution
   同理——寫入端與讀取端同一個變更出貨（讀取端要 strip NUL、數撕裂列而不 raise），並附一個斷電測試（注入 NUL 段與
   半列），寫入端每列 fsync；只有寫沒有人讀的日誌不算證據（ai_trader fx_lane 339 列沒人讀、沒 fsync，b2cdd1160 補
   `read_ledger()`＋測試）；一條研究線得出 verdict 後，
-  同一個變更就把它的腳本移出樹（收據留 commit hash）；推給使用者的通知（LINE 等）只在有新事實時發（有成交或有新
+  同一個變更就把它的腳本移出樹（收據留 commit hash），並在座位的研究判決索引補一行（一研究一行、依 candidate／rejected 分組，數字以引擎為準）——提案或重測一條規則前先 grep 這份索引（反向學習自 ai_trader study-verdicts-index 2026-11-15）；推給使用者的通知（LINE 等）只在有新事實時發（有成交或有新
   verdict），「0 筆／UNKNOWN」這種日報是噪音、要壓掉並記原因。座位的低效要從它自己的日誌與 rider 結果量出來，hub
   的通用效率工具給不出座位層級的缺陷；結構性閒置（沒人用的盤中機器）列出來交使用者決定，不自行退場
   （反向學習自 ai_trader workflow-audit-20261020）。
@@ -78,7 +78,8 @@ parent_skill: aex-agent-evolution
   讀腳本本體，不裝 plugin、不跑它的安裝腳本（`irm … | iex`、`curl … | sh` 一律不執行）；③查本座位有沒有同等功能
   （`f1s-harvest.py tools`、grep）；④沒有就用自己的資料把方法重做成本地模組＋測試，接進既有報告當 report block
   （fail-open，不是 gate），模擬結果一律標「模擬不是勝率」；⑤真的要裝二進位或套件才能比（無頭瀏覽器、索引器）：
-  先過 SkillSpector／供應鏈檢查，只裝到專案範圍（不改 ~/.claude 全域設定，那要使用者授權），語意／LLM pass 不得
+  先過 SkillSpector／供應鏈檢查；啟用 plugin 前先量每對話固定成本 `fleet-skill-vet.py plugin-cost <plugin>`
+  （≥2000 tok＝blocked-risk，ecc@ecc 量到 ~44834；輸出的 inject_hooks＝每 prompt／工具呼叫都注入的 hook，啟用後跑 `audit-session-tax.py --replay`，比座位現值多 >200 tok/prompt 就停用），新 skill 看 `fleet-skill-vet.py scan` 的 always_on；只裝到專案範圍（不改 ~/.claude 全域設定，那要使用者授權），語意／LLM pass 不得
   動用付費模型；換掉現役工具只憑同一批輸入的 A/B 量測（成功數不低於現役、記憶體或 token 差距寫進收據），量不到或
   輸的就記下數字與不採用原因，不換。（反向學習自 ai_trader first-touch-sim-20261028，commit 5f4d0a02c）
 
