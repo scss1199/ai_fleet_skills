@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "dark-hero-z790",
-  "at": "2026-11-16T01:53:09",
+  "at": "2026-11-16T22:07:09",
   "hub": "C:\\ai_workspace",
-  "seconds": 120.4,
+  "seconds": 304.0,
   "check": {
     "seats": [
       {
@@ -52,10 +52,10 @@
         "seat": "ai_darkhero",
         "missing": [],
         "findings": [
-          "dirty_files:1025"
+          "dirty_files:1036"
         ],
         "repo": "own",
-        "dirty": 1025,
+        "dirty": 1036,
         "unpushed": 0,
         "last_commit": "2026-11-16",
         "worktrees": 0,
@@ -87,7 +87,7 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 0,
+        "dirty": 1,
         "unpushed": 0,
         "last_commit": "2026-11-13",
         "worktrees": 0,
@@ -105,9 +105,9 @@
           "tracked_junction_files:1"
         ],
         "repo": "own",
-        "dirty": 6,
+        "dirty": 7,
         "unpushed": 0,
-        "last_commit": "2026-11-13",
+        "last_commit": "2026-11-16",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
@@ -137,7 +137,7 @@
         "repo": "own",
         "dirty": 5,
         "unpushed": 0,
-        "last_commit": "2026-11-15",
+        "last_commit": "2026-11-16",
         "worktrees": 1,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
@@ -267,7 +267,7 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 3,
+        "dirty": 5,
         "unpushed": 0,
         "last_commit": "2026-11-13",
         "worktrees": 1,
@@ -362,7 +362,7 @@
       },
       {
         "dir": "ai_darkhero/_registry/kyloren-knowledge-social/consolidate/cards",
-        "entries": 1364,
+        "entries": 1482,
         "retention_named": 0,
         "writer": "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"
       },
@@ -463,13 +463,6 @@
         "memory": "C:\\Users\\sc\\.claude\\projects\\C--ai-workspace-ai-nuwa\\memory\\project_q04_bow_heel_cup.md",
         "stale": [
           "recipes/batches/20261111/q04_bow_v1.json"
-        ]
-      },
-      {
-        "seat": "ai_trader",
-        "memory": "C:\\Users\\sc\\.claude\\projects\\C--ai-workspace-ai-trader\\memory\\stock-sim-event-lane-token-guard-20261115.md",
-        "stale": [
-          "runtime/stock_sim/book.json[\"events\"]"
         ]
       }
     ],
@@ -795,19 +788,23 @@
   },
   "sweep": {
     "applied": true,
-    "planned": 1,
-    "planned_bytes": 12,
+    "planned": 3,
+    "planned_bytes": 232388,
     "by_class": {
-      "stale": {
+      "temp": {
         "count": 1,
-        "bytes": 12
+        "bytes": 229392
+      },
+      "expired_state": {
+        "count": 2,
+        "bytes": 2996
       }
     },
     "skipped": {
       "git_tracked": 487,
       "protected": 0
     },
-    "moved": 1,
+    "moved": 3,
     "engine": "fleet-residue-quarantine.py",
     "errors": []
   },
@@ -815,10 +812,10 @@
     "ok": true,
     "applied": true,
     "seats": 19,
-    "deny_rows": 40,
+    "deny_rows": 0,
     "pins_moved": 0
   },
-  "delete_bytes": 48565744051,
+  "delete_bytes": 48569597417,
   "summary": {
     "seats": 23,
     "violations": 7,
@@ -830,11 +827,11 @@
     "scheduled_task_findings": 0,
     "producer_leaks": 3,
     "retention_antipatterns": 9,
-    "stale_memories": 6,
+    "stale_memories": 5,
     "runtime_cves": 6,
-    "seat_budget": "applied seats=19 deny+40 pins->sonnet 0",
-    "moved": 1,
-    "planned_bytes": 12,
+    "seat_budget": "applied seats=19 deny+0 pins->sonnet 0",
+    "moved": 3,
+    "planned_bytes": 232388,
     "applied": true
   }
 }
