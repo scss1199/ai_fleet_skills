@@ -663,14 +663,35 @@ def _place_skill(src_dir: str, dest_dir: str, link_mode: str) -> str:
     return "copied"
 
 
+_VET = None
+
+
+def _spec_issues(src_dir: str, name: str) -> list[str]:
+    """Agent Skills spec gate (fleet-skill-vet.skill_spec_issues): a SKILL.md failing spec is not deployed.
+    typesafe-jev showed an HTML comment as its description for 16 days (2026-10-31..11-16)."""
+    global _VET
+    if _VET is None:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "fleet_skill_vet", os.path.join(os.path.dirname(os.path.abspath(__file__)), "fleet-skill-vet.py"))
+        _VET = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(_VET)
+    with open(os.path.join(src_dir, "SKILL.md"), encoding="utf-8", errors="replace") as fh:
+        return _VET.skill_spec_issues(fh.read(), name)
+
+
 def _deploy_surface(root: str, surface: dict, names: tuple[str, ...]) -> dict:
     dest_base = os.path.join(root, *surface["path"])
     os.makedirs(dest_base, exist_ok=True)
     link_mode = surface.get("link_mode") or "copy"
-    copied, actions = [], {}
+    copied, actions, spec_blocked = [], {}, {}
     for name in names:
         src_dir = os.path.join(CANON, name)
         if not os.path.isfile(os.path.join(src_dir, "SKILL.md")):
+            continue
+        issues = _spec_issues(src_dir, name)
+        if issues:
+            spec_blocked[name] = issues   # the deployed copy (if any) stays as it was
             continue
         actions[name] = _place_skill(src_dir, os.path.join(dest_base, name), link_mode)
         copied.append(name)
@@ -679,7 +700,8 @@ def _deploy_surface(root: str, surface: dict, names: tuple[str, ...]) -> dict:
                 actions[alias] = _place_skill(src_dir, os.path.join(dest_base, alias), link_mode)
                 copied.append(alias)
     blocked = sorted(n for n, act in actions.items() if act == "blocked")
-    return {"dest": dest_base, "copied": copied, "link_mode": link_mode, "blocked": blocked}
+    return {"dest": dest_base, "copied": copied, "link_mode": link_mode, "blocked": blocked,
+            "spec_blocked": spec_blocked}
 
 
 def _deploy_named(root: str, names: tuple[str, ...]) -> dict:
@@ -688,16 +710,18 @@ def _deploy_named(root: str, names: tuple[str, ...]) -> dict:
         return {"root": _rel_path(root), "ok": False, "error": "missing"}
     gitignored = _ensure_surface_gitignore(root)
     surfaces = {}
-    copied = []
+    copied, spec_blocked = [], {}
     for surface in AGENT_SURFACES:
         result = _deploy_surface(root, surface, names)
         surfaces[surface["key"]] = result["dest"]
         copied.extend(result["copied"])
+        spec_blocked.update(result["spec_blocked"])
     return {
         "root": _rel_path(root),
         "ok": True,
         "copied": sorted(set(copied)),
         "surfaces": surfaces,
+        "spec_blocked": spec_blocked,
         "gitignored": gitignored,
     }
 
@@ -778,6 +802,7 @@ def _deploy_to_root(root: str, names: tuple[str, ...] | None = None) -> dict:
         "surfaces": {key: res["dest"] for key, res in results.items()},
         "link_modes": {key: res["link_mode"] for key, res in results.items()},
         "blocked": sorted({n for res in results.values() for n in res["blocked"]}),
+        "spec_blocked": {n: i for res in results.values() for n, i in res["spec_blocked"].items()},
         "gitignored": gitignored,
     }
 
