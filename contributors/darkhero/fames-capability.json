@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-16T18:25:04.531773+00:00",
+  "observed_at": "2026-11-16T18:55:07.988439+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -355,6 +355,18 @@
     "base_proof_state": "PASS",
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-17T02:54:03+08:00",
+        "receipt_sha256": "154417cf68d330071a732c0128c1055a61e698f9ff202a808c639f45e177f787"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-17T02:41:46+08:00",
+        "receipt_sha256": "40b4c4c3ef166b7a84bef0135eeb83d8cf1f79a01e96e57572b0094b0d374288"
+      },
       {
         "agent": "ai_ziyaoastro",
         "surface": "claude",
