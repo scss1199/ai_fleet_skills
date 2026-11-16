@@ -34,6 +34,7 @@ import argparse
 import fnmatch
 import json
 import os
+import subprocess
 import sys
 import time
 
@@ -496,9 +497,86 @@ def injection(seat: str, session_id: str = "") -> str:
 
 
 HANDOFF_OVER_K = 150
+ROLLOVER_OVER_K = 180       # `live_wake.rollover_over_k`: above this the advisory becomes a roll-over order, 0 = off
+BRIEF_REQUEST_CHARS = 1500
 
 
-def handoff_line(seat: str, session_id: str = "", context: int | None = None, over: int | None = None) -> str:
+def last_typed_request(path) -> str:
+    """The last prompt a person typed in a transcript; wake turns (task notifications, hook feedback, side sessions,
+    system reminders) and tool results are skipped. "" when none is found or the file cannot be read."""
+    import f1s_waste
+    last = ""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            for raw in fh:
+                try:
+                    rec = json.loads(raw)
+                except ValueError:
+                    continue
+                if rec.get("type") != "user" or rec.get("isMeta") or rec.get("isSidechain"):
+                    continue
+                content = (rec.get("message") or {}).get("content")
+                if isinstance(content, list):
+                    if any(isinstance(b, dict) and b.get("type") == "tool_result" for b in content):
+                        continue
+                    content = "\n".join(b.get("text") or "" for b in content if isinstance(b, dict) and b.get("type") == "text")
+                if not isinstance(content, str) or not content.strip():
+                    continue
+                text = content.strip()
+                if text.startswith(("<system-reminder>", "<command-", "<local-command", "Caveat:")):
+                    continue
+                if f1s_waste.wake_kind(text) == "operator":
+                    last = text
+    except OSError:
+        return ""
+    return last
+
+
+def rollover_brief_text(seat: str, session_id: str, context: int, last_request: str) -> str:
+    """The whole prompt of the conversation that takes over a rolled-over one. Pure: no file is read or written."""
+    k = f"{context // 1000}K"
+    sid = session_id or "unknown"
+    transcript = f"C:/Users/<user>/.claude/projects/*/{session_id}.jsonl" if session_id else "(unknown)"
+    if last_request:
+        task = ("Task to carry out now (the operator's latest typed request, verbatim):\n"
+                + last_request[:BRIEF_REQUEST_CHARS])
+    else:
+        task = "No typed request found; ask nothing, read the park file."
+    return "\n".join((
+        f"This conversation continues {seat}'s conversation {sid}, which F1S rolled over at {k}.",
+        "Read first, and only if needed: C:/ai_workspace/_registry/agc-compact/" + f"{seat}.md" + " and C:/ai_workspace/_logs/park/"
+        + f"{seat}.md" + " (last entry).",
+        task,
+        "Reply rules: report in Traditional Chinese, conclusion first in two sentences, numbers only from measurements made in this "
+        "conversation, no questions about mechanical work.",
+        f"The old conversation is archived; its transcript ({transcript}) is for exact details only.",
+    ))
+
+
+def rollover_brief(seat: str, session_id: str = "", park: bool = True) -> str:
+    import glob as _glob
+    from pathlib import Path as _Path
+    if park:
+        try:
+            kw = {"creationflags": 0x08000000} if os.name == "nt" else {}
+            subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "goal_compact.py"), "park", seat],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120, **kw)
+        except Exception:
+            pass
+    found = _glob.glob(os.path.join(CLAUDE_PROJECTS, "*", f"{session_id}.jsonl")) if session_id and session_id.replace("-", "").isalnum() else []
+    request, context = "", 0
+    if found:
+        request = last_typed_request(found[0])
+        try:
+            import f1s_live
+            context = f1s_live.context_tokens(_Path(found[0]), settled=True)
+        except Exception:
+            pass
+    return rollover_brief_text(seat, session_id, context, request)
+
+
+def handoff_line(seat: str, session_id: str = "", context: int | None = None, over: int | None = None,
+                 rollover: int | None = None) -> str:
     """operator 2026-11-14: the ai_darkhero main chat spent 17.4M in two days, 692 calls at 160K each, most of them tool calls.
     Once this conversation holds more than `live_wake.handoff_over_k` (K tokens, default 150, 0 = off) every prompt says so
     with the two existing ways out: a lean station for the execution, or AGC park and a new chat. Advisory, never blocks;
@@ -521,8 +599,24 @@ def handoff_line(seat: str, session_id: str = "", context: int | None = None, ov
             context = f1s_live.context_tokens(_Path(found[0]), settled=True)
     except Exception:
         return ""
+    if rollover is None:
+        try:
+            with open(os.path.join(HUB, "_registry", "run-until-done.json"), encoding="utf-8-sig") as fh:
+                rollover = int(float((json.load(fh).get("live_wake") or {}).get("rollover_over_k", ROLLOVER_OVER_K)) * 1000)
+        except (OSError, ValueError, TypeError, AttributeError):
+            rollover = ROLLOVER_OVER_K * 1000
     if not over or context <= over:
         return ""
+    if rollover and context > rollover:
+        sess = f" --session {session_id}" if session_id else ""
+        return (f"ROLL OVER {context // 1000}K > {rollover // 1000}K: this conversation holds {context // 1000}K; do not do this prompt's work here. "
+                "If a background task of this conversation is still running, let it finish first. "
+                f"Run `python C:/ai_workspace/_skill/engines/curator_orders.py rollover-brief --seat {seat}{sess}` (it parks the seat and prints the hand-over prompt). "
+                "Then start a new conversation in the same cwd at once with that printed text as its whole prompt "
+                "(tool mcp__ccd_session__start_session, initiation \"user_asked\", context \"fresh\", no worktree), no offer card and no question to the operator. "
+                "When the tool result says it started, tell the operator in one line where the work continues, then archive this conversation "
+                "(mcp__ccd_session_mgmt__archive_session \"self\"). "
+                "If a new conversation cannot be started (for example over Remote Control), fall back to a lean station and say so.")
     cwd = os.path.join(HUB, seat).replace(os.sep, "/")
     return (f"FAT CHAT {context // 1000}K > {over // 1000}K: every tool call here re-reads {context // 1000}K. Hand execution to a lean "
             f"station (about 30K, one result row back): `python _skill/engines/f1s_station.py run --cwd {cwd} --tools Read,Grep,Glob,Bash,Edit,Write "
@@ -827,7 +921,18 @@ def main(argv=None) -> int:
     s.add_argument("seat")
     s.add_argument("n", type=int, nargs="+")
     sub.add_parser("review")
+    s = sub.add_parser("rollover-brief", help="park the seat and print the hand-over prompt for a new conversation")
+    s.add_argument("--seat", required=True)
+    s.add_argument("--session", default="")
+    s.add_argument("--no-park", action="store_true")
     a = ap.parse_args(argv)
+    if a.cmd == "rollover-brief":
+        text = rollover_brief(a.seat, a.session, park=not a.no_park)
+        try:
+            print(text)
+        except UnicodeEncodeError:
+            sys.stdout.write(text.encode(sys.stdout.encoding or "utf-8", "backslashreplace").decode(sys.stdout.encoding or "utf-8") + "\n")
+        return 0
     if a.cmd == "review":
         print("\n".join(review_table()) or "review queue empty")
         return 0
