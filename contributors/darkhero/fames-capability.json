@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-16T09:37:04.760519+00:00",
+  "observed_at": "2026-11-16T10:07:07.955896+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -360,6 +360,24 @@
         "surface": "claude",
         "observed_at": "2026-11-16T16:13:32+08:00",
         "receipt_sha256": "a936536e4cf35d0f9050d398c819ef5f56c20135f5a50da7bccd324f074c60a3"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-16T17:56:01+08:00",
+        "receipt_sha256": "3bfc9666a17dc7c4d85c76370f5787b31b146c4124ecde37e0a948320c789258"
+      },
+      {
+        "agent": "ai_trader",
+        "surface": "claude",
+        "observed_at": "2026-11-16T17:54:12+08:00",
+        "receipt_sha256": "8b4e03dcd095258eacab2c6a4a740dbb02cd7c362691a1ae22f919b6cfbd3774"
+      },
+      {
+        "agent": "ai_career",
+        "surface": "claude",
+        "observed_at": "2026-11-16T17:51:25+08:00",
+        "receipt_sha256": "dc0690302382e4a053401d392b6b42d46dccdef8ccfc835c22490ade94a901a5"
       },
       {
         "agent": "ai_nuwa",
