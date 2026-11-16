@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "altos",
-  "package_sha": "fb55c045d9b4dcdafadf46c91065f0e9d5960e5b2c8324b511a9ded6beb85d76",
+  "package_sha": "b5e6892c117c9aaf6ce9d0b4be413b44d75dd6f99fcb614f9bd1cc2dc6462760",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-16T10:31:12.129360+00:00",
+  "observed_at": "2026-11-16T10:46:39.288168+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,46 +353,9 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "OBSERVED_PARTIAL_POPULATION",
-    "native_events": [
-      {
-        "agent": "ai_altos",
-        "surface": "claude",
-        "observed_at": "2026-11-16T17:57:13+08:00",
-        "receipt_sha256": "c16ab69e2194c2d8493421a8167be75cfee3c4bc911e79526bafa4ca1657e8cb"
-      },
-      {
-        "agent": "ai_altos",
-        "surface": "claude",
-        "observed_at": "2026-11-16T18:21:56+08:00",
-        "receipt_sha256": "75c3092a8cab4eafcf911f8e033d0a511e3dae1408993bb287c13d12870a10ae"
-      },
-      {
-        "agent": "ai_altos",
-        "surface": "claude",
-        "observed_at": "2026-11-16T17:58:33+08:00",
-        "receipt_sha256": "84c9c258ae2d8a70fa77888745b959d71b4336386ae58c643c8eed9bbb37b808"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-11-16T17:57:04+08:00",
-        "receipt_sha256": "037bfbac840aed8d6dcfdb0e292867b1fb32b68467feb7dc4b9e0c830d0e3509"
-      },
-      {
-        "agent": "ai_altos",
-        "surface": "claude",
-        "observed_at": "2026-11-16T18:08:05+08:00",
-        "receipt_sha256": "58511b8e05ca6cd4903f43d7887282082724a236671d5802a3048acd8d1cc827"
-      },
-      {
-        "agent": "ai_altos",
-        "surface": "claude",
-        "observed_at": "2026-11-16T18:12:20+08:00",
-        "receipt_sha256": "e66f122bccec901b69120012ea626e960f1fc28ca0070531af8a89ec974fbbaa"
-      }
-    ],
-    "runtime_release_sha256": "b6c72b1d17f04e8bc6a497e74efe7095174bd18cd73b034c6f9af0d0709494db"
+    "native_state": "UNKNOWN",
+    "native_events": [],
+    "runtime_release_sha256": "0aba62cc13baee3d920587436af7198cc7c2e8d3dba31bdb4df5f6d7ceaca7ba"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
