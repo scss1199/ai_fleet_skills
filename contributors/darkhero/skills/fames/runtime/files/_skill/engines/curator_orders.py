@@ -889,7 +889,7 @@ def _unclaimed_orders() -> str:
                 continue
             if not owner_of(o) and age > UNCLAIMED_AFTER_S:
                 rows.append(f"{seat}#{o['n']} {o['title']}")
-            elif owner_of(o) and _owner_silent_s(owner_of(o)) > STALE_OWNER_AFTER_S:
+            elif owner_of(o) and _claim_silent_s(o) > STALE_OWNER_AFTER_S:
                 stale.append(f"{seat}#{o['n']} owner {owner_of(o)[:8]}")
     lines = []
     if rows:
@@ -901,6 +901,19 @@ def _unclaimed_orders() -> str:
                      f"{STALE_OWNER_AFTER_S // 3600}h+: {'; '.join(stale[:6])}. list_sessions first (host_gone is not dead); "
                      "if the owner is not running, curator_orders.py claim <seat> <n> --release, then send the order into a live chat of that seat.")
     return "\n".join(lines)
+
+
+def _claim_silent_s(order: dict, now: float | None = None) -> float:
+    """How long the owner of this claim has been silent. A station- owner has no transcript (2026-11-17: ai_trader#145 was
+    named stale seconds after a station took it), so the age of its claim decides; an unreadable claim time is not stale."""
+    owner = owner_of(order)
+    if not owner.startswith(STATION_SESSION):
+        return _owner_silent_s(owner, now)
+    try:
+        claimed = time.mktime(time.strptime(str((order.get("owner") or {}).get("at")), "%Y-%m-%dT%H:%M:%S"))
+    except (ValueError, OverflowError):
+        return 0.0
+    return max(0.0, (time.time() if now is None else now) - claimed)
 
 
 def _owner_silent_s(session_id: str, now: float | None = None) -> float:
