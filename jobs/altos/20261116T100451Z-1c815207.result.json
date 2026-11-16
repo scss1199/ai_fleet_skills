@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261116T100451Z-1c815207",
+  "host": "altos",
+  "started_at": "2026-11-16T10:12:16+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_altos cwd=ai_altos auth=cli_credentials_file 80.6s]\n兩個指令都成功結束（exit=0），FAMES bundle 版本是 **1.45.322**。要注意：指令 1 的輸出含 `\"publication\": {\"ok\": true, \"commit\": \"92c6328e\"}`，代表 hygiene 在 `--apply` 時自己發布了一個 commit。這是腳本本身的行為，我沒有另外做任何改動。\n\n**1. `python _skill\\engines\\fleet-hygiene.py run --apply --force`**（最後 12 行）\n```\n  \"runtime_cves\": 2,\n  \"seat_budget\": \"applied seats=2 deny+0 pins->sonnet 0\",\n  \"moved\": 0,\n  \"planned_bytes\": 0,\n  \"applied\": true\n },\n \"publication\": {\n  \"ok\": true,\n  \"commit\": \"92c6328e\",\n  \"attempts\": 1\n }\n}\n```\n\n**2. `python _skill\\engines\\apply_seat_budget.py --dry-run`**（總共只輸出 5 行，全部列出）\n```\nWOULD ai_altos: deny +0 [] agent=kept\nWOULD ai_darkhero: deny +0 [] agent=kept\nSKIP jci_taipei: no transcript in 30 days\nSKIP jci_taipei_committee_profiles: no transcript in 30 days\nSKIP jci_taipei_plaud_flow: no transcript in 30 days\n```\n\n**`_skill\\fleet-skills\\fames\\bundle-manifest.json` 的 `version`**：`1.45.322`\n\n沒有下一步。\n",
+  "stderr": "",
+  "finished_at": "2026-11-16T10:13:37+00:00"
+}
