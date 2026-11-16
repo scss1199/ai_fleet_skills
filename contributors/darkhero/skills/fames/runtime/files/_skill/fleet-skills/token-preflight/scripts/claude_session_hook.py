@@ -796,19 +796,22 @@ def _expand_frame(prompt: str) -> str:
         return ""
 
 
-def _article_seen(prompt: str) -> str:
+def _article_seen(prompt: str, session_id: str = "") -> str:
     """operator 2026-11-03: a link pasted into any seat answers what already happened to it, so nothing is read twice.
-    "" without a link, for an unknown link or on any error (_skill/engines/f1s_apply.py). Never raises."""
+    2026-11-16: a prompt naming a tool an article recipe checked gets that one RECIPE line (f1s_apply.recipe_hint: whole-word
+    tool name only, RECIPE_HINTS per conversation). "" without either, or on any error (_skill/engines/f1s_apply.py). Never raises."""
     path = HUB / "_skill" / "engines" / "f1s_apply.py"
     try:
-        if "http" not in (prompt or ""):
+        if len((prompt or "").strip()) < 4:
             return ""
         spec = importlib.util.spec_from_file_location("fames_hook_f1s_apply", path)
         if not path.is_file() or spec is None or spec.loader is None:
             return ""
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        return str(module.seen_context(prompt) or "")
+        seen = str(module.seen_context(prompt) or "") if "http" in prompt else ""
+        hint = getattr(module, "recipe_hint", None)
+        return chr(10).join(x for x in (seen, str(hint(prompt, session_id) or "") if hint else "") if x)
     except Exception:
         return ""
 
@@ -938,7 +941,7 @@ def main():
                        _charter_refresh(surface_id, session_id, cwd, at_start=False, transcript_path=transcript_path),
                        _proof_carry(session_id), "" if machine_event else _proof_recurrence(cwd),
                        "" if machine_event else _article_relay(agent, cwd, session_id),
-                       "" if machine_event else _article_seen(prompt),
+                       "" if machine_event else _article_seen(prompt, session_id),
                        "" if machine_event else _expand_frame(prompt)):
             if update:
                 context=(context+"\n"+update).strip()
