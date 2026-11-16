@@ -34,6 +34,7 @@ import argparse
 import fnmatch
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -162,13 +163,18 @@ def _hub_rel(path: str) -> str:
 
 
 def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None = None, routine: bool = False,
-          ledger: bool = False) -> dict:
-    """ledger=True: an engine reads the answer back into its own table (f1s_fanout), so any answer closes the order."""
+          ledger: bool = False, machine: dict | None = None) -> dict:
+    """ledger=True: an engine reads the answer back into its own table (f1s_fanout), so any answer closes the order.
+    machine={...}: an engine issues it from inside a seat's own session (Stop hook), so the curator-session check is
+    skipped; the order is marked `"machine": true` and the dict's fields (e.g. "gap") are stored on it. Never routine-free."""
     cwd = cwd or os.getcwd()
     if not (do or "").strip():
         raise ValueError("an order needs its full prompt text (--do or --prompt-file)")
-    _require_curator(cwd, "issues orders")
-    if seat == curator():
+    if machine is None:
+        _require_curator(cwd, "issues orders")
+    elif not is_curator(cwd):
+        raise PermissionError(f"machine issue needs the curator cwd (cwd resolves to {seat_of(cwd)})")
+    if seat == curator() and not machine:      # machine = a gap order from the curator's own report, done by a station
         raise ValueError("an order corrects another cwd, not the curator")
     if seat not in _projects._load():
         raise ValueError(f"unknown seat {seat!r}")
@@ -182,6 +188,10 @@ def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None 
     order = {"n": max((o.get("n", 0) for o in doc["orders"]), default=0) + 1, "issued_at": _now(),
              "issued_from": os.path.abspath(cwd), "title": title, "do": do,
              "freeze": [_hub_rel(p) for p in freeze], "forbid": list(forbid), "status": "open"}
+    if machine is not None:
+        routine = True
+        order["machine"] = True
+        order.update(machine)
     if routine and not freeze and not forbid:
         order["routine"] = True
         if ledger:
@@ -189,6 +199,124 @@ def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None 
     doc["orders"].append(order)
     _save(seat, doc)
     return order
+
+
+# operator 2026-11-17: 「還沒解決的 < 推理應當如何解決過程自動去補缺口」 — the "not solved yet" bullets of a final report
+# become routine orders for the conversation's own seat; F1S hands an unowned one to a lean station after 2 h.
+RUN_UNTIL_DONE = os.path.join(REGISTRY, "run-until-done.json")
+GAP_PER_DAY = 6
+GAP_MAX_ITEMS = 5
+GAP_MIN_CHARS = 12
+GAP_DEDUPE_S = 14 * 86400
+GAP_CONTEXT_CHARS = 1200
+GAP_SKIP_SEATS = ("quant", "fracdigi", "kyloren_quant", "ai_accountancy")
+GAP_HEADINGS = ("還沒解決的", "還沒解決", "尚未解決", "未解決", "還沒做的", "未完成", "not solved yet", "unresolved")
+GAP_OPERATOR_CALLS = ("需要你決定", "授權", "你點頭", "operator 親手", "金鑰", "永久刪除")
+_BULLET = re.compile(r"^\s*(?:[-*•])\s+(.*\S)\s*$")
+_HEADING_MARKS = "#*:： \t"
+
+
+def _heading_text(line: str) -> str:
+    return line.strip().strip(_HEADING_MARKS).strip().lower()
+
+
+def _is_heading(line: str) -> bool:
+    s = line.strip()
+    return s.startswith("#") or bool(re.fullmatch(r"\*\*[^*]+\*\*\s*[:：]?", s)) or bool(re.fullmatch(r"__[^_]+__\s*[:：]?", s))
+
+
+def gap_items(text: str) -> list[str]:
+    """Bullets under a 「還沒解決的」-style heading of a final reply, minus short ones and the operator's own calls."""
+    items: list[str] = []
+    in_section = False
+    blank = False
+    for line in (text or "").splitlines():
+        if not in_section:
+            if _is_heading(line) and _heading_text(line) in GAP_HEADINGS:
+                in_section, blank = True, False
+            continue
+        if not line.strip():
+            blank = True
+            continue
+        if "沒有下一步" in line:
+            break
+        bullet = _BULLET.match(line)
+        if bullet:
+            blank = False
+            items.append(bullet.group(1))
+            continue
+        if _is_heading(line):
+            if _heading_text(line) in GAP_HEADINGS:
+                blank = False
+                continue
+            break
+        if blank or not line[:1].isspace():
+            break
+        # an indented line right after a bullet continues it; the bullet text stays as written on its own line
+    out = [i for i in items if len(i) >= GAP_MIN_CHARS and not any(k in i for k in GAP_OPERATOR_CALLS)]
+    return out[:GAP_MAX_ITEMS]
+
+
+def _gap_hash(item: str) -> str:
+    import hashlib
+    return hashlib.sha1(" ".join(item.split()).lower().encode("utf-8")).hexdigest()
+
+
+def _gap_switch() -> bool:
+    """`live_wake.gap_orders` in run-until-done.json: default on, false/0 off; unreadable = on (fail open like its neighbours)."""
+    try:
+        with open(RUN_UNTIL_DONE, encoding="utf-8-sig") as fh:
+            value = (json.load(fh).get("live_wake") or {}).get("gap_orders", True)
+    except (OSError, ValueError, AttributeError):
+        return True
+    if isinstance(value, str):
+        return value.strip().lower() not in ("false", "0", "off", "no", "")
+    return bool(value)
+
+
+def _gap_do(item: str, context_text: str) -> str:
+    return (
+        "A conversation in this cwd ended its report with this item still unsolved:\n\n"
+        f"\"{item}\"\n\n"
+        "Surrounding reply (verbatim, for context):\n\n"
+        f"{(context_text or '')[:GAP_CONTEXT_CHARS]}\n\n"
+        "Find the root cause, make the smallest change that fixes it, and verify with a re-run test or a measurement. "
+        "Answer this order with `--evidence <path or commit:sha> --note \"<before -> after>\"`, or with "
+        "`--cannot \"<reason>\"` when it needs the operator's authority, money, a secret, permanent deletion, a new "
+        "scheduled job, or a file outside this cwd. Never ask a question."
+    )
+
+
+def issue_gaps(seat: str, items, context_text: str, session_id: str = "", now: float | None = None) -> list[int]:
+    """One machine-issued routine order per gap item for `seat`; returns the order numbers issued.
+    Guards: seat not skipped, switch on, no same item (sha1) within 14 days, at most GAP_PER_DAY per 24 h."""
+    if seat in GAP_SKIP_SEATS or not items or not _gap_switch():
+        return []
+    now = time.time() if now is None else now
+    doc = load(seat)
+
+    def age(order: dict) -> float:
+        try:
+            return now - time.mktime(time.strptime(str(order.get("issued_at")), "%Y-%m-%dT%H:%M:%S"))
+        except (ValueError, OverflowError):
+            return 0.0
+
+    seen = {o.get("gap") for o in doc["orders"] if o.get("gap") and age(o) < GAP_DEDUPE_S}
+    today = sum(1 for o in doc["orders"] if o.get("gap") and age(o) < 86400)
+    made: list[int] = []
+    for item in items:
+        digest = _gap_hash(item)
+        if digest in seen:
+            continue
+        if today >= GAP_PER_DAY:
+            break
+        order = issue(seat, "未解決缺口：" + item[:40], _gap_do(item, context_text),
+                      cwd=os.path.join(HUB, curator()), routine=True,
+                      machine={"gap": digest, "gap_session": session_id})
+        seen.add(digest)
+        today += 1
+        made.append(order["n"])
+    return made
 
 
 def deliver(seat: str, n: int, session: str, cwd: str | None = None) -> dict:
@@ -465,7 +593,8 @@ def open_orders(seat: str, session_id: str | None = None) -> list[dict]:
     orders = [o for o in load(seat)["orders"] if o.get("status") == "open"]
     if session_id is None:
         return orders
-    return [o for o in orders if not owned_by_other(o, session_id)]
+    # A gap order (issue_gaps) is station work: it never holds the conversation whose report produced it.
+    return [o for o in orders if not owned_by_other(o, session_id) and not o.get("gap")]
 
 
 STATION_SESSION = "station-"   # f1s_station.order answers under this id: the order was done outside every conversation
