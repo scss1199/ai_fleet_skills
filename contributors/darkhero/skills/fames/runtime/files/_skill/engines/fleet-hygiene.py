@@ -589,6 +589,26 @@ def stale_memories(hub: Path, root: Path | None = None) -> list[dict]:
     return out
 
 
+# 2026-11-16 (ai_darkhero proposal, article "Agent = Model + Harness"): MEMORY.md is injected into every session of its
+# seat, so its size is a per-turn tax no engine bounded (ai_darkhero 24 KB / 170 files). Advisory row per seat over the cap.
+MEM_INDEX_BYTES = 12288
+
+
+def memory_index_oversize(hub: Path, root: Path | None = None, cap: int = MEM_INDEX_BYTES) -> list[dict]:
+    """Seats whose MEMORY.md index exceeds `cap` bytes: facts stay, task logs and stale lines go (edit, never truncate)."""
+    root = root or MEMORY_ROOT
+    out: list[dict] = []
+    for seat in [hub] + seats(hub):
+        idx = root / _project_dir(seat) / "memory" / "MEMORY.md"
+        try:
+            size = idx.stat().st_size
+        except OSError:
+            continue
+        if size > cap:
+            out.append({"seat": seat.name, "bytes": size, "cap": cap, "files": len(list(idx.parent.glob("*.md"))) - 1})
+    return out
+
+
 # ------------------------------------------------------------------ runtime CVEs (ai_darkhero proposal 2026-11-13)
 # The CVE-2026-111497 sweep (local Node 24.14.1, three cwds on node:22-alpine, brotli 1.2.0) was done by hand; the
 # same comparison is mechanical: Node lines against nodejs.org/dist/index.json (its `security` flag), seat Python
@@ -726,6 +746,10 @@ def check(hub: Path, now: float | None = None) -> dict:
     except Exception as exc:  # noqa: BLE001
         mems = f"UNKNOWN: {type(exc).__name__}"
     try:
+        mem_idx = memory_index_oversize(hub)
+    except Exception as exc:  # noqa: BLE001
+        mem_idx = f"UNKNOWN: {type(exc).__name__}"
+    try:
         leaks = producers(hub)
     except Exception as exc:  # noqa: BLE001 — a hygiene check never takes the rider down
         leaks = f"UNKNOWN: {type(exc).__name__}"
@@ -745,7 +769,7 @@ def check(hub: Path, now: float | None = None) -> dict:
     return {"seats": rows, "scheduled_tasks": scheduled_task_findings(hub), "hub_stale_agent_worktrees": hub_wt,
             "counts": {k: sum(1 for r in rows if r["activity"] == k) for k in ("ACTIVE", "IDLE", "DORMANT")},
             "violations": sum(len(r["findings"]) for r in rows),
-            "producers": leaks, "retention_antipatterns": anti, "stale_memories": mems, "runtime_cves": cves}
+            "producers": leaks, "retention_antipatterns": anti, "stale_memories": mems, "memory_index_oversize": mem_idx, "runtime_cves": cves}
 
 
 # ------------------------------------------------------------------ sweep
@@ -1099,6 +1123,7 @@ def run(hub: Path = HUB, host: str | None = None, apply: bool = False, force: bo
                            "producer_leaks": chk["producers"] if isinstance(chk["producers"], str) else len(chk["producers"]),
                            "retention_antipatterns": chk["retention_antipatterns"] if isinstance(chk["retention_antipatterns"], str) else len(chk["retention_antipatterns"]),
                            "stale_memories": chk["stale_memories"] if isinstance(chk["stale_memories"], str) else len(chk["stale_memories"]),
+                           "memory_index_oversize": chk["memory_index_oversize"] if isinstance(chk["memory_index_oversize"], str) else len(chk["memory_index_oversize"]),
                            "runtime_cves": chk["runtime_cves"] if isinstance(chk["runtime_cves"], str) else len(chk["runtime_cves"]),
                            "seat_budget": (f"{'applied' if sb['applied'] else 'planned'} seats={sb['seats']} deny+{sb['deny_rows']} pins->sonnet {sb['pins_moved']}" if sb.get("ok") else "error: " + str(sb.get("error"))), "moved": sw["moved"], "planned_bytes": sw["planned_bytes"], "applied": apply}}
         doc["seconds"] = round(time.time() - t0, 1)
@@ -1160,7 +1185,7 @@ def main(argv=None) -> int:
     elif a.cmd == "cves":
         out = runtime_cves(HUB)
     elif a.cmd == "memories":
-        out = stale_memories(HUB)
+        out = {"stale": stale_memories(HUB), "index_oversize": memory_index_oversize(HUB)}
     elif a.cmd == "status":
         host = this_host()
         out = {"host": host, "state": _load(OUT / f"{host}.state.json", {}), "report": _load(OUT / f"{host}.json", {}).get("summary")}
