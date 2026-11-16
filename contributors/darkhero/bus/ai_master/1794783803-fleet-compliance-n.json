@@ -1,0 +1,8 @@
+{
+  "id": "1794783803-fleet-compliance-n",
+  "from": "fleet-compliance",
+  "at": "2026-11-16 07:03:23",
+  "text": "[fleet-compliance] 艦隊合規變動（HubClock 自動審計，勿手動跑）\nblocking=0 · red=ai_darkhero_integration,ai_fintrend,ai_news,ai_portal · inbox Σ=179\n報告: _logs/fleet/compliance-report.md\nJSON: _logs/fleet/compliance-report.json",
+  "kind": "note",
+  "relayed_from": "dark-hero-z790"
+}
