@@ -1,0 +1,38 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261116T035925Z-6f57aca4",
+  "host": "altos",
+  "started_at": "2026-11-16T04:02:18+00:00",
+  "kind": "prompt",
+  "ok": false,
+  "blocker": "claude_auth_unverified",
+  "check": {
+    "cli": "C:\\Users\\USER\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Anthropic.ClaudeCode_Microsoft.Winget.Source_8wekyb3d8bbwe\\claude.EXE",
+    "cli_ok": true,
+    "auth_source": "cli_credentials_file",
+    "auth_present": true,
+    "auth_state": "present_unverified",
+    "auth_ok": false,
+    "enabled": true,
+    "probe": "fail",
+    "probe_stamp": {
+      "found": true,
+      "ok": false,
+      "auth_source": "cli_credentials_file",
+      "age_sec": 0.0,
+      "fresh": true,
+      "ttl_sec": 43200.0
+    },
+    "ready": false,
+    "gateway": {
+      "enabled": true,
+      "healthy": false,
+      "detail": "gateway_unreachable:URLError",
+      "base_url": "http://127.0.0.1:20128"
+    },
+    "probe_err": "claude_local_rc1:Failed to authenticate: OAuth session expired and could not be refreshed",
+    "blocker": "claude_auth_unverified",
+    "blocker_detail": "claude_local_rc1:Failed to authenticate: OAuth session expired and could not be refreshed"
+  },
+  "finished_at": "2026-11-16T04:02:28+00:00"
+}
