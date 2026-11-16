@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261116T100451Z-1c815207",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Run exactly these two commands in C:\\ai_workspace and print the last 12 output lines of each verbatim in your FIRST and only reply (the full lines, even if a hook later asks for a delta only). Change nothing else.\n1. python _skill\\engines\\fleet-hygiene.py run --apply --force\n2. python _skill\\engines\\apply_seat_budget.py --dry-run\nAlso print the version field of _skill\\fleet-skills\\fames\\bundle-manifest.json. If a command fails, quote the error text. No installs, no scheduled tasks, no visible windows.\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-11-16T10:04:51+00:00",
+  "expires_at": "2026-11-18T10:04:51+00:00"
+}
