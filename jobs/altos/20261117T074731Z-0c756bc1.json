@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261117T074731Z-0c756bc1",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Read-only search on this machine's D:\\ drive. Change nothing, copy nothing, delete nothing, no installs, no scheduled tasks, no visible windows.\n\nGoal: the operator says the audio for the JCI Taipei 才能發展委員會 (idvdev) 第八次會議 held 2026-09-21 (files \"錄製 (4).m4a\" and \"木盆 3.m4a\") was found on D:\\ of this machine. Find the sign-in sheet (簽到表) of that meeting and any other material of the same meeting (agenda/議程, photos, group photo/大合照, minutes drafts).\n\nSteps:\n1. Locate \"錄製 (4).m4a\" and \"木盆 3.m4a\" anywhere under D:\\ (use es.exe if present, else PowerShell Get-ChildItem -Recurse -ErrorAction SilentlyContinue). Print their full paths, sizes, LastWriteTime.\n2. List EVERY file in the folder(s) containing them and their sibling/parent folders (one level up), with size and LastWriteTime.\n3. Search all of D:\\ for files whose name contains any of: 簽到, signin, sign-in, 0921, 20260921, 9月21, 9-21, 才能, 第八次, idvdev; and for image/pdf/docx/xlsx files with LastWriteTime between 2026-09-21 00:00 and 2026-09-23 23:59 local time. Print full path, size, LastWriteTime.\n4. For every image file found in steps 2-3 that is dated 2026-09-21..23, describe what it shows (open it and look): is it a handwritten sign-in sheet, a group photo, a slide, other.\n5. For each candidate sign-in sheet or group photo, print its SHA-256.\n\nReply with one table of findings (path | size | time | what it is | sha256) and a one-line verdict: sign-in sheet FOUND (path) or NOT FOUND. Print the full table in your first and only reply even if a hook asks for a delta only.\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-11-17T07:47:31+00:00",
+  "expires_at": "2026-11-19T07:47:31+00:00"
+}
