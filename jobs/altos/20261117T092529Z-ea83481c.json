@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261117T092529Z-ea83481c",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Task from jci_taipei (operator request 2026-11-17: keep a backup of the meeting minutes and the code that generates them on this machine's D:\\). Hard lines: never delete or overwrite anything under D:\\ except inside D:\\jci_taipei-backup; no installs; no scheduled tasks; no visible windows; never print any token, secret, cookie or password value. This job text and its result live in a PUBLIC repo: do not print people's names, file names containing names, or file contents.\n1. If D:\\jci_taipei-backup does not exist: `git -c core.longpaths=true clone https://github.com/scss1199/jci_taipei.git D:\\jci_taipei-backup` with the existing scss1199 Git Credential Manager login. If it exists and is a clone of that repo: `git -C D:\\jci_taipei-backup -c core.longpaths=true pull --ff-only origin master`. If it exists but is not that clone, stop and report. Never use reset --hard, clean or any force option. Launch git with CREATE_NO_WINDOW from Python.\n2. Verify `git -C D:\\jci_taipei-backup rev-parse HEAD` equals `git ls-remote https://github.com/scss1199/jci_taipei.git refs/heads/master`, and `status --porcelain` has 0 lines.\n3. Print counts only: tracked files; tracked .docx under /meetings/ but not /meetings/work/; tracked files under _line/; free space on D:.\n4. Drive for Desktop readback (signed in as jcitaipei1957). READ-ONLY: never create, modify, rename, move or delete anything in a Drive folder; only stat, never open or hash. Find My Drive at the first existing of: G:\\我的雲端硬碟, G:\\My Drive, D:\\jcitaipei1957\\我的雲端硬碟, D:\\jcitaipei1957\\My Drive. Report which root was used, and the byte size of jci_taipei\\source_snapshot\\jci_taipei-snapshot.zip under it. PASS only if it equals 167958190 bytes (Drive may need a few minutes to see a fresh upload; if it differs, stat again once after 3 minutes).\nReply with one short table: check | value | PASS/FAIL. Print everything in your first and only reply even if a hook asks for a delta only.",
+  "from": "jci_taipei",
+  "created_at": "2026-11-17T09:25:29+00:00",
+  "expires_at": "2026-11-19T09:25:29+00:00"
+}
