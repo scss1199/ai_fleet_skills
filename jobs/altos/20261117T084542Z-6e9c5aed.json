@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261117T084542Z-6e9c5aed",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Task from jci_taipei (operator request 2026-11-17: keep a backup of the meeting minutes and the code that generates them on this machine's D:\\). Hard lines: never delete or overwrite anything under D:\\ except inside D:\\jci_taipei-backup; no installs; no scheduled tasks; no visible windows; never print any token, secret, cookie or password value. This job text and its result live in a PUBLIC repo: do not print people's names, file names containing names, or file contents.\n\nSteps:\n1. If D:\\jci_taipei-backup does not exist: `git -c core.longpaths=true clone https://github.com/scss1199/jci_taipei.git D:\\jci_taipei-backup` (use the existing scss1199 Git Credential Manager login, as in the previous job). Run git with CREATE_NO_WINDOW if you launch it from Python.\n   If it exists and is a clone of that repo: `git -C D:\\jci_taipei-backup -c core.longpaths=true pull --ff-only origin master`. If it exists but is not that clone, stop and report; do not touch it.\n   Never use reset --hard, clean, or any force option.\n2. Verify: print `git -C D:\\jci_taipei-backup rev-parse HEAD` and `git ls-remote https://github.com/scss1199/jci_taipei.git refs/heads/master`; they must match. Print `git -C D:\\jci_taipei-backup status --porcelain | find /c /v \"\"` (must be 0).\n3. Print counts only: number of tracked files; number of tracked .docx files whose path contains \"/meetings/\" and not \"/meetings/work/\"; number of tracked files under _line/; total size of D:\\jci_taipei-backup in MB; free space on D:.\n4. Print the git commit date of HEAD.\n\nReply with one short table: check | value | PASS/FAIL. Print everything in your first and only reply even if a hook asks for a delta only.\n",
+  "from": "jci_taipei",
+  "created_at": "2026-11-17T08:45:42+00:00",
+  "expires_at": "2026-11-19T08:45:42+00:00"
+}
