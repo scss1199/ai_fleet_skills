@@ -49,6 +49,7 @@ SESSION_SCOPE = os.path.join(REGISTRY, "f1s-session-scope.json")  # {"sessions":
 TECHNIQUES = os.path.join(REGISTRY, "f1s-apply.json")
 UNCLAIMED_AFTER_S = 3600
 STALE_OWNER_AFTER_S = 6 * 3600  # owner transcript silent this long: the claim blocks every other chat (ai_metadata #14/#15, 11-10)
+HANDOVER_AFTER_S = 3600  # owner transcript silent this long (the cache TTL): a same-seat chat holding evidence may answer
 CLAUDE_PROJECTS = os.path.join(os.path.expanduser("~"), ".claude", "projects")
 CURATOR_FALLBACK = "ai_darkhero"
 REVIEW_SAMPLE = 8       # one routine order in this many still gets the curator's review
@@ -423,9 +424,13 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
         raise ValueError(f"order #{n} is {order['status']}, not open")
     sid = _session_id(session)
     if owner_of(order) and owner_of(order) != sid:
-        # ai_trader 2026-11-07..09: the main chat answered #87 that its Fable session had claimed, from a shell
-        # drifted to the hub root; only the owner, or the curator's own session (not its cwd), may answer it.
-        _require_curator(cwd, f"answers order #{n} owned by conversation {owner_of(order)[:8]}")
+        if evidence and _silent_owner_handover(order, seat, cwd, sid):
+            order["owner"] = {"session": sid, "from": os.path.abspath(cwd), "at": _now(), "by": "handover",
+                              "took_from": owner_of(order)}
+        else:
+            # ai_trader 2026-11-07..09: the main chat answered #87 that its Fable session had claimed, from a shell
+            # drifted to the hub root; only the owner, or the curator's own session (not its cwd), may answer it.
+            _require_curator(cwd, f"answers order #{n} owned by conversation {owner_of(order)[:8]}")
     order["status"] = "done" if evidence else "cannot"
     order["answer"] = {"at": _now(), "from": os.path.abspath(cwd), "session": sid,
                        "evidence": [p if p.startswith(COMMIT) else os.path.abspath(os.path.join(cwd, p)) for p in evidence],
@@ -438,6 +443,22 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
         order.update(status="closed", closed_at=_now(), closed_from=MECHANICAL)
     _save(seat, doc)
     return order
+
+
+def _silent_owner_handover(order: dict, seat: str, cwd: str, sid: str) -> bool:
+    """True when a conversation of the same seat may answer, with evidence, an order another conversation owns: the owner's
+    transcript exists and was last written HANDOVER_AFTER_S ago or more. Third time the finished work of a seat waited for
+    the curator behind a silent owner (ai_metadata #14/#15 11-10, #27 11-11, ai_ziyaoastro #57/#58 11-17: 2.1 h, 3.3 h, 5 h
+    silent, all under the 6 h STALE line). A missing transcript or unreadable projects dir is unknown, not silent, and a
+    station- owner has no transcript: those stay with the curator. The session's own folder decides the seat, not the shell."""
+    owner = owner_of(order)
+    if not sid or owner.startswith(STATION_SESSION):
+        return False
+    where = _session_cwd() or cwd
+    if seat_of(where) != seat or is_curator(where):
+        return False
+    silent = _owner_silent_s(owner)
+    return HANDOVER_AFTER_S <= silent < float("inf")
 
 
 def claim(seat: str, n: int, release: bool = False, cwd: str | None = None, session: str | None = None) -> dict:
@@ -831,7 +852,8 @@ def _injection(seat: str, session_id: str = "") -> str:
     for o in orders:
         extra = "".join(f" [{k}: {', '.join(o[k])}]" for k in ("freeze", "forbid") if o.get(k))
         if owned_by_other(o, session_id):
-            lines.append(f"#{o['n']} {o['title']}: 由對話 {owner_of(o)[:8]} 負責中，本對話讀過即可，不要 answer、不要停工{extra}")
+            lines.append(f"#{o['n']} {o['title']}: 由對話 {owner_of(o)[:8]} 負責中，本對話讀過即可，不要 answer、不要停工"
+                         f"（例外：負責對話靜默滿 {HANDOVER_AFTER_S // 3600} 小時且你手上已有完成證據，answer --evidence 即接手）{extra}")
         else:
             lines.append(f"#{o['n']} {o['title']}: {o['do']}{extra}")
     lines.append(f"回報: python {HUB}/_skill/engines/curator_orders.py answer {seat} <n> --evidence <commit:SHA 或既有的程式／測試檔路徑；不要為了回報新開檔> "
