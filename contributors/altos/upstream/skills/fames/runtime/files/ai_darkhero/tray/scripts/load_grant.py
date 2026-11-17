@@ -65,7 +65,7 @@ LEARN_TTL_S = 6 * 3600.0
 # Hold (operator 2026-11-17: 「使用它很高機率會當機…除非我們找到一個穩定保證不會當機的策略再真的給A770負載」): an owner whose
 # name starts with one of these is refused outright, before any sensor is read, on every host and in every posture.
 # Lifting it is the operator's decision: remove the prefix here, re-run load_grant_conformance.py, ship.
-HELD_OWNERS = ("sdnext",)
+HELD_OWNERS: tuple[str, ...] = ()  # lifted by the operator 2026-11-17: 「同時解除 A770 hold，照清單開跑」
 
 
 def held(owner: str) -> str | None:
