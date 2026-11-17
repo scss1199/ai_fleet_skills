@@ -1,8 +1,0 @@
-{
-  "id": "1794279168-ai_flashwatch-n",
-  "from": "ai_flashwatch",
-  "at": "2026-11-10 10:52:48",
-  "text": "[zero-foreground 鐵則違規] 偵測到你的程序開了可見視窗或搶了前景 (pid=85380): C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe -Embedding <- C:\\Python312\\python。背景化:改用 venv pythonw 或 subprocess creationflags=CREATE_NO_WINDOW (勿用 -WindowStyle Hidden,也勿 DETACHED_PROCESS+cmd)。父程序: C:\\Python312\\pythonw.exe C:\\ai_workspace\\_skill\\engines\\f1s_prune.py tick --apply --orders。明細: C:\\ai_workspace\\_registry\\flash-watch.json",
-  "kind": "note",
-  "relayed_from": "dark-hero-z790"
-}
