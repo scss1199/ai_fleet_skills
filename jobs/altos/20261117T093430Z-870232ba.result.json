@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261117T093430Z-870232ba",
+  "host": "altos",
+  "started_at": "2026-11-17T09:37:01+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_altos cwd=ai_altos auth=cli_credentials_file 306.9s]\nGoogle Drive 已改成鏡像（雙向同步）模式，「我的雲端硬碟」直接放在 `D:\\jcitaipei1957` 本身，中間沒有另一層子資料夾。快照 zip 已完整下載，大小 167958190 bytes，跟預期一樣。過程中只跳出一個要求重新啟動 Drive 的對話框，我選了「立即重新啟動」；沒有出現任何提到刪除檔案的對話框。\n\n| check | value | PASS/FAIL |\n|---|---|---|\n| 0 事前檢查 `D:\\jcitaipei1957` | 存在，0 個項目（含隱藏檔） | PASS |\n| 1 能否操作桌面 UI | 原本沒裝 pywinauto、uiautomation、comtypes；用 `pip install --user pywinauto` 裝了 0.6.9，不需要 admin；UIA 讀得到 Drive 的 WebView2 介面 | PASS |\n| 2a 「我的筆記型電腦」的 jcitaipei1957（0 byte） | 取消勾選「與 Google 雲端硬碟保持同步」後按「完成」再「儲存」；沒有刪除對話框，畫面顯示「沒有任何資料夾會同步」 | PASS |\n| 2b 「Google 雲端硬碟」分頁 | 選了「雙向同步檔案」（這個版本的鏡像選項），點「變更資料夾位置」選 `D:\\jcitaipei1957`，再「確認位置」→「儲存」→「立即重新啟動」 | PASS |\n| 2c 關閉偏好設定 | Drive 重新啟動後視窗自動關閉 | PASS |\n| 3a roots 資料表（以 `?mode=ro` 唯讀開啟） | root_id 2，title `jcitaipei1957`，is_my_drive=1，路徑 `D:\\jcitaipei1957`；原本的電腦備份那一列（root_id 1）已經不見 | PASS |\n| 3b My Drive 資料夾位置 | 就是 `D:\\jcitaipei1957` 本身，沒有子資料夾；最上層是 `jci_taipei`，裡面 6 個項目 | PASS（跟任務設想的路徑不同） |\n| 3c `D:\\jcitaipei1957\\jci_taipei\\source_snapshot\\jci_taipei-snapshot.zip` | 存在，167958190 bytes | PASS |\n| 3d 同步進度 | 已有 617 個檔案；`.tmp.drivedownload` 裡還有 10 個項目，表示還在下載中 | 進行中 |\n| 3e D: 剩餘空間 | 456.18 GB | PASS |\n| G: 串流磁碟 | 已經不存在 | PASS |\n\n除了 Drive 為了同步自己寫進 `D:\\jcitaipei1957` 的檔案，我沒有刪除、移動或改名任何檔案，也沒有建排程、改 registry 或改 DriveFS 的資料庫。roots 資料表裡的帳號 ID 沒有印出來。\n\n我寫的操作腳本 `ui.py`、`pick.py` 和驗證腳本 `probe.py` 在 `C:\\ai_workspace\\ai_altos\\evidence\\drive-mirror\\`，目前沒有 commit。\n\n沒有下一步。\n",
+  "stderr": "",
+  "finished_at": "2026-11-17T09:42:10+00:00"
+}
