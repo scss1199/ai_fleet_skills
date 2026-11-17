@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-17T09:43:05.727668+00:00",
+  "observed_at": "2026-11-17T10:43:05.600595+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -382,14 +382,14 @@
       {
         "agent": "jci_taipei",
         "surface": "claude",
-        "observed_at": "2026-11-17T17:32:55+08:00",
-        "receipt_sha256": "716de3d8bd409739b1456eaeb153409ecbc7213862c2a5608513f01e37ffb5e3"
+        "observed_at": "2026-11-17T18:35:20+08:00",
+        "receipt_sha256": "0791591d5b98f8346f622cbd694d7a41110c8b8d486c77d108b648462aa81f8c"
       },
       {
         "agent": "jci_taipei",
         "surface": "claude",
         "observed_at": "2026-11-17T17:38:32+08:00",
-        "receipt_sha256": "ffb80304d2870d6ac0e124416c9add856849308eebb238bd65b57c0f47c322a0"
+        "receipt_sha256": "2875f5e3b91ed436ae3de81823e6322cbbb1ffd4ba702b0d51835afef7549738"
       },
       {
         "agent": "ai_darkhero",
