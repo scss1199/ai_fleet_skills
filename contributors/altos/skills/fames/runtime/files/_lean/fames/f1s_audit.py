@@ -75,6 +75,7 @@ TEXTS = {
     "session_tax": HUB / "_skill" / "engines" / "audit-session-tax.py",
     "transcript_audit": HUB / "_skill" / "engines" / "f1s-transcript-audit.py",
     "git_smart": HUB / "_skill" / "engines" / "git_smart.py",
+    "cred_sync": HUB / "_skill" / "engines" / "fleet-credential-sync.py",
     "f1s_apply": HUB / "_skill" / "engines" / "f1s_apply.py",
     "fg_guard": HUB / "_skill" / "engines" / "zt-foreground-guard.py",
     "skill_hubpulse": HUB / "_skill" / "fleet-skills" / "hubpulse-ops" / "SKILL.md",
@@ -1494,6 +1495,9 @@ ELEMENTS = [
     {"id": "EVO-git-smart-order-trailer-20261117", "element": "ai_theater card 647ccaab36: 11 of 60 commits named neither Why nor a task id", "verdict": "REFINE",
      "requires": None, "detail": "git_smart appends 'Order: <seat>#<n>' when --why is absent and this conversation owns exactly one open curator order of its cwd's seat; two or more stay unnamed, store failure names nothing (test_order_trailer_names_the_one_claimed_order_when_why_is_absent)",
      "check_text": ("git_smart", "def _claimed_order")},
+    {"id": "EVO-ig-current-user-expired-20261117", "element": "ai_darkhero 2026-11-17 F1S proposal: IG session sssc1219 dead since ~21:47 while credential-fleet.json said OK (current_user answers the logged-out home page with HTTP 200)", "verdict": "REFINE",
+     "requires": None, "detail": "fleet-credential-sync probes instagram current_user: JSON with a user object = OK, HTML or /accounts/login redirect = EXPIRED (human_step cm cookies-import), other answers demote OK to NOT_LIVE_VERIFIED (test_instagram_logged_out_home_page_is_expired; live probe on the current jar returned EXPIRED). Re-sign-in of sssc1219, finding the 21:47 jar writer and re-reading Df1dnDZGVD1/DfzzXcaykVj are cases, not rules: left to the operator sign-in (password) and the ai_metadata seat",
+     "check_text": ("cred_sync", "def ig_identity_state")},
     {"id": "KB-article-proctor-standard", "element": "YouTube Media transcript: 驗收標準必須獨立於Agent之外，防止其透過修改測試程式來掩蓋錯誤", "verdict": "INFO",
      "requires": None, "detail": "驗證標準須放Agent改不到的地方；人類監考官是F1S座位設計核心；與ClaimContract.claimState模型相符"},
 ]
