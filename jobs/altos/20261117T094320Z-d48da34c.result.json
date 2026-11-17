@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261117T094320Z-d48da34c",
+  "host": "altos",
+  "started_at": "2026-11-17T09:47:01+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_altos cwd=ai_altos auth=cli_credentials_file 46.1s]\nD:\\ 上的備份已經是最新狀態，所有檢查都 PASS。`D:\\jci_taipei-backup` 原本就存在，而且確認是該 repo 的 clone，所以這次跑的是 `pull --ff-only`，沒有重新 clone。\n\n| check | value | PASS/FAIL |\n|---|---|---|\n| 1. 備份 | 已存在且 origin 指向同一個 repo；`pull --ff-only origin master` 成功（exit 0），git 以 CREATE_NO_WINDOW 啟動 | PASS |\n| 2. HEAD 與遠端 master 一致 | `f9f529141ed1` = `f9f529141ed1` | PASS |\n| 2. `status --porcelain` | 0 行 | PASS |\n| 3. 追蹤檔案數 | 1453 | PASS |\n| 3. `/meetings/` 下的 .docx（不含 `/meetings/work/`） | 29 | PASS |\n| 3. `_line/` 下的追蹤檔案 | 236 | PASS |\n| 3. D: 剩餘空間 | 488.96 GB | PASS |\n| 4. `D:\\jcitaipei1957\\jci_taipei` 存在 | 是（只讀取大小，沒開檔、沒算 hash） | PASS |\n| 4. `jci_taipei-snapshot.zip` 大小 | 167958159 bytes，與期望值相同（第一次讀取就相符，不需要 3 分鐘後再讀） | PASS |\n\n執行用的腳本：`C:\\Users\\USER\\AppData\\Local\\Temp\\jci_backup_job\\run.py`。整個過程沒有刪除或覆蓋任何東西，沒有安裝，也沒有建立排程。\n\n沒有下一步。\n",
+  "stderr": "",
+  "finished_at": "2026-11-17T09:47:49+00:00"
+}
