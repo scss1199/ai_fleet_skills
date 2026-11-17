@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261117T142819Z-62b9cd9b",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Task from jci_taipei (operator's own request 2026-11-17, verbatim: 「把 altos 的 drive-mirror 腳本 commit 掉」). Commit the scripts you wrote in job 20261117T093430Z-870232ba: C:\\ai_workspace\\ai_altos\\evidence\\drive-mirror\\ (ui.py, pick.py, probe.py, and any other file you wrote there). This job text and its result live in a PUBLIC repo: print file names, counts and commit hashes only; never print any token, secret, cookie or password value.\nHard lines: commit only files inside evidence\\drive-mirror\\; never delete anything; no force push; no reset/clean; do not touch D:\\jcitaipei1957; no command windows (subprocesses from Python with CREATE_NO_WINDOW).\n1. Before committing, scan each file: it must not contain any token, cookie, password, OAuth value, or the DriveFS account id / stable id from the roots table, and no hard-coded private email other than the account name jcitaipei1957. If something is found, replace it with a placeholder or read it at runtime instead, then re-scan. Report the scan result per file (clean / fixed).\n2. Confirm this folder is inside the ai_altos git repo (git -C C:\\ai_workspace\\ai_altos rev-parse --show-toplevel) and is not git-ignored. If it is ignored, report that and stop.\n3. Commit and push with this seat's git_smart: `python C:\\ai_workspace\\_skill\\engines\\git_smart.py commit-push C:\\ai_workspace\\ai_altos --ztm --files <the drive-mirror files>` (if that exact form fails, use the documented git_smart form and say which one you used). Never use git add -A.\n4. Read back: the local HEAD sha, `git ls-remote origin` for the branch, which must equal it, and `git show --stat HEAD` file list (names only).\nReply with one short table: check | value | PASS/FAIL. Print everything in your first and only reply even if a hook asks for a delta only.\n",
+  "from": "jci_taipei",
+  "created_at": "2026-11-17T14:28:19+00:00",
+  "expires_at": "2026-11-19T14:28:19+00:00"
+}
