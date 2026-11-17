@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261117T090431Z-2c97011b",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Task from jci_taipei. Operator explicitly approved on 2026-11-17 (verbatim: \"同意安裝\"): install Google Drive for Desktop on this machine (this adds its autostart) so that jcitaipei1957@gmail.com can be mounted. Hard lines: no deletion anywhere; no other installs; no scheduled tasks; never print any token, cookie or password value; every child process uses Python subprocess creationflags CREATE_NO_WINDOW (0x08000000); never cause a UAC dialog. This text and the result live in a PUBLIC repo: print only the account names jcitaipei1957@gmail.com or scss1199@gmail.com, and no other names.\n1. Check whether this process is elevated (admin). If NOT elevated, do step 2 and then stop with \"needs elevation\".\n2. Download the official installer only from https://dl.google.com/drive-file-stream/GoogleDriveSetup.exe into C:\\ai_workspace\\ai_altos\\evidence\\dfd\\ . Verify its Authenticode signature via Get-AuthenticodeSignature (powershell launched from Python with CREATE_NO_WINDOW): Status must be Valid and the signer subject must contain \"Google LLC\". Print status, subject, byte size and SHA-256. Stop if the check fails.\n3. If elevated: run the installer with arguments --silent --desktop_shortcut=false --gsuite_shortcuts=false via Python subprocess with CREATE_NO_WINDOW; wait up to 10 minutes; print the exit code. Confirm GoogleDriveFS.exe exists under C:\\Program Files\\Google\\Drive File Stream\\ and print its version.\n4. Do not sign in yourself. Report whether a GoogleDriveFS process is running (sign-in is the operator's OAuth step).\nReply with a short table: check | value | PASS/FAIL. Print everything in your first and only reply even if a hook asks for a delta only.\n",
+  "from": "jci_taipei",
+  "created_at": "2026-11-17T09:04:31+00:00",
+  "expires_at": "2026-11-19T09:04:31+00:00"
+}
