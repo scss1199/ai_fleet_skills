@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261117T085553Z-e0ee9fb8",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Task from jci_taipei (operator 2026-11-17: \"altos 已登入 jcitaipei1957，接上 Drive\"). Read-only. Hard lines: no installs, no scheduled tasks, no visible windows (CREATE_NO_WINDOW only), no deletion or moves anywhere, never print any token, cookie or password value. This text and the result live in a PUBLIC repo: print no people's names and no file names other than the ones below; account names jcitaipei1957@gmail.com and scss1199@gmail.com may be printed.\n1. Find how jcitaipei1957 is signed in on this machine: Google Drive for Desktop (installed? running? mounted drive letter and account), Chrome/Edge profile (Local State profile.info_cache user_name), rclone remotes, gcloud. Report each.\n2. If Drive for Desktop mounts jcitaipei1957: under its \"My Drive\" (或「我的雲端硬碟」) find folder jci_taipei\\source_snapshot\\jci_taipei-snapshot.zip; print its byte size (expected 167957856) and whether jci_taipei contains folders jci_taipei_70 and jci_taipei_website (yes/no). Also print the full local path pattern of the jci_taipei folder (drive letter + top folder names only).\n3. If only a browser profile is signed in (no Drive for Desktop), say so; do not start any OAuth flow and do not open windows.\nReply with a short table: check | value | PASS/FAIL. Print everything in your first and only reply even if a hook asks for a delta only.\n",
+  "from": "jci_taipei",
+  "created_at": "2026-11-17T08:55:53+00:00",
+  "expires_at": "2026-11-19T08:55:53+00:00"
+}
