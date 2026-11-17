@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-17T14:57:47.023512+00:00",
+  "observed_at": "2026-11-17T15:28:07.854514+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,8 +353,51 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "UNKNOWN",
-    "native_events": [],
+    "native_state": "OBSERVED_PARTIAL_POPULATION",
+    "native_events": [
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-11-17T23:01:22+08:00",
+        "receipt_sha256": "7e881b33d62ae99f64af993fdc662c955ba054ca8b9131a2e86f74d54a6cf319"
+      },
+      {
+        "agent": "ai_ziyaoastro",
+        "surface": "claude",
+        "observed_at": "2026-11-17T23:27:21+08:00",
+        "receipt_sha256": "8206187054bf12c0c9c3b9a72d15d26bf229f76be82f530515a444c509c3820a"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-17T23:09:25+08:00",
+        "receipt_sha256": "563686dc1a1d4d717cce9d20a558031ee9d2238bd61a05ff3b0877a430f3e4e6"
+      },
+      {
+        "agent": "ai_metadata",
+        "surface": "claude",
+        "observed_at": "2026-11-17T23:19:12+08:00",
+        "receipt_sha256": "dac1fa650d45b068529e0d85a8e7f533a091013022cec5a089c42abbbce7a11e"
+      },
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-11-17T23:12:09+08:00",
+        "receipt_sha256": "8c10f70a16d9d61ee135d78bc3c201d55cf29342d4756429bfd19aa7bd96247a"
+      },
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-11-17T23:14:31+08:00",
+        "receipt_sha256": "b7d7cca89121287f59ce618c7838c613a2415a6c8c93edac63d5deea20cfe64c"
+      },
+      {
+        "agent": "ai_metadata",
+        "surface": "claude",
+        "observed_at": "2026-11-17T23:03:22+08:00",
+        "receipt_sha256": "8fb0e917a72ea07fd8368b1e68c5940c1b1cddbeb2f36964e9e75239c6996849"
+      }
+    ],
     "runtime_release_sha256": "a49c2b1114b2fa615973783044bb5aa03a1778d2e77eae180698b39573337334"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
