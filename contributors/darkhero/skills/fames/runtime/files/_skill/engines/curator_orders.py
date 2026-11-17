@@ -275,12 +275,31 @@ def _gap_switch() -> bool:
     return bool(value)
 
 
+GAP_REFS_CHARS = 600  # URLs and `code` references of the whole reply, so an item that says "this video" can be done
+
+
+def _gap_context(item: str, text: str) -> str:
+    """The reply text that ends at the item (2026-11-17 ai_darkhero#3: the head of a long reply said nothing about an
+    item near its end); the head when the item is not found or already sits inside it."""
+    at = text.find(item[:30])
+    return text[:GAP_CONTEXT_CHARS] if at <= GAP_CONTEXT_CHARS else text[at - GAP_CONTEXT_CHARS:at]
+
+
+def _gap_refs(text: str) -> str:
+    refs: list[str] = []
+    for ref in re.findall(r"https?://[^\s)>\]】」`]+|`[^`\n]{3,120}`", text):
+        if ref not in refs and sum(map(len, refs)) + len(ref) <= GAP_REFS_CHARS:
+            refs.append(ref)
+    return "References in the whole reply: " + " ; ".join(refs) + "\n\n" if refs else ""
+
+
 def _gap_do(item: str, context_text: str) -> str:
     return (
         "A conversation in this cwd ended its report with this item still unsolved:\n\n"
         f"\"{item}\"\n\n"
         "Surrounding reply (verbatim, for context):\n\n"
-        f"{(context_text or '')[:GAP_CONTEXT_CHARS]}\n\n"
+        f"{_gap_context(item, context_text or '')}\n\n"
+        f"{_gap_refs(context_text or '')}"
         "Find the root cause, make the smallest change that fixes it, and verify with a re-run test or a measurement. "
         "Answer this order with `--evidence <path or commit:sha> --note \"<before -> after>\"`, or with "
         "`--cannot \"<reason>\"` when it needs the operator's authority, money, a secret, permanent deletion, a new "
