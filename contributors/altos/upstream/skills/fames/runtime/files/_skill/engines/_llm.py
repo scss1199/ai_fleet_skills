@@ -624,6 +624,10 @@ class Pool:
             raw=self._oai(keys or [],url,messages,jsonmode,max_tokens,timeout or 90)
         else: return f"__ERR__ unknown provider {provider}"
         failed=isinstance(raw,str) and raw.startswith("__ERR__")
+        # 2026-11-16: a content-policy block (gemini `blocked:PROHIBITED_CONTENT|SAFETY|...`) refuses ONE prompt, not the
+        # provider: five of them opened the gemini circuit for every seat. The caller still gets the __ERR__ and falls to
+        # its next route; the circuit is charged nothing and an existing genuine failure streak is left untouched.
+        if failed and p=="gemini" and re.search(r"gemini-failed \(blocked:(PROHIBITED_CONTENT|SAFETY|IMAGE_SAFETY|RECITATION|BLOCKLIST|SPII)\b",raw): return raw
         # keep the real (redacted) cause in the health file: "provider-call-failed" alone hid 402/403/410 causes
         self.circuits.record(p,not failed,("provider-call-failed: "+redact(raw[8:])[:130]) if failed else "ok")
         return raw

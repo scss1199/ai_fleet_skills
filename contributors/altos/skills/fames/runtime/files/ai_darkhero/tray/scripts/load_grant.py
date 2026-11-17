@@ -73,6 +73,12 @@ def held(owner: str) -> str | None:
     return next((p for p in HELD_OWNERS if low.startswith(p)), None)
 
 
+def a770_owner(owner: str) -> bool:
+    """A job that loads the A770: it needs 15 continuous minutes of sensor record behind it (a770_window)."""
+    low = (owner or "").strip().lower()
+    return low.startswith(("sdnext",)) or "a770" in low
+
+
 def _log(row: dict) -> None:
     try:
         os.makedirs(os.path.dirname(LOG), exist_ok=True)
@@ -282,6 +288,13 @@ def try_grant(owner: str, step_w: float) -> dict:
                 "reason": f"held: {held(owner)}* may not add A770 load until the operator lifts the hold (HELD_OWNERS)"}
     if unmetered_host():
         return {"ok": True, "owner": owner, "step_w": step_w, "charged_w": 0.0, "reason": "unmetered_host"}
+    pre = None
+    if a770_owner(owner):
+        import a770_window
+
+        pre = a770_window.precheck(time.time(), RING)
+        if not pre["ok"]:
+            return {"ok": False, "owner": owner, "step_w": step_w, "reason": pre["reason"]}
     os.makedirs(os.path.dirname(LOCK), exist_ok=True)
     with open(LOCK, "a+b") as lock:
         lock.seek(0)  # lock and unlock the same byte: "a+b" opens positioned at the end
@@ -311,6 +324,8 @@ def try_grant(owner: str, step_w: float) -> dict:
                     json.dump({"owner": owner, "step_w": step_w, "epoch": now, "power": power,
                                "recent": recent}, fh)
                 os.replace(tmp, STATE)
+                if pre is not None:
+                    a770_window.open_window(owner, now, pre, "grant")
             return {**result, "owner": owner, "step_w": step_w, "power": power}
         finally:
             lock.seek(0)

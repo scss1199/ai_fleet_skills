@@ -1491,6 +1491,9 @@ ELEMENTS = [
      "requires": None, "detail": "rejected as duplicate of EVO-judge-every-article-20261111: the fleet unit is f1s_apply.py (every technique gets a fate), the signal-class half stays in ai_trader; ledger marked seat-specific so it is not proposed again; no text added"},
     {"id": "EVO-jci-yearbook71-sheet-20261117", "element": "jci_taipei memory jci-yearbook71-sheet re-sent (ledger d11bcbfab3ab, fourth time)", "verdict": "INFO",
      "requires": None, "detail": "rejected as duplicate of EVO-jci-sheet-formula-cols-20261110: jci-drive-line-web-transfer carries the 收稿／名冊類 sheet line; ledger marked integrated, which is what the three earlier ticks skipped; no text added"},
+    {"id": "EVO-git-smart-order-trailer-20261117", "element": "ai_theater card 647ccaab36: 11 of 60 commits named neither Why nor a task id", "verdict": "REFINE",
+     "requires": None, "detail": "git_smart appends 'Order: <seat>#<n>' when --why is absent and this conversation owns exactly one open curator order of its cwd's seat; two or more stay unnamed, store failure names nothing (test_order_trailer_names_the_one_claimed_order_when_why_is_absent)",
+     "check_text": ("git_smart", "def _claimed_order")},
     {"id": "KB-article-proctor-standard", "element": "YouTube Media transcript: 驗收標準必須獨立於Agent之外，防止其透過修改測試程式來掩蓋錯誤", "verdict": "INFO",
      "requires": None, "detail": "驗證標準須放Agent改不到的地方；人類監考官是F1S座位設計核心；與ClaimContract.claimState模型相符"},
 ]

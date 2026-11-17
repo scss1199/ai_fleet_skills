@@ -45,7 +45,9 @@ Playwright CLI = `microsoft/playwright-cli`（Apache-2.0）。F1S 只取做法�
    ```
    規則是 Vercel Web Interface Guidelines 裡能從原始碼判定的部分（禁縮放、`transition: all`、拿掉 outline 沒補
    focus-visible、圖片沒 alt、div/span 當按鈕、表單欄位沒 label、純圖示按鈕沒 aria-label、擋貼上、動畫沒有
-   reduced-motion）。改動前後各跑一次，數字只能下降；新增的 finding 要修或寫明理由。其餘要判斷的規則
+   reduced-motion；2026-11-16 加動效／觸控七條：`ease-in`、`motion-overshoot`、`transition-slow`（>500ms）、
+   `hover-unguarded`、`viewport-height`、`tap-highlight-no-pressed`、`loading-label-swap`，見下節）。
+   改動前後各跑一次，數字只能下降；新增的 finding 要修或寫明理由。其餘要判斷的規則
    （層級、文案、深色模式、i18n）依 `https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md`
    逐條人工檢查，用 `file:line` 回報。
 5. **截圖驗證（取代 Playwright CLI，不安裝）**：在 Claude 內建瀏覽器開頁面（本機檔案先用
@@ -136,3 +138,29 @@ API 端加 `Cache-Control: private, stale-while-revalidate=<秒>`。範例：`jc
   - 換圖示前先算 accent 對按鈕底色的 WCAG 對比，低於 3:1 就不必試；用 Playwright 截 Workers 站時，用 route abort
     掉含 `_rsc=` 的請求，免得又觸發 RSC 預取風暴（jci_taipei 2026-11-06，`_inbox/from_projects/jci_taipei/kubai-icons-trial-comparison.png`）。
 - 架構圖、流程圖、時間軸：`C:/ai_workspace/_harness/tools/diagram-design/SKILL.md`，輸出單檔 HTML＋SVG，加 `--system-fonts` 就不連 Google Fonts；不存 `~/.diagram-design` profile。
+
+## 八個設計 skill 取了什麼（2026-11-16，IG reel Dfyc6qTFFRK）
+
+來源核對：Stageshow＝`benjitaylor/skills`（MIT，app icon 素材不在 MIT 內）、Impeccable＝`pbakaus/impeccable`（Apache-2.0）、
+Dimensional Drawing＝`enesozturk/dimensional-drawing`（MIT）、Awwwards MCP＝`INSANE0777/Awwwards-mcp`（MIT，npm `awwwards-mcp`）、
+Oil UI＝`oil-oil/oil-ui`（MIT）、Emil Kowalski＝`emilkowalski/skills`（MIT）、Taste Skill 已在上面、design.how＝`arla6ka/design.how`（MIT）。
+照舊只取做法，不 `npx skills add`，不加 MCP。
+
+- **機械化的（進 `ui-guideline-lint.py`，三個來源都寫同一條才收）**：ease-in 不用在 UI 進出場（Emil：200ms ease-out 比 ease-in 覺得快）；
+  cubic-bezier y 值出 0..1 會回彈；transition 超過 500ms（UI 300ms 內，modal／drawer 最多 500ms）；`:hover` 顯示東西要包
+  `@media (hover: hover)`（觸控點一下會假 hover）；`height:100vh` 要有 dvh／svh 後備（手機瀏覽器列會蓋住底部，min-height 放行）；
+  拿掉 tap highlight 就要有 `:active`／pressed 樣式；按鈕 pending 時不換字（`{saving ? "Saving…" : "Save"}`），字留著、加 spinner、設 `aria-busy`。
+  首跑全艦 14 筆新 finding，全部是真例（jci 官網 ease-in／0.6s／label swap，ziyaoastro tarot hover，ai_metadata 100vh）。
+- **判斷題（做 UI 時對照，不寫規則）**：Emil 的頻率表——一天用上百次的動作（快捷鍵、command palette）不動畫，
+  常用的（hover、列表）減到最少，偶爾的（modal、drawer、toast）標準動畫，第一次／慶祝才給 delight；時長：按鈕回饋 100–160ms、
+  tooltip 125–200ms、下拉 150–250ms、modal 200–500ms。Impeccable craft floor 的驗收：對比 4.5:1／大字 3:1、陰影要有偏移加柔邊、
+  標題上方留白多於下方、內文 65–75ch、display 最大 6rem、只有一個 authored 動作、hover／disabled／loading／error／empty 五狀態齊、
+  瀏覽器自帶的選取色／游標／捲軸／focus ring／表格數字也要套色；它的「預設不用」清單：同尺寸 icon＋標題＋文字卡片當版型、
+  eyebrow 小標（禁）、01/02/03 編號、漸層文字、>1px 彩色左邊框、`4px 4px 0` 硬陰影、emoji 當圖示、系統粗體字當 display 字。
+- **流程上取的**：Oil UI 的「先出三個方向並排比再收斂」放進第 2 步（方向沒定不動手），評審給截圖不給原始碼、不給上一輪分數；
+  design.how 的「自己的工作不能叫 verified，只能叫 self-verified」、「修過兩次的毛病變成檢查規則或腳本，不是再寫一句」、
+  「沒有腳本產出的數字不回報」——這三條就是 F1S ④⑤⑥ 的前端版，已由 PROOF 與本 lint 承擔。
+- **不收的**：Stageshow（產品示範動畫、bento 展示）與 Dimensional Drawing（元件尺寸圖）是行銷素材工具，fleet 網頁不需要，
+  ai_demo 做 jci 2027 行銷影片時再看 `references/verify.md`（framing→hierarchy→motion→polish 的逐幀驗收）；
+  Awwwards MCP 要常駐 server＋Playwright 才有 `verify_build`（band map Dice 分數＋motion 指紋）；找參考網站用它的網頁版即可，
+  不裝。Impeccable 的 hook／命令機制（`/polish`、`/audit`）只是把上面的清單變成 slash command，F1S 不另裝 plugin。

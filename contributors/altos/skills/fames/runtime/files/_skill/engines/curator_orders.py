@@ -662,7 +662,57 @@ def station_line(seat: str, now: float | None = None) -> str:
 def injection(seat: str, session_id: str = "") -> str:
     if out_of_scope(session_id):
         return ""
-    return "\n".join(t for t in (_injection(seat, session_id), station_line(seat), handoff_line(seat, session_id)) if t)
+    return "\n".join(t for t in (_injection(seat, session_id), station_line(seat), handoff_line(seat, session_id),
+                                 model_lane_line(seat, session_id)) if t)
+
+
+def model_lane_line(seat: str, session_id: str = "", transcript=None) -> str:
+    """operator 2026-11-17 Fable/Opus hybrid: the MODEL LANE line from f1s_model_lane for this conversation's own model
+    (switch away from a spent quota, or back once it reset); the curator seat also gets the refresh prompt when the plan
+    windows are unknown. "" when the transcript is not found or anything fails (fail-open)."""
+    try:
+        import f1s_model_lane as ml
+        from pathlib import Path as _Path
+        if transcript is None:
+            import glob as _glob
+            ok = session_id and session_id.replace("-", "").isalnum()
+            found = _glob.glob(os.path.join(CLAUDE_PROJECTS, "*", f"{session_id}.jsonl")) if ok else []
+            transcript = _Path(found[0]) if found else None
+        if transcript is None:
+            return ""
+        model = ""
+        with open(transcript, "rb") as fh:
+            fh.seek(max(0, os.path.getsize(transcript) - 512 * 1024))
+            for raw in reversed(fh.read().decode("utf-8", errors="replace").splitlines()):
+                if '"assistant"' in raw and '"model"' in raw:
+                    try:
+                        model = (json.loads(raw).get("message") or {}).get("model") or ""
+                    except ValueError:
+                        continue
+                    if ml.family(model):
+                        break
+        hosts = [h for h in _projects_host_ids(session_id)] if session_id else []
+        out = ml.line(hosts[0] if hosts else session_id, model, transcript=transcript)
+        if seat == curator():
+            out = "\n".join(t for t in (out, ml.stale_prompt()) if t)
+        return out
+    except Exception:
+        return ""
+
+
+def _projects_host_ids(session_id: str) -> list:
+    """Desktop host id (local_...) of a CLI transcript uuid, from ~/.claude/sessions/<pid>.json; [] when unknown."""
+    import glob as _glob
+    out = []
+    for f in _glob.glob(os.path.join(os.path.expanduser("~"), ".claude", "sessions", "*.json")):
+        try:
+            with open(f, encoding="utf-8") as fh:
+                d = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        if d.get("sessionId") == session_id and str(d.get("hostSessionId") or "").startswith("local_"):
+            out.append(d["hostSessionId"])
+    return out
 
 
 HANDOFF_OVER_K = 150

@@ -414,9 +414,42 @@ def judge(text: str, cfg: dict) -> tuple[str, str | None]:
     return "allow", "no_pending_marker"
 
 
+def _issue_gaps(doc: dict) -> None:
+    """The turn ends: the 「還沒解決的」 bullets of the final reply become routine orders for this conversation's seat
+    (curator_orders.issue_gaps; operator 2026-11-17). Silent, fail open, no model call, not for subagent stops."""
+    try:
+        if doc.get("agent_id") or doc.get("isSidechain"):
+            return
+        path = _safe_transcript_path(doc)
+        if path is None:
+            return
+        text, _ = closing_text(path)
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import curator_orders
+        items = curator_orders.gap_items(text)
+        if not items:
+            return
+        cwd = _origin_cwd(path) or str(doc.get("cwd") or "")
+        if not cwd.strip():
+            return
+        seat = curator_orders.seat_of(cwd)
+        if seat in ("", "unknown"):
+            return
+        curator_orders.issue_gaps(seat, items, text, session_id=str(doc.get("session_id") or ""))
+    except Exception:  # noqa: BLE001 - fail open: gap orders never change the hook's decision
+        pass
+
+
 def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
     """Return the hook payload to print, or None for silence (= let the turn end)."""
     cfg = cfg or _config()
+    payload = _decide(doc, cfg)
+    if payload is None and cfg.get("enabled", True) and doc.get("hook_event_name") == "Stop":
+        _issue_gaps(doc)
+    return payload
+
+
+def _decide(doc: dict, cfg: dict) -> dict | None:
     if not cfg.get("enabled", True):
         return None
     if doc.get("hook_event_name") != "Stop":
