@@ -62,6 +62,15 @@ OBSERVE_FROM_S, OBSERVE_TO_S = 30.0, 120.0
 OVERRUN_MARGIN_W = 15.0
 LEARN_KEEP = 3
 LEARN_TTL_S = 6 * 3600.0
+# Hold (operator 2026-11-17: 「使用它很高機率會當機…除非我們找到一個穩定保證不會當機的策略再真的給A770負載」): an owner whose
+# name starts with one of these is refused outright, before any sensor is read, on every host and in every posture.
+# Lifting it is the operator's decision: remove the prefix here, re-run load_grant_conformance.py, ship.
+HELD_OWNERS = ("sdnext",)
+
+
+def held(owner: str) -> str | None:
+    low = (owner or "").strip().lower()
+    return next((p for p in HELD_OWNERS if low.startswith(p)), None)
 
 
 def _log(row: dict) -> None:
@@ -268,6 +277,9 @@ def try_grant(owner: str, step_w: float) -> dict:
     """One attempt; the grant is recorded under an exclusive file lock so two jobs never step at the same moment."""
     import msvcrt
 
+    if held(owner):
+        return {"ok": False, "held": True, "owner": owner, "step_w": step_w,
+                "reason": f"held: {held(owner)}* may not add A770 load until the operator lifts the hold (HELD_OWNERS)"}
     if unmetered_host():
         return {"ok": True, "owner": owner, "step_w": step_w, "charged_w": 0.0, "reason": "unmetered_host"}
     os.makedirs(os.path.dirname(LOCK), exist_ok=True)
@@ -309,7 +321,7 @@ def wait_grant(owner: str, step_w: float, timeout_s: float = 900.0, poll_s: floa
     deadline = time.time() + timeout_s
     while True:
         result = try_grant(owner, step_w)
-        if result["ok"] or time.time() >= deadline or result["reason"].startswith("step "):
+        if result["ok"] or time.time() >= deadline or result["reason"].startswith(("step ", "held")):
             _log({k: result[k] for k in ("ok", "owner", "step_w", "reason", "posture") if k in result})
             return result
         time.sleep(poll_s)

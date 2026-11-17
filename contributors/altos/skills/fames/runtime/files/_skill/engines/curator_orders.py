@@ -34,6 +34,8 @@ import argparse
 import fnmatch
 import json
 import os
+import re
+import subprocess
 import sys
 import time
 
@@ -47,6 +49,7 @@ SESSION_SCOPE = os.path.join(REGISTRY, "f1s-session-scope.json")  # {"sessions":
 TECHNIQUES = os.path.join(REGISTRY, "f1s-apply.json")
 UNCLAIMED_AFTER_S = 3600
 STALE_OWNER_AFTER_S = 6 * 3600  # owner transcript silent this long: the claim blocks every other chat (ai_metadata #14/#15, 11-10)
+HANDOVER_AFTER_S = 3600  # owner transcript silent this long (the cache TTL): a same-seat chat holding evidence may answer
 CLAUDE_PROJECTS = os.path.join(os.path.expanduser("~"), ".claude", "projects")
 CURATOR_FALLBACK = "ai_darkhero"
 REVIEW_SAMPLE = 8       # one routine order in this many still gets the curator's review
@@ -161,13 +164,18 @@ def _hub_rel(path: str) -> str:
 
 
 def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None = None, routine: bool = False,
-          ledger: bool = False) -> dict:
-    """ledger=True: an engine reads the answer back into its own table (f1s_fanout), so any answer closes the order."""
+          ledger: bool = False, machine: dict | None = None) -> dict:
+    """ledger=True: an engine reads the answer back into its own table (f1s_fanout), so any answer closes the order.
+    machine={...}: an engine issues it from inside a seat's own session (Stop hook), so the curator-session check is
+    skipped; the order is marked `"machine": true` and the dict's fields (e.g. "gap") are stored on it. Never routine-free."""
     cwd = cwd or os.getcwd()
     if not (do or "").strip():
         raise ValueError("an order needs its full prompt text (--do or --prompt-file)")
-    _require_curator(cwd, "issues orders")
-    if seat == curator():
+    if machine is None:
+        _require_curator(cwd, "issues orders")
+    elif not is_curator(cwd):
+        raise PermissionError(f"machine issue needs the curator cwd (cwd resolves to {seat_of(cwd)})")
+    if seat == curator() and not machine:      # machine = a gap order from the curator's own report, done by a station
         raise ValueError("an order corrects another cwd, not the curator")
     if seat not in _projects._load():
         raise ValueError(f"unknown seat {seat!r}")
@@ -181,6 +189,10 @@ def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None 
     order = {"n": max((o.get("n", 0) for o in doc["orders"]), default=0) + 1, "issued_at": _now(),
              "issued_from": os.path.abspath(cwd), "title": title, "do": do,
              "freeze": [_hub_rel(p) for p in freeze], "forbid": list(forbid), "status": "open"}
+    if machine is not None:
+        routine = True
+        order["machine"] = True
+        order.update(machine)
     if routine and not freeze and not forbid:
         order["routine"] = True
         if ledger:
@@ -188,6 +200,143 @@ def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None 
     doc["orders"].append(order)
     _save(seat, doc)
     return order
+
+
+# operator 2026-11-17: 「還沒解決的 < 推理應當如何解決過程自動去補缺口」 — the "not solved yet" bullets of a final report
+# become routine orders for the conversation's own seat; F1S hands an unowned one to a lean station after 2 h.
+RUN_UNTIL_DONE = os.path.join(REGISTRY, "run-until-done.json")
+GAP_PER_DAY = 6
+GAP_MAX_ITEMS = 5
+GAP_MIN_CHARS = 12
+GAP_DEDUPE_S = 14 * 86400
+GAP_CONTEXT_CHARS = 1200
+GAP_SKIP_SEATS = ("quant", "fracdigi", "kyloren_quant", "ai_accountancy")
+GAP_HEADINGS = ("還沒解決的", "還沒解決", "尚未解決", "未解決", "還沒做的", "未完成", "not solved yet", "unresolved")
+GAP_OPERATOR_CALLS = ("需要你決定", "授權", "你點頭", "operator 親手", "金鑰", "永久刪除")
+_BULLET = re.compile(r"^\s*(?:[-*•])\s+(.*\S)\s*$")
+_HEADING_MARKS = "#*:： \t"
+
+
+def _heading_text(line: str) -> str:
+    return line.strip().strip(_HEADING_MARKS).strip().lower()
+
+
+def _is_heading(line: str) -> bool:
+    s = line.strip()
+    return s.startswith("#") or bool(re.fullmatch(r"\*\*[^*]+\*\*\s*[:：]?", s)) or bool(re.fullmatch(r"__[^_]+__\s*[:：]?", s))
+
+
+def gap_items(text: str) -> list[str]:
+    """Bullets under a 「還沒解決的」-style heading of a final reply, minus short ones and the operator's own calls."""
+    items: list[str] = []
+    in_section = False
+    blank = False
+    for line in (text or "").splitlines():
+        if not in_section:
+            if _is_heading(line) and _heading_text(line) in GAP_HEADINGS:
+                in_section, blank = True, False
+            continue
+        if not line.strip():
+            blank = True
+            continue
+        if "沒有下一步" in line:
+            break
+        bullet = _BULLET.match(line)
+        if bullet:
+            blank = False
+            items.append(bullet.group(1))
+            continue
+        if _is_heading(line):
+            if _heading_text(line) in GAP_HEADINGS:
+                blank = False
+                continue
+            break
+        if blank or not line[:1].isspace():
+            break
+        # an indented line right after a bullet continues it; the bullet text stays as written on its own line
+    out = [i for i in items if len(i) >= GAP_MIN_CHARS and not any(k in i for k in GAP_OPERATOR_CALLS)]
+    return out[:GAP_MAX_ITEMS]
+
+
+def _gap_hash(item: str) -> str:
+    import hashlib
+    return hashlib.sha1(" ".join(item.split()).lower().encode("utf-8")).hexdigest()
+
+
+def _gap_switch() -> bool:
+    """`live_wake.gap_orders` in run-until-done.json: default on, false/0 off; unreadable = on (fail open like its neighbours)."""
+    try:
+        with open(RUN_UNTIL_DONE, encoding="utf-8-sig") as fh:
+            value = (json.load(fh).get("live_wake") or {}).get("gap_orders", True)
+    except (OSError, ValueError, AttributeError):
+        return True
+    if isinstance(value, str):
+        return value.strip().lower() not in ("false", "0", "off", "no", "")
+    return bool(value)
+
+
+GAP_REFS_CHARS = 600  # URLs and `code` references of the whole reply, so an item that says "this video" can be done
+
+
+def _gap_context(item: str, text: str) -> str:
+    """The reply text that ends at the item (2026-11-17 ai_darkhero#3: the head of a long reply said nothing about an
+    item near its end); the head when the item is not found or already sits inside it."""
+    at = text.find(item[:30])
+    return text[:GAP_CONTEXT_CHARS] if at <= GAP_CONTEXT_CHARS else text[at - GAP_CONTEXT_CHARS:at]
+
+
+def _gap_refs(text: str) -> str:
+    refs: list[str] = []
+    for ref in re.findall(r"https?://[^\s)>\]】」`]+|`[^`\n]{3,120}`", text):
+        if ref not in refs and sum(map(len, refs)) + len(ref) <= GAP_REFS_CHARS:
+            refs.append(ref)
+    return "References in the whole reply: " + " ; ".join(refs) + "\n\n" if refs else ""
+
+
+def _gap_do(item: str, context_text: str) -> str:
+    return (
+        "A conversation in this cwd ended its report with this item still unsolved:\n\n"
+        f"\"{item}\"\n\n"
+        "Surrounding reply (verbatim, for context):\n\n"
+        f"{_gap_context(item, context_text or '')}\n\n"
+        f"{_gap_refs(context_text or '')}"
+        "Find the root cause, make the smallest change that fixes it, and verify with a re-run test or a measurement. "
+        "Answer this order with `--evidence <path or commit:sha> --note \"<before -> after>\"`, or with "
+        "`--cannot \"<reason>\"` when it needs the operator's authority, money, a secret, permanent deletion, a new "
+        "scheduled job, or a file outside this cwd. Never ask a question."
+    )
+
+
+def issue_gaps(seat: str, items, context_text: str, session_id: str = "", now: float | None = None) -> list[int]:
+    """One machine-issued routine order per gap item for `seat`; returns the order numbers issued.
+    Guards: seat not skipped, switch on, no same item (sha1) within 14 days, at most GAP_PER_DAY per 24 h."""
+    if seat in GAP_SKIP_SEATS or not items or not _gap_switch():
+        return []
+    now = time.time() if now is None else now
+    doc = load(seat)
+
+    def age(order: dict) -> float:
+        try:
+            return now - time.mktime(time.strptime(str(order.get("issued_at")), "%Y-%m-%dT%H:%M:%S"))
+        except (ValueError, OverflowError):
+            return 0.0
+
+    seen = {o.get("gap") for o in doc["orders"] if o.get("gap") and age(o) < GAP_DEDUPE_S}
+    today = sum(1 for o in doc["orders"] if o.get("gap") and age(o) < 86400)
+    made: list[int] = []
+    for item in items:
+        digest = _gap_hash(item)
+        if digest in seen:
+            continue
+        if today >= GAP_PER_DAY:
+            break
+        order = issue(seat, "未解決缺口：" + item[:40], _gap_do(item, context_text),
+                      cwd=os.path.join(HUB, curator()), routine=True,
+                      machine={"gap": digest, "gap_session": session_id})
+        seen.add(digest)
+        today += 1
+        made.append(order["n"])
+    return made
 
 
 def deliver(seat: str, n: int, session: str, cwd: str | None = None) -> dict:
@@ -294,9 +443,13 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
         raise ValueError(f"order #{n} is {order['status']}, not open")
     sid = _session_id(session)
     if owner_of(order) and owner_of(order) != sid:
-        # ai_trader 2026-11-07..09: the main chat answered #87 that its Fable session had claimed, from a shell
-        # drifted to the hub root; only the owner, or the curator's own session (not its cwd), may answer it.
-        _require_curator(cwd, f"answers order #{n} owned by conversation {owner_of(order)[:8]}")
+        if evidence and _silent_owner_handover(order, seat, cwd, sid):
+            order["owner"] = {"session": sid, "from": os.path.abspath(cwd), "at": _now(), "by": "handover",
+                              "took_from": owner_of(order)}
+        else:
+            # ai_trader 2026-11-07..09: the main chat answered #87 that its Fable session had claimed, from a shell
+            # drifted to the hub root; only the owner, or the curator's own session (not its cwd), may answer it.
+            _require_curator(cwd, f"answers order #{n} owned by conversation {owner_of(order)[:8]}")
     order["status"] = "done" if evidence else "cannot"
     order["answer"] = {"at": _now(), "from": os.path.abspath(cwd), "session": sid,
                        "evidence": [p if p.startswith(COMMIT) else os.path.abspath(os.path.join(cwd, p)) for p in evidence],
@@ -309,6 +462,22 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
         order.update(status="closed", closed_at=_now(), closed_from=MECHANICAL)
     _save(seat, doc)
     return order
+
+
+def _silent_owner_handover(order: dict, seat: str, cwd: str, sid: str) -> bool:
+    """True when a conversation of the same seat may answer, with evidence, an order another conversation owns: the owner's
+    transcript exists and was last written HANDOVER_AFTER_S ago or more. Third time the finished work of a seat waited for
+    the curator behind a silent owner (ai_metadata #14/#15 11-10, #27 11-11, ai_ziyaoastro #57/#58 11-17: 2.1 h, 3.3 h, 5 h
+    silent, all under the 6 h STALE line). A missing transcript or unreadable projects dir is unknown, not silent, and a
+    station- owner has no transcript: those stay with the curator. The session's own folder decides the seat, not the shell."""
+    owner = owner_of(order)
+    if not sid or owner.startswith(STATION_SESSION):
+        return False
+    where = _session_cwd() or cwd
+    if seat_of(where) != seat or is_curator(where):
+        return False
+    silent = _owner_silent_s(owner)
+    return HANDOVER_AFTER_S <= silent < float("inf")
 
 
 def claim(seat: str, n: int, release: bool = False, cwd: str | None = None, session: str | None = None) -> dict:
@@ -464,7 +633,8 @@ def open_orders(seat: str, session_id: str | None = None) -> list[dict]:
     orders = [o for o in load(seat)["orders"] if o.get("status") == "open"]
     if session_id is None:
         return orders
-    return [o for o in orders if not owned_by_other(o, session_id)]
+    # A gap order (issue_gaps) is station work: it never holds the conversation whose report produced it.
+    return [o for o in orders if not owned_by_other(o, session_id) and not o.get("gap")]
 
 
 STATION_SESSION = "station-"   # f1s_station.order answers under this id: the order was done outside every conversation
@@ -496,9 +666,86 @@ def injection(seat: str, session_id: str = "") -> str:
 
 
 HANDOFF_OVER_K = 150
+ROLLOVER_OVER_K = 180       # `live_wake.rollover_over_k`: above this the advisory becomes a roll-over order, 0 = off
+BRIEF_REQUEST_CHARS = 1500
 
 
-def handoff_line(seat: str, session_id: str = "", context: int | None = None, over: int | None = None) -> str:
+def last_typed_request(path) -> str:
+    """The last prompt a person typed in a transcript; wake turns (task notifications, hook feedback, side sessions,
+    system reminders) and tool results are skipped. "" when none is found or the file cannot be read."""
+    import f1s_waste
+    last = ""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            for raw in fh:
+                try:
+                    rec = json.loads(raw)
+                except ValueError:
+                    continue
+                if rec.get("type") != "user" or rec.get("isMeta") or rec.get("isSidechain"):
+                    continue
+                content = (rec.get("message") or {}).get("content")
+                if isinstance(content, list):
+                    if any(isinstance(b, dict) and b.get("type") == "tool_result" for b in content):
+                        continue
+                    content = "\n".join(b.get("text") or "" for b in content if isinstance(b, dict) and b.get("type") == "text")
+                if not isinstance(content, str) or not content.strip():
+                    continue
+                text = content.strip()
+                if text.startswith(("<system-reminder>", "<command-", "<local-command", "Caveat:")):
+                    continue
+                if f1s_waste.wake_kind(text) == "operator":
+                    last = text
+    except OSError:
+        return ""
+    return last
+
+
+def rollover_brief_text(seat: str, session_id: str, context: int, last_request: str) -> str:
+    """The whole prompt of the conversation that takes over a rolled-over one. Pure: no file is read or written."""
+    k = f"{context // 1000}K"
+    sid = session_id or "unknown"
+    transcript = f"C:/Users/<user>/.claude/projects/*/{session_id}.jsonl" if session_id else "(unknown)"
+    if last_request:
+        task = ("Task to carry out now (the operator's latest typed request, verbatim):\n"
+                + last_request[:BRIEF_REQUEST_CHARS])
+    else:
+        task = "No typed request found; ask nothing, read the park file."
+    return "\n".join((
+        f"This conversation continues {seat}'s conversation {sid}, which F1S rolled over at {k}.",
+        "Read first, and only if needed: C:/ai_workspace/_registry/agc-compact/" + f"{seat}.md" + " and C:/ai_workspace/_logs/park/"
+        + f"{seat}.md" + " (last entry).",
+        task,
+        "Reply rules: report in Traditional Chinese, conclusion first in two sentences, numbers only from measurements made in this "
+        "conversation, no questions about mechanical work.",
+        f"The old conversation is archived; its transcript ({transcript}) is for exact details only.",
+    ))
+
+
+def rollover_brief(seat: str, session_id: str = "", park: bool = True) -> str:
+    import glob as _glob
+    from pathlib import Path as _Path
+    if park:
+        try:
+            kw = {"creationflags": 0x08000000} if os.name == "nt" else {}
+            subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "goal_compact.py"), "park", seat],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120, **kw)
+        except Exception:
+            pass
+    found = _glob.glob(os.path.join(CLAUDE_PROJECTS, "*", f"{session_id}.jsonl")) if session_id and session_id.replace("-", "").isalnum() else []
+    request, context = "", 0
+    if found:
+        request = last_typed_request(found[0])
+        try:
+            import f1s_live
+            context = f1s_live.context_tokens(_Path(found[0]), settled=True)
+        except Exception:
+            pass
+    return rollover_brief_text(seat, session_id, context, request)
+
+
+def handoff_line(seat: str, session_id: str = "", context: int | None = None, over: int | None = None,
+                 rollover: int | None = None) -> str:
     """operator 2026-11-14: the ai_darkhero main chat spent 17.4M in two days, 692 calls at 160K each, most of them tool calls.
     Once this conversation holds more than `live_wake.handoff_over_k` (K tokens, default 150, 0 = off) every prompt says so
     with the two existing ways out: a lean station for the execution, or AGC park and a new chat. Advisory, never blocks;
@@ -521,8 +768,24 @@ def handoff_line(seat: str, session_id: str = "", context: int | None = None, ov
             context = f1s_live.context_tokens(_Path(found[0]), settled=True)
     except Exception:
         return ""
+    if rollover is None:
+        try:
+            with open(os.path.join(HUB, "_registry", "run-until-done.json"), encoding="utf-8-sig") as fh:
+                rollover = int(float((json.load(fh).get("live_wake") or {}).get("rollover_over_k", ROLLOVER_OVER_K)) * 1000)
+        except (OSError, ValueError, TypeError, AttributeError):
+            rollover = ROLLOVER_OVER_K * 1000
     if not over or context <= over:
         return ""
+    if rollover and context > rollover:
+        sess = f" --session {session_id}" if session_id else ""
+        return (f"ROLL OVER {context // 1000}K > {rollover // 1000}K: this conversation holds {context // 1000}K; do not do this prompt's work here. "
+                "If a background task of this conversation is still running, let it finish first. "
+                f"Run `python C:/ai_workspace/_skill/engines/curator_orders.py rollover-brief --seat {seat}{sess}` (it parks the seat and prints the hand-over prompt). "
+                "Then start a new conversation in the same cwd at once with that printed text as its whole prompt "
+                "(tool mcp__ccd_session__start_session, initiation \"user_asked\", context \"fresh\", no worktree), no offer card and no question to the operator. "
+                "When the tool result says it started, tell the operator in one line where the work continues, then archive this conversation "
+                "(mcp__ccd_session_mgmt__archive_session \"self\"). "
+                "If a new conversation cannot be started (for example over Remote Control), fall back to a lean station and say so.")
     cwd = os.path.join(HUB, seat).replace(os.sep, "/")
     return (f"FAT CHAT {context // 1000}K > {over // 1000}K: every tool call here re-reads {context // 1000}K. Hand execution to a lean "
             f"station (about 30K, one result row back): `python _skill/engines/f1s_station.py run --cwd {cwd} --tools Read,Grep,Glob,Bash,Edit,Write "
@@ -608,7 +871,8 @@ def _injection(seat: str, session_id: str = "") -> str:
     for o in orders:
         extra = "".join(f" [{k}: {', '.join(o[k])}]" for k in ("freeze", "forbid") if o.get(k))
         if owned_by_other(o, session_id):
-            lines.append(f"#{o['n']} {o['title']}: 由對話 {owner_of(o)[:8]} 負責中，本對話讀過即可，不要 answer、不要停工{extra}")
+            lines.append(f"#{o['n']} {o['title']}: 由對話 {owner_of(o)[:8]} 負責中，本對話讀過即可，不要 answer、不要停工"
+                         f"（例外：負責對話靜默滿 {HANDOVER_AFTER_S // 3600} 小時且你手上已有完成證據，answer --evidence 即接手）{extra}")
         else:
             lines.append(f"#{o['n']} {o['title']}: {o['do']}{extra}")
     lines.append(f"回報: python {HUB}/_skill/engines/curator_orders.py answer {seat} <n> --evidence <commit:SHA 或既有的程式／測試檔路徑；不要為了回報新開檔> "
@@ -666,7 +930,7 @@ def _unclaimed_orders() -> str:
                 continue
             if not owner_of(o) and age > UNCLAIMED_AFTER_S:
                 rows.append(f"{seat}#{o['n']} {o['title']}")
-            elif owner_of(o) and _owner_silent_s(owner_of(o)) > STALE_OWNER_AFTER_S:
+            elif owner_of(o) and _claim_silent_s(o) > STALE_OWNER_AFTER_S:
                 stale.append(f"{seat}#{o['n']} owner {owner_of(o)[:8]}")
     lines = []
     if rows:
@@ -678,6 +942,19 @@ def _unclaimed_orders() -> str:
                      f"{STALE_OWNER_AFTER_S // 3600}h+: {'; '.join(stale[:6])}. list_sessions first (host_gone is not dead); "
                      "if the owner is not running, curator_orders.py claim <seat> <n> --release, then send the order into a live chat of that seat.")
     return "\n".join(lines)
+
+
+def _claim_silent_s(order: dict, now: float | None = None) -> float:
+    """How long the owner of this claim has been silent. A station- owner has no transcript (2026-11-17: ai_trader#145 was
+    named stale seconds after a station took it), so the age of its claim decides; an unreadable claim time is not stale."""
+    owner = owner_of(order)
+    if not owner.startswith(STATION_SESSION):
+        return _owner_silent_s(owner, now)
+    try:
+        claimed = time.mktime(time.strptime(str((order.get("owner") or {}).get("at")), "%Y-%m-%dT%H:%M:%S"))
+    except (ValueError, OverflowError):
+        return 0.0
+    return max(0.0, (time.time() if now is None else now) - claimed)
 
 
 def _owner_silent_s(session_id: str, now: float | None = None) -> float:
@@ -827,7 +1104,18 @@ def main(argv=None) -> int:
     s.add_argument("seat")
     s.add_argument("n", type=int, nargs="+")
     sub.add_parser("review")
+    s = sub.add_parser("rollover-brief", help="park the seat and print the hand-over prompt for a new conversation")
+    s.add_argument("--seat", required=True)
+    s.add_argument("--session", default="")
+    s.add_argument("--no-park", action="store_true")
     a = ap.parse_args(argv)
+    if a.cmd == "rollover-brief":
+        text = rollover_brief(a.seat, a.session, park=not a.no_park)
+        try:
+            print(text)
+        except UnicodeEncodeError:
+            sys.stdout.write(text.encode(sys.stdout.encoding or "utf-8", "backslashreplace").decode(sys.stdout.encoding or "utf-8") + "\n")
+        return 0
     if a.cmd == "review":
         print("\n".join(review_table()) or "review queue empty")
         return 0
