@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-17T05:43:07.027799+00:00",
+  "observed_at": "2026-11-17T06:40:13.704911+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -358,20 +358,44 @@
       {
         "agent": "ai_career",
         "surface": "claude",
-        "observed_at": "2026-11-17T13:23:33+08:00",
-        "receipt_sha256": "a4019ad4b7530d4c045b11b9618cdb111177695733174bb09d8b12f303f705aa"
+        "observed_at": "2026-11-17T14:31:12+08:00",
+        "receipt_sha256": "708ebffce945583d2073d4ad15c0746acdf11eb9f90958555532a3a8635e704c"
       },
       {
         "agent": "jci_taipei",
         "surface": "claude",
-        "observed_at": "2026-11-17T13:39:21+08:00",
-        "receipt_sha256": "17a61d60de7269d61466b4e7aabdc582cb52004dbdb816ab86b433c394b50b54"
+        "observed_at": "2026-11-17T14:24:59+08:00",
+        "receipt_sha256": "be4712191cafdc9acb03a5a33eaff0c869b2a6a91888b3c11cbd2b14024746e9"
+      },
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-11-17T14:07:57+08:00",
+        "receipt_sha256": "e02620f4e07657a18ee812d2c9bd9f17f81848264952917c550ee10695d879bd"
+      },
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-11-17T14:30:06+08:00",
+        "receipt_sha256": "e71506355ff54a04c9dd06d0d31e47efd7cfc897c95bc4e85ef91a19aeb5c3cc"
+      },
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-11-17T14:16:52+08:00",
+        "receipt_sha256": "f6470beedd3761540667973213025fae7d8c6bbff5f8f9d29c165f751ff9de37"
       },
       {
         "agent": "jci_taipei",
         "surface": "claude",
         "observed_at": "2026-11-17T13:31:20+08:00",
         "receipt_sha256": "b3313b42b6960e82adbc1b1822bb35bf4e89ee40630e4ab43b676ef330e2b114"
+      },
+      {
+        "agent": "ai_career",
+        "surface": "claude",
+        "observed_at": "2026-11-17T14:31:32+08:00",
+        "receipt_sha256": "55ea82144579ce26379730415b38f74329885d331eb7781fd75310907e4aaaf7"
       }
     ],
     "runtime_release_sha256": "a0386f43e71fa603311be7234ed8ce1a09f01a887adb27811e34da2efa2a5b17"
