@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261117T091742Z-a2587f59",
+  "host": "altos",
+  "started_at": "2026-11-17T09:22:01+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_altos cwd=ai_altos auth=cli_credentials_file 105.1s]\n我只做了讀取，什麼都沒改。檢查結果和預期不同：D:\\jcitaipei1957 存在但是空的，而且它不是 My Drive 的鏡像根目錄，而是「電腦」裡的備份資料夾。My Drive 其實是用串流模式掛在 **G:\\我的雲端硬碟**，三個目標項目都在那裡找到了。\n\n| check | value | PASS/FAIL |\n|---|---|---|\n| 1a GoogleDriveFS.exe 執行中 | 2 個 process | PASS |\n| 1b 安裝版本 | `C:\\Program Files\\Google\\Drive File Stream\\133.0.2.0\\`（不在 `Drive File System`） | PASS |\n| 2 登入帳號 | `jcitaipei1957@gmail.com`（只有一個帳號目錄；email 取自 DriveFS metadata db 的 `driveway_account`，用唯讀方式開；token 欄位都已遮蔽） | PASS |\n| 3a D:\\jcitaipei1957 是否存在 | 存在，裡面沒有任何東西（attr `0x10`） | PASS |\n| 3b 是否設定成 My Drive 鏡像根目錄 | 否。`roots` 表裡它是電腦備份資料夾（`is_my_drive=0`），My Drive 是以串流模式掛在 G:（`media` 表：`Google Drive` → `G:\\`）；它也沒有 desktop.ini 或 `.tmp.drivedownload` 標記 | FAIL |\n| 3c 頂層項目 | D:\\jcitaipei1957：無；G:\\：`我的雲端硬碟`、`.shortcut-targets-by-id`、`.Encrypted`、`$RECYCLE.BIN` | — |\n| 4 My Drive 資料夾 | `G:\\我的雲端硬碟`，exists=yes（裡面有 2 個項目） | PASS |\n| 4a `jci_taipei\\source_snapshot\\jci_taipei-snapshot.zip` | exists=yes，167,957,856 bytes，修改時間 2026-11-17 16:50:15（本機時間），attr `0x80`，沒有 OFFLINE / RECALL 旗標。但 G: 是 DriveFS 的虛擬檔案系統，看屬性判斷不出它是否已完整存在本機，所以「是否完整在本機」= UNKNOWN（沒有開檔，也沒有算 hash） | PASS（locality UNKNOWN） |\n| 4b `jci_taipei\\jci_taipei_70` | exists=yes，13 個直接子項 | PASS |\n| 4c `jci_taipei\\jci_taipei_website` | exists=yes，14 個直接子項 | PASS |\n| 5 D: 剩餘空間 | 490,794,573,824 bytes（約 457 GiB）/ 總共 500,104,687,616 | PASS |\n\n- 這是我的推論，沒有驗證：從 D:\\jcitaipei1957 存取這些檔案的流程目前都拿不到東西。要嘛改成讀 `G:\\我的雲端硬碟\\jci_taipei\\...`，要嘛在 Drive 設定裡把 My Drive 改成「鏡像」並指向 D:。後者會改到雲端設定，需要你決定；我沒有動。\n- 所有讀取都是唯讀的：Python 讀 registry、用 `?mode=ro` 開 sqlite、對檔案只做 `stat`、目錄只做 `listdir`。唯一的子程序是用 `CREATE_NO_WINDOW` 開的 tasklist 和 powershell。整個過程沒有寫任何檔案，所以沒有產出檔可以附。\n\n沒有下一步。\n",
+  "stderr": "",
+  "finished_at": "2026-11-17T09:23:48+00:00"
+}
