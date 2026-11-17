@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-17T09:08:09.853395+00:00",
+  "observed_at": "2026-11-17T09:43:05.727668+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,8 +353,51 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "UNKNOWN",
-    "native_events": [],
+    "native_state": "OBSERVED_PARTIAL_POPULATION",
+    "native_events": [
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-11-17T17:33:27+08:00",
+        "receipt_sha256": "2e2af61b7ab8c973e8464f1e207fdba4c4454c3689aa30bb0ba54b59efa2a547"
+      },
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-11-17T17:32:47+08:00",
+        "receipt_sha256": "e39fe5497cec99099fa0f61a19162817d891fad9df3b018cfb530f67ad4c50d1"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-17T17:09:19+08:00",
+        "receipt_sha256": "c8d9e8828c3a55397b6b8b059e19ed3279fd8bca5b9f2b6d193465264fd4c7b6"
+      },
+      {
+        "agent": "sdnext_a770",
+        "surface": "claude",
+        "observed_at": "2026-11-17T17:39:24+08:00",
+        "receipt_sha256": "2719272e821afe18b12355fec225fb34e4ae08ef64cb51fbdac294ea83c8601a"
+      },
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-11-17T17:32:55+08:00",
+        "receipt_sha256": "716de3d8bd409739b1456eaeb153409ecbc7213862c2a5608513f01e37ffb5e3"
+      },
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-11-17T17:38:32+08:00",
+        "receipt_sha256": "ffb80304d2870d6ac0e124416c9add856849308eebb238bd65b57c0f47c322a0"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-17T17:16:47+08:00",
+        "receipt_sha256": "32f3b48f71036d9a96bd72a5da9926726003e9690d806572acd478b71b2baf49"
+      }
+    ],
     "runtime_release_sha256": "95ec6b78f850d433aee130553cc3db3cddeac553d9a5053c6545fc78bd3c65de"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
