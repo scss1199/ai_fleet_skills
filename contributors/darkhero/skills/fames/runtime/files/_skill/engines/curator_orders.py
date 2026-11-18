@@ -361,6 +361,17 @@ def owner_of(order: dict) -> str:
     return str((order.get("owner") or {}).get("session") or "")
 
 
+def order_text(order: dict) -> str:
+    """The prompt a seat executes: `do`, plus the curator's reopen note when the order was reopened. On 2026-11-18 five
+    reopened free-pool orders carried their concrete task only in the note; the hook and the station showed `do` alone,
+    so stations re-answered the same cannot in 20 s."""
+    do = str(order.get("do") or "")
+    note = str(order.get("note") or "").strip()
+    if order.get("reopened_at") and note:
+        return f"{do}\n\n【curator 重開說明（最新，優先於先前的回覆）】{note}"
+    return do
+
+
 def owned_by_other(order: dict, session_id: str) -> bool:
     """True when another conversation owns this order: it reads the order but is not pushed to answer it."""
     owner = owner_of(order)
@@ -930,7 +941,7 @@ def _injection(seat: str, session_id: str = "") -> str:
             lines.append(f"#{o['n']} {o['title']}: 由對話 {owner_of(o)[:8]} 負責中，本對話讀過即可，不要 answer、不要停工"
                          f"（例外：負責對話靜默滿 {HANDOVER_AFTER_S // 3600} 小時且你手上已有完成證據，answer --evidence 即接手）{extra}")
         else:
-            lines.append(f"#{o['n']} {o['title']}: {o['do']}{extra}")
+            lines.append(f"#{o['n']} {o['title']}: {order_text(o)}{extra}")
     lines.append(f"回報: python {HUB}/_skill/engines/curator_orders.py answer {seat} <n> --evidence <commit:SHA 或既有的程式／測試檔路徑；不要為了回報新開檔> "
                  f"[--note \"計數前後、留下什麼\"] "
                  f"| --cannot \"<原因>\"（answer 的對話成為該令的負責對話；接手前先 claim {seat} <n>，已有負責對話就不要接）。"
