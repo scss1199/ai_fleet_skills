@@ -44,19 +44,43 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 
 | 任務標籤 | 先用 | 再用 | 實測 |
 |---|---|---|---|
-| `summary` 中文摘要 | gemini | OmniRoute `auto/coding` | 2 輪全對、1–3 秒 |
-| `extract` 抽取成 JSON | gemini | OmniRoute `ddgw/gpt-5.4-mini` → `auto/coding` | 2 輪全對；`jsonmode=True` 時散文回覆算該路失敗（`not-json`），自動換下一條 |
-| `reasoning` 計算／推理 | OmniRoute `auto/reasoning` | gemini | 2 輪全對、2–4 秒 |
-| `bulk` 大量分類比對 | gemini | OmniRoute `ddgw/gpt-5.4-mini` → `auto/coding` | ai_trader 2026-10-18 40 則標題純 JSON 標註：ddgw 2.0／1.6／2.3 秒每次可解析、與 gemini 一致 88/120；`auto/coding`、`auto/reasoning` 回散文、閘道 gemini-2.5-flash 截斷、`cfp/zai-org/glm-5.2` 54 秒。ddgw 上游免金鑰、會 503「Failed to acquire VQD token」（curator 同夜實測），所以 `auto/coding` 留作末位（同夜 chat/completions 4.2 秒回合法 JSON） |
-| `translate` 翻譯（日→繁中等） | gemini | `auto/reasoning` → `ddgw/gpt-5.4-mini` → `cfp/zai-org/glm-5.2` → nvidia `glm-5.3-flash` | 全部譯對；1.1／1.8／1.8／11–49／42 秒 |
+| `summary` 中文摘要 | gemini | nvidia `nemotron-3.5-super-vl-120b` → nvidia `nemotron-3-nano-omni-30b` → openrouter `:free` → OmniRoute `auto/coding` | 2026-11-18 拿掉 gemini 實測：改前 auto/coding 7.7 秒，改後 super-vl 0.5 秒、正確 |
+| `extract` 抽取成 JSON | gemini | nvidia super-vl → nvidia `minimax-m3.1-flash` → nano-omni → openrouter → OmniRoute `cfp/openai/gpt-oss-120b` → `ddgw/gpt-5.4-mini` → `auto/coding` | 2026-11-18 拿掉 gemini：改前 15.3 秒落到 cfp，改後 super-vl 0.9 秒；`jsonmode=True` 時散文回覆算該路失敗（`not-json`），自動換下一條 |
+| `reasoning` 計算／推理 | gemini | nvidia super-vl → nano-omni → openrouter → OmniRoute `auto/reasoning` | 2026-11-18 拿掉 gemini：改前 auto/reasoning 14.9 秒，改後 super-vl 1.4 秒 |
+| `bulk` 大量分類比對 | gemini | nvidia super-vl → openrouter → OmniRoute `ddgw/gpt-5.4-mini` → `auto/coding` | 2026-11-18 拿掉 gemini：改前 auto/coding 7.4 秒，改後 super-vl 1.1 秒（nvidia 的 JSON 任務不送 `response_format`，否則 `[...]` 會被壓成只剩第一個物件）。舊紀錄： | ai_trader 2026-10-18 40 則標題純 JSON 標註：ddgw 2.0／1.6／2.3 秒每次可解析、與 gemini 一致 88/120；`auto/coding`、`auto/reasoning` 回散文、閘道 gemini-2.5-flash 截斷、`cfp/zai-org/glm-5.2` 54 秒。ddgw 上游免金鑰、會 503「Failed to acquire VQD token」（curator 同夜實測），所以 `auto/coding` 留作末位（同夜 chat/completions 4.2 秒回合法 JSON） |
+| `translate` 翻譯（日→繁中等） | gemini | nvidia `nemotron-3-ultra-550b` → nvidia super-vl → openrouter → `ddgw/gpt-5.4-mini` → `cfp/zai-org/glm-5.2` → `auto/reasoning` | 2026-11-18 拿掉 gemini：改前 21.8 秒落到 cfp glm-5.2，改後 ultra 1.2 秒、譯對；nvidia `glm-5.3-flash` 斷路器開著，已移出路由 |
 | OCR 圖片讀字 | gemini 視覺（`image_ocr.py`） | 反白／低對比標題（白字灰底）：裁出該欄＋反相＋autocontrast 的暫存副本再讀一次，原檔不動 | 合成簽到圖逐字正確、2.7 秒；整頁圖述漏讀反白標題首字（「林國仲」讀成「國仲」），裁欄反相後盲測 3/5→5/5（ai_zonghe 2026-11-06 `images/_tools/caption.py`） |
 | 語音轉文字 日／中 | 本機 faster-whisper（`distill-media.py --engine local --lang ja`） | Deepgram（`--engine deepgram`，音檔會外送）、`medium` 重試 | 日文合成音逐字正確、30 秒 |
-| 網路搜尋 | gemini Google 搜尋（`distill-url.py --search`，每把 key 輪 `GEMINI_MODELS`） | Google News RSS（免 key，連結是 news.google.com 轉址）→ DuckDuckGo／Bing；全失敗看 `websearch.LAST_ERRORS`／stderr（429＝額度用完，不是查無結果） | 期交所官網排第一；2026-10-16 gemini 全 429 時 News RSS 仍回 96/96 |
+| 網路搜尋 | r.jina.ai 讀 DuckDuckGo → r.jina.ai 讀 Bing（免 key，間隔 3.2 秒） | gemini Google 搜尋 → Google News RSS → DuckDuckGo／Bing 直連 → Wikipedia API；全失敗看 `websearch.LAST_ERRORS`／stderr（429＝額度用完，不是查無結果）。`distill-url.py --search ... --no-digest` 只回結果不叫模型；有摘要時只用一次 `chat_for("extract")` | 2026-11-18「Tzuyu TWICE height」：jina-DDG 0.6 秒 20/20 相關、jina-Bing 3.4 秒 10/10、gemini 全 429、News RSS 6/6、DDG html 10/10、DDG lite 0、Bing 直連 0/10 相關、Wikipedia 1 筆；`fetch_text` 直連失敗或頁面 <400 字改走 r.jina.ai，Wikipedia 網址走 API（0.5 秒） |
 | embeddings 向量 | OmniRoute `gemini/gemini-embedding-001`（`/v1/embeddings`） | — | 3072 維、0.5 秒 |
 | 語音合成 TTS | 本機 edge-tts（技能 `zh-tts-narrate`） | Windows SAPI | — |
 | 文生圖／圖生影片 | 本機 SD.Next A770（`sdnext_a770`） | — | OmniRoute flux／aihorde 逾時或排隊 >1000 秒 |
 
 燒錄字幕（fansub）對照語料是意譯：時間對得上、句意常對不上（ai_theater 2026-10-18 實測 117 對只有 12 對經詞彙錨點確認同義），只能當語體／詞彙參考注入 prompt，不能當逐句 ground truth；要用就先經錨點篩選，篩選結果仍是草稿。
+
+### 文章提到的免費池（2026-11-18 curator 逐一實測）
+
+來源：kyloren-knowledge 卡片（Threads／IG）、`_registry/f1s-daily` 摘要、`technique_output/INDEX.md`、本檔。
+
+| 免費池 | 文章出處 | 實測結果 | 處置 |
+|---|---|---|---|
+| NVIDIA NIM（build.nvidia.com） | IG reel De1UihACGPs；Threads「GLM 5.3 Flash」 | 33 個模型；17 個文字模型 ×4 任務：13 個能答。4/4 對：nemotron-3.5-super-vl-120b 0.7–3.4 秒、nemotron-3-nano-omni-30b 1.1–2.2、nemotron-3-ultra-550b 0.9–4.5、kimi-k3.1-pro 2.1–7.1、nemotron-3.5-lightning 1.6–7.1、step-5-preview 2.6–52.7、gemma-4-31b 13.7–16.2、muse-glimmer-30b 17.6–46.1、minimax-m3.1-flash 25.9–35.4（6 路並發下）。laguna-xs-2.1、nemotron-3.5-bolt-e4b 算術錯；riva-translate-4b 只會翻譯 | 已接 `chat_for` 五個任務（super-vl／nano-omni／ultra／minimax）；每個模型自己的斷路器 |
+| NVIDIA 死模型 | 同上 | glm-5.3-flash 斷路器開、gpt-oss-20b 183 秒逾時 ×4、mistral-large-4 2/4 逾時、gemma-3-12b-it／gemma-3-4b-it 404 | 不路由 |
+| OpenRouter `:free` | Threads（25+ 免費模型） | 金鑰表寫 quota0，實測又能用（`key-health.py probe --provider openrouter --write` 改回 ok）；列出 14 個 `:free`，抽取＋翻譯雙對 9 個，取最快 8 個（1.0–6.1 秒；dots-3-note 翻譯 12.4 秒沒收）；gemma-4-26b／31b `:free` 429、lfm-3-1.7b 第二次 429、nemotron-3.5-lightning:free 空回、inkling-2-small 403（只限 agent 工具） | 已接（`Pool.OPENROUTER_FREE` 實測名單排在金鑰表名單前），排在 nvidia 之後 |
+| OpenCode Zen 免費模型 | Threads（15 個免費、Muse Spark、Beam、LongCat） | 金鑰可列 50 個模型；8 個 `*-free` 全回 429 `FreeUsageLimitError`（免費額度只在 OpenCode 客戶端內） | 不路由（死：免費額度綁客戶端） |
+| Kilo Code | Threads（5 個免費模型） | 模型清單免 key 可讀（200）；推論要帳號 token，金鑰表沒有 | 不路由（要 operator 開帳號） |
+| Vercel AI Gateway | Threads（Beam 限時免費） | 模型清單免 key 可讀（200）；推論要 key＋綁卡，金鑰表沒有 | 不路由（要 operator 開帳號） |
+| Cerebras | INDEX.md 多家族投票 | 4 把 key 全 402「Payment required」 | 不路由 |
+| Groq | INDEX.md 翻譯備援 | 400「Organization has been restricted」 | 不路由 |
+| Mistral | INDEX.md、舊健康池 | 402「API budget exhausted」 | 不路由 |
+| SambaNova | INDEX.md | 401 invalid_api_key | 不路由 |
+| Hugging Face Router | 舊健康池 | 402 月額度用完 | 不路由 |
+| Google AI Studio（gemini） | IG 文章 | `chat_for` 實測 extract／bulk／summary／reasoning 1.4–3.0 秒能答（translate 被擋、落到備援 1.3 秒）；搜尋 grounding 三個模型全 429 | 留在各任務第一位；搜尋改排第三 |
+| r.jina.ai 讀取器 | ai_metadata 實測 | 免 key 200、0.4 秒；`s.jina.ai` 搜尋 401（要 key） | 已接 `websearch`（搜尋前兩階、`fetch_text` 退路） |
+| Wikipedia API | ai_metadata 實測 | 免 key 200、0.6 秒 | 已接 `websearch` 最後一階與 `fetch_text` |
+| MyMemory 翻譯 | INDEX.md | 免 key 200、1.5 秒，日→繁中「明天會下雨。」 | 未接（只做詞句；`translate` 已有 nvidia） |
+| FreeLLMAPI、「2000+ 免費 API」清單 | IG reel DfKOWvRA_N8、DfgbKnslNAs | 文章沒給網址；後者是資料 API 清單、不是 LLM | 不路由（無端點可測） |
+| Perplexity、TypeSafe Jev、Claude／ChatGPT 方案 API 額度 | 多篇 | 付費或沒有免費層 | 永不路由 |
 
 不路由（2026-10-16 實測失敗）：OmniRoute 的 `/v1/ocr`、`/v1/web/fetch`、`/v1/audio/speech`、`/v1/audio/transcriptions`、
 `/v1/rerank`（缺 provider 憑證或 404）、OmniRoute 視覺（gemini／gemma 90 秒逾時，`zc/*` spawn zcode 失敗）、
