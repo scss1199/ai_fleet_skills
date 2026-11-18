@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261118T062844Z-1017b56e",
+  "target_host": "scar3",
+  "kind": "prompt",
+  "seat": null,
+  "prompt": "F1S 令（operator 2026-11-18 原話：「持續解析所有文章裡面的各種免費池弄到f1s的中央路由 並將之推廣 尤其直接用新接好的免費池反推 ai_metadata的任務進度」，以及「同理推到其他電腦以及cwd」）。\n\n目標：用 F1S 新接上的免費池，推進本 cwd 自己還沒完成的任務，並且用前後數字證明真的有推進。ai_metadata 已經在做同一件事。\n\n步驟：\n1. 先量（前值）：列出本 cwd 還沒完成的任務（看 park／stash／open orders／TODO），每項寫一個可以數的完成量（例如已補欄位數／總數、已處理檔數、通過測試數）。\n2. 看有哪些池可用：`python C:/ai_workspace/_skill/engines/pool_tiers.py status`。呼叫一律走中央路由 `C:/ai_workspace/_skill/engines/_llm.py`，用法看技能 mtm-api-pool-offload。\n3. 只把有驗證方式的部分交給免費池跑（擷取、摘要、分類、填欄位、翻譯、逐字稿、OCR）。結果當草稿，關鍵事實回原文核對；判斷與取捨留在本對話。\n4. 再量（後值），commit 用 git_smart.py。\n5. 回覆：`python C:/ai_workspace/_skill/engines/curator_orders.py answer <本seat> <n> --evidence <路徑或commit> --note \"任務A 前→後; 任務B 前→後; 免費池呼叫 ok/全部\"`。如果本 cwd 沒有任何能交給免費池的未完成任務，用 `--cannot` 寫出原因與量過的清單。\n\n限制：不加 A770 負載（不用 A770 上的本機模型）、不跳任何視窗、不永久刪除、不新增 rider／排程、金鑰不貼進對話也不印值、Claude token 能省就省。\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-11-18T06:28:44+00:00",
+  "expires_at": "2026-11-25T06:28:44+00:00"
+}
