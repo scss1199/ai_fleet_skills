@@ -190,7 +190,75 @@ def _relevant(query, title, url):
     return not q or bool(q & _tokens(hay)) or any(len(t) == 1 and t in hay for t in q)
 
 
-BACKENDS = [_b_gemini, _b_gnews, _b_ddg_html, _b_ddg_lite, _b_bing]
+_JINA_LAST = [0.0]
+JINA_MIN_INTERVAL = 3.2   # keyless r.jina.ai allows about 20 requests a minute (ai_metadata person_pool_fill)
+
+
+def _jina(target, timeout=30):
+    """Keyless r.jina.ai reader, throttled to its free rate. s.jina.ai (search) needs a key: 401 on 2026-11-18."""
+    import time
+    wait = JINA_MIN_INTERVAL - (time.monotonic() - _JINA_LAST[0])
+    if wait > 0:
+        time.sleep(wait)
+    _JINA_LAST[0] = time.monotonic()
+    return _get("https://r.jina.ai/" + target, timeout=timeout)
+
+
+def _md_links(md):
+    return re.findall(r"\[([^\]]{3,200})\]\((https?://[^\s()]+)\)", md)
+
+
+def _b_jina_bing(q):
+    """Bing through r.jina.ai (ai_metadata 2026-11-18: 6 on-topic hits in 1.8 s); links are bing ck/a redirects."""
+    out = []
+    for t, u in _md_links(_jina("https://www.bing.com/search?q=" + urllib.parse.quote(q))):
+        u = _bing_url(u)
+        host = urllib.parse.urlparse(u).netloc.lower()
+        if not any(h in host for h in ("bing.com", "microsoft.com", "msn.com", "jina.ai")):
+            out.append((_clean(t), u))
+    return out
+
+
+def _b_wikipedia(q):
+    """Keyless Wikipedia search API (en, zh); last rung: titles only, but it answers when every engine throttles."""
+    out = []
+    for lang in ("en", "zh"):
+        try:
+            d = json.loads(_get("https://%s.wikipedia.org/w/api.php?action=query&list=search&format=json&srlimit=5"
+                                "&srsearch=%s" % (lang, urllib.parse.quote(q)), timeout=15))
+        except Exception:
+            continue
+        for hit in (d.get("query") or {}).get("search") or []:
+            title = str(hit.get("title") or "")
+            out.append((title, "https://%s.wikipedia.org/wiki/%s" % (lang, urllib.parse.quote(title.replace(" ", "_")))))
+    return out
+
+
+def _wiki_text(url, max_chars):
+    u = urllib.parse.urlparse(url)
+    title = urllib.parse.unquote(u.path.split("/wiki/", 1)[-1])
+    d = json.loads(_get("%s://%s/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&format=json&titles=%s"
+                        % (u.scheme, u.netloc, urllib.parse.quote(title)), timeout=20))
+    pages = (d.get("query") or {}).get("pages") or {}
+    return "\n".join("%s\n%s" % (p.get("title", ""), p.get("extract", "")) for p in pages.values())[:max_chars]
+
+
+def _b_jina_ddg(q):
+    """DuckDuckGo through the keyless r.jina.ai reader. ai_metadata 2026-11-18 ('Tzuyu TWICE height'): 14 on-topic
+    hits in 2.2 s while grounding 429'd on every key and direct DDG timed out. First, so search stops spending the
+    gemini quota that the pool's chat routes need; grounding stays the next rung."""
+    md = _jina("https://html.duckduckgo.com/html/?q=" + urllib.parse.quote(q))
+    out = []
+    for t, u in _md_links(md):
+        u = _ddg_url(u)
+        host = urllib.parse.urlparse(u).netloc.lower()
+        if not any(h in host for h in ("duckduckgo.com", "jina.ai", "bing.com")):
+            out.append((_clean(t), u))
+    return out
+
+# 2026-11-18: keyless reader routes first (a 429ed gemini already only skipped to the next rung; leading with it spent
+# the quota the pool's chat routes need), grounding next, the direct scrapers after, Wikipedia last.
+BACKENDS = [_b_jina_ddg, _b_jina_bing, _b_gemini, _b_gnews, _b_ddg_html, _b_ddg_lite, _b_bing, _b_wikipedia]
 
 @logged_call("search", rung=0, domain_from=lambda a, kw: "duckduckgo.com")
 def search(query, n=10):
@@ -212,9 +280,10 @@ def search(query, n=10):
         for title, url in raw:
             if backend is _b_bing:
                 url = _bing_url(url)
+            url = url.split("#")[0]
             if not url.startswith("http") or url in seen:
                 continue
-            if backend is not _b_gemini and not _relevant(query, title, url):
+            if backend not in (_b_gemini, _b_wikipedia) and not _relevant(query, title, url):
                 continue
             seen.add(url); out.append((title, url))
             if len(out) >= n:
@@ -232,10 +301,20 @@ def fetch_text(url, max_chars=6000):
     # exact domain match: a substring test made "taifex.com" match "x.com" and skipped the whole TAIFEX site
     if any(host == w or host.endswith("." + w) for w in WALLED):
         return ""  # login wall -> no content
+    if ".wikipedia.org/wiki/" in url:
+        try:
+            return _wiki_text(url, max_chars)
+        except Exception:
+            pass
     try:
         html = _get(url, timeout=20)
     except Exception:
-        return ""
+        html = ""
+    if not html:
+        try:   # 2026-11-18: blocked/timeout direct fetch -> keyless r.jina.ai reader (ai_metadata person_pool_fill)
+            return _jina(url, timeout=45)[:max_chars]
+        except Exception:
+            return ""
     # \b: without it `<head` also matched `<header ...>` and the lazy span ate the page body (taifex indexMarging
     # lost its margin table: 243 KB html -> 220 chars, ai_trader 2026-10-15).
     html = re.sub(r"(?is)<(script|style|noscript|svg|head)\b[^>]*>.*?</\1>", " ", html)
@@ -249,6 +328,11 @@ def fetch_text(url, max_chars=6000):
     body = re.sub(r"&[a-z#0-9]+;", " ", body)
     body = re.sub(r"\s+", " ", body).strip()
     txt = "\n".join(x for x in [title, og, body] if x)
+    if len(txt) < 400:   # a JS shell or bot wall: the r.jina.ai reader renders it
+        try:
+            txt = _jina(url, timeout=45) or txt
+        except Exception:
+            pass
     return txt[:max_chars]
 
 if __name__ == "__main__":

@@ -589,6 +589,26 @@ def stale_memories(hub: Path, root: Path | None = None) -> list[dict]:
     return out
 
 
+# 2026-11-16 (ai_darkhero proposal, article "Agent = Model + Harness"): MEMORY.md is injected into every session of its
+# seat, so its size is a per-turn tax no engine bounded (ai_darkhero 24 KB / 170 files). Advisory row per seat over the cap.
+MEM_INDEX_BYTES = 12288
+
+
+def memory_index_oversize(hub: Path, root: Path | None = None, cap: int = MEM_INDEX_BYTES) -> list[dict]:
+    """Seats whose MEMORY.md index exceeds `cap` bytes: facts stay, task logs and stale lines go (edit, never truncate)."""
+    root = root or MEMORY_ROOT
+    out: list[dict] = []
+    for seat in [hub] + seats(hub):
+        idx = root / _project_dir(seat) / "memory" / "MEMORY.md"
+        try:
+            size = idx.stat().st_size
+        except OSError:
+            continue
+        if size > cap:
+            out.append({"seat": seat.name, "bytes": size, "cap": cap, "files": len(list(idx.parent.glob("*.md"))) - 1})
+    return out
+
+
 # ------------------------------------------------------------------ runtime CVEs (ai_darkhero proposal 2026-11-13)
 # The CVE-2026-111497 sweep (local Node 24.14.1, three cwds on node:22-alpine, brotli 1.2.0) was done by hand; the
 # same comparison is mechanical: Node lines against nodejs.org/dist/index.json (its `security` flag), seat Python
@@ -718,13 +738,91 @@ def runtime_cves(hub: Path, fetch=None, local_node: str | None = None) -> list[d
     return rows
 
 
+# ------------------------------------------------------------------ station CLI drift (ai_darkhero proposal 2026-11-17)
+# f1s_station.py and three other engines run `claude -p` on the npm CLI; it sat at 2.1.289 while the desktop app
+# bundled 2.1.325 and nothing noticed. Compare the CLI with the newest desktop bundle and the npm registry latest;
+# station CLI over CLI_DRIFT_RELEASES releases behind = one violation row carrying the exact upgrade command.
+CLI_DRIFT_RELEASES = 10
+CLI_NPM_LATEST = "https://registry.npmjs.org/@anthropic-ai/claude-code/latest"
+CLI_APP_ROOT = Path(os.path.expandvars(r"%LOCALAPPDATA%\AnthropicClaude"))
+CLI_ASAR_RE = re.compile(rb'\{"version":"(\d+\.\d+\.\d+)","manifest":\{"version":"')
+
+
+def _claude_cli() -> tuple[str, str] | None:
+    """(path, version) of the CLI the stations run, or None when this machine has none."""
+    cli = shutil.which("claude")
+    if not cli:
+        return None
+    try:
+        out = subprocess.run([cli, "--version"], capture_output=True, text=True, timeout=30, creationflags=NW).stdout
+    except (OSError, subprocess.SubprocessError):
+        return (cli, "")
+    m = re.search(r"\d+\.\d+\.\d+", out or "")
+    return (cli, m.group(0) if m else "")
+
+
+def _app_bundled_cli(app_root: Path) -> str | None:
+    """Claude Code version inside the newest desktop app-*/resources/app.asar, None when no desktop app is installed."""
+    dirs = sorted((d for d in app_root.glob("app-*") if (d / "resources" / "app.asar").is_file()),
+                  key=lambda d: _ver(d.name[4:]) or (0,))
+    if not dirs:
+        return None
+    m = CLI_ASAR_RE.search((dirs[-1] / "resources" / "app.asar").read_bytes())
+    return m.group(1).decode() if m else None
+
+
+def claude_cli_drift(local: tuple[str, str] | None = None, app_root: Path | None = None, fetch=None,
+                     limit: int = CLI_DRIFT_RELEASES) -> list[dict] | str:
+    """[] = no CLI here or within `limit` releases; one row when behind; UNKNOWN string when nothing could be compared."""
+    local = local if local is not None else _claude_cli()
+    if not local:
+        return []
+    cli, have = local
+    v = _ver(have) if have else None
+    if not v or len(v) < 3:
+        return "UNKNOWN: claude --version unreadable"
+    refs: dict[str, str] = {}
+    try:
+        app = _app_bundled_cli(app_root or CLI_APP_ROOT)
+    except OSError:
+        app = None
+    if app:
+        refs["app"] = app
+    try:
+        npm = str((fetch or _fetch_json)(CLI_NPM_LATEST).get("version") or "")
+        if _ver(npm):
+            refs["npm"] = npm
+    except Exception:  # noqa: BLE001 - offline: the desktop bundle alone still decides
+        pass
+    if not refs:
+        return "UNKNOWN: no desktop bundle and npm registry unreachable"
+    target = max(refs.values(), key=lambda s: _ver(s))
+    t = _ver(target)
+    if t <= v:
+        return []
+    behind = t[2] - v[2] if t[:2] == v[:2] else None   # another minor line: the release count is not derivable
+    if behind is not None and behind <= limit:
+        return []
+    fix = "npm i -g @anthropic-ai/claude-code@latest" if "npm" in cli.lower() else "claude update"
+    return [{"cli": have, **refs, "behind": behind if behind is not None else f"minor line {v[0]}.{v[1]} < {t[0]}.{t[1]}",
+             "limit": limit, "path": cli, "fix": fix}]
+
+
 def check(hub: Path, now: float | None = None) -> dict:
     now = now or _now()
     rows = [check_seat(s, now) for s in seats(hub)]
     try:
+        cli_drift = claude_cli_drift()
+    except Exception as exc:  # noqa: BLE001
+        cli_drift = f"UNKNOWN: {type(exc).__name__}"
+    try:
         mems = stale_memories(hub)
     except Exception as exc:  # noqa: BLE001
         mems = f"UNKNOWN: {type(exc).__name__}"
+    try:
+        mem_idx = memory_index_oversize(hub)
+    except Exception as exc:  # noqa: BLE001
+        mem_idx = f"UNKNOWN: {type(exc).__name__}"
     try:
         leaks = producers(hub)
     except Exception as exc:  # noqa: BLE001 — a hygiene check never takes the rider down
@@ -744,8 +842,8 @@ def check(hub: Path, now: float | None = None) -> dict:
         hub_wt = f"UNKNOWN: {type(exc).__name__}"
     return {"seats": rows, "scheduled_tasks": scheduled_task_findings(hub), "hub_stale_agent_worktrees": hub_wt,
             "counts": {k: sum(1 for r in rows if r["activity"] == k) for k in ("ACTIVE", "IDLE", "DORMANT")},
-            "violations": sum(len(r["findings"]) for r in rows),
-            "producers": leaks, "retention_antipatterns": anti, "stale_memories": mems, "runtime_cves": cves}
+            "violations": sum(len(r["findings"]) for r in rows) + (len(cli_drift) if isinstance(cli_drift, list) else 0),
+            "claude_cli_drift": cli_drift, "producers": leaks, "retention_antipatterns": anti, "stale_memories": mems, "memory_index_oversize": mem_idx, "runtime_cves": cves}
 
 
 # ------------------------------------------------------------------ sweep
@@ -1099,7 +1197,9 @@ def run(hub: Path = HUB, host: str | None = None, apply: bool = False, force: bo
                            "producer_leaks": chk["producers"] if isinstance(chk["producers"], str) else len(chk["producers"]),
                            "retention_antipatterns": chk["retention_antipatterns"] if isinstance(chk["retention_antipatterns"], str) else len(chk["retention_antipatterns"]),
                            "stale_memories": chk["stale_memories"] if isinstance(chk["stale_memories"], str) else len(chk["stale_memories"]),
+                           "memory_index_oversize": chk["memory_index_oversize"] if isinstance(chk["memory_index_oversize"], str) else len(chk["memory_index_oversize"]),
                            "runtime_cves": chk["runtime_cves"] if isinstance(chk["runtime_cves"], str) else len(chk["runtime_cves"]),
+                           "claude_cli_drift": chk["claude_cli_drift"] if isinstance(chk["claude_cli_drift"], str) else [f"{d['cli']} behind {d['behind']}: {d['fix']}" for d in chk["claude_cli_drift"]],
                            "seat_budget": (f"{'applied' if sb['applied'] else 'planned'} seats={sb['seats']} deny+{sb['deny_rows']} pins->sonnet {sb['pins_moved']}" if sb.get("ok") else "error: " + str(sb.get("error"))), "moved": sw["moved"], "planned_bytes": sw["planned_bytes"], "applied": apply}}
         doc["seconds"] = round(time.time() - t0, 1)
         _save(OUT / f"{host}.json", doc)
@@ -1147,6 +1247,7 @@ def main(argv=None) -> int:
     sub.add_parser("fleet")
     sub.add_parser("cves", help="runtime CVE rows: Node lines vs nodejs.org security releases, seat venvs vs OSV")
     sub.add_parser("memories", help="memories naming engine files, paths or flags that no longer exist")
+    sub.add_parser("cli", help="station CLI (`claude -p`) version vs the desktop bundle and npm latest")
     pr = sub.add_parser("producers", help="name the engines that keep filling state dirs (no move)")
     pr.add_argument("--cap", type=int, default=PRODUCER_CAP)
     a = ap.parse_args(argv)
@@ -1159,8 +1260,10 @@ def main(argv=None) -> int:
                "expired_state_planned": len(expired_state(HUB))}
     elif a.cmd == "cves":
         out = runtime_cves(HUB)
+    elif a.cmd == "cli":
+        out = {"cli": _claude_cli(), "drift": claude_cli_drift()}
     elif a.cmd == "memories":
-        out = stale_memories(HUB)
+        out = {"stale": stale_memories(HUB), "index_oversize": memory_index_oversize(HUB)}
     elif a.cmd == "status":
         host = this_host()
         out = {"host": host, "state": _load(OUT / f"{host}.state.json", {}), "report": _load(OUT / f"{host}.json", {}).get("summary")}

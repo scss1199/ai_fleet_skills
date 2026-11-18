@@ -20,6 +20,17 @@ python "$E" --search "blender" --limit 5                           # 查三個�
 - 寫入：`--out DIR`，預設 `%TEMP%/social-read/<url sha>/`（`full.txt`、`digest.md`、`source.json`）。需要長存才指定 `--out`。
 - 不涵蓋：限時動態、個人頁列表、未點開的留言區。
 
+## 帳號分析（追蹤結構、首頁／探索頁組成、頭像清單）
+
+`_skill/engines/ig_account_analysis.py`（operator 2026-11-18，從 @scss1199 的瀏覽分析流程化）。只讀：不追蹤、不退追、不按讚、不發文。
+1. `python $E recv --out DIR --once`（背景，127.0.0.1:8765 接收匯出）
+2. `python $E js --user <帳號>` 印出收集腳本 → 內建瀏覽器開任一 instagram.com 頁面，用 javascript_tool 執行 → 每 10 秒查 `window.__iga.done`
+3. 同一分頁 navigate 到 `http://127.0.0.1:8765/` → `DIR/export.json`
+4. `python $E analyze DIR/export.json [--captions] [--topics topics.json]` → `summary.json`＋`report.jpg`（主題分類先用 `--captions` 讀標題再自己寫 topics，程式不猜）
+5. `python $E sheets DIR/export.json --set notback|fans|mutual [--groups groups.json]` → 編號頭像清單 JPG（給操作者看用 JPG，不用 HTML）
+- 追蹤／粉絲名單任何已登入帳號都讀得到（公開帳號）；首頁動態、探索頁、收藏只有「瀏覽器登入的就是目標帳號」才有（`viewer_is_target`）。
+- IG 突發量會回 429 或 404 HTML 頁；腳本記在 `status` 就停，不重試、不逐一查整份名單的個人檔案。2026-11-18 `feed/user`（貼文）回 404，貼文數據為 UNKNOWN 時照實寫。
+
 ## 主動收到的文章
 
 操作者傳到 IG DM（scss1199 ← sssc1219）、kyloren_bot、kyloren_quant 的文章，`article-relay` rider 每 30 分鐘依主題轉成校正令
