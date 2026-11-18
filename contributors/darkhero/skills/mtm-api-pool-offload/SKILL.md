@@ -81,6 +81,19 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 | MyMemory 翻譯 | INDEX.md | 免 key 200、1.5 秒，日→繁中「明天會下雨。」 | 未接（只做詞句；`translate` 已有 nvidia） |
 | FreeLLMAPI、「2000+ 免費 API」清單 | IG reel DfKOWvRA_N8、DfgbKnslNAs | 文章沒給網址；後者是資料 API 清單、不是 LLM | 不路由（無端點可測） |
 | Perplexity、TypeSafe Jev、Claude／ChatGPT 方案 API 額度 | 多篇 | 付費或沒有免費層 | 永不路由 |
+| Gemini 新模型（AI Studio 免費層） | 2026-11-14 Hydrogen 文章（「free tier in AI Studio」）、Gemini Decision 1 文章 | 同 3 把 gemini key，4 任務：gemini-3.5-flash-lite 4/4 0.9–1.5 秒、gemini-3.8-flash 3/4 4.5–6.0 秒（1 次 503）、gemini-4-hydrogen 3/4 19–63 秒（1 次 503）、gemini-decision-1 免費層 404 | 已接：`Pool.GEMINI_FREE`，金鑰表模型 429/503/404 時同 key 換下一個模型（強制 404 實測 0.9 秒回答）；hydrogen 太慢不列 |
+| OpenRouter `openrouter/free` 路由器 | 2026-10-18 OpenRouter 免費模型文章 | 清單有列（共 15 個 free id）；4 任務全 429「free-models-per-day」 | 不另接：與 `:free` 名單共用同一個每日額度，不增加容量 |
+| DeepSeek API | 多篇（V4 免費開源） | `/user/balance`：granted 0.00、topped_up −0.22 USD、is_available=False；開源權重免費但 API 是儲值計費 | 不路由（付費） |
+| Cloudflare Workers AI | F1S 文章帳本（free quota 用完照常運作） | `_llm.Pool.cf_ai` 程式已在；`token-onboard.py list` cf_ai MISSING（要 token＋account_id） | 待 operator：`token-onboard.py request cf_ai` |
+| Zhipu GLM（z.ai／bigmodel） | 中國模型文章、z.ai 網域 4 篇 | 金鑰表與 token-onboard 都沒有；GLM 經 NVIDIA 已測（glm-5.3-flash 斷路器開） | 待 operator 開帳號；沒有 recipe |
+| fal.ai | infinite-tv 文章 | 金鑰表沒有；影片／圖像付費點數 | 不路由（沒有 key、非文字池） |
+| Moonshot Kimi、Liquid LFM、Cohere、Baidu ERNIE、StepFun | 多篇 | 已經由 NVIDIA（kimi-k3.1-pro、step-5-preview）或 OpenRouter `:free`（cohere/north-mini-code、liquid/lfm-3-1.7b、baidu/ernie-5.5-flash-preview）實測 | 已涵蓋（不另開 provider） |
+| Doubao Volcengine、Tencent Hunyuan、OpenAI API、xAI Grok API、Stability、Baseten、Together AI、Hyperbolic | 新聞類文章 | 文章沒給免費端點；xai 金鑰 quota0、together invalid | 不路由 |
+| Windsurf、Copilot、Kiro、Qoder、Gemini CLI、LM Arena | 工具／排行榜文章 | 免費額度綁客戶端或網頁（同 OpenCode Zen），沒有可呼叫的 API | 不路由 |
+| ElevenLabs、Kaggle、Colab、Firecrawl | 多篇 | ElevenLabs 文章講的是本機開源替代；Kaggle／Colab 是互動筆記本 GPU；Firecrawl 要帳號（讀網頁已有 r.jina.ai） | 不路由 |
+
+全文掃描：`python _skill/engines/free_pool_sweep.py sweep`（0 模型 token；kyloren-knowledge*、`_wiki/articles`、f1s-sources、f1s-apply 技巧行）。
+`article_relay.py tick` 每輪跑增量掃描，表上沒有的池名出現在 curator 回合的「FREE POOL CANDIDATES」行；實測後把列補進本表即消失。
 
 不路由（2026-10-16 實測失敗）：OmniRoute 的 `/v1/ocr`、`/v1/web/fetch`、`/v1/audio/speech`、`/v1/audio/transcriptions`、
 `/v1/rerank`（缺 provider 憑證或 404）、OmniRoute 視覺（gemini／gemma 90 秒逾時，`zc/*` spawn zcode 失敗）、

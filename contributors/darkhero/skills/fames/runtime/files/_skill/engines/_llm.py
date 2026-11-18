@@ -144,28 +144,38 @@ class Pool:
                 # transient (SSL bad-record-mac, conn reset): rotate key + backoff, keep trying
                 self.gi+=1; time.sleep(1.5); last=str(e); continue
         return f"__ERR__ groq transient ({last})"
+    # 2026-11-18 curator article sweep (free_pool_sweep.py; AI Studio free tier, 4 keyed tasks, 3 keys): gemini-3.5-flash-lite
+    # 4/4 in 0.9-1.5 s, gemini-3.8-flash 3/4 in 4.5-6.0 s (one 503), gemini-4-hydrogen 3/4 in 19-63 s (too slow, not
+    # listed), gemini-decision-1 404 on the free tier. Free-tier quota is per model, so a model that answers 429/503/404
+    # falls through to the next one on the same keys instead of failing the provider.
+    GEMINI_FREE=["gemini-3.5-flash-lite","gemini-3.8-flash"]
     def _gemini(self,messages,jsonmode):
         if not self.gem or not self.gemkeys: return "__ERR__ no-gemini"
-        model=self.gem["models"][0]; url=self.gem["url"].format(model=model)
         text="\n\n".join(m["content"] for m in messages)
         last="none"
-        for key in self.gemkeys:
-            req=urllib.request.Request(f"{url}?key={key}",method="POST",
-                headers={"Content-Type":"application/json","User-Agent":UA})
-            data={"contents":[{"parts":[{"text":text}]}],"generationConfig":{"temperature":0.1}}
-            try:
-                r=urllib.request.urlopen(req,data=json.dumps(data).encode(),timeout=120)
-                doc=json.loads(r.read())
-            except urllib.error.HTTPError as e:
-                last="%s %s"%(e.code,e.read()[:120]); continue   # 2026-10-27: 503 high-demand on one key -> next key
-            except Exception as e:
-                last=type(e).__name__; continue
-            text=self._gemini_text(doc)
-            if text is not None:
-                return text
-            # 2026-10-31: 124 'gemini-failed (KeyError)' rows in one day were safety-blocked replies with no parts
-            # (ai_theater subtitle text). The reason is now named, and a block repeats on every key: stop here.
-            last="blocked:"+self._gemini_block_reason(doc); break
+        for model in dict.fromkeys(list(self.gem["models"][:1])+self.GEMINI_FREE):
+            url=self.gem["url"].format(model=model); skip_model=False
+            for key in self.gemkeys:
+                req=urllib.request.Request(f"{url}?key={key}",method="POST",
+                    headers={"Content-Type":"application/json","User-Agent":UA})
+                data={"contents":[{"parts":[{"text":text}]}],"generationConfig":{"temperature":0.1}}
+                try:
+                    r=urllib.request.urlopen(req,data=json.dumps(data).encode(),timeout=120)
+                    doc=json.loads(r.read())
+                except urllib.error.HTTPError as e:
+                    last="%s %s [%s]"%(e.code,e.read()[:120],model)   # 2026-10-27: 503 high-demand on one key -> next key
+                    if e.code==404: skip_model=True; break         # model not on this tier: no key will have it
+                    continue
+                except Exception as e:
+                    last=type(e).__name__; continue
+                out=self._gemini_text(doc)
+                if out is not None:
+                    return out
+                # 2026-10-31: 124 'gemini-failed (KeyError)' rows in one day were safety-blocked replies with no parts
+                # (ai_theater subtitle text). The reason is now named, and a block repeats on every key and model: stop here.
+                last="blocked:"+self._gemini_block_reason(doc)
+                return "__ERR__ gemini-failed (%s)"%redact(last)
+            if skip_model: continue
         return "__ERR__ gemini-failed (%s)"%redact(last)
     @staticmethod
     def _gemini_text(doc):
