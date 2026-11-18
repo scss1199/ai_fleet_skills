@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-18T03:04:16.982912+00:00",
+  "observed_at": "2026-11-18T04:02:05.656786+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,8 +353,45 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "UNKNOWN",
-    "native_events": [],
+    "native_state": "OBSERVED_PARTIAL_POPULATION",
+    "native_events": [
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-18T11:39:48+08:00",
+        "receipt_sha256": "534604f35fec5b79e77c1ede395637aed930b21830cabf211ebdb83bf3fc0ad1"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-18T11:13:32+08:00",
+        "receipt_sha256": "99fd05dc5a3e8df9e89f5f52d9b1c7a21821afbde1c3d560c2dd9431967192d2"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-18T11:44:31+08:00",
+        "receipt_sha256": "62af30d00b3a66e2073ae6f8055a75f5fbca659b7f46dfcaf6bac63fc674ce21"
+      },
+      {
+        "agent": "sdnext_a770",
+        "surface": "claude",
+        "observed_at": "2026-11-18T11:22:28+08:00",
+        "receipt_sha256": "6d82ef828c99a43b76fc4d610c06dd6251ba8e15b2516f30c40bc18566351cf1"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-18T11:22:52+08:00",
+        "receipt_sha256": "4d0ffedd7413912d52c074c8b31f048a66234daf42a80a3e3456faff1bff13bc"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-18T11:44:57+08:00",
+        "receipt_sha256": "e15494316bb17ba844a0b3be85526217b3b15b8b7a307d4728378e18082b3a22"
+      }
+    ],
     "runtime_release_sha256": "b1a7781ec433b69e5f804ee6ed2adf70f0b52cec245efd5ce258e1975d288611"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
