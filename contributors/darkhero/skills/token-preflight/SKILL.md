@@ -57,6 +57,12 @@ Two habits, mechanised by `_skill/engines/session-consolidate.py`:
    defect twice resumes only when the parent forwards a dated operator quote. The parent reads back each claimed
    deploy (live sha, receipt, acceptance file) before reporting it. Red lines and operator-only decisions still stop.
    Evidence: C:/Users/sc/Downloads/_quick_output/20261111_nuwa_progress.txt.
+4. **One hub conversation per named topic (jci_taipei, operator 2026-11-18 「所有元月刊都從這邊統籌 有任務就從這開子對話」
+   and 「官網相關的統一在這個對話不要發散…子對話完成後自動關閉」).** When the operator names a conversation as the hub of
+   a topic, every request on that topic goes to that conversation; it only compares the current state, starts children
+   for the tasks and checks their evidence. A child reports its result back to the hub and closes itself when done
+   (`archive_session("self")`); no second conversation works the same topic in parallel.
+   Evidence: C:/Users/sc/.claude/projects/C--ai-workspace-jci-taipei/memory/yearbook71-single-hub-session.md.
 
 ## Every wake is a full cache read (F1S 2026-11-03, f1s_waste.py)
 
