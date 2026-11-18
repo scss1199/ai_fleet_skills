@@ -373,6 +373,50 @@ def _free_pool_block(package_sha: str, previous: dict | None = None) -> dict:
     return block
 
 
+def _key_seal_block(node: dict) -> dict:
+    """Follower side of option (a) (operator 2026-11-18): publish this host's fleet SSH public key so darkhero
+    can seal the free-pool keys to it. Public key and fingerprint only; missing `cryptography` = UNKNOWN."""
+    if node.get("role") not in {"downstream_curator", "downstream_follower"}:
+        return {}
+    try:
+        seal = _load_engine("fleet_key_seal.py", "fleet_key_seal_pub")
+        line = seal.ensure_identity()
+        if line:
+            return {"key_seal": {"ssh_pubkey": line, "fingerprint": seal.fingerprint(line)}}
+    except Exception:  # noqa: BLE001 - never block the manifest on the key path
+        pass
+    return {"key_seal": {"state": "UNKNOWN"}}
+
+
+def _seal_followers(proto: dict, node: dict) -> dict:
+    """Upstream side: seal the free-pool rows to every follower's published key under contributors/<me>/sealed/."""
+    try:
+        seal = _load_engine("fleet_key_seal.py", "fleet_key_seal_up")
+        followers = sorted({_contributor_slug(n) for n in (proto.get("nodes") or {}).values()
+                            if n.get("role") in {"downstream_curator", "downstream_follower"}})
+        state = _load_state(proto)
+        out = seal.seal_for_followers(_repo_root(node, proto), _contributor_slug(node), followers, state)
+        _save_state(proto, state)
+        return out
+    except Exception as exc:  # noqa: BLE001
+        return {"state": "FAILED", "reason": type(exc).__name__}
+
+
+def _apply_sealed_keys(proto: dict, node: dict) -> dict:
+    """Follower side: open contributors/<upstream>/sealed/<me>.json when it changed and merge it locally."""
+    try:
+        seal = _load_engine("fleet_key_seal.py", "fleet_key_seal_down")
+        nodes = proto.get("nodes") or {}
+        upstream = nodes.get(proto.get("default_upstream", "ai_darkhero")) or {}
+        state = _load_state(proto)
+        out = seal.apply_sealed(_repo_root(node, proto), _contributor_slug(upstream), _contributor_slug(node), state)
+        if out.get("state") == "APPLIED":
+            _save_state(proto, state)
+        return out
+    except Exception as exc:  # noqa: BLE001
+        return {"state": "FAILED", "reason": type(exc).__name__}
+
+
 def _finalize_manifest(manifest: dict) -> str:
     payload = {k: v for k, v in manifest.items() if k != "manifest_sha"}
     manifest["manifest_sha"] = _sha16_text(json.dumps(payload, ensure_ascii=False, sort_keys=True))
@@ -468,6 +512,7 @@ def cmd_export(node_name: str, node: dict, *, quiet: bool = False) -> dict:
         "free_pool": _free_pool_block(
             next((s.get("package_sha") for s in manifest_skills if s.get("name") == "fames"), ""),
             previous_manifest.get("free_pool")),
+        **_key_seal_block(node),
     }
     same_generation = (
         previous_manifest.get("schema") == manifest["schema"]
@@ -480,6 +525,8 @@ def cmd_export(node_name: str, node: dict, *, quiet: bool = False) -> dict:
     body = _finalize_manifest(manifest)
     os.makedirs(export, exist_ok=True)
     Path(os.path.join(export, "manifest.json")).write_text(body, encoding="utf-8")
+    if node.get("role") == "upstream_curator":
+        _seal_followers(proto, node)
     digest_out = os.path.join(export, "digest.json")
     if not (same_generation and os.path.isfile(digest_out)):
         Path(digest_out).write_text(
@@ -1369,6 +1416,7 @@ def cmd_sync(node_name: str, node: dict, *, quiet: bool = False) -> dict:
     if role in {"downstream_curator", "downstream_follower"}:
         before = _run_fames_follow(node_name, node)
         pull = cmd_pull(node_name, node, quiet=quiet)
+        keys = _apply_sealed_keys(_load_proto(), node)
         # A legacy follower may learn the follow command only through the pull above.
         after = before if before.get("ok") else _run_fames_follow(node_name, node)
         publish = (
@@ -1381,6 +1429,7 @@ def cmd_sync(node_name: str, node: dict, *, quiet: bool = False) -> dict:
             "ok": bool(pull.get("ok") and after.get("ok") and publish.get("ok")),
             "fames": after,
             "publish": publish,
+            "key_seal": keys,
         }
         if not quiet:
             print(json.dumps(out, ensure_ascii=False))
