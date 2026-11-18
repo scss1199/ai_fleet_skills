@@ -758,8 +758,11 @@ def last_typed_request(path) -> str:
                     content = "\n".join(b.get("text") or "" for b in content if isinstance(b, dict) and b.get("type") == "text")
                 if not isinstance(content, str) or not content.strip():
                     continue
-                text = content.strip()
-                if text.startswith(("<system-reminder>", "<command-", "<local-command", "Caveat:")):
+                # 2026-11-19: a request relayed by another session (or typed while the app adds a "Linked sessions
+                # now" note) opens with <system-reminder> blocks; skipping the whole row lost the only task the
+                # rolled-over 44817296 had ("No typed request found"). Judge the text after those blocks.
+                text = re.sub(r"(?s)^(\s*<system-reminder>.*?</system-reminder>\s*)+", "", content).strip()
+                if not text or text.startswith(("<system-reminder>", "<command-", "<local-command", "Caveat:")):
                     continue
                 if f1s_waste.wake_kind(text) == "operator":
                     last = text
@@ -768,28 +771,69 @@ def last_typed_request(path) -> str:
     return last
 
 
-def rollover_brief_text(seat: str, session_id: str, context: int, last_request: str) -> str:
+ROLLOVER_TTL_S = 30 * 60      # an armed hand-over nobody picked up within this is stale
+ROLLOVER_TASKS = 12
+
+
+def rollover_path(seat: str) -> str:
+    """The armed hand-over of a seat. Writer: `rollover-brief --arm`; readers: f1s_live.wait (wakes the cleared
+    conversation) and claude_session_hook (SessionStart source=clear injects it). One file per seat, rewritten, TTL."""
+    return os.path.join(HUB, "_registry", "fames-hot", f"rollover-{seat}.json")
+
+
+def transcript_state(path) -> tuple[str, list[str]]:
+    """(model of the last assistant row, the open steps of the last update_plan list). ("", []) when unreadable."""
+    model, items = "", []
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            for raw in fh:
+                if '"assistant"' not in raw:
+                    continue
+                try:
+                    msg = json.loads(raw).get("message") or {}
+                except ValueError:
+                    continue
+                if not isinstance(msg, dict):
+                    continue
+                if str(msg.get("model") or "").startswith("claude-"):
+                    model = msg["model"]
+                for b in msg.get("content") or []:
+                    if (isinstance(b, dict) and b.get("type") == "tool_use" and str(b.get("name") or "").endswith("update_plan")
+                            and isinstance((b.get("input") or {}).get("items"), list)):
+                        items = b["input"]["items"]
+    except OSError:
+        return "", []
+    open_steps = [str(i.get("content") or "") for i in items
+                  if isinstance(i, dict) and i.get("status") != "completed" and i.get("content")]
+    return model, open_steps[:ROLLOVER_TASKS]
+
+
+def rollover_brief_text(seat: str, session_id: str, context: int, last_request: str, model: str = "",
+                        open_tasks: list | None = None) -> str:
     """The whole prompt of the conversation that takes over a rolled-over one. Pure: no file is read or written."""
     k = f"{context // 1000}K"
     sid = session_id or "unknown"
     transcript = f"C:/Users/<user>/.claude/projects/*/{session_id}.jsonl" if session_id else "(unknown)"
     if last_request:
-        task = ("Task to carry out now (the operator's latest typed request, verbatim):\n"
+        task = ("Task to carry out now (the operator's latest request, verbatim):\n"
                 + last_request[:BRIEF_REQUEST_CHARS])
     else:
         task = "No typed request found; ask nothing, read the park file."
-    return "\n".join((
-        f"This conversation continues {seat}'s conversation {sid}, which F1S rolled over at {k}.",
-        "Read first, and only if needed: C:/ai_workspace/_registry/agc-compact/" + f"{seat}.md" + " and C:/ai_workspace/_logs/park/"
-        + f"{seat}.md" + " (last entry).",
-        task,
-        "Reply rules: report in Traditional Chinese, conclusion first in two sentences, numbers only from measurements made in this "
-        "conversation, no questions about mechanical work.",
-        f"The old conversation is archived; its transcript ({transcript}) is for exact details only.",
-    ))
+    lines = [f"This conversation continues {seat}'s conversation {sid}, which F1S rolled over at {k}"
+             + (f" on model {model} (keep it)." if model else "."),
+             "Read first, and only if needed: C:/ai_workspace/_registry/agc-compact/" + f"{seat}.md" + " and C:/ai_workspace/_logs/park/"
+             + f"{seat}.md" + " (last entry).",
+             task]
+    if open_tasks:
+        lines.append("Open steps left by the old conversation (finish them; drop any the request above already covers):\n"
+                     + "\n".join(f"- {t[:200]}" for t in open_tasks))
+    lines += ["Reply rules: report in Traditional Chinese, conclusion first in two sentences, numbers only from measurements made in this "
+              "conversation, no questions about mechanical work.",
+              f"The old conversation's transcript ({transcript}) is for exact details only."]
+    return "\n".join(lines)
 
 
-def rollover_brief(seat: str, session_id: str = "", park: bool = True) -> str:
+def rollover_brief(seat: str, session_id: str = "", park: bool = True, arm: bool = False) -> str:
     import glob as _glob
     from pathlib import Path as _Path
     if park:
@@ -800,15 +844,79 @@ def rollover_brief(seat: str, session_id: str = "", park: bool = True) -> str:
         except Exception:
             pass
     found = _glob.glob(os.path.join(CLAUDE_PROJECTS, "*", f"{session_id}.jsonl")) if session_id and session_id.replace("-", "").isalnum() else []
-    request, context = "", 0
+    request, context, model, tasks = "", 0, "", []
     if found:
         request = last_typed_request(found[0])
+        model, tasks = transcript_state(found[0])
         try:
             import f1s_live
             context = f1s_live.context_tokens(_Path(found[0]), settled=True)
         except Exception:
             pass
-    return rollover_brief_text(seat, session_id, context, request)
+    text = rollover_brief_text(seat, session_id, context, request, model, tasks)
+    if arm:
+        arm_rollover(seat, session_id, text, model)
+    return text
+
+
+def _write_rollover(path: str, doc: dict) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, ensure_ascii=False, indent=1)
+    os.replace(tmp, path)
+
+
+def arm_rollover(seat: str, session_id: str, brief: str, model: str = "", now: float | None = None) -> dict:
+    """Record the hand-over for the conversation that clears itself next (clear_session "self" keeps the session's
+    model, folder and permissions, and unlike start_session it is not refused on a turn nobody typed)."""
+    now = time.time() if now is None else now
+    doc = {"seat": seat, "session": session_id, "model": model, "brief": brief, "armed_at": now,
+           "armed_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)), "delivered": []}
+    _write_rollover(rollover_path(seat), doc)
+    return doc
+
+
+def take_rollover(seat: str, via: str, session_id: str = "", now: float | None = None) -> dict:
+    """The armed hand-over of `seat` if it is fresh, with `via` recorded as one delivery ({} otherwise). `via` is
+    "start" (SessionStart source=clear, session_id = the new conversation) or "wake" (the old conversation's idle
+    waiter, session_id = the armed one). Each via delivers at most once. Never raises."""
+    now = time.time() if now is None else now
+    path = rollover_path(seat)
+    try:
+        with open(path, encoding="utf-8") as fh:
+            doc = json.load(fh)
+        if not isinstance(doc, dict) or now - float(doc.get("armed_at") or 0) > ROLLOVER_TTL_S:
+            return {}
+        if via == "wake" and session_id != doc.get("session"):
+            return {}
+        if via == "start" and session_id == doc.get("session"):
+            return {}
+        done = [d for d in doc.get("delivered") or [] if isinstance(d, dict)]
+        if any(d.get("via") == via for d in done):
+            return {}
+        doc["delivered"] = done + [{"via": via, "session": session_id, "at": now}]
+        _write_rollover(path, doc)
+        return doc
+    except (OSError, ValueError, TypeError, AttributeError):
+        return {}
+
+
+def rollover_start_text(seat: str, session_id: str) -> str:
+    """For SessionStart source=clear: the armed brief as this new conversation's task. "" when none."""
+    doc = take_rollover(seat, "start", session_id)
+    return ("F1S ROLLOVER — this conversation was cleared to continue a full one on the same model; the hand-over below "
+            "is your task. Start it at once, without waiting for the operator:\n" + doc["brief"]) if doc else ""
+
+
+def rollover_wake_text(seat: str, session_id: str) -> str:
+    """For the old conversation's idle waiter after it cleared itself: the wake text. "" when nothing is armed."""
+    doc = take_rollover(seat, "wake", session_id)
+    if not doc:
+        return ""
+    if any(d.get("via") == "start" for d in doc.get("delivered") or [] if isinstance(d, dict)):
+        return "F1S ROLLOVER — the hand-over in your context (F1S ROLLOVER) is your task: carry it out now."
+    return "F1S ROLLOVER — carry out this hand-over now:\n" + doc["brief"]
 
 
 def handoff_line(seat: str, session_id: str = "", context: int | None = None, over: int | None = None,
@@ -847,12 +955,15 @@ def handoff_line(seat: str, session_id: str = "", context: int | None = None, ov
         sess = f" --session {session_id}" if session_id else ""
         return (f"ROLL OVER {context // 1000}K > {rollover // 1000}K: this conversation holds {context // 1000}K; do not do this prompt's work here. "
                 "If a background task of this conversation is still running, let it finish first. "
-                f"Run `python C:/ai_workspace/_skill/engines/curator_orders.py rollover-brief --seat {seat}{sess}` (it parks the seat and prints the hand-over prompt). "
-                "Then start a new conversation in the same cwd at once with that printed text as its whole prompt "
-                "(tool mcp__ccd_session__start_session, initiation \"user_asked\", context \"fresh\", no worktree), no offer card and no question to the operator. "
-                "When the tool result says it started, tell the operator in one line where the work continues, then archive this conversation "
-                "(mcp__ccd_session_mgmt__archive_session \"self\"). " + ARCHIVE_RC_HINT + " "
-                "If a new conversation cannot be started (for example over Remote Control), fall back to a lean station and say so.")
+                f"Run `python C:/ai_workspace/_skill/engines/curator_orders.py rollover-brief --seat {seat}{sess} --arm` (it parks the seat, "
+                "records the hand-over with the operator's request, the model and the open steps, and prints it). "
+                "Then call mcp__ccd_session_mgmt__clear_session with session_id \"self\": the same session keeps its model, folder and "
+                "permissions, it works on turns nobody typed, and when this turn ends F1S hands the cleared conversation the brief "
+                "(SessionStart) and wakes it (idle waiter). Tell the operator in one line that the conversation rolls over, then end the turn. "
+                "If clear_session is refused (Remote Control, pinned, or open live work), start a new conversation in the same cwd with "
+                "the printed text as its whole prompt (mcp__ccd_session__start_session, initiation \"user_asked\", context \"fresh\", "
+                "no worktree, model = the one in the brief) and archive this one (mcp__ccd_session_mgmt__archive_session \"self\"). "
+                + ARCHIVE_RC_HINT + " If neither works, fall back to a lean station and say so.")
     cwd = os.path.join(HUB, seat).replace(os.sep, "/")
     return (f"FAT CHAT {context // 1000}K > {over // 1000}K: every tool call here re-reads {context // 1000}K. Hand execution to a lean "
             f"station (about 30K, one result row back): `python _skill/engines/f1s_station.py run --cwd {cwd} --tools Read,Grep,Glob,Bash,Edit,Write "
@@ -1175,9 +1286,10 @@ def main(argv=None) -> int:
     s.add_argument("--seat", required=True)
     s.add_argument("--session", default="")
     s.add_argument("--no-park", action="store_true")
+    s.add_argument("--arm", action="store_true", help="record it for clear_session(self): SessionStart and the idle waiter deliver it")
     a = ap.parse_args(argv)
     if a.cmd == "rollover-brief":
-        text = rollover_brief(a.seat, a.session, park=not a.no_park)
+        text = rollover_brief(a.seat, a.session, park=not a.no_park, arm=a.arm)
         try:
             print(text)
         except UnicodeEncodeError:
