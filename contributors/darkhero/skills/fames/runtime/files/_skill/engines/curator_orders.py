@@ -623,7 +623,13 @@ def archive_due(session_id: str = "", now: float | None = None, spawn=None, own:
     items = "; ".join(f"{r['host_id']} ({r.get('reason')}, {str(r.get('title') or '')[:30]})" for r in rows[:8])
     whose = "conversation(s) you started are confirmed complete" if own else "conversation(s) have no task left"
     return (f"SESSION ARCHIVE DUE — {len(rows)} {whose}: {items}. Archive each with "
-            f"archive_session (reason = its reason); a reopened one comes back on its next order.")
+            f"archive_session (reason = its reason); a reopened one comes back on its next order. " + ARCHIVE_RC_HINT)
+
+
+# ai_photo 2026-11-18: archive_session refuses an idle chat while Remote Control is on ("still has live work").
+ARCHIVE_RC_HINT = ("If archive_session says live work and the target is idle (isRunning=false) with remoteControlActive=true, "
+                   "call set_remote_control(enabled=false) on it, then archive_session again; for self, "
+                   "set_remote_control(self, false) before archive_session(self).")
 
 
 def open_orders(seat: str, session_id: str | None = None) -> list[dict]:
@@ -834,7 +840,7 @@ def handoff_line(seat: str, session_id: str = "", context: int | None = None, ov
                 "Then start a new conversation in the same cwd at once with that printed text as its whole prompt "
                 "(tool mcp__ccd_session__start_session, initiation \"user_asked\", context \"fresh\", no worktree), no offer card and no question to the operator. "
                 "When the tool result says it started, tell the operator in one line where the work continues, then archive this conversation "
-                "(mcp__ccd_session_mgmt__archive_session \"self\"). "
+                "(mcp__ccd_session_mgmt__archive_session \"self\"). " + ARCHIVE_RC_HINT + " "
                 "If a new conversation cannot be started (for example over Remote Control), fall back to a lean station and say so.")
     cwd = os.path.join(HUB, seat).replace(os.sep, "/")
     return (f"FAT CHAT {context // 1000}K > {over // 1000}K: every tool call here re-reads {context // 1000}K. Hand execution to a lean "

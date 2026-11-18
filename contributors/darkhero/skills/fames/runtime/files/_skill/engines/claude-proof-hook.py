@@ -1472,6 +1472,15 @@ def _test_scan_note(command: str, result: str, green: bool, is_error) -> str | N
 SESSION_ID = re.compile(r"session_id: (local_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
 
 
+def _seat_of(path: str) -> str:
+    """The seat a folder belongs to: its first component under the hub root; the root itself is ai_darkhero."""
+    parts = [p for p in re.split(r"[\\/]+", str(path).lower()) if p]
+    if "ai_workspace" in parts:
+        rest = parts[parts.index("ai_workspace") + 1:]
+        return rest[0] if rest else "ai_darkhero"
+    return "/".join(parts)
+
+
 def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
     exec_mod = _exec_module()
     uses: dict[str, tuple[str, dict]] = {}
@@ -1513,7 +1522,11 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
                 f["tool_calls"] += 1
                 command = str(tool_input.get("command") or "")
                 if ok and name.endswith(("__start_session", "__hand_off_to_session")):
-                    f["started_sessions"].extend(i for i in SESSION_ID.findall(result or "") if i not in f["started_sessions"])
+                    for i in SESSION_ID.findall(result or ""):
+                        if i not in f["started_sessions"]:
+                            f["started_sessions"].append(i)
+                        # 2026-11-18: where it runs; "" = this chat's own folder (same seat)
+                        f.setdefault("started_cwds", {})[i] = str(tool_input.get("cwd") or "")
                 if ok and name.endswith("__detach_session"):
                     f["detached_sessions"].append(str(tool_input.get("session_id") or ""))
                 if size < MAX_HAYSTACK:
@@ -1727,6 +1740,10 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
 
     if classes.get("attached_session", True):
         for sid in f.get("started_sessions") or []:
+            # 2026-11-18 (ai_darkhero#2): a child in this chat's own seat may nest (operator jci_taipei
+            # 2026-11-18 「有小任務就開子對話來完成並回報你」); only another seat's work must detach.
+            if cwd and _seat_of(cwd) == _seat_of((f.get("started_cwds") or {}).get(sid) or cwd):
+                continue
             if sid not in (f.get("detached_sessions") or []):
                 violations.append({"line": 0, "class": "attached_session", "snippet": sid[:SNIPPET],
                                    "need": LIE_NEEDS["attached_session"]})
