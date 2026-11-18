@@ -84,7 +84,7 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 | Gemini 新模型（AI Studio 免費層） | 2026-11-14 Hydrogen 文章（「free tier in AI Studio」）、Gemini Decision 1 文章 | 同 3 把 gemini key，4 任務：gemini-3.5-flash-lite 4/4 0.9–1.5 秒、gemini-3.8-flash 3/4 4.5–6.0 秒（1 次 503）、gemini-4-hydrogen 3/4 19–63 秒（1 次 503）、gemini-decision-1 免費層 404 | 已接：`Pool.GEMINI_FREE`，金鑰表模型 429/503/404 時同 key 換下一個模型（強制 404 實測 0.9 秒回答）；hydrogen 太慢不列 |
 | OpenRouter `openrouter/free` 路由器 | 2026-10-18 OpenRouter 免費模型文章 | 清單有列（共 15 個 free id）；4 任務全 429「free-models-per-day」 | 不另接：與 `:free` 名單共用同一個每日額度，不增加容量 |
 | DeepSeek API | 多篇（V4 免費開源） | `/user/balance`：granted 0.00、topped_up −0.22 USD、is_available=False；開源權重免費但 API 是儲值計費 | 不路由（付費） |
-| Cloudflare Workers AI | F1S 文章帳本（free quota 用完照常運作） | `_llm.Pool.cf_ai` 程式已在；`token-onboard.py list` cf_ai MISSING（要 token＋account_id） | 待 operator：`token-onboard.py request cf_ai` |
+| Cloudflare Workers AI | F1S 文章帳本（free quota 用完照常運作） | 2026-11-18 token（Workers AI 範本）＋account_id 入金鑰表，`key-health.py probe --provider cf_ai --write` → ok；帳號 0 筆付費訂閱（免費方案，每日 10k neurons 用完即停、不計費）；預設 llama-3.1-8b 410 已下架；4 任務：mistral-small-3.1-24b 4/4 0.4–1.2 秒、gpt-oss-120b 4/4 0.8–2.2 秒、llama-3.3-70b-fp8-fast 4/4 0.7–8.0 秒、gemma-4-26b 4/4 1.8–11.5 秒、qwen3-30b 3/4、glm-4.7-flash 2/4；`chat_via("cf_ai")` extract 0.8 秒、translate 0.9 秒 | 已接：五個任務路由都排在 openrouter 前 |
 | Zhipu GLM（z.ai／bigmodel） | 中國模型文章、z.ai 網域 4 篇 | 金鑰表與 token-onboard 都沒有；GLM 經 NVIDIA 已測（glm-5.3-flash 斷路器開） | 待 operator 開帳號；沒有 recipe |
 | fal.ai | infinite-tv 文章 | 金鑰表沒有；影片／圖像付費點數 | 不路由（沒有 key、非文字池） |
 | Moonshot Kimi、Liquid LFM、Cohere、Baidu ERNIE、StepFun | 多篇 | 已經由 NVIDIA（kimi-k3.1-pro、step-5-preview）或 OpenRouter `:free`（cohere/north-mini-code、liquid/lfm-3-1.7b、baidu/ernie-5.5-flash-preview）實測 | 已涵蓋（不另開 provider） |

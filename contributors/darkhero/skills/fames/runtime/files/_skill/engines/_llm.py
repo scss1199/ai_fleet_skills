@@ -454,9 +454,12 @@ class Pool:
     OPENROUTER_FREE=["nvidia/nemotron-3.5-super-vl:free","cohere/north-mini-code:free","baidu/ernie-5.5-flash-preview:free",
                      "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free","recursive/flint-v1.0:free",
                      "nvidia/nemotron-3-ultra-550b-a55b:free","particle-ai/particle-1:free","inclusionai/ling-3.2-flash:free"]
+    # 2026-11-18 cf_ai (Workers AI, free plan: account has no paid subscription, so the 10k-neuron/day cap stops, never bills):
+    # 4-task probe mistral-small-3.1-24b 4/4 0.4-1.2 s, gpt-oss-120b 4/4 0.8-2.2 s, llama-3.3-70b-fp8-fast 4/4 0.7-8.0 s;
+    # it goes before openrouter, whose :free daily cap answered 429 free-models-per-day the same day.
     TASK_ROUTES={
         # 2026-11-18: without gemini, summary fell to auto/coding (7.7 s); nemotron-3.5-super-vl answered in 0.4-3.4 s.
-        "summary":["gemini",NV_FAST,NV_OMNI,"openrouter","omniroute:auto/coding"],
+        "summary":["gemini",NV_FAST,NV_OMNI,"cf_ai","openrouter","omniroute:auto/coding"],
         # 2026-10-18 (ai_trader F1S proposal, 40-title JSON labelling): ddgw/gpt-5.4-mini 2.0/1.6/2.3 s and parsed on
         # every probe (88/120 labels agree with gemini); auto/coding and auto/reasoning answered in prose there, so
         # structured tasks take ddgw before auto/coding. auto/coding stays last: the curator probe the same night got
@@ -465,19 +468,19 @@ class Pool:
         # 2026-11-18 (ai_metadata F1S proposal, 172cm/48kg JSON probe): ddgw/* and auto/coding both timed out at 120 s,
         # so one gemini 429 cost 240 s; nvidia minimax-m3.1-flash 1.0 s and cfp gpt-oss-120b 7.1 s answered correctly.
         # 2026-11-18 curator re-probe without gemini: the route took 15.3 s to reach cfp gpt-oss-120b.
-        "extract":["gemini",NV_FAST,"nvidia:minimaxai/minimax-m3.1-flash",NV_OMNI,"openrouter",
+        "extract":["gemini",NV_FAST,"nvidia:minimaxai/minimax-m3.1-flash",NV_OMNI,"cf_ai","openrouter",
                    "omniroute:cfp/openai/gpt-oss-120b","omniroute:ddgw/gpt-5.4-mini","omniroute:auto/coding"],
         # 2026-10-27 re-probe: auto/reasoning answered 502 (its combo picked nvidia moonshotai/kimi-k3, EOL 410 since
         # 2026-10-15), then 1.5 s, then 63.8 s -> volatile, moved last. gemini 1.3 s; nvidia glm-5.3-flash 1.2-1.9 s.
         # 2026-11-18: glm-5.3-flash circuit-open; super-vl 0.7 s, nano-omni 1.1 s, both correct.
-        "reasoning":["gemini",NV_FAST,NV_OMNI,"openrouter","omniroute:auto/reasoning"],
-        "bulk":["gemini",NV_FAST,"openrouter","omniroute:ddgw/gpt-5.4-mini","omniroute:auto/coding"],
+        "reasoning":["gemini",NV_FAST,NV_OMNI,"cf_ai","openrouter","omniroute:auto/reasoning"],
+        "bulk":["gemini",NV_FAST,"cf_ai","openrouter","omniroute:ddgw/gpt-5.4-mini","omniroute:auto/coding"],
         # 2026-10-16 ja->zh-TW probe: gemini 1.1 s, auto/reasoning 1.8 s, ddgw/gpt-5.4-mini 3.6 s, cfp glm-5.2 11 s,
         # nvidia glm-5.3-flash 42 s (all correct). auto/chat took 104 s -> not routed.
         # 2026-10-27: auto/reasoning volatile (see "reasoning") -> after the steady routes.
         # 2026-11-18: without gemini, translate took 21.8 s to reach cfp glm-5.2; ultra 0.9 s, super-vl 1.5 s. The bare
         # "nvidia-nim" route (matrix default model) is gone: its model is glm-5.3-flash, circuit-open.
-        "translate":["gemini",NV_ULTRA,NV_FAST,"openrouter","omniroute:ddgw/gpt-5.4-mini","omniroute:cfp/zai-org/glm-5.2",
+        "translate":["gemini",NV_ULTRA,NV_FAST,"cf_ai","openrouter","omniroute:ddgw/gpt-5.4-mini","omniroute:cfp/zai-org/glm-5.2",
                      "omniroute:auto/reasoning"],
     }
     def _gateway(self,model,messages,max_tokens=1500,timeout=120):
