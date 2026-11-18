@@ -518,8 +518,10 @@ def thrash_due(seat: str, curator: str, now: float | None = None) -> str:
     _write(THRASH_STATE, {**{k: v for k, v in state.items() if now - float(v or 0) < THRASH_WINDOW_S}, **{s: now for s in due}})
     return ("F1S SESSION STUCK — autocompact thrash stopped transcript " + ", ".join(due) + " (under ~/.claude/projects). A "
             "running process keeps the compaction trigger it started with, and only a new process reads the current one. "
-            "Restart it now: find the local_ id in list_sessions, archive_session, unarchive_session, then send_message with "
-            "its remaining steps. Read back a later compaction's preTokens near 270K and tell the operator.")
+            "Hand it over now (sdnext_a770 2026-11-18: a reopened thrashing context thrashed again): find its local_ id and "
+            "cwd in list_sessions, run `python C:/ai_workspace/_skill/engines/curator_orders.py rollover-brief --seat <seat> "
+            "--session <transcript id>` (it parks the seat and prints the hand-over prompt), start a new conversation in that "
+            "cwd with that prompt, then archive_session the stuck one. Tell the operator which seat moved.")
 
 
 def reason_due(seat: str, curator: str, session_id: str, now: float | None = None, context: int = 0) -> str:
@@ -588,6 +590,22 @@ def hardware_due(seat: str, curator: str, now: float | None = None) -> str:
             "Restore it now: read ai_darkhero/tray/state/hw_csv_logger.json and tray/logs/hw_csv_logger.log for the "
             "lifecycle and reason, heal it (tray heal, or python C:\\ai_workspace\\ai_darkhero\\tray\\scripts\\"
             "hwlog_autostart.py --request-restart), read back a segment younger than 10 s, and tell the operator.")
+
+
+def rollover_due(seat: str, session_id: str) -> str:
+    """The wake text when this conversation armed a rollover (curator_orders.py rollover-brief --arm) and cleared
+    itself: Claude Code wakes the cleared conversation with it, so the hand-over starts without anyone typing. Exempt
+    from the cold gate and the daily cap's purpose: it is one wake into an empty context. "" otherwise; never raises."""
+    if not seat or not session_id:
+        return ""
+    try:
+        spec = importlib.util.spec_from_file_location("f1s_live_curator_orders_rollover",
+                                                      HUB / "_skill" / "engines" / "curator_orders.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return str(mod.rollover_wake_text(seat, session_id) or "")
+    except Exception:  # noqa: BLE001
+        return ""
 
 
 def review_batch() -> int:
@@ -695,7 +713,8 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
             _write(path, state)
         return code, text
 
-    if len(state["wakes"]) >= MAX_WAKES_PER_DAY and not active_captures(session_id):
+    if (len(state["wakes"]) >= MAX_WAKES_PER_DAY and not active_captures(session_id)
+            and _read(HUB / "_registry" / "fames-hot" / f"rollover-{seat}.json").get("session") != session_id):
         return finish(0, "capped")
     sleep(grace_s)
     offset = _size(transcript) if transcript.is_file() else 0
@@ -710,6 +729,9 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
             return finish(0, "disabled")
         if _now() - start > lifetime_s:
             return finish(0, "expired")
+        alert = rollover_due(seat, session_id)
+        if alert:
+            return finish(2, "rollover", alert)
         alert = capture_due(session_id)
         if alert:
             return finish(2, "capture", alert)
