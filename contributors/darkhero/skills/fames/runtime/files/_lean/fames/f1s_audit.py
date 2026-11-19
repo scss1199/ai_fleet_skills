@@ -32,6 +32,8 @@ MODULES = {
     "F1SCore": HERE / "F1SCore.lean",
     "ClaimContract": HERE / "ClaimContract.lean",
     "FamesKernel": HERE / "FamesKernel.lean",
+    "LoadGrant": HERE / "LoadGrant.lean",
+    "F1SMath": HERE / "F1SMath.lean",
 }
 TEXTS = {
     "hot_directive": HUB / "_registry" / "fames-protocol.json",
@@ -570,7 +572,7 @@ ELEMENTS = [
      "check_text": ("ship_engine", "Every ship checks the package it is about to commit")},
     # 2026-10-24 operator after two power losses 14 min apart: ai_darkhero is the one load scheduler; F1S asks it too.
     {"id": "EVO-load-grant", "element": "every planned load increase asks ai_darkhero's load grant (steady power, <= 40 W step, <= 250 W)", "verdict": "REFINE",
-     "requires": None, "detail": "windows-runtime-pitfalls rule for agents; ship-f1s and f1s-evolve wait for a grant before their gate tests; ai_theater ramp + CPU fleet ask before each step",
+     "requires": "Fames.LoadGrant.granted_within_budget", "detail": "windows-runtime-pitfalls rule for agents; ship-f1s and f1s-evolve wait for a grant before their gate tests; ai_theater ramp + CPU fleet ask before each step",
      "check_text": ("skill_runtime", "加負載先拿 load grant")},
     # 2026-10-24 operator: 「優先於 然後馬上實作疊代f1s (f1s就是會優先於其他cwd的意思 你構造f1s 用f1s統御其他cwd)」.
     {"id": "OP-f1s-governs", "element": "T1 f1s-governs: ai_darkhero correction orders outrank a seat's own decisions; red lines and the operator's own words stay above", "verdict": "REFINE",
@@ -1130,7 +1132,7 @@ ELEMENTS = [
      "requires": None, "detail": "web-ui-taste step 3 had only reference-image and phone+desktop checks, nothing comparing a new component against the existing ones in one image; step 3 now starts from the closest existing component and verifies new + existing side by side at 2-3x (size, outline/stroke, layers, existing accent colours) until all pass, with the side-by-side screenshot attached; evidence ai_darkhero/_registry/kyloren-knowledge-social/consolidate/cards/589a1ba3d1e7f2ce.json (quote at offset 3341, re-read in full.txt)",
      "check_text": ("skill_ui", "新素材與既有素材並排驗證")},
     {"id": "EVO-wait-within-cache-ttl", "element": "ai_metadata proposal 2026-11-05: background waits past ~55 min return to a cold prompt cache (7 days: >65 min cold 18/warm 0; 11 late notifications rebuilt 795k, all login/Chrome-close/multi-hour pulls)", "verdict": "REFINE",
-     "requires": None, "detail": "token-preflight 'Every wake is a full cache read' said when to background but not how long to wait; adds: slice jobs expected over 55 min into batches that report inside the window or hand them to the tick and end the turn, never a waiter on an event with no end time; stated as a window limit on run-until-no-next-step (T1 unchanged, the tick-owned step is not handed to the operator); evidence C:/Users/sc/.claude/projects/C--ai-workspace-ai-metadata/memory/cache-ttl-wait-rule.md",
+     "requires": "Fames.F1SMath.cold_wake_deferred", "detail": "token-preflight 'Every wake is a full cache read' said when to background but not how long to wait; adds: slice jobs expected over 55 min into batches that report inside the window or hand them to the tick and end the turn, never a waiter on an event with no end time; stated as a window limit on run-until-no-next-step (T1 unchanged, the tick-owned step is not handed to the operator); evidence C:/Users/sc/.claude/projects/C--ai-workspace-ai-metadata/memory/cache-ttl-wait-rule.md",
      "check_text": ("skill_preflight", "背景等待不超過快取壽命")},
     {"id": "OP-perishable-source-cadence", "element": "ai_metadata 37976db28eca (operator 2026-11-03): __queen 系列在 x.com 極易被禁，要更抓緊頻率抓 x.com 並頻繁更新同步的官網內容", "verdict": "REFINE",
      "requires": None, "detail": "already built in ai_metadata configs/acquisition_refresh.json section_hours __queen (twitter 3 h, person_page 3 h); library-bookmark-coverage Scheduling now states the general rule: cadence follows source mortality, mirror source at the same cadence, no new rider",
@@ -1538,6 +1540,24 @@ ELEMENTS = [
      "check_text": ("curator_orders", "FAT CHAT {context // 1000}K > {over // 1000}K")},
     {"id": "KB-article-proctor-standard", "element": "YouTube Media transcript: 驗收標準必須獨立於Agent之外，防止其透過修改測試程式來掩蓋錯誤", "verdict": "INFO",
      "requires": None, "detail": "驗證標準須放Agent改不到的地方；人類監考官是F1S座位設計核心；與ClaimContract.claimState模型相符"},
+    {"id": "F1SMATH-leverage-saved", "element": "f1s_waste.leverage: saved = (baseline - w) * typed per window; curator spend charged in every window, typed or not; PAID iff saved >= spent", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.idle_window_charges", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "F1SMATH-leverage-paid", "element": "f1s_waste.leverage: PAID is antitone in curator spend and equals ratio >= 1", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.paid_iff_ratio", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "F1SMATH-weight", "element": "f1s_waste.weight = input + 1.25 cache_write + 0.1 cache_read + 5 output; a cold wake costs 12.5x a warm one", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.cold_is_12_5x_warm", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "F1SMATH-cold-defer", "element": "f1s_live.cold_deferrable: a wake past 3300 s (cache TTL 3600 s - 300 s) without a real order is deferred", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.cold_wake_deferred", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "F1SMATH-hubclock-backoff", "element": "hubclock: streak backoff and learned skip never stack; a rider runs at most 4x slower (old rule 12x)", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.at_most_4x_slower", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "F1SMATH-window-need", "element": "f1s_window.need: per-cwd compact window clamps into its range and is monotone in the measured need", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.need_in_range", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "F1SMATH-learn-mult", "element": "hubclock_learn.backoff_for: multiplier stays in range and is monotone in the idle streak", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.mult_in_range", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "F1SMATH-pending", "element": "load_grant.pending_w: pending watts stay within [0, step] and fall as the measured rise grows", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.pending_bounds", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "F1SMATH-p95", "element": "f1s_control._queue_window p95 = sorted[ceil(0.95 n) - 1] (nearest rank; the old int() index was one rank low at n=21)", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.p95_nearest_rank", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
 ]
 
 def sha(path: Path) -> str:

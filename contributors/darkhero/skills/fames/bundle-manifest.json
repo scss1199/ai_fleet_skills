@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "FAMES",
-  "version": "1.45.360",
-  "skill_gen": "2026-11-20.3",
+  "version": "1.45.361",
+  "skill_gen": "2026-11-20.4",
   "execution_order": [
     "FP",
     "MTM",
@@ -24,7 +24,7 @@
   "source_git_commit": null,
   "files": {
     ".gitattributes": "448f5307a4b4eaab3e5e0615e1b57e125c2e6419d590025c4ac3d2e2c004955e",
-    "SKILL.md": "0b9bc65ab4a0e1727db78af1ce6ae83ae64b28343105569d9781c43f5900e05f",
+    "SKILL.md": "8697c571348ed23d7830cb8d1a870806469dde535c234259a362efd5b80ec0cd",
     "examples/anthropic_async_adapter.py": "bd7f7059e2b188eeaa2437c3c8c56948e679ffe0c063f1776bd0f482e13410d0",
     "references/autonomous-knowledge.md": "b34ca6beb034909aaade75be4707c772e90155c6c12b8278c7b3964ec8238df5",
     "references/cases.json": "2ebbb062b8e58241dfd2a70ec423678c4c16e40303d436ffa6de6e5560f67a40",
@@ -35,7 +35,7 @@
     "references/minimal-context.md": "f5c24bd6cc37901d7e71187ef9d273a88676be4c1393faaedf1664ff794478da",
     "references/operator-manual.md": "ddfdafdb484c5233b59bf91d80f44a0060b161f822342db9669e7bcf63b0903c",
     "references/production-web-delivery.json": "121d184785b83dc7917b864fba7e2ade98b7df4a6a6a8426cab18db0ef326592",
-    "references/protocols/fames-protocol.json": "b21b95bc4371d47c46be9fc338ac07d8dd6db569912aacc341b2ede49a134ef5",
+    "references/protocols/fames-protocol.json": "e8866007f44ceba53f651c8b42be53da5b397877b9e5a35c757169749bb5df0b",
     "references/protocols/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
     "references/protocols/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
     "references/protocols/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -64,7 +64,7 @@
     "runtime/files/_lean/fames/FamesTurnRecovery.lean": "c7535908561b0d13ddf1533ec6e178785d46f933611bcc670a8728f075f8b6c3",
     "runtime/files/_lean/fames/claim_conformance.py": "47bb78d57a08d6f5aa9a185e4b383a017fdfc9c193686c69f5fc9ca2df555dec",
     "runtime/files/_lean/fames/conformance.py": "be37ceac19048f17a563248064026548cd3e45a90753df7846156bfe0550eee8",
-    "runtime/files/_lean/fames/f1s_audit.py": "988eb7d67f0abd4bda3bfe9cf768b2b6327ceeb5577411901ecf111c3ea02e23",
+    "runtime/files/_lean/fames/f1s_audit.py": "c037241331222e9e3c93fa8564d86d0a8b7bca505bb4ca80bb7eeb347b6d696b",
     "runtime/files/_lean/fames/lean_gate.py": "6eb82287a898c3225d859eaf28d74eb42f78aa12727a523b6f294e29c01052ab",
     "runtime/files/_lean/fames/phase_conformance.py": "ba60fd7f4aa8f850968239279dfa354ba0ce4a53243c383aeec873af65e1f989",
     "runtime/files/_lean/fames/phase_contract.py": "6b03b9d4fe4569cf69bbb14b23ff7244710bae4181f08f9027887c448e6e5726",
@@ -73,7 +73,7 @@
     "runtime/files/_lean/leanctl.py": "2cde11126976a17c88a927375b56c5c09a2115b7b0a6708ec8f563a068c7d7a3",
     "runtime/files/_registry/agent-surfaces.json": "b36cebd6b0f912587f117bc7df19c352496bbb6bcf7c9d3293b0940e951e8f60",
     "runtime/files/_registry/claude-remote-control.json": "44f271d7e0700238d5351698be0638cb1f798669d9f30c8aa3ad1c7d2fc2cfa2",
-    "runtime/files/_registry/fames-protocol.json": "b21b95bc4371d47c46be9fc338ac07d8dd6db569912aacc341b2ede49a134ef5",
+    "runtime/files/_registry/fames-protocol.json": "e8866007f44ceba53f651c8b42be53da5b397877b9e5a35c757169749bb5df0b",
     "runtime/files/_registry/fleet-token-ladder.json": "6a2019e72a898ab73bcd2b5bed24906b126a2333f78e0b9b05d762a4a8998354",
     "runtime/files/_registry/goal-vector-protocol.json": "9e368a8c3b46e440b68b440d68e675b15ee667866d555594c2cc1b2d0f9c4664",
     "runtime/files/_registry/mtm-protocol.json": "57f12cbde19e6b1fd2ebc1bc4256d2967358e9933c031f90aa35822a07a20ebb",
@@ -114,7 +114,7 @@
     "runtime/files/_skill/engines/fleet-skill-sync.py": "0abf5d0ff9e69096c6b5029713a45fe81ddf1f08d80e63eefc6da563e10abf17",
     "runtime/files/_skill/engines/fleet_key_seal.py": "9385b46c4a1f16d6079fbfd505a02d8643829cc44e53ad3a217faeb8b730305e",
     "runtime/files/_skill/engines/hub_python.py": "94e826b861844e6ab0b199ccc3ab1d2d2f639412302e6841f9371651506ec167",
-    "runtime/files/_skill/engines/hubclock.py": "ea5adcaa7467adfad4bd3434f65e6f70df9de0ba8717e1998d9d7a885e2c2b3c",
+    "runtime/files/_skill/engines/hubclock.py": "7f439ef0b9af47007d94e52f9061e0cd91b17de636cb40615bf52df372cf7742",
     "runtime/files/_skill/engines/key-health.py": "2ad0299d5bc799c65fb10967799b34e9d3abc4343845047b2422a60895a8f448",
     "runtime/files/_skill/engines/key-pool-tick.py": "c1cb93df92c3699af5a27d5f340909048feec465aee181f0998323f1fb39803a",
     "runtime/files/_skill/engines/lane_taxonomy.py": "e8cb50dd7a0ea47368196320ad4ce3e1ce90379beb757be0f3d38fe193d26888",
@@ -130,7 +130,7 @@
     "runtime/files/_skill/fleet-skills/token-preflight/scripts/claude_session_hook.py": "6941a5c42ebf3a7af17badf01c825e29df3f21a208bddef6b7b5868aa63178f8",
     "runtime/files/ai_darkhero/tray/load_posture.py": "665fd736a3d245bf50c5c7b7f8ecd1b4da23e176ee347ea001912f12116a0efb",
     "runtime/files/ai_darkhero/tray/scripts/load_grant.py": "29f4ae654f36b3ed23b45aca190267887d0e1ff1cfd5cee1d700b97948844ede",
-    "runtime/manifest.json": "12ce99a14ab4f1eae06930aac50408dd5c391647ff77121323ff5edd74404676",
+    "runtime/manifest.json": "9b2465c647abd4ff806dbbe8b648d62888bb9b547489fcd31bb5b864389bd77d",
     "scripts/adaptive_response_controller.py": "07a19c6e0bda90f25800617a274d5f641709676d0d71cdfae8e17dec91e0d911",
     "scripts/claude_live_ab.py": "3aaa4276c505e1eceea33207c6c4baeb190b6319b737f081fd53fbc055834261",
     "scripts/claude_task_acceptance.py": "f467f0438b5480899d88a0e943e6a7172a717fdb47567a06df2385024c269f70",
@@ -145,5 +145,5 @@
     "scripts/test_work_efficiency.py": "e4250ba4c05f616c79cf97182507d1ff3585487c788546151a97b2dad74f0536",
     "scripts/work_efficiency.py": "42d41b64b8075280b1212625b46a25ab32bba35d27f5c019cf79dde02552022e"
   },
-  "package_sha": "aacee6fdaa7358255229c6b24befb0c9a2a696f0c488675dd18a4649d4d4fc02"
+  "package_sha": "37fa5d46309cf4665bc4085e6bb5b735735ee31198eb0cef289709951ea87936"
 }
