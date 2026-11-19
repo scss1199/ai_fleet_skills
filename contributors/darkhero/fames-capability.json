@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-19T14:33:27.593477+00:00",
+  "observed_at": "2026-11-19T15:11:22.484926+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,8 +353,45 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "UNKNOWN",
-    "native_events": [],
+    "native_state": "OBSERVED_PARTIAL_POPULATION",
+    "native_events": [
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-11-19T22:52:36+08:00",
+        "receipt_sha256": "2d137580d4e72373593553962d222bcbce57ef9466b2fa4e471802625a8867e6"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-19T22:33:32+08:00",
+        "receipt_sha256": "749f32eca5a0ed8e2da7d7ba10c84b3dffe5021a34a3448ce6ddf6a1187d8860"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-19T22:35:24+08:00",
+        "receipt_sha256": "88df0620bfe5ecbf973c8ee84950707e6cd0eb8b4a9d3a936124b236ba64cf24"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-19T22:51:31+08:00",
+        "receipt_sha256": "3bfa7421141669daab11fcc72091b4ce4d2ba45c445c155853c7097b8af073fb"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-19T22:36:37+08:00",
+        "receipt_sha256": "5458f8a59f46e5c3d02fa63bb728687b302123a8e5f1b6041ff749101f552c0f"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-19T23:02:03+08:00",
+        "receipt_sha256": "4b4e7e01da3cde712ce9338ff5d448148b9595c95c1c25de151041318e261b1d"
+      }
+    ],
     "runtime_release_sha256": "b3c96b68c4ea77b323cd5e5a5dbb4d8fae97a449b7780721f84d5e312ac8a9a1"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
