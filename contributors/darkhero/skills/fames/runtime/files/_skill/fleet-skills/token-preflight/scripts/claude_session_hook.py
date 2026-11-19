@@ -1005,7 +1005,10 @@ def main():
     # operator 2026-11-19 「建立自動換對話(保持一樣的模型)的機制」: a full conversation armed a hand-over and cleared
     # itself (clear_session "self" keeps model/folder/permissions); the cleared one starts with the brief as its task,
     # above everything else and never deduplicated away.
-    if event == "SessionStart" and session_source == "clear":
+    # 2026-11-19: the desktop app's clear_session("self") restarts the process, so its SessionStart says "startup",
+    # never "clear" (transcript 3ef5ff65: hook_success SessionStart:startup, rollover delivered []). take_rollover
+    # already refuses the armed session itself, a stale (>30 min) brief and a second delivery.
+    if event == "SessionStart" and session_source in ("clear", "startup"):
         handover=_rollover_start(agent, session_id)
         if handover:
             context=(handover+"\n"+context).strip()
