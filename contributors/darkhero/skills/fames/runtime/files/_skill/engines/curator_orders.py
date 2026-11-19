@@ -1197,6 +1197,44 @@ def _brief(orders: list[dict]) -> list[dict]:
     return rows + ([{"closed": closed}] if closed else [])
 
 
+ARTICLE_LANE_TITLE = "F1S｜文章線"
+
+
+def article_lane(sessions_dir=None, alive=None) -> str:
+    """Session id of the curator's live standing article chat, "" when none (operator 2026-11-14 main-chat-division;
+    2026-11-20 「是不是少開了一個子對話來讀對應的文章跟做筆記」: it had been archived and nothing reopened it)."""
+    sessions_dir = sessions_dir or os.path.join(os.path.expanduser("~"), ".claude", "sessions")
+    if alive is None:
+        try:
+            import psutil
+            alive = psutil.pid_exists
+        except ImportError:
+            alive = lambda pid: True  # noqa: E731
+    try:
+        names = os.listdir(sessions_dir)
+    except OSError:
+        return ""
+    for name in names:
+        try:
+            with open(os.path.join(sessions_dir, name), encoding="utf-8") as fh:
+                o = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        if "文章線" in str(o.get("name") or "") and o.get("pid") and alive(int(o["pid"])):
+            return str(o.get("hostSessionId") or o.get("sessionId") or "")
+    return ""
+
+
+def article_lane_line(lane: str | None = None) -> str:
+    """Where article work goes from the curator's main chat: forward to the lane, or start it when it is gone."""
+    lane = article_lane() if lane is None else lane
+    if lane:
+        return f"ARTICLE LANE — article relay and technique rows belong to {lane} ({ARTICLE_LANE_TITLE}): send_message them there, do not work them here."
+    return (f"ARTICLE LANE MISSING — no live {ARTICLE_LANE_TITLE} chat: start_session now (user_asked, fresh, cwd ai_darkhero, "
+            f"title {ARTICLE_LANE_TITLE}, Sonnet) to read the waiting articles, write their notes (f1s_vault.py) and close the "
+            "technique rows (f1s_apply.py list --seat ai_darkhero), then forward article work there.")
+
+
 def _waiting_techniques(seat: str) -> str:
     """f1s_apply orders every other seat; the curator's own rows have no order to arrive in, so they are named here."""
     try:
@@ -1208,7 +1246,8 @@ def _waiting_techniques(seat: str) -> str:
     if not waiting:
         return ""
     return (f"ARTICLE TECHNIQUES — {waiting} waiting for this seat: f1s_apply.py list --seat {seat}, apply and measure the worthwhile ones, "
-            "f1s_apply.py close <id> applied|covered --evidence <path> or rejected --note <why>; an opinion with nothing to take apart: nouse --note <why> (not handed on).")
+            "f1s_apply.py close <id> applied|covered --evidence <path> or rejected --note <why>; an opinion with nothing to take apart: nouse --note <why> (not handed on)."
+            + ("\n" + article_lane_line() if seat == curator() else ""))
 
 
 def _fanout_line() -> str:
