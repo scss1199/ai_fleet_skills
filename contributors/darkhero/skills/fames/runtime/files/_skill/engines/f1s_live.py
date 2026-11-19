@@ -25,6 +25,7 @@ re-verify what no file shows (CAPTURE CHECK). Captures are exempt from the daily
 claude-run-until-done-hook.py refuses to let a turn end on "it keeps recording until the end" without a registration.
 
   python f1s_live.py wait              # hook entry: the Stop payload on stdin
+  python f1s_live.py start             # SessionStart asyncRewake entry: first turn of a rolled-over (cleared) chat
   python f1s_live.py status [--json]   # one row per conversation: seat, current or behind, waiter, wakes
   python f1s_live.py capture add --name meet-0824 --file <growing file> [--stale-s 90] [--check-every-s 300] [--hours 3]
   python f1s_live.py capture done --name meet-0824 | capture list   (session from CLAUDE_CODE_SESSION_ID or --session)
@@ -608,6 +609,69 @@ def rollover_due(seat: str, session_id: str) -> str:
         return ""
 
 
+START_GRACE_S = 8.0     # the SessionStart hooks inject the brief and a typed first prompt lands within this
+START_WAIT_S = 120.0    # the cleared conversation's transcript may appear only at its first row
+
+
+def rollover_armed(seat: str, now: float | None = None) -> bool:
+    """A fresh armed hand-over for `seat` exists: a stat and one small read, so every other SessionStart exits at once."""
+    doc = _read(HUB / "_registry" / "fames-hot" / f"rollover-{seat}.json")
+    now = _now() if now is None else now
+    try:
+        return bool(doc) and now - float(doc.get("armed_at") or 0) <= 600
+    except (TypeError, ValueError):
+        return False
+
+
+def rollover_rewake_due(seat: str, session_id: str) -> str:
+    """curator_orders.rollover_rewake_text, loaded by path; "" on any error."""
+    if not seat or not session_id:
+        return ""
+    try:
+        spec = importlib.util.spec_from_file_location("f1s_live_curator_orders_rewake",
+                                                      HUB / "_skill" / "engines" / "curator_orders.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return str(mod.rollover_rewake_text(seat, session_id) or "")
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def start(doc: dict, *, hook=None, grace_s: float = START_GRACE_S, poll_s: float = 2.0, wait_s: float = START_WAIT_S,
+          sleep=time.sleep) -> tuple[int, str]:
+    """(exit code, wake text) for the SessionStart asyncRewake hook: a conversation that a full one cleared to hand
+    over to (curator_orders.py rollover-brief --arm, then clear_session "self") gets its first turn without anyone
+    typing. Claude Code wakes an idle conversation when an asyncRewake hook exits 2, SessionStart included (proved
+    2026-11-19: a headless claude.exe 2.1.325 with no user message answered a SessionStart asyncRewake hook's text).
+    No armed hand-over, a resumed or compacted start, a typed first prompt, or a conversation that is not the cleared
+    one -> exit 0 at once. Never raises."""
+    session_id = str(doc.get("session_id") or "")
+    if (not session_id or doc.get("agent_id") or str(doc.get("source") or "") not in ("startup", "clear")
+            or not enabled() or os.environ.get("CLAUDE_CODE_SESSION_ATTENDED") == "0"):
+        return 0, ""
+    hook = hook or load_hook()
+    seat, _cwd = hook._session_seat(doc, None)
+    if not seat or not rollover_armed(seat):
+        return 0, ""
+    sleep(grace_s)
+    transcript = Path(str(doc.get("transcript_path") or ""))
+    claude_pid = int(os.environ.get("CLAUDE_PID") or 0) or _claude_ancestor()
+    waited = 0.0
+    while True:
+        if transcript.is_file() and turned_active(transcript, 0):
+            return 0, ""                                   # someone typed (or a turn runs): that turn carries the brief
+        if not _alive(claude_pid):
+            return 0, ""
+        text = rollover_rewake_due(seat, session_id)
+        if text or waited >= wait_s:
+            return (2, text) if text else (0, "")
+        if not transcript.is_file():
+            # no row yet is the normal idle state of a cleared conversation; one look is enough
+            return 0, ""
+        sleep(poll_s)
+        waited += poll_s
+
+
 def review_batch() -> int:
     """How many fresh-evidence answers wake the curator together; `live_wake.review_batch: 0` = each answer wakes."""
     try:
@@ -771,8 +835,11 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
                 grew = rows is None or known is None or bool(set(rows) - set(known))
                 if contract == state["contract"]:
                     text = ""
-                elif base == state["base"] and not grew:
-                    text = ""                              # an order was answered, closed or judged: no new work here
+                elif not grew and not review_only and not (directive_only and upgrade_wake()):
+                    # nothing new to act on: an order was answered, closed or judged, alone or together with an upgrade
+                    # (2026-11-19: 77 of 340 live wakes in two days ran no tool at 177K average context; the upgrade
+                    # rides the next prompt, as an upgrade alone already does)
+                    text = ""
                 elif review_only and not claim_review(session_id, sleep=sleep):
                     text = ""                              # another curator chat took this review
                 elif directive_only and not upgrade_wake():
@@ -780,8 +847,9 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
                 elif base == state["base"] and cold_deferrable(titles, known, _now() - start):
                     text = ""                              # cache gone, only self-review/prune: the next prompt carries it
                     state["cold_held"] = int(state.get("cold_held") or 0) + 1
-                elif base == state["base"] and (route := station_route(index, known, context_tokens(transcript))) is not None:
+                elif (route := station_route(index, known, context_tokens(transcript))) is not None:
                     text = ""                              # too large to wake for a routine order: a lean station does it
+                                                           # (also when an upgrade came with it: the next prompt carries that)
                     for n in route[0]:
                         try:
                             spawn_station(sig_seat, cwd, n)
@@ -827,6 +895,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("wait")
+    sub.add_parser("start")
     st = sub.add_parser("status")
     st.add_argument("--json", action="store_true")
     cp = sub.add_parser("capture")
@@ -870,7 +939,8 @@ def main(argv=None) -> int:
     try:
         raw = sys.stdin.buffer.read().decode("utf-8-sig", "replace") if sys.stdin else ""
         doc = json.loads(raw) if raw.strip() else {}
-        code, text = wait(doc if isinstance(doc, dict) else {})
+        doc = doc if isinstance(doc, dict) else {}
+        code, text = start(doc) if a.cmd == "start" else wait(doc)
     except Exception:
         return 0
     if code == 2 and text:

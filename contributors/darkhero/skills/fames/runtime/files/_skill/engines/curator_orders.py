@@ -893,24 +893,39 @@ def arm_rollover(seat: str, session_id: str, brief: str, model: str = "", now: f
     return doc
 
 
+ROLLOVER_REWAKE_S = 10 * 60   # the cleared conversation's new process starts seconds after the clear; later = not it
+ROLLOVER_WAKE_AFTER_S = 45.0  # the old conversation's waiter steps in only when no cleared one took the hand-over by then
+
+
 def take_rollover(seat: str, via: str, session_id: str = "", now: float | None = None) -> dict:
     """The armed hand-over of `seat` if it is fresh, with `via` recorded as one delivery ({} otherwise). `via` is
-    "start" (SessionStart source=clear, session_id = the new conversation) or "wake" (the old conversation's idle
-    waiter, session_id = the armed one). Each via delivers at most once. Never raises."""
+    "start" (SessionStart source=clear/startup injects the brief, session_id = the new conversation), "rewake" (the new
+    conversation's SessionStart asyncRewake waiter gives it its first turn, `f1s_live.py start`) or "wake" (the old
+    conversation's idle waiter, session_id = the armed one: the fallback when no cleared conversation took it, e.g. the
+    clear was refused). Each via delivers at most once; "rewake" and "wake" exclude each other, so one turn starts the
+    hand-over; "rewake" only within ROLLOVER_REWAKE_S and never into a conversation other than the one "start" reached;
+    "wake" only ROLLOVER_WAKE_AFTER_S after arming. Never raises."""
     now = time.time() if now is None else now
     path = rollover_path(seat)
     try:
         with open(path, encoding="utf-8") as fh:
             doc = json.load(fh)
-        if not isinstance(doc, dict) or now - float(doc.get("armed_at") or 0) > ROLLOVER_TTL_S:
+        armed_at = float(doc.get("armed_at") or 0) if isinstance(doc, dict) else 0.0
+        if not isinstance(doc, dict) or now - armed_at > ROLLOVER_TTL_S:
             return {}
-        if via == "wake" and session_id != doc.get("session"):
+        if via == "wake" and (session_id != doc.get("session") or now - armed_at < ROLLOVER_WAKE_AFTER_S):
             return {}
-        if via == "start" and session_id == doc.get("session"):
+        if via in ("start", "rewake") and session_id == doc.get("session"):
             return {}
         done = [d for d in doc.get("delivered") or [] if isinstance(d, dict)]
         if any(d.get("via") == via for d in done):
             return {}
+        if via in ("wake", "rewake") and any(d.get("via") in ("wake", "rewake") for d in done):
+            return {}
+        if via == "rewake":
+            started = [d.get("session") for d in done if d.get("via") == "start"]
+            if now - armed_at > ROLLOVER_REWAKE_S or (started and session_id not in started):
+                return {}
         doc["delivered"] = done + [{"via": via, "session": session_id, "at": now}]
         _write_rollover(path, doc)
         return doc
@@ -935,6 +950,20 @@ def rollover_wake_text(seat: str, session_id: str) -> str:
     return "F1S ROLLOVER — carry out this hand-over now:\n" + doc["brief"]
 
 
+def rollover_rewake_text(seat: str, session_id: str, now: float | None = None) -> str:
+    """For the cleared conversation's SessionStart asyncRewake waiter (`f1s_live.py start`): the text of its first turn.
+    2026-11-19: the desktop app's clear_session("self") restarts the process, the old idle waiter dies with it, and the
+    cleared conversation sat silent with the brief in its context until the operator typed. "" when nothing is armed."""
+    doc = take_rollover(seat, "rewake", session_id, now=now)
+    if not doc:
+        return ""
+    if any(d.get("via") == "start" and d.get("session") == session_id for d in doc.get("delivered") or [] if isinstance(d, dict)):
+        return ("F1S ROLLOVER — this conversation was cleared to continue a full one; the hand-over in your context "
+                "(F1S ROLLOVER) is your task: carry it out now, without waiting for the operator.")
+    return ("F1S ROLLOVER — this conversation was cleared to continue a full one on the same model; carry out this "
+            "hand-over now, without waiting for the operator:\n" + doc["brief"])
+
+
 def _rollover_steps(seat: str, session_id: str) -> str:
     """The roll-over instructions shared by the size trigger and the anger trigger."""
     sess = f" --session {session_id}" if session_id else ""
@@ -943,7 +972,7 @@ def _rollover_steps(seat: str, session_id: str) -> str:
             "records the hand-over with the operator's request, the model and the open steps, and prints it). "
             "Then call mcp__ccd_session_mgmt__clear_session with session_id \"self\": the same session keeps its model, folder and "
             "permissions, it works on turns nobody typed, and when this turn ends F1S hands the cleared conversation the brief "
-            "(SessionStart) and wakes it (idle waiter). Tell the operator in one line that the conversation rolls over, then end the turn. "
+            "(SessionStart) and gives it its first turn (`f1s_live.py start`). Tell the operator in one line that the conversation rolls over, then end the turn. "
             "If clear_session is refused (Remote Control, pinned, or open live work), start a new conversation in the same cwd with "
             "the printed text as its whole prompt (mcp__ccd_session__start_session, initiation \"user_asked\", context \"fresh\", "
             "no worktree, model = the one in the brief) and archive this one (mcp__ccd_session_mgmt__archive_session \"self\"). "

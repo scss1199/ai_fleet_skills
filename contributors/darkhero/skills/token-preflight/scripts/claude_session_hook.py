@@ -457,7 +457,47 @@ STATUS_LINE_PREFIXES=("TOKEN WATCH ","F1S REUSE ","F1S NIGHT","F1S RECURRENCE ",
 # differed from one already held only in its digits (TOKEN WATCH 58K, ARTICLE RELAY 10K, F1S NIGHT 10K). These compare
 # with digits blanked, so the line goes out again when its words change (a seat enters OVER SHARE, the posture flips),
 # not when 361/416 becomes 365/420. Other status lines still compare whole: there a number is the news.
-DRIFT_LINE_PREFIXES=("TOKEN WATCH ","F1S NIGHT","ARTICLE RELAY ")
+DRIFT_LINE_PREFIXES=("TOKEN WATCH ","F1S NIGHT","ARTICLE RELAY ","F1S COST ")
+# 2026-11-19 audit (2 days, every cwd): F1S text was 12.1M injected tokens (7%). CURATOR REVIEW and F1S LEVERAGE went out
+# verbatim on every prompt and again mid-turn; they are status lines now (the review line changes when the queue does, so
+# a wake for a new answer still carries it). CURATOR ORDERS stay outside this list: an order is never deduplicated away.
+STATUS_LINE_PREFIXES+=("CURATOR REVIEW ","F1S LEVERAGE ","F1S RECORD ","F1S COST ")
+# The three cost lines said the same thing three ways; _slim_context merges them into one F1S COST line whose parts are
+# compared one by one (a part already held this conversation is dropped, digits blanked).
+COST_LINE_PREFIXES=("TOKEN WATCH ","F1S LEVERAGE ","F1S RECORD ")
+COST_HEAD="F1S COST — "
+COST_SEP=" ‖ "
+_COST_LEGENDS=(re.compile(r"classes: fat_exec = .*?resume = spend after a compaction until the next turn; "),
+               re.compile(r" \(over_300k>30% = .*?\)\.$"))
+
+
+def _slim_context(text: str, *, event: str="", hard_lines_state: str | None=None) -> str:
+    """The 2026-11-19 cuts, before dedup. (1) OPERATOR RED LINES restates T1 hard lines every seat charter carries, and
+    SessionStart injects T1 itself where no charter does: dropped unless the hard lines were UNKNOWN this start. (2) TOKEN
+    WATCH, F1S LEVERAGE and F1S RECORD become one F1S COST line without their static legends (the class and OVER SHARE
+    glossaries live in f1s_waste.py). Pure text transform; never raises."""
+    try:
+        lines=text.split("\n")
+        if hard_lines_state != "UNKNOWN":
+            lines=[l for l in lines if not l.strip().startswith("OPERATOR RED LINES:")]
+        parts,first=[],None
+        out=[]
+        for line in lines:
+            s=line.strip()
+            if s.startswith(COST_LINE_PREFIXES):
+                for rx in _COST_LEGENDS:
+                    s=rx.sub(".",s) if rx.pattern.endswith("$") else rx.sub("",s)
+                parts.append(s)
+                if first is None:
+                    first=len(out)
+                    out.append("")
+                continue
+            out.append(line)
+        if parts:
+            out[first]=COST_HEAD+COST_SEP.join(parts)
+        return "\n".join(out)
+    except Exception:
+        return text
 
 
 def _contract_dedup(surface_id: str, session_id: str, text: str, *, agent_id: str="", reset: bool=False,
@@ -488,6 +528,16 @@ def _contract_dedup(surface_id: str, session_id: str, text: str, *, agent_id: st
                 # Post-compact SessionStart (sdnext_a770 2026-11-18: ~12.7KB re-injected per compaction refilled the
                 # window, 9 compacts in 7 min, then "Autocompact is thrashing"). Status lines are dropped and NOT held,
                 # so the next prompt delivers them once; contract, hard lines and orders still go out.
+                continue
+            if line.strip().startswith(COST_HEAD):
+                fresh=[]
+                for part in line.strip()[len(COST_HEAD):].split(COST_SEP):
+                    digest=hashlib.sha256(re.sub(r"\d+(\.\d+)?","#",part).encode("utf-8")).hexdigest()[:32]
+                    if digest not in held:
+                        held.add(digest)
+                        fresh.append(part)
+                if fresh:
+                    kept.append(COST_HEAD+COST_SEP.join(fresh))
                 continue
             if line.strip().startswith(CONTRACT_LINE_PREFIXES+STATUS_LINE_PREFIXES):
                 shape=re.sub(r"\d+(\.\d+)?","#",line.strip()) if line.strip().startswith(DRIFT_LINE_PREFIXES) else line.strip()
@@ -615,7 +665,8 @@ def live_update(doc, *, event: str="PostToolUse", watch_seat: str | None=None) -
                                     transcript_path=str(doc.get("transcript_path") or ""))):
         if update:
             parts.append(update)
-    return _contract_dedup(surface_id,session_id,"\n".join(p for p in parts if p).strip(),agent_id=agent_id)
+    return _contract_dedup(surface_id,session_id,_slim_context("\n".join(p for p in parts if p).strip(),event=event),
+                           agent_id=agent_id)
 
 
 MAP_STREAK=8
@@ -1000,6 +1051,7 @@ def main():
     orders=_curator_orders(agent, session_id)
     if orders:
         context=(orders+"\n"+context).strip()
+    context=_slim_context(context, event=event, hard_lines_state=t1_state)
     context=_contract_dedup(surface_id, session_id, context, reset=event == "SessionStart",
                             compact=event == "SessionStart" and session_source == "compact")
     # operator 2026-11-19 「建立自動換對話(保持一樣的模型)的機制」: a full conversation armed a hand-over and cleared
