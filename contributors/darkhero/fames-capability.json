@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-19T15:11:22.484926+00:00",
+  "observed_at": "2026-11-19T15:41:19.676657+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -368,10 +368,46 @@
         "receipt_sha256": "749f32eca5a0ed8e2da7d7ba10c84b3dffe5021a34a3448ce6ddf6a1187d8860"
       },
       {
+        "agent": "ai_theater",
+        "surface": "claude",
+        "observed_at": "2026-11-19T23:17:37+08:00",
+        "receipt_sha256": "f430887e9f7cbd7415a717fa7107b137fc6968a1a8e46de6d58159851d58093a"
+      },
+      {
+        "agent": "ai_theater",
+        "surface": "claude",
+        "observed_at": "2026-11-19T23:17:30+08:00",
+        "receipt_sha256": "42dd491042d54bad97051c6e1383202c3e1fdf4792a3ce93a50aec99b5194588"
+      },
+      {
+        "agent": "ai_metadata",
+        "surface": "claude",
+        "observed_at": "2026-11-19T23:17:52+08:00",
+        "receipt_sha256": "65eca653f7f28c8ed09dcea8615a20d467d0f31eac656cdc6558b584d751ca32"
+      },
+      {
+        "agent": "ai_trader",
+        "surface": "claude",
+        "observed_at": "2026-11-19T23:17:59+08:00",
+        "receipt_sha256": "11a97632a6fb3b801f20265fc07f3a7cf46acfc9e775c66ec0778c41a546f848"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-19T23:19:46+08:00",
+        "receipt_sha256": "e8bbb120b20ebe398b6117bbc7ea1b08536fdd0ea556e83cc6ea954e36159671"
+      },
+      {
         "agent": "ai_darkhero",
         "surface": "claude",
         "observed_at": "2026-11-19T22:35:24+08:00",
         "receipt_sha256": "88df0620bfe5ecbf973c8ee84950707e6cd0eb8b4a9d3a936124b236ba64cf24"
+      },
+      {
+        "agent": "ai_metadata",
+        "surface": "claude",
+        "observed_at": "2026-11-19T23:17:45+08:00",
+        "receipt_sha256": "077d95e24e0c7bd128762978848bc56897d8f7a59bd4213c294aad9c72834c32"
       },
       {
         "agent": "ai_darkhero",
@@ -388,8 +424,8 @@
       {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-11-19T23:02:03+08:00",
-        "receipt_sha256": "4b4e7e01da3cde712ce9338ff5d448148b9595c95c1c25de151041318e261b1d"
+        "observed_at": "2026-11-19T23:25:34+08:00",
+        "receipt_sha256": "ed0d5af1f04d925c7a7a74edbaae768cecf0982ab8079c4c961168ee9866a415"
       }
     ],
     "runtime_release_sha256": "b3c96b68c4ea77b323cd5e5a5dbb4d8fae97a449b7780721f84d5e312ac8a9a1"
