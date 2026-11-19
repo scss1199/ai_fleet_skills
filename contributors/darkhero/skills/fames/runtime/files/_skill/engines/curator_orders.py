@@ -631,16 +631,31 @@ def archive_due(session_id: str = "", now: float | None = None, spawn=None, own:
         rows = [r for r in rows if session_id and session_id in (r.get("parent"), r.get("parent_session"))]
     if not rows:
         return ""
-    items = "; ".join(f"{r['host_id']} ({r.get('reason')}, {str(r.get('title') or '')[:30]})" for r in rows[:8])
+    def _bg(r):
+        bg = r.get("bg") or []
+        return (f", bg={r.get('bg_action')}:" + ",".join(f"{b.get('kind')}/{b.get('id')}" for b in bg[:3])) if bg else ""
+    items = "; ".join(f"{r['host_id']} ({r.get('reason')}, {str(r.get('title') or '')[:30]}{_bg(r)})" for r in rows[:8])
     whose = "conversation(s) you started are confirmed complete" if own else "conversation(s) have no task left"
+    hint = ARCHIVE_BG_HINT if any(r.get("bg") for r in rows) else ""
     return (f"SESSION ARCHIVE DUE — {len(rows)} {whose}: {items}. Archive each with "
-            f"archive_session (reason = its reason); a reopened one comes back on its next order. " + ARCHIVE_RC_HINT)
+            f"archive_session (reason = its reason); a reopened one comes back on its next order. " + hint + ARCHIVE_RC_HINT)
+
+
+# operator 2026-11-19 「關閉對話之前只要看到有背景任務就建立下一個對話去接續背景任務(分析背景任務類型)」. A successor
+# cannot adopt another session's harness task, and archiving kills its processes, so the type decides the move.
+ARCHIVE_BG_HINT = ("bg=relay (a live watch): first check the watched thing can still happen; if yes start_session "
+                   "user_asked fresh in its cwd with the watch command to re-arm, then send_message the old one "
+                   "'TaskStop <ids>, change nothing else', then archive; if not, just that TaskStop + archive. "
+                   "bg=wait (a running job or subagent): do not archive, it would kill the work; it comes back due "
+                   "after the completion notice. bg=sidebar (no process left): a successor adopts nothing; ")
 
 
 # ai_photo 2026-11-18: archive_session refuses an idle chat while Remote Control is on ("still has live work").
 ARCHIVE_RC_HINT = ("If archive_session says live work and the target is idle (isRunning=false) with remoteControlActive=true, "
                    "call set_remote_control(enabled=false) on it, then archive_session again; for self, "
-                   "set_remote_control(self, false) before archive_session(self).")
+                   "set_remote_control(self, false) before archive_session(self). Still refused with Remote Control "
+                   "off and no bg listed (or bg=sidebar): the app's task list is stale, no successor helps; leave it "
+                   "for the operator's sidebar archive and say so in one line.")
 
 
 def open_orders(seat: str, session_id: str | None = None) -> list[dict]:
