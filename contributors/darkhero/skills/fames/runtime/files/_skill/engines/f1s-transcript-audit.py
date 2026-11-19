@@ -51,8 +51,9 @@ AGENT_TOOLS = {"Agent", "Task"}
 # Operator 2026-11-03 (泛科學院 on scolding AI): "reply and result quality" is what removes the reason for the tone, so
 # the tone is never judged; this counts whether anger comes back. Baseline 11-03 from the transcripts: 38/117 after an
 # angry prompt vs 86/1629 after a calm one. Counts only, the prompt text is never stored. Prompts over ANGER_MAX_CHARS
-# are pasted material, not the operator's own reaction.
-ANGER = re.compile(r"廢物|智障|白癡|白痴|腦殘|靠北|媽的|他媽|幹你|屁話|屁用|起訴|法律途徑|垃圾模型|耍我|你到底|到底要|講幾次|說幾次|有沒有搞懂")
+# are pasted material, not the operator's own reaction. 2026-11-19: 操你/糙你/瞎子/混帳/浪費多少時間 added (jci_taipei
+# 7a7640c2 was scolded three times in 32 minutes and two of them went uncounted).
+ANGER = re.compile(r"廢物|智障|白癡|白痴|腦殘|靠北|媽的|他媽|幹你|操你|糙你|瞎子|混帳|屁話|屁用|起訴|法律途徑|垃圾模型|耍我|你到底|到底要|講幾次|說幾次|有沒有搞懂|浪費多少時間")
 ANGER_MAX_CHARS = 1500
 ANGER_RULE_SINCE = "2026-11-03T10:00"  # UTC, transcript timestamps; f1s-intake §5 took effect here
 # Operator 2026-11-09 (「一樣的東西要講兩次以上」): 81% of repeated prose followed a PROOF block, so the three Stop-hook
