@@ -1,26 +1,26 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "desktop-rsniapr",
-  "at": "2026-11-17T15:15:22",
+  "at": "2026-11-19T18:39:24",
   "hub": "C:\\ai_workspace",
-  "seconds": 39.7,
+  "seconds": 105.1,
   "check": {
     "seats": [
       {
         "seat": "ai_altos",
         "missing": [],
         "findings": [
-          "unpushed_commits:2"
+          "unpushed_commits:1"
         ],
         "repo": "own",
-        "dirty": 18,
-        "unpushed": 2,
-        "last_commit": "2026-11-16",
+        "dirty": 16,
+        "unpushed": 1,
+        "last_commit": "2026-11-18",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-17",
+        "newest_file": "2026-11-19",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -36,7 +36,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-17",
+        "newest_file": "2026-11-18",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -143,8 +143,8 @@
     "claude_cli_drift": [
       {
         "cli": "2.1.292",
-        "npm": "2.1.326",
-        "behind": 34,
+        "npm": "2.1.328",
+        "behind": 36,
         "limit": 10,
         "path": "C:\\Users\\USER\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Anthropic.ClaudeCode_Microsoft.Winget.Source_8wekyb3d8bbwe\\claude.EXE",
         "fix": "claude update"
@@ -184,7 +184,7 @@
       },
       {
         "file": "_skill/engines/mtm-fleet-skill-github.py",
-        "line": 480,
+        "line": 585,
         "kind": "uuid_named_copy",
         "text": "keep = Path(HUB) / \"_registry/fleet-skill-export-backups\" / uuid.uuid4().hex / \"skills\""
       },
@@ -323,7 +323,7 @@
     "memory_index_oversize": 0,
     "runtime_cves": 2,
     "claude_cli_drift": [
-      "2.1.292 behind 34: claude update"
+      "2.1.292 behind 36: claude update"
     ],
     "seat_budget": "applied seats=2 deny+0 pins->sonnet 0",
     "moved": 0,
