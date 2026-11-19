@@ -1,0 +1,238 @@
+{
+ "schema": 1,
+ "date": "2026-11-19",
+ "generated": "2026-11-19T10:36:10+00:00",
+ "host": "ai_altos",
+ "sessions": 56,
+ "running": 2,
+ "triage_source": "pending-pool",
+ "matrix": {
+  "hub": {
+   "running": 0,
+   "archived": 4,
+   "corrections": 0,
+   "recurring_errors": 0,
+   "articles_read": 0,
+   "articles_pending": 0,
+   "in_project_matrix": false
+  },
+  "ai_altos": {
+   "running": 2,
+   "archived": 38,
+   "corrections": 1,
+   "recurring_errors": 7,
+   "articles_read": 0,
+   "articles_pending": 0,
+   "in_project_matrix": true
+  },
+  "jci_taipei": {
+   "running": 0,
+   "archived": 2,
+   "corrections": 0,
+   "recurring_errors": 4,
+   "articles_read": 0,
+   "articles_pending": 0,
+   "in_project_matrix": false
+  },
+  "scratch": {
+   "running": 0,
+   "archived": 1,
+   "corrections": 0,
+   "recurring_errors": 2,
+   "articles_read": 0,
+   "articles_pending": 0,
+   "in_project_matrix": false
+  },
+  "ai_darkhero": {
+   "running": 0,
+   "archived": 9,
+   "corrections": 0,
+   "recurring_errors": 0,
+   "articles_read": 0,
+   "articles_pending": 0,
+   "in_project_matrix": false
+  }
+ },
+ "matrix_gaps": [
+  "ai_darkhero",
+  "jci_taipei"
+ ],
+ "generalize": [],
+ "candidates": [
+  {
+   "id": "c1",
+   "seat": "ai_altos",
+   "text": "我授權且同意 以後這種低階的認證與登入問題不要再出現",
+   "at": "2026-11-16T04:33:58.215Z",
+   "session": "Altos claude_auth_unverified 調查",
+   "seats": [
+    "ai_altos"
+   ],
+   "kind": "pending",
+   "rule": ""
+  }
+ ],
+ "recurring_errors": [
+  {
+   "signature": "Traceback (most recent call last):",
+   "count": 7
+  },
+  {
+   "signature": "{",
+   "count": 3
+  },
+  {
+   "signature": "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Credential Exploration",
+   "count": 3
+  },
+  {
+   "signature": "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Sensitive-Source Prove",
+   "count": 3
+  },
+  {
+   "signature": "{\"ok\": true, \"node\": \"ai_altos\", \"upstream\": \"ai_darkhero\", \"remote_manifest_sha\": \"#\", \"source_commit\": \"#\", ",
+   "count": 2
+  },
+  {
+   "signature": "Invoke-Expression : At line:# char:#",
+   "count": 2
+  },
+  {
+   "signature": "exit=#",
+   "count": 2
+  },
+  {
+   "signature": "usage: mtm-fleet-skill-github.py [-h]",
+   "count": 2
+  }
+ ],
+ "decisions_open": [],
+ "articles": {},
+ "seats": {
+  "hub": {
+   "running": 0,
+   "archived": 4,
+   "titles_running": [],
+   "errors": {},
+   "articles": [],
+   "decisions": []
+  },
+  "ai_altos": {
+   "running": 2,
+   "archived": 38,
+   "titles_running": [
+    "1f01ca0e",
+    "Number Lock 預設值與 Nap Mode 實作"
+   ],
+   "errors": {
+    "/usr/bin/bash: eval: line #: unexpected EOF while looking for matching ``'": 1,
+    "<tool_use_error>Blocked: sleep # followed by: python -c \"": 1,
+    "電源配置 GUID: #-f#-#f#-#-#  (平衡)--- VIDEOIDLE": 1,
+    "DETACHED = #x#": 1,
+    "#: import argparse": 1,
+    "Ripgrep search timed out after # seconds. The search may have matched files but did not complete in time. Try ": 1,
+    "PASS {'ok': True, 'skill_gen': '#-#-#.#', 'package_sha': '#', 'version': '#.#.#', 'package_ok': True, 'parity_": 1,
+    "{\"ok\": true, \"node\": \"ai_altos\", \"upstream\": \"ai_darkhero\", \"remote_manifest_sha\": \"#\", \"source_commit\": \"#\", ": 2,
+    "Traceback (most recent call last):": 5,
+    "=== verify-host (with junctions) ===": 1,
+    "== layout ==": 1,
+    "== git pull ==": 1,
+    "{": 3,
+    "# #-#-# #:#:# +# chore(skills/altos): export manifest # (# skills)": 1,
+    "fames exit=#": 1,
+    "Invoke-Expression : At line:# char:#": 2,
+    "The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the": 1,
+    "== self-check ==": 1,
+    "== leanctl help ==": 1,
+    "exit=#": 2,
+    "\"source_sha#\": \"#\",": 1,
+    "backup: C:\\ai_workspace\\ai_altos\\evidence\\preconverge-backup-#T#": 1,
+    "usage: mtm-fleet-skill-github.py [-h]": 2,
+    "host=DESKTOP-RSNIAPR": 1,
+    "=== #": 1,
+    "C:\\Users\\USER\\AppData\\Roaming\\Claude\\claude-code\\#.#.#\\#\\claude.exe": 1,
+    "--#--": 1,
+    "{\"ok\": false, \"skill\": \"fames\", \"upstream\": \"ai_darkhero\", \"expected_package_sha\": \"#\", \"source_package_sha\": ": 1,
+    "{\"ok\": false, \"node\": \"ai_altos\", \"upstream\": \"ai_darkhero\", \"remote_manifest_sha\": \"#\", \"source_commit\": \"#\",": 1,
+    "C:\\Users\\USER\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Anthropic.ClaudeCode_Microsoft.Winget.Source_#wekyb#d#bb": 1,
+    "Remove-Item : Cannot find path 'Env:\\CLAUDE_CODE_DISABLE_CRON' because it does not exist.": 1,
+    "PreToolUse:PowerShell hook error: PROOF POPUP GATE (operator red line 零前景／零彈窗, RL-POPUP-OAUTH-ONLY): this call": 1,
+    "--- engines present": 1,
+    "{\"cli\": \"C:\\\\Users\\\\USER\\\\AppData\\\\Roaming\\\\npm\\\\omniroute.cmd\", \"base_url\": \"http://#.#.#.#:#\", \"healthy\": tr": 1,
+    "The server-side auto mode classifier gave no verdict for mcp__ccd_session_mgmt__archive_session: a hook change": 1,
+    "total #": 1,
+    "<tool_use_error>Blocked: sleep # followed by: cd /c/ai_workspace/ai_altos/tray date +%T /c/Users/USER/AppData/": 1,
+    "<tool_use_error>Blocked: Start-Sleep # followed by: Get-Date -f HH:mm:ss; Select-String -Path C:\\ai_workspace\\": 1,
+    "ls-remote exit=#": 1,
+    "File \"<stdin>\", line #": 1,
+    "<tool_use_error>Task b#wfj# is not running (status: completed)</tool_use_error>": 1,
+    "WIN # '工作列' Shell_TrayWnd": 1,
+    "<tool_use_error>Blocked: Start-Sleep # followed by: $z='D:\\jcitaipei#\\jci_taipei\\source_snapshot\\jci_taipei-sn": 1,
+    "File \"C:\\ai_workspace\\ai_altos\\evidence\\tmp-transfer\\a.py\", line #": 2,
+    "A# sha# # size #": 1,
+    "which: no gh in (/c/Users/USER/bin:/mingw#/bin:/usr/local/bin:/usr/bin:/bin:/mingw#/bin:/usr/bin:/c/Users/USER": 1,
+    "/c/ai_workspace/jci_taipei": 1,
+    "File \"C:\\Users\\USER\\AppData\\Local\\Temp\\jcibk\\run.py\", line #": 1,
+    "#:rows.append((\"D: free\",f\"{shutil.disk_usage('D:\\').free/#**#:.#f} GiB\",None))": 1,
+    "python.exe : C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python#\\python.exe: No module named pytest": 1
+   },
+   "articles": [],
+   "decisions": []
+  },
+  "jci_taipei": {
+   "running": 0,
+   "archived": 2,
+   "titles_running": [],
+   "errors": {
+    "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Credential Exploration": 3,
+    "pdftoppm is not installed. Install poppler-utils (e.g. `brew install poppler` or `apt-get install poppler-util": 1,
+    "[Request interrupted by user for tool use]": 1,
+    "gh NOT on PATH": 1,
+    "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Expose Local Services]": 1,
+    "Traceback (most recent call last):": 2,
+    "Permission for this action was denied by the Claude Code auto mode classifier. Reason: Blocked by classifier. ": 2,
+    "Command timed out after #m #s": 2,
+    "File does not exist. Note: your current working directory is C:\\ai_workspace\\jci_taipei.": 1,
+    "Name       Version         Source": 1,
+    "未找到符合輸入條件的已安裝套件。": 1,
+    "=== https://github.com/scss#/jci_taipei.git": 1,
+    "credential.helper: manager": 1
+   },
+   "articles": [],
+   "decisions": []
+  },
+  "scratch": {
+   "running": 0,
+   "archived": 1,
+   "titles_running": [],
+   "errors": {
+    "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Sensitive-Source Prove": 3,
+    "{\"ok\": false, \"job\": \"#T#Z-#\", \"path\": \"jobs/dark-hero-z#/#T#Z-#.json\", \"target_host\": \"dark-hero-z#\", \"kind\":": 2,
+    "=== hook: _harness/hot_refresh/plan_text/record/user prompt assembly": 1,
+    "=== _instruction_files": 1,
+    "Permission for this action was denied by the Claude Code auto mode classifier. Reason: The server-side auto mo": 1,
+    "total #": 1,
+    "ls: cannot access '/c/ai_workspace/_skill/ai_fleet_skills/jobs/dark-hero-z#/': No such file or directory": 1,
+    "PreToolUse:Bash hook error: PROOF write gate (operator #-#-# 「用LEAN和F#S嚴格要求不准寫多餘且無用的垃圾檔案」, Lean ClaimContract.": 1
+   },
+   "articles": [],
+   "decisions": []
+  },
+  "ai_darkhero": {
+   "running": 0,
+   "archived": 9,
+   "titles_running": [],
+   "errors": {},
+   "articles": [],
+   "decisions": []
+  }
+ },
+ "upstream_proposals": [
+  {
+   "to": "ai_darkhero",
+   "title": "F1S: f1s-daily live digest reaches idle conversations",
+   "why": "altos' daily digest reaches a conversation at its next prompt through the instruction-file diff; adding _registry/f1s-daily/live.md to claude_session_hook.MIDTURN_WATCH would also deliver it mid-turn and wake idle conversations (f1s_live.py).",
+   "evidence": "_registry/f1s-daily/live.md; _skill/engines/f1s-daily-digest.py"
+  }
+ ]
+}

@@ -70,6 +70,9 @@ class Pool:
         # (a concurrent harvester once left a phantom 'openrouter/free') so the pool never 404s on
         # garbage -> no "dying" calls from a bad roster. key-pool-tick refreshes the roster live.
         _or_models=[x for x in _or_models if isinstance(x,str) and "/" in x and x.endswith(":free")] or ["google/gemma-4-31b-it:free"]
+        # 2026-11-18 probe: the matrix roster held two laguna ids no longer in the :free list and two gemma ids answering
+        # 429; the measured roster goes first so a dead id never caps the key (see OPENROUTER_FREE).
+        _or_models=list(dict.fromkeys(self.OPENROUTER_FREE+_or_models))[:8]
         self.openrouter=[(k["key"],mdl) for k in m["keys"]
                          if k["provider"]=="openrouter" and k["status"]=="ok" and k.get("key")
                          for mdl in _or_models]
@@ -141,28 +144,38 @@ class Pool:
                 # transient (SSL bad-record-mac, conn reset): rotate key + backoff, keep trying
                 self.gi+=1; time.sleep(1.5); last=str(e); continue
         return f"__ERR__ groq transient ({last})"
+    # 2026-11-18 curator article sweep (free_pool_sweep.py; AI Studio free tier, 4 keyed tasks, 3 keys): gemini-3.5-flash-lite
+    # 4/4 in 0.9-1.5 s, gemini-3.8-flash 3/4 in 4.5-6.0 s (one 503), gemini-4-hydrogen 3/4 in 19-63 s (too slow, not
+    # listed), gemini-decision-1 404 on the free tier. Free-tier quota is per model, so a model that answers 429/503/404
+    # falls through to the next one on the same keys instead of failing the provider.
+    GEMINI_FREE=["gemini-3.5-flash-lite","gemini-3.8-flash"]
     def _gemini(self,messages,jsonmode):
         if not self.gem or not self.gemkeys: return "__ERR__ no-gemini"
-        model=self.gem["models"][0]; url=self.gem["url"].format(model=model)
         text="\n\n".join(m["content"] for m in messages)
         last="none"
-        for key in self.gemkeys:
-            req=urllib.request.Request(f"{url}?key={key}",method="POST",
-                headers={"Content-Type":"application/json","User-Agent":UA})
-            data={"contents":[{"parts":[{"text":text}]}],"generationConfig":{"temperature":0.1}}
-            try:
-                r=urllib.request.urlopen(req,data=json.dumps(data).encode(),timeout=120)
-                doc=json.loads(r.read())
-            except urllib.error.HTTPError as e:
-                last="%s %s"%(e.code,e.read()[:120]); continue   # 2026-10-27: 503 high-demand on one key -> next key
-            except Exception as e:
-                last=type(e).__name__; continue
-            text=self._gemini_text(doc)
-            if text is not None:
-                return text
-            # 2026-10-31: 124 'gemini-failed (KeyError)' rows in one day were safety-blocked replies with no parts
-            # (ai_theater subtitle text). The reason is now named, and a block repeats on every key: stop here.
-            last="blocked:"+self._gemini_block_reason(doc); break
+        for model in dict.fromkeys(list(self.gem["models"][:1])+self.GEMINI_FREE):
+            url=self.gem["url"].format(model=model); skip_model=False
+            for key in self.gemkeys:
+                req=urllib.request.Request(f"{url}?key={key}",method="POST",
+                    headers={"Content-Type":"application/json","User-Agent":UA})
+                data={"contents":[{"parts":[{"text":text}]}],"generationConfig":{"temperature":0.1}}
+                try:
+                    r=urllib.request.urlopen(req,data=json.dumps(data).encode(),timeout=120)
+                    doc=json.loads(r.read())
+                except urllib.error.HTTPError as e:
+                    last="%s %s [%s]"%(e.code,e.read()[:120],model)   # 2026-10-27: 503 high-demand on one key -> next key
+                    if e.code==404: skip_model=True; break         # model not on this tier: no key will have it
+                    continue
+                except Exception as e:
+                    last=type(e).__name__; continue
+                out=self._gemini_text(doc)
+                if out is not None:
+                    return out
+                # 2026-10-31: 124 'gemini-failed (KeyError)' rows in one day were safety-blocked replies with no parts
+                # (ai_theater subtitle text). The reason is now named, and a block repeats on every key and model: stop here.
+                last="blocked:"+self._gemini_block_reason(doc)
+                return "__ERR__ gemini-failed (%s)"%redact(last)
+            if skip_model: continue
         return "__ERR__ gemini-failed (%s)"%redact(last)
     @staticmethod
     def _gemini_text(doc):
@@ -423,24 +436,57 @@ class Pool:
     # 2026-10-27: mistral-large-latest answers 403 tier_not_allowed on the free tier (the key itself is valid);
     # ministral-14b-latest / ministral-8b-latest answer 200 in 0.6 s on the same key.
     RETIRED={"deepseek-ai/deepseek-v4-pro":"z-ai/glm-5.3-flash","mistral-large-latest":"ministral-14b-latest"}
+    # 2026-11-18 curator probe (one NVIDIA key, 33-model catalog; JSON extract / zh summary / ja->zh-TW / arithmetic,
+    # 6 calls in parallel): nemotron-3.5-super-vl-120b 4/4 in 0.7-3.4 s, nemotron-3-nano-omni-30b 4/4 in 1.1-2.2 s,
+    # nemotron-3-ultra-550b 4/4 in 0.9-4.5 s, kimi-k3.1-pro 4/4 in 2.1-7.1 s, nemotron-3.5-lightning 4/4 in 1.6-7.1 s,
+    # step-5-preview 4/4 in 2.6-52.7 s, minimax-m3.1-flash 4/4 in 25.9-35.4 s under load (ai_metadata: 1.0 s alone),
+    # gemma-4-31b 4/4 in 13.7-16.2 s, muse-glimmer-30b 4/4 in 17.6-46.1 s. laguna-xs-2.1 and nemotron-3.5-bolt-e4b
+    # 3/4 (arithmetic wrong), riva-translate-4b translate-only. Dead: glm-5.3-flash circuit-open, gpt-oss-20b timeout
+    # at 183 s x4, mistral-large-4 timeout 2/4, gemma-3-12b-it and gemma-3-4b-it 404. Each model has its own breaker
+    # (chat_model key `nvidia-nim:<model>`), so a dead one never closes the provider.
+    NV_FAST="nvidia:nvidia/nemotron-3.5-super-vl-120b-a12b"
+    NV_OMNI="nvidia:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+    NV_ULTRA="nvidia:nvidia/nemotron-3-ultra-550b-a55b"
+    # 2026-11-18: the OpenRouter key answered again (matrix said quota0; key-health probe --write flipped it to ok).
+    # 14 :free ids listed; 9 answered extract+translate correctly; the 8 fastest (1.0-6.1 s) are listed. gemma-4-26b/31b :free
+    # answered 429, lfm-3-1.7b 429 on the second call, nemotron-3.5-lightning:free empty content, inkling-2-small 403
+    # (agentic harnesses only) -> not listed.
+    OPENROUTER_FREE=["nvidia/nemotron-3.5-super-vl:free","cohere/north-mini-code:free","baidu/ernie-5.5-flash-preview:free",
+                     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free","recursive/flint-v1.0:free",
+                     "nvidia/nemotron-3-ultra-550b-a55b:free","particle-ai/particle-1:free","inclusionai/ling-3.2-flash:free"]
+    # 2026-11-18 cf_ai (Workers AI, free plan: account has no paid subscription, so the 10k-neuron/day cap stops, never bills):
+    # 4-task probe mistral-small-3.1-24b 4/4 0.4-1.2 s, gpt-oss-120b 4/4 0.8-2.2 s, llama-3.3-70b-fp8-fast 4/4 0.7-8.0 s;
+    # it goes before openrouter, whose :free daily cap answered 429 free-models-per-day the same day.
     TASK_ROUTES={
-        "summary":["gemini","omniroute:auto/coding"],
+        # 2026-11-18: without gemini, summary fell to auto/coding (7.7 s); nemotron-3.5-super-vl answered in 0.4-3.4 s.
+        "summary":["gemini",NV_FAST,NV_OMNI,"cf_ai","openrouter","omniroute:auto/coding"],
         # 2026-10-18 (ai_trader F1S proposal, 40-title JSON labelling): ddgw/gpt-5.4-mini 2.0/1.6/2.3 s and parsed on
         # every probe (88/120 labels agree with gemini); auto/coding and auto/reasoning answered in prose there, so
         # structured tasks take ddgw before auto/coding. auto/coding stays last: the curator probe the same night got
         # valid JSON from it in 4.2 s while ddgw answered 503 "Failed to acquire VQD token" (keyless upstream, volatile).
         # A prose answer no longer counts as success: chat_for(jsonmode=True) drops non-JSON output to the next route.
-        "extract":["gemini","omniroute:ddgw/gpt-5.4-mini","omniroute:auto/coding"],
+        # 2026-11-18 (ai_metadata F1S proposal, 172cm/48kg JSON probe): ddgw/* and auto/coding both timed out at 120 s,
+        # so one gemini 429 cost 240 s; nvidia minimax-m3.1-flash 1.0 s and cfp gpt-oss-120b 7.1 s answered correctly.
+        # 2026-11-18 curator re-probe without gemini: the route took 15.3 s to reach cfp gpt-oss-120b.
+        "extract":["gemini",NV_FAST,"nvidia:minimaxai/minimax-m3.1-flash",NV_OMNI,"cf_ai","openrouter",
+                   "omniroute:cfp/openai/gpt-oss-120b","omniroute:ddgw/gpt-5.4-mini","omniroute:auto/coding"],
         # 2026-10-27 re-probe: auto/reasoning answered 502 (its combo picked nvidia moonshotai/kimi-k3, EOL 410 since
         # 2026-10-15), then 1.5 s, then 63.8 s -> volatile, moved last. gemini 1.3 s; nvidia glm-5.3-flash 1.2-1.9 s.
-        "reasoning":["gemini","nvidia:z-ai/glm-5.3-flash","omniroute:auto/reasoning"],
-        "bulk":["gemini","omniroute:ddgw/gpt-5.4-mini","omniroute:auto/coding"],
+        # 2026-11-18: glm-5.3-flash circuit-open; super-vl 0.7 s, nano-omni 1.1 s, both correct.
+        "reasoning":["gemini",NV_FAST,NV_OMNI,"cf_ai","openrouter","omniroute:auto/reasoning"],
+        "bulk":["gemini",NV_FAST,"cf_ai","openrouter","omniroute:ddgw/gpt-5.4-mini","omniroute:auto/coding"],
         # 2026-10-16 ja->zh-TW probe: gemini 1.1 s, auto/reasoning 1.8 s, ddgw/gpt-5.4-mini 3.6 s, cfp glm-5.2 11 s,
         # nvidia glm-5.3-flash 42 s (all correct). auto/chat took 104 s -> not routed.
         # 2026-10-27: auto/reasoning volatile (see "reasoning") -> after the steady routes.
-        "translate":["gemini","omniroute:ddgw/gpt-5.4-mini","omniroute:cfp/zai-org/glm-5.2","nvidia-nim","omniroute:auto/reasoning"],
+        # 2026-11-18: without gemini, translate took 21.8 s to reach cfp glm-5.2; ultra 0.9 s, super-vl 1.5 s. The bare
+        # "nvidia-nim" route (matrix default model) is gone: its model is glm-5.3-flash, circuit-open.
+        "translate":["gemini",NV_ULTRA,NV_FAST,"cf_ai","openrouter","omniroute:ddgw/gpt-5.4-mini","omniroute:cfp/zai-org/glm-5.2",
+                     "omniroute:auto/reasoning"],
     }
-    def _gateway(self,model,messages,max_tokens=1500,timeout=120):
+    def _gateway(self,model,messages,max_tokens=1500,timeout=120,task=None):
+        """OmniRoute local gateway; a direct call writes one pool-tiers row (record only), nested calls none."""
+        return self._recorded(task or "via","omniroute",lambda: self._gateway_call(model,messages,max_tokens,timeout))
+    def _gateway_call(self,model,messages,max_tokens=1500,timeout=120):
         """OmniRoute local gateway (127.0.0.1:20128, Anthropic format); token from the vault, never printed."""
         try:
             import _secrets
@@ -524,7 +570,9 @@ class Pool:
                 if not self._budget_ok("nvidia-nim"):
                     last="__ERR__ nvidia-nim budget-parked"; continue
                 model=route.split(":",1)[1]
-                last=self.chat_model("nvidia-nim",model,messages,jsonmode=jsonmode,max_tokens=max_tokens)
+                # 2026-11-18: response_format json_object forces an OBJECT, so a bulk "[...]" prompt came back as its first
+                # item only; ask in plain mode (no stream) and let _json_ok below judge the reply instead.
+                last=self.chat_model("nvidia-nim",model,messages,jsonmode=False,max_tokens=max_tokens,stream=not jsonmode)
                 if jsonmode and not last.startswith("__ERR__") and not self._json_ok(last):
                     last=f"__ERR__ nvidia-nim not-json {model}: {last[:60]!r}"
                 self._budget_note("nvidia-nim",task,last,model)
@@ -597,8 +645,24 @@ class Pool:
             return out
         with ThreadPoolExecutor(max_workers=max(1,min(workers,len(jobs)))) as ex:
             return list(ex.map(one,enumerate(jobs)))
-    def chat_via(self,provider,messages,jsonmode=False,max_tokens=1500,timeout=None):
-        """Call one provider with persistent failure isolation and attribution."""
+    def chat_via(self,provider,messages,jsonmode=False,max_tokens=1500,timeout=None,task=None):
+        """Call one provider with persistent failure isolation and attribution.
+        2026-11-19: a direct call writes one pool-tiers row (record only, never gates); inside chat/chat_for it adds none."""
+        return self._recorded(task or "via",provider,lambda: self._chat_via(provider,messages,jsonmode,max_tokens,timeout))
+    def _recorded(self,task,provider,call):
+        if getattr(_TIER_LOCAL,"depth",0): return call()
+        _TIER_LOCAL.depth=1
+        try:
+            out=call()
+        finally:
+            _TIER_LOCAL.depth=0
+        try:
+            if not str(out).startswith("__ERR__"): self.last_served=provider
+            self._tier("note",task,out)
+        except Exception:
+            pass
+        return out
+    def _chat_via(self,provider,messages,jsonmode=False,max_tokens=1500,timeout=None):
         p=(provider or "").lower()
         if p!="ollama" and self._creds(p) is False:
             # 2026-10-27 audit: cerebras/cf_ai/hf/... had no status=ok key, yet every fallback chain called them and

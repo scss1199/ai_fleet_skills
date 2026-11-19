@@ -189,7 +189,8 @@ def _is_fresh(entry, stale_hours, now):
     return bool(checked and (now - checked).total_seconds() < stale_hours * 3600)
 
 
-def _summary(m):
+def provider_states(m):
+    """Per-provider key counts by status, from matrix metadata only (no network, no key value leaves)."""
     states = {}
     for entry in m.get("keys", []):
         provider = entry.get("provider", "UNKNOWN")
@@ -198,6 +199,18 @@ def _summary(m):
         row["total"] += 1
         row["present"] += int(bool(entry.get("key")))
         row["status"][status] = row["status"].get(status, 0) + 1
+    return states
+
+
+def readiness(m):
+    """Names-only free-pool readiness: providers whose last probe left at least one key status=ok."""
+    states = provider_states(m)
+    ok = sorted(p for p, row in states.items() if row["status"].get("ok"))
+    return {"providers_ok": ok, "ok": len(ok), "total": len(states)}
+
+
+def _summary(m):
+    states = provider_states(m)
     print("provider       total present statuses")
     for provider, row in sorted(states.items()):
         status = ",".join(f"{k}:{v}" for k, v in sorted(row["status"].items()))

@@ -318,6 +318,105 @@ def _mirror_skill_dir(src_skill_dir: str, dest_skill_dir: str) -> bool:
     return True
 
 
+_PROVIDER_NAME = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
+# Prefixes real API keys/tokens start with; a provider name never does (ai_fleet_skills is a PUBLIC repo).
+_KEY_PREFIXES = ("sk-", "sk_", "gsk", "aiza", "hf_", "csk", "nvapi", "xai-", "r8_", "ghp", "gho", "github_pat",
+                 "pk-", "pk_", "eyj", "bearer", "ya29", "1//")
+_FREE_POOL_REFRESH_S = 6 * 3600
+
+
+def _safe_provider_name(name) -> bool:
+    return (isinstance(name, str) and len(name) <= 24 and bool(_PROVIDER_NAME.match(name))
+            and not name.startswith(_KEY_PREFIXES))
+
+
+def _load_engine(file: str, alias: str):
+    spec = importlib.util.spec_from_file_location(alias, os.path.join(HUB, "_skill", "engines", file))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _free_pool_block(package_sha: str, previous: dict | None = None) -> dict:
+    """Names-and-counts readiness this host publishes under contributors/<host>/manifest.json (operator
+    2026-11-18: measure the follower free-pool gap). Built only from key-health.readiness (matrix metadata,
+    no network) and omniroute-gateway.status()["healthy"]; every string is allow-listed, so no key value,
+    prefix, token or cookie can reach the public repo. observed_at refreshes when the content changes or is
+    6 h old, so an unchanged host does not commit every 15-min tick."""
+    providers: list[str] | None = None
+    ok = total = None
+    try:
+        kh = _load_engine("key-health.py", "key_health_free_pool")
+        matrix = json.loads(Path(kh.MP).read_text(encoding="utf-8-sig"))
+        r = kh.readiness(matrix)
+        providers = sorted({p for p in r.get("providers_ok") or [] if _safe_provider_name(p)})
+        ok, total = len(providers), int(r.get("total") or 0)
+    except Exception:  # noqa: BLE001 - no matrix / unreadable = UNKNOWN, never a guess
+        pass
+    try:
+        gw = "up" if _load_engine("omniroute-gateway.py", "omniroute_free_pool").status().get("healthy") is True else "down"
+    except Exception:  # noqa: BLE001
+        gw = "UNKNOWN"
+    sha = package_sha if isinstance(package_sha, str) and re.fullmatch(r"[0-9a-f]{6,64}", package_sha or "") else None
+    block = {"state": "UNKNOWN" if providers is None else "MEASURED", "providers_ok": providers or [],
+             "ok": ok, "total": total, "omniroute": gw, "package_sha": sha, "observed_at": _iso()}
+    prev = previous if isinstance(previous, dict) else {}
+    same = {k: v for k, v in prev.items() if k != "observed_at"} == {k: v for k, v in block.items() if k != "observed_at"}
+    if same and prev.get("observed_at"):
+        try:
+            age = time.time() - datetime.strptime(prev["observed_at"], "%Y-%m-%dT%H:%M:%SZ").replace(
+                tzinfo=timezone.utc).timestamp()
+            if 0 <= age < _FREE_POOL_REFRESH_S:
+                block["observed_at"] = prev["observed_at"]
+        except (TypeError, ValueError):
+            pass
+    return block
+
+
+def _key_seal_block(node: dict) -> dict:
+    """Follower side of option (a) (operator 2026-11-18): publish this host's fleet SSH public key so darkhero
+    can seal the free-pool keys to it. Public key and fingerprint only; missing `cryptography` = UNKNOWN."""
+    if node.get("role") not in {"downstream_curator", "downstream_follower"}:
+        return {}
+    try:
+        seal = _load_engine("fleet_key_seal.py", "fleet_key_seal_pub")
+        line = seal.ensure_identity()
+        if line:
+            return {"key_seal": {"ssh_pubkey": line, "fingerprint": seal.fingerprint(line)}}
+    except Exception:  # noqa: BLE001 - never block the manifest on the key path
+        pass
+    return {"key_seal": {"state": "UNKNOWN"}}
+
+
+def _seal_followers(proto: dict, node: dict) -> dict:
+    """Upstream side: seal the free-pool rows to every follower's published key under contributors/<me>/sealed/."""
+    try:
+        seal = _load_engine("fleet_key_seal.py", "fleet_key_seal_up")
+        followers = sorted({_contributor_slug(n) for n in (proto.get("nodes") or {}).values()
+                            if n.get("role") in {"downstream_curator", "downstream_follower"}})
+        state = _load_state(proto)
+        out = seal.seal_for_followers(_repo_root(node, proto), _contributor_slug(node), followers, state)
+        _save_state(proto, state)
+        return out
+    except Exception as exc:  # noqa: BLE001
+        return {"state": "FAILED", "reason": type(exc).__name__}
+
+
+def _apply_sealed_keys(proto: dict, node: dict) -> dict:
+    """Follower side: open contributors/<upstream>/sealed/<me>.json when it changed and merge it locally."""
+    try:
+        seal = _load_engine("fleet_key_seal.py", "fleet_key_seal_down")
+        nodes = proto.get("nodes") or {}
+        upstream = nodes.get(proto.get("default_upstream", "ai_darkhero")) or {}
+        state = _load_state(proto)
+        out = seal.apply_sealed(_repo_root(node, proto), _contributor_slug(upstream), _contributor_slug(node), state)
+        if out.get("state") == "APPLIED":
+            _save_state(proto, state)
+        return out
+    except Exception as exc:  # noqa: BLE001
+        return {"state": "FAILED", "reason": type(exc).__name__}
+
+
 def _finalize_manifest(manifest: dict) -> str:
     payload = {k: v for k, v in manifest.items() if k != "manifest_sha"}
     manifest["manifest_sha"] = _sha16_text(json.dumps(payload, ensure_ascii=False, sort_keys=True))
@@ -410,6 +509,10 @@ def cmd_export(node_name: str, node: dict, *, quiet: bool = False) -> dict:
         "required": list(reg.get("required") or []),
         "skill_count": len(manifest_skills),
         "skills": manifest_skills,
+        "free_pool": _free_pool_block(
+            next((s.get("package_sha") for s in manifest_skills if s.get("name") == "fames"), ""),
+            previous_manifest.get("free_pool")),
+        **_key_seal_block(node),
     }
     same_generation = (
         previous_manifest.get("schema") == manifest["schema"]
@@ -422,6 +525,8 @@ def cmd_export(node_name: str, node: dict, *, quiet: bool = False) -> dict:
     body = _finalize_manifest(manifest)
     os.makedirs(export, exist_ok=True)
     Path(os.path.join(export, "manifest.json")).write_text(body, encoding="utf-8")
+    if node.get("role") == "upstream_curator":
+        _seal_followers(proto, node)
     digest_out = os.path.join(export, "digest.json")
     if not (same_generation and os.path.isfile(digest_out)):
         Path(digest_out).write_text(
@@ -1311,6 +1416,7 @@ def cmd_sync(node_name: str, node: dict, *, quiet: bool = False) -> dict:
     if role in {"downstream_curator", "downstream_follower"}:
         before = _run_fames_follow(node_name, node)
         pull = cmd_pull(node_name, node, quiet=quiet)
+        keys = _apply_sealed_keys(_load_proto(), node)
         # A legacy follower may learn the follow command only through the pull above.
         after = before if before.get("ok") else _run_fames_follow(node_name, node)
         publish = (
@@ -1323,6 +1429,7 @@ def cmd_sync(node_name: str, node: dict, *, quiet: bool = False) -> dict:
             "ok": bool(pull.get("ok") and after.get("ok") and publish.get("ok")),
             "fames": after,
             "publish": publish,
+            "key_seal": keys,
         }
         if not quiet:
             print(json.dumps(out, ensure_ascii=False))
