@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-19T05:41:20.770008+00:00",
+  "observed_at": "2026-11-19T06:11:52.286035+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -358,6 +358,12 @@
       {
         "agent": "ai_darkhero",
         "surface": "claude",
+        "observed_at": "2026-11-19T13:54:33+08:00",
+        "receipt_sha256": "fdbe212c2dae7280a8bc7839285a5a92799d42bbdd370eb9314849fe010ec3e3"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
         "observed_at": "2026-11-19T12:06:11+08:00",
         "receipt_sha256": "a0e23aa7cee5ee58623d0f350323e14790a41fafebcd1a606a24a93c26e11d5b"
       },
@@ -370,8 +376,14 @@
       {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-11-19T12:42:16+08:00",
-        "receipt_sha256": "5dbe8dd381a188777aa4c7eb52bb3e93a0ed285944f7628b9fc7817f8f028956"
+        "observed_at": "2026-11-19T13:41:41+08:00",
+        "receipt_sha256": "b6ccd18c3010cc81ccb5dc7902faa81cb9f08cea80f3651b0b3759dc2c3f3c4a"
+      },
+      {
+        "agent": "ai_theater",
+        "surface": "claude",
+        "observed_at": "2026-11-19T13:58:05+08:00",
+        "receipt_sha256": "10c999862c443431eb2a2e93ea23fcbe31567ddbb2cfdece847a1991653208db"
       },
       {
         "agent": "ai_darkhero",
@@ -384,6 +396,18 @@
         "surface": "claude",
         "observed_at": "2026-11-19T12:41:16+08:00",
         "receipt_sha256": "f3871f75cd79fcf3b83f47cead979c0ba4ec6d9825bfcd1fdf875c86e3326d5d"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-19T14:10:48+08:00",
+        "receipt_sha256": "d1031e8a404da54e65d86c0d83efb9bf87d78f2717a0dafb00e9532d0c08bdb8"
+      },
+      {
+        "agent": "ai_theater",
+        "surface": "claude",
+        "observed_at": "2026-11-19T13:56:45+08:00",
+        "receipt_sha256": "411fd7bdbe60eb3581aeae23c4507255823fa1e06b60b5543cbcd97989afbfde"
       }
     ],
     "runtime_release_sha256": "f0f314dd53be1f5ba71f0b379673f95ca10f201a7ad4a3808788739dee23dfe9"
