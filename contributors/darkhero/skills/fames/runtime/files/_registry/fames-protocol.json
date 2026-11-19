@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.45.352",
+  "version": "1.45.354",
   "updated": "2026-09-23",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -2473,7 +2473,7 @@
       "completion_rule": "Scope completion/release does not clear unrelated parent obligations; task completion requires fresh accepted evidence and closed work",
       "unsupported": "Arbitrary recursive child delegation, transitive lineage and cumulative child budgets are not added or proven by this entrypoint"
     },
-    "hot_directive": "F1S 做法在技能、按需載入（紅線見 T1）：①f1s-intake 原話列要做／不做／限制／驗收，不擴不縮不替換，已決定不再問；③mtm-mto-first 先重用再寫、改碼前全域搜尋、只改要改的行；④⑤⑥ztm-verify-before-done 主張要有本回合證據否則 UNKNOWN、綠測試才說修好、只寫使用者點名的檔案；⑥b 引擎檔要有讀回者或 TTL，禁每跑一檔。其他路由看技能描述。平行：跨檔查事實 f1s_map.py；多單元 f1s_parallel.py plan→run→merge，有驗證器交免費池、判斷留主對話。多個獨立問題各開一個對話，本對話只收編；閒置對話 session-consolidate.py absorb→park→archive。「在這裡執行此任務：…」＝已核准。F1S 升級自動注入；提案 inbox.py send ai_darkhero <seat> --kind task \"F1S: 標題＋原因＋證據路徑\"。額度用完走 OmniRoute 免費池。單說「FAMES」＝列各階段狀態。",
+    "hot_directive": "F1S 做法在技能、按需載入（紅線見 T1）：①f1s-intake 原話列要做／不做／限制／驗收，不擴不縮不替換，已決定不再問，不新開 .md/.json；③mtm-mto-first 先重用再寫、改碼前全域搜尋、只改要改的行；④⑤⑥ztm-verify-before-done 主張要有本回合證據否則 UNKNOWN、綠測試才說修好、「需要你決定」只問一次且只問使用者專屬的事、只寫使用者點名的檔案；⑥b 引擎檔要有讀回者或 TTL。路由：登入→browser-login-handoff；查資料／逐字稿／OCR→mtm-api-pool-offload（免費池三層）；無原始碼→rea-reverse-engineering；前端→web-ui-taste；反向學習→f1s-reverse-learning。平行：跨檔查事實 f1s_map.py；多單元 f1s_parallel.py plan→run→merge，有驗證器交免費池、判斷留主對話，讀回證據才併入。多個獨立問題各開一個對話，本對話只收編；閒置對話 session-consolidate.py absorb→park→archive。「在這裡執行此任務：…」＝已核准。升級自動注入；提案 inbox.py send ai_darkhero <seat> --kind task \"F1S: 標題＋原因＋證據路徑\"，f1s-evolve 整合。額度用完走 OmniRoute 免費池。單說「FAMES」＝列各階段狀態。",
     "phase_execution": {
       "schema": 1,
       "required": true,

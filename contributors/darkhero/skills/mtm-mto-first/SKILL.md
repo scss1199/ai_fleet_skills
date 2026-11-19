@@ -167,3 +167,7 @@ python %AI_WORKSPACE%\_skill\engines\mtm-token-waste-scan.py --agent <seat> --br
 - 只拿來分辨同名函式各被誰呼叫（ai_trader `prepare`、`launch` 分得出定義）。輸出和 rg 差不多大，又不印呼叫那行，省不到 token；ai_trader、ai_ziyaoastro 試完都留 rg 當預設（#78、#14）。
 - 漏答會回「0 個呼叫者」而不是報錯：用檔名跑 subprocess、importlib 載入、預設參數引用（`_skill/engines`、ai_trader）；跨檔 `db.set_ai_text_cache(...)` 也漏（ai_ziyaoastro，同樣寫法的 `L.prepare` 在 ai_trader 又查得到）。所以「No callers」不是證據，要刪或改名前照舊 rg 全域搜尋。
 - 不跑 `codegraph install`（會改全域設定），也不加 `alwaysLoad` 的 MCP（每回合都付工具 schema）。（PROOF `decision`：全域設定紅線詞）
+
+## 子對話平行（預設，operator 2026-11-19）
+
+主對話接任務後，若可拆成多個獨立單元：`f1s_parallel.py plan`，每個 unit 都要標 `kind`／`files`／`cwd`（檔案重疊的會自動排成先後）→ `run`（有驗證器的交免費池；claude_sub 依 kind 交 station、Sonnet 或 Opus 子對話，照它印出的 `start_session` brief 直接開）→ `close --evidence --session --fact k=v`（越界改檔會被拒）→ `merge --verify "<cmd>" --strict`（事實矛盾、越界或驗證失敗＝NOT MERGED）。判斷與整合留主對話。細節見 skill `token-preflight`。
