@@ -454,7 +454,10 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
         raise ValueError(f"order #{n} is {order['status']}, not open")
     sid = _session_id(session)
     if owner_of(order) and owner_of(order) != sid:
-        if evidence and _silent_owner_handover(order, seat, cwd, sid):
+        # A measured `--cannot` hands over too: ai_search #19 2026-11-20, owner fad3b104 silent 3 h, the seat's measured
+        # cannot (lines up only by order #17's required tests, prune dead 0) was refused and waited for the 6 h STALE line.
+        # A cannot is judged by the curator either way, the same place a STALE release lands.
+        if _silent_owner_handover(order, seat, cwd, sid):
             order["owner"] = {"session": sid, "from": os.path.abspath(cwd), "at": _now(), "by": "handover",
                               "took_from": owner_of(order)}
         else:
@@ -1083,12 +1086,15 @@ def handoff_line(seat: str, session_id: str = "", context: int | None = None, ov
     if rollover is None:
         try:
             with open(os.path.join(HUB, "_registry", "run-until-done.json"), encoding="utf-8-sig") as fh:
-                rollover = int(float((json.load(fh).get("live_wake") or {}).get("rollover_over_k", ROLLOVER_OVER_K)) * 1000)
+                live = json.load(fh).get("live_wake") or {}
+            by_seat = live.get("rollover_over_k_by_seat") or {}      # a seat without a key keeps the fleet value
+            rollover = int(float(by_seat.get(seat, live.get("rollover_over_k", ROLLOVER_OVER_K))) * 1000)
         except (OSError, ValueError, TypeError, AttributeError):
             rollover = ROLLOVER_OVER_K * 1000
-    if not over or context <= over:
+    rolling = bool(rollover) and context > rollover       # a per-seat line under the FAT CHAT line still rolls over (over=0 = all off)
+    if not over or (context <= over and not rolling):
         return ""
-    if rollover and context > rollover:
+    if rolling:
         return (f"ROLL OVER {context // 1000}K > {rollover // 1000}K: this conversation holds {context // 1000}K; do not do this prompt's work here. "
                 + _rollover_steps(seat, session_id))
     cwd = os.path.join(HUB, seat).replace(os.sep, "/")

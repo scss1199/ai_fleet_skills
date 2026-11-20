@@ -164,9 +164,34 @@ def station_over_tokens() -> int:
         return STATION_OVER_K * 1000
 
 
+_CONTEXT_MEMO: dict = {}   # (path, settled) -> ((mtime_ns, size), tokens): an idle poll re-asked the same unchanged tail every 5 s
+
+
+def _stat_key(path: Path):
+    try:
+        st = path.stat()
+        return (st.st_mtime_ns, st.st_size)
+    except OSError:
+        return None
+
+
 def context_tokens(transcript: Path, settled: bool = False) -> int:
     """What the next call of this conversation would re-read: the last main-chain model call's whole input. 0 = unknown.
-    `settled`: 0 as well when a compaction came after that call (the size it shows is the one the compaction removed)."""
+    `settled`: 0 as well when a compaction came after that call (the size it shows is the one the compaction removed).
+    Memoised on (mtime_ns, size): a transcript that did not change is not re-read (lean-cost 2026-11-20)."""
+    key = _stat_key(transcript)
+    memo = _CONTEXT_MEMO.get((str(transcript), settled))
+    if key is not None and memo and memo[0] == key:
+        return memo[1]
+    tokens = _context_tokens_scan(transcript, settled)
+    if key is not None:
+        if len(_CONTEXT_MEMO) > 64:
+            _CONTEXT_MEMO.clear()
+        _CONTEXT_MEMO[(str(transcript), settled)] = (key, tokens)
+    return tokens
+
+
+def _context_tokens_scan(transcript: Path, settled: bool = False) -> int:
     try:
         with transcript.open("rb") as fh:
             fh.seek(max(0, _size(transcript) - TAIL_BYTES))
@@ -379,6 +404,26 @@ def capture_due(session_id: str, now: float | None = None) -> str:
     return "\n".join(alerts)
 
 
+_BYTES_MEMO: dict = {}     # path -> ((mtime_ns, size), bytes); dropped by _drop_bytes() so no waiter keeps the order files in RAM
+
+
+def _bytes(path: Path) -> bytes:
+    """path.read_bytes(), but one read per (mtime_ns, size): orders_sig, contract_sig and order_index read the same order
+    files in a row (3 x 1.8 MB for ai_trader on every waiter start and every settle)."""
+    st = path.stat()
+    key = (st.st_mtime_ns, st.st_size)
+    hit = _BYTES_MEMO.get(str(path))
+    if hit and hit[0] == key:
+        return hit[1]
+    data = path.read_bytes()
+    _BYTES_MEMO[str(path)] = (key, data)
+    return data
+
+
+def _drop_bytes() -> None:
+    _BYTES_MEMO.clear()
+
+
 def orders_sig(hook, seat: str) -> str:
     """This seat's curator orders alone: the part of the contract an idle conversation has work to do on."""
     import hashlib
@@ -389,7 +434,7 @@ def orders_sig(hook, seat: str) -> str:
         orders = []
     for path in orders:
         try:
-            digest.update(path.read_bytes())
+            digest.update(_bytes(path))
         except OSError:
             digest.update(b"-")
     return digest.hexdigest()[:16]
@@ -422,7 +467,7 @@ def order_index(hook, seat: str) -> dict | None:
     out = {}
     for path in paths:
         try:
-            orders = json.loads(path.read_text(encoding="utf-8-sig")).get("orders")
+            orders = json.loads(_bytes(path).decode("utf-8-sig")).get("orders")
         except OSError:
             continue                                        # no file = no orders
         except (ValueError, AttributeError):
@@ -464,7 +509,7 @@ def contract_sig(hook, seat: str) -> str:
     # f1s_daily.py's live.md (operator 2026-10-27 「動態作用回所有正在跑的對話」) wakes idle conversations once a day.
     for path in [HUB / "_registry" / "rules-blueprint.json", HUB / "_registry" / "f1s-daily" / "live.md", *orders]:
         try:
-            digest.update(path.read_bytes())
+            digest.update(_bytes(path))
         except OSError:
             digest.update(b"-")
     return digest.hexdigest()[:16]
@@ -494,13 +539,24 @@ def _thrash_tail(path: Path) -> bool:
     return False
 
 
+_THRASH_MEMO: dict = {}   # path -> ((mtime_ns, size), stopped-on-thrash)
+
+
 def thrash_stuck(now: float | None = None) -> list[str]:
     """Transcripts of the last day stopped by the thrash guard. They wait for a person until the process restarts."""
     now = now if now is not None else _now()
     found = []
     try:
         for path in CLAUDE_PROJECTS.glob("*/*.jsonl"):
-            if now - path.stat().st_mtime <= THRASH_WINDOW_S and _thrash_tail(path):
+            st = path.stat()
+            if now - st.st_mtime > THRASH_WINDOW_S:
+                continue
+            key = (st.st_mtime_ns, st.st_size)       # the tail verdict only changes when the file does
+            memo = _THRASH_MEMO.get(str(path))
+            if memo is None or memo[0] != key:
+                memo = (key, _thrash_tail(path))
+                _THRASH_MEMO[str(path)] = memo
+            if memo[1]:
                 found.append(path.stem)
     except OSError:
         pass
@@ -593,6 +649,24 @@ def hardware_due(seat: str, curator: str, now: float | None = None) -> str:
             "hwlog_autostart.py --request-restart), read back a segment younger than 10 s, and tell the operator.")
 
 
+_CO_MEMO: list = []        # [(mtime_ns, size), module]
+
+
+def _curator_orders():
+    """curator_orders.py loaded by path, once per file version: the two polls that ask it every 5 s exec'd its 80 KB
+    source (and its imports) each time. A new file version (mtime_ns, size) is loaded fresh, so a 70 h waiter still
+    sees new code."""
+    path = HUB / "_skill" / "engines" / "curator_orders.py"
+    key = _stat_key(path)
+    if _CO_MEMO and key is not None and _CO_MEMO[0] == (str(path), key):
+        return _CO_MEMO[1]
+    spec = importlib.util.spec_from_file_location("f1s_live_curator_orders_poll", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    _CO_MEMO[:] = [(str(path), key), mod] if key is not None else []
+    return mod
+
+
 def rollover_due(seat: str, session_id: str) -> str:
     """The wake text when this conversation armed a rollover (curator_orders.py rollover-brief --arm) and cleared
     itself: Claude Code wakes the cleared conversation with it, so the hand-over starts without anyone typing. Exempt
@@ -600,10 +674,7 @@ def rollover_due(seat: str, session_id: str) -> str:
     if not seat or not session_id:
         return ""
     try:
-        spec = importlib.util.spec_from_file_location("f1s_live_curator_orders_rollover",
-                                                      HUB / "_skill" / "engines" / "curator_orders.py")
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
+        mod = _curator_orders()
         return str(mod.rollover_wake_text(seat, session_id) or "")
     except Exception:  # noqa: BLE001
         return ""
@@ -636,10 +707,7 @@ def idle_rollover_due(seat: str, session_id: str, transcript: Path, idle_s: floa
     if not context:
         return ""
     try:
-        spec = importlib.util.spec_from_file_location("f1s_live_curator_orders_idle",
-                                                      HUB / "_skill" / "engines" / "curator_orders.py")
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
+        mod = _curator_orders()
         line = str(mod.handoff_line(seat, session_id, context=context) or "")
     except Exception:  # noqa: BLE001
         return ""
@@ -808,6 +876,7 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
              "order_rows": prior.get("order_rows") if pending else order_rows(hook, sig_seat),
              "idle_rollover": prior.get("idle_rollover")}
     _write(path, state)
+    _drop_bytes()                                          # the order files are not held between polls
 
     def finish(code: int, why: str, text: str = "") -> tuple[int, str]:
         current = _read(path)
@@ -853,7 +922,7 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
         alert = article_loop_due(seat, curator, session_id)
         if alert:
             return finish(2, "article_loop", alert)
-        alert = reason_due(seat, curator, session_id, context=context_tokens(transcript))
+        alert = reason_due(seat, curator, session_id, context=context_tokens(transcript) if seat and seat == curator else 0)
         if alert:
             return finish(2, "reason", alert)
         if hook._midturn_pending(surface_id, session_id, seat=sig_seat) and not shipping():
@@ -905,6 +974,7 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
                 else:
                     text = hook.live_update(doc, event="IdleWake", watch_seat=sig_seat)
                 state["contract"], state["base"], state["orders"], state["order_rows"] = contract, base, orders, rows
+                _drop_bytes()
                 if text:
                     return finish(2, "woke", HEAD + "\n" + text)
                 # Nothing it must act on (or nothing to say): record it, or the same change re-enters the settle loop
