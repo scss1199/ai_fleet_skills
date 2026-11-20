@@ -609,6 +609,46 @@ def rollover_due(seat: str, session_id: str) -> str:
         return ""
 
 
+IDLE_ROLLOVER_S = 90.0  # a finished fat turn waits this long (the operator may type first) before its roll-over wake
+
+
+def idle_rollover_due(seat: str, session_id: str, transcript: Path, idle_s: float, done: bool) -> str:
+    """operator 2026-11-20 「為啥現在又有對話不會自動壓縮?」: the ROLL OVER line rode typed prompts only, so a chat that
+    finished a turn at 180K-198K sat there (below Claude Code's own compaction) until the operator came back, and a
+    chat that got the line while wrapping up (ai_trader 69f7f0fe, 2026-11-19 21:03) ran wrap_up and stopped. One wake
+    per conversation, while the cache is still warm (the wake re-reads at 0.1x), with the roll-over steps: the
+    conversation hands over and clears itself without anyone typing. `live_wake.idle_rollover: false` switches it off.
+    "" under the line, already armed, already woken once, cold, or on any error."""
+    if done or not seat or not session_id or idle_s < IDLE_ROLLOVER_S:
+        return ""
+    try:
+        cfg = json.loads(CONFIG.read_text(encoding="utf-8-sig")).get("live_wake") or {}
+        if cfg.get("idle_rollover", True) is False:
+            return ""
+    except (OSError, ValueError, AttributeError):
+        pass
+    cold = cold_after_s()
+    if cold and idle_s > cold:
+        return ""                                          # cache gone: the next typed prompt carries the line
+    if rollover_armed(seat):
+        return ""
+    context = context_tokens(transcript, settled=True)
+    if not context:
+        return ""
+    try:
+        spec = importlib.util.spec_from_file_location("f1s_live_curator_orders_idle",
+                                                      HUB / "_skill" / "engines" / "curator_orders.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        line = str(mod.handoff_line(seat, session_id, context=context) or "")
+    except Exception:  # noqa: BLE001
+        return ""
+    if not line.startswith("ROLL OVER"):
+        return ""
+    return ("IDLE ROLL OVER: the last turn ended above the roll-over line and nobody has typed since. Hand over now, "
+            "while the cache is warm, and do no new work here. " + line)
+
+
 START_GRACE_S = 8.0     # the SessionStart hooks inject the brief and a typed first prompt lands within this
 START_WAIT_S = 120.0    # the cleared conversation's transcript may appear only at its first row
 
@@ -765,7 +805,8 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
              "base": (prior.get("base") or None) if pending else contract_sig(hook, ""),
              "orders": (prior.get("orders") or None) if pending else orders_sig(hook, sig_seat),
              # None = not known: the first change wakes as before
-             "order_rows": prior.get("order_rows") if pending else order_rows(hook, sig_seat)}
+             "order_rows": prior.get("order_rows") if pending else order_rows(hook, sig_seat),
+             "idle_rollover": prior.get("idle_rollover")}
     _write(path, state)
 
     def finish(code: int, why: str, text: str = "") -> tuple[int, str]:
@@ -799,6 +840,10 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
         alert = capture_due(session_id)
         if alert:
             return finish(2, "capture", alert)
+        alert = idle_rollover_due(seat, session_id, transcript, _now() - start + grace_s, bool(state.get("idle_rollover")))
+        if alert:
+            state["idle_rollover"] = _iso()                # once per conversation: a refusal is not repeated
+            return finish(2, "idle_rollover", alert)
         alert = hardware_due(seat, curator)
         if alert:
             return finish(2, "hardware", alert)
