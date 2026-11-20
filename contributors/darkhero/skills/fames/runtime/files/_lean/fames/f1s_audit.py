@@ -1563,6 +1563,8 @@ ELEMENTS = [
      "check_text": ("skill_jci_transfer", "外人看得到嗎")},
     {"id": "EVO-defined-but-not-running-20261121", "element": "ai_darkhero correction 1cf6e2518b87 (ledger 239eb23166ab): are SCF/AEX/Lean and the many definitions actually executing", "verdict": "INFO",
      "requires": None, "detail": "rejected as already covered: f1s_audit.py runs 8 rule families on every PostToolUse, fames-phase-conformance binds phases to Lean, fleet-accountability bans fake automation; no new rule"},
+    {"id": "EVO-article-lane-reopen-20261121", "element": "ai_darkhero correction c0bbd79d5690 (ledger 0d371af9c66f): the article-reading/notes child chat was missing; reopen it and dispatch to every cwd", "verdict": "INFO",
+     "requires": None, "detail": "rejected as already covered: curator_orders.article_lane/article_lane_line (ARTICLE_LANE_TITLE F1S｜文章線) prints ARTICLE LANE MISSING with the start_session brief when no live lane exists, session-consolidate LANE_TITLE keeps it from being archived, fames references/autonomous-knowledge.md fixes the article line mode; the dispatch-to-all-cwds half is the one-off of that day, not a rule"},
     {"id": "KB-article-proctor-standard", "element": "YouTube Media transcript: 驗收標準必須獨立於Agent之外，防止其透過修改測試程式來掩蓋錯誤", "verdict": "INFO",
      "requires": None, "detail": "驗證標準須放Agent改不到的地方；人類監考官是F1S座位設計核心；與ClaimContract.claimState模型相符"},
     {"id": "F1SMATH-leverage-saved", "element": "f1s_waste.leverage: saved = (baseline - w) * typed per window; curator spend charged in every window, typed or not; PAID iff saved >= spent", "verdict": "FORMALIZED",
