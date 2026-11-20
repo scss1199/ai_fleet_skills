@@ -17,6 +17,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -34,6 +35,7 @@ MODULES = {
     "FamesKernel": HERE / "FamesKernel.lean",
     "LoadGrant": HERE / "LoadGrant.lean",
     "F1SMath": HERE / "F1SMath.lean",
+    "ProvedBound": HERE / "ProvedBound.lean",
 }
 TEXTS = {
     "hot_directive": HUB / "_registry" / "fames-protocol.json",
@@ -1611,6 +1613,83 @@ def text_has(key: str, needle: str) -> bool:
         return False
 
 
+# PROVED means bound (ledger a06762913d, 2026-11-20): a theorem is about its model; it says something about the
+# running hub only when a conformance script compares that model with the production Python. Every theorem file
+# in these trees carries one line `-- F1S-BINDING: bound <hub-relative conformance script> <module.function,...>`
+# or `-- F1S-BINDING: model-only <reason>`. Only `bound` files whose script exists count toward a PROVED count.
+# The decision is `binding_class`, modelled in ProvedBound.lean and compared cell by cell by
+# proved_bound_conformance.py. evidence/ holds generated eval copies of the sources; those are not theorem files.
+BINDING_ROOTS = [HUB / "_lean" / "fames", HUB / "_lean" / "hubclock", HUB / "_lean" / "pfkt",
+                 HUB / "_skill" / "engines" / "lean"]
+BINDING_SKIP = {"evidence", ".lake", "__pycache__"}
+BINDING_LINE = "-- F1S-BINDING:"
+THEOREM_RE = re.compile(r"^\s*(theorem|lemma)\s", re.M)
+
+
+def binding_class(label, script_exists: bool) -> tuple[str, bool, bool]:
+    """(class, counted toward PROVED, reported as a finding) for a file's label and its script's presence.
+
+    label: None (no label line), "bound", "model-only", or "invalid" (several label lines, or an unknown word)."""
+    if label == "bound":
+        cls = "bound" if script_exists else "bound-missing-script"
+    elif label == "model-only":
+        cls = "model-only"
+    elif label is None:
+        cls = "unlabelled"
+    else:
+        cls = "invalid"
+    return cls, cls == "bound", cls not in ("bound", "model-only")
+
+
+def read_binding(text: str) -> tuple:
+    """(label, script, functions or reason) from the file's `-- F1S-BINDING:` lines."""
+    lines = [ln[len(BINDING_LINE):].strip() for ln in text.splitlines() if ln.startswith(BINDING_LINE)]
+    if not lines:
+        return None, "", ""
+    words = lines[0].split(None, 2)
+    if len(lines) > 1 or not words or words[0] not in ("bound", "model-only"):
+        return "invalid", "", lines[0]
+    if words[0] == "bound":
+        return "bound", words[1] if len(words) > 1 else "", words[2] if len(words) > 2 else ""
+    return "model-only", "", lines[0][len("model-only"):].strip()
+
+
+def binding_scan(roots=None, hub: Path = HUB) -> dict:
+    """Classify every .lean file with at least one theorem under the roots; counts and findings."""
+    files = []
+    for root in roots if roots is not None else BINDING_ROOTS:
+        for path in sorted(Path(root).rglob("*.lean")):
+            if BINDING_SKIP & set(path.relative_to(root).parts) or path.name.endswith(".hollow-probe.lean"):
+                continue
+            try:
+                text = path.read_text(encoding="utf-8-sig", errors="replace")
+            except OSError:
+                continue
+            n = len(THEOREM_RE.findall(text))
+            if not n:
+                continue
+            label, script, rest = read_binding(text)
+            exists = bool(label == "bound" and script and script.endswith(".py") and (Path(hub) / script).is_file())
+            cls, counted, reported = binding_class(label, exists)
+            files.append({"path": str(path), "theorems": n, "label": label, "class": cls, "counted": counted,
+                          "reported": reported, "script": script, "binds": rest})
+    tot = sum(f["theorems"] for f in files)
+    bound = [f for f in files if f["counted"]]
+    model = [f for f in files if f["class"] == "model-only"]
+    return {"files": files, "n_files": len(files), "bound_files": len(bound), "theorems": tot,
+            "bound_theorems": sum(f["theorems"] for f in bound), "model_only_files": len(model),
+            "model_only_theorems": sum(f["theorems"] for f in model),
+            "findings": [{"path": f["path"], "class": f["class"], "script": f["script"]} for f in files if f["reported"]]}
+
+
+def binding_line(scan: dict) -> str:
+    by = {c: sum(1 for f in scan["findings"] if f["class"] == c) for c in ("unlabelled", "bound-missing-script", "invalid")}
+    return (f"BINDING bound/total theorems {scan['bound_theorems']}/{scan['theorems']}, files {scan['bound_files']}/"
+            f"{scan['n_files']}; model-only {scan['model_only_files']} files {scan['model_only_theorems']} theorems "
+            f"(not PROVED); unlabelled {by['unlabelled']}, bound-missing-script {by['bound-missing-script']}, "
+            f"invalid {by['invalid']}")
+
+
 def main() -> int:
     started = time.time()
     proofs = {}
@@ -1647,6 +1726,10 @@ def main() -> int:
             proofs[name] = {**lean(path, receipt), "reused": False}
         MODULES_RUN[name] = path
     proved = {t for p in proofs.values() for t in p["theorems"]}
+    scan = binding_scan()
+    counted_paths = {str(Path(f["path"]).resolve()) for f in scan["files"] if f["counted"]}
+    module_bound = {name: str(Path(path).resolve()) in counted_paths for name, path in {**MODULES, **MODULES_RUN}.items()}
+    theorem_module = {t: name for name, p in proofs.items() for t in p["theorems"]}
     rows = []
     unresolved = 0
     for el in ELEMENTS:
@@ -1655,11 +1738,13 @@ def main() -> int:
         frow = formal.get(el["id"])
         if not req and frow and frow.get("theorem") in proved:      # root-namespace theorem, bound as is
             row.update(verdict="FORMALIZED", lean_theorem=frow["theorem"], lean_ok=True,
+                       lean_bound=module_bound.get(theorem_module.get(frow["theorem"], ""), False),
                        detail=f"f1s_formalize: {frow.get('kind')} proved round {frow.get('proved_round')}, faithful {frow.get('faithful')} -- {row.get('detail', '')}"[:600])
         if req:
             full = req if req.startswith("Fames.") else "Fames." + ("F1S." + req[8:] if req.startswith("F1SCore.") else req)
             row["lean_theorem"] = full
             row["lean_ok"] = full in proved
+            row["lean_bound"] = module_bound.get(theorem_module.get(full, ""), False)
             if not row["lean_ok"]:
                 row["verdict"] = "CONTRADICTION"
         chk = el.get("check_text")
@@ -1686,20 +1771,34 @@ def main() -> int:
         directive, directive_ok = "", False
     if not directive_ok:
         print(f"  FAIL hot_directive length {len(directive)} outside 100..1400 (fames_capabilities cap)")
-    ok = all(p["verdict"] == "PROVED" for p in proofs.values()) and unresolved == 0 and conf_ok and directive_ok
+    for f in scan["findings"]:
+        print(f"  FAIL binding {f['class']} {f['path']}" + (f" (script {f['script'] or '-'} not on disk)"
+                                                            if f["class"] == "bound-missing-script" else ""))
+    ok = (all(p["verdict"] == "PROVED" for p in proofs.values()) and unresolved == 0 and conf_ok and directive_ok
+          and not scan["findings"])
+    # only bound modules' theorems count as PROVED; a model-only module is still kernel-checked (verdict kept)
+    proved_counts = {k: (v["verdict"], len(v["theorems"]) if module_bound.get(k) else 0) for k, v in proofs.items()}
+    binding = {"bound_theorems": scan["bound_theorems"], "theorems": scan["theorems"], "bound_files": scan["bound_files"],
+               "files": scan["n_files"], "model_only_files": scan["model_only_files"],
+               "model_only_theorems": scan["model_only_theorems"], "findings": scan["findings"],
+               "model_only_modules": sorted(k for k in proofs if not module_bound.get(k)),
+               "proved_bound": sum(n for v, n in proved_counts.values() if v == "PROVED"),
+               "formalized_bound": sum(1 for r in rows if r["verdict"] == "FORMALIZED" and r.get("lean_bound"))}
     doc = {
         "schema": "f1s-audit/1", "ok": ok, "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "elapsed_s": round(time.time() - started, 1), "pattern": "ai_ut/ut_theory/rederive",
         "proofs": proofs, "claim_conformance_current": conf_ok, "unresolved": unresolved,
         "verdict_counts": {v: sum(1 for r in rows if r["verdict"] == v) for v in sorted({r["verdict"] for r in rows})},
-        "elements": rows,
+        "elements": rows, "binding": {**binding, "files_detail": scan["files"]},
         "bound": {k: {"path": str(p), "sha256": sha(p)} for k, p in {**MODULES, **MODULES_RUN, **TEXTS}.items()},
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    print(json.dumps({"ok": ok, "proofs": {k: (v["verdict"], len(v["theorems"])) for k, v in proofs.items()},
-                      "verdicts": doc["verdict_counts"], "claim_conformance_current": conf_ok, "unresolved": unresolved},
+    print(json.dumps({"ok": ok, "proofs": proved_counts,
+                      "verdicts": doc["verdict_counts"], "claim_conformance_current": conf_ok, "unresolved": unresolved,
+                      "binding": {k: v for k, v in binding.items() if k != "findings"} | {"findings": len(scan["findings"])}},
                      ensure_ascii=False))
+    print(binding_line(scan))
     for r in rows:
         if r["verdict"] in {"CONTRADICTION", "REFINE"}:
             print(" ", r["verdict"], r["id"], "-", r["detail"][:110])
