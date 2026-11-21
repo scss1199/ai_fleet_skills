@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "desktop-rsniapr",
-  "at": "2026-11-19T18:39:24",
+  "at": "2026-11-21T10:00:39",
   "hub": "C:\\ai_workspace",
-  "seconds": 105.1,
+  "seconds": 64.8,
   "check": {
     "seats": [
       {
@@ -20,7 +20,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-19",
+        "newest_file": "2026-11-21",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -36,7 +36,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-18",
+        "newest_file": "2026-11-21",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -143,8 +143,8 @@
     "claude_cli_drift": [
       {
         "cli": "2.1.292",
-        "npm": "2.1.328",
-        "behind": 36,
+        "npm": "2.1.330",
+        "behind": 38,
         "limit": 10,
         "path": "C:\\Users\\USER\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Anthropic.ClaudeCode_Microsoft.Winget.Source_8wekyb3d8bbwe\\claude.EXE",
         "fix": "claude update"
@@ -323,7 +323,7 @@
     "memory_index_oversize": 0,
     "runtime_cves": 2,
     "claude_cli_drift": [
-      "2.1.292 behind 36: claude update"
+      "2.1.292 behind 38: claude update"
     ],
     "seat_budget": "applied seats=2 deny+0 pins->sonnet 0",
     "moved": 0,
