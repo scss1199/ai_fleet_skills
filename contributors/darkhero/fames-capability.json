@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "34b2e776d62d3fdf629a539fc50bbd5901eb25e02aa74a61f6e1b140b1e12e1a",
+  "package_sha": "45f1c4a5d45e7cbb275a8db9ef1ddfb6e31c03c2964a28885f12b9748e225f8a",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-21T09:03:01.021470+00:00",
+  "observed_at": "2026-11-21T09:27:38.950997+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,22 +353,9 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "OBSERVED_PARTIAL_POPULATION",
-    "native_events": [
-      {
-        "agent": "ai_metadata",
-        "surface": "claude",
-        "observed_at": "2026-11-21T16:20:28+08:00",
-        "receipt_sha256": "30b4e09cadc3ed2f5725ae37ddb44446e12d614bf72a18261162de338e23d7fa"
-      },
-      {
-        "agent": "jci_taipei",
-        "surface": "claude",
-        "observed_at": "2026-11-21T16:30:35+08:00",
-        "receipt_sha256": "07628bfe57b4d2d3415f6116c41c4973621b05fa99e53095ad554533931485bb"
-      }
-    ],
-    "runtime_release_sha256": "21882e40708e899157fc6d4a110b4c5dff1bf98574242c38df2065b455870a56"
+    "native_state": "UNKNOWN",
+    "native_events": [],
+    "runtime_release_sha256": "5bcfa499d8bf3d7554e43c0fb632a75ba8a7e6cdac3f3eec0a6e295a9bb434cd"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
