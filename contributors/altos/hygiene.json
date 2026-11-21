@@ -1,26 +1,26 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "desktop-rsniapr",
-  "at": "2026-11-21T10:00:39",
+  "at": "2026-11-22T06:01:17",
   "hub": "C:\\ai_workspace",
-  "seconds": 64.8,
+  "seconds": 26.4,
   "check": {
     "seats": [
       {
         "seat": "ai_altos",
         "missing": [],
         "findings": [
-          "unpushed_commits:1"
+          "unpushed_commits:2"
         ],
         "repo": "own",
-        "dirty": 16,
-        "unpushed": 1,
-        "last_commit": "2026-11-18",
-        "worktrees": 0,
+        "dirty": 18,
+        "unpushed": 2,
+        "last_commit": "2026-11-21",
+        "worktrees": 2,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-21",
+        "newest_file": "2026-11-22",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -154,7 +154,7 @@
     "retention_antipatterns": [
       {
         "file": "_skill/engines/claude-proof-hook.py",
-        "line": 573,
+        "line": 704,
         "kind": "migrated_bak_loop",
         "text": "(\"migrated-bak\", re.compile(r\"MIGRATED-bak\"), re.compile(r\"(?i)rename|replace|move|copy|with_name|with_suffix|\\+\\s*['\\\"]|f['\\\"]\"),"
       },
