@@ -2,21 +2,21 @@
   "conversations": {
     "schema": 1,
     "host": "darkhero",
-    "generated": "2026-11-21T12:22:29+00:00",
+    "generated": "2026-11-21T13:08:41+00:00",
     "counts": {
-      "total": 1892,
+      "total": 1894,
       "desktop": 500,
-      "dispatched": 1392,
-      "active_48h": 298
+      "dispatched": 1394,
+      "active_48h": 299
     },
     "rows": [
       {
-        "id": "8a74fef2",
+        "id": "6078c681",
         "title": "",
         "seat": "ai_darkhero",
         "kind": "dispatched",
-        "first": "2026-11-21T12:11:19+00:00",
-        "last": "2026-11-21T12:13:47+00:00",
+        "first": "2026-11-21T13:04:39+00:00",
+        "last": "2026-11-21T13:08:29+00:00",
         "state": "running"
       },
       {
@@ -25,7 +25,34 @@
         "seat": "ai_darkhero",
         "kind": "desktop",
         "first": "2026-11-21T11:24:57+00:00",
-        "last": "2026-11-21T12:06:27+00:00",
+        "last": "2026-11-21T12:46:56+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "a8454e0e",
+        "title": "官網協調對話（接續 8b09e1d1）",
+        "seat": "jci_taipei",
+        "kind": "desktop",
+        "first": "2026-11-19T16:27:41+00:00",
+        "last": "2026-11-21T12:46:47+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "ec702e34",
+        "title": "",
+        "seat": "ai_photo",
+        "kind": "dispatched",
+        "first": "2026-11-21T12:46:08+00:00",
+        "last": "2026-11-21T12:46:19+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "8a74fef2",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T12:11:19+00:00",
+        "last": "2026-11-21T12:13:47+00:00",
         "state": "idle"
       },
       {
@@ -242,15 +269,6 @@
         "kind": "desktop",
         "first": "2026-11-18T00:40:55+00:00",
         "last": "2026-11-21T11:09:51+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "a8454e0e",
-        "title": "官網協調對話（接續 8b09e1d1）",
-        "seat": "jci_taipei",
-        "kind": "desktop",
-        "first": "2026-11-19T16:27:41+00:00",
-        "last": "2026-11-21T11:09:50+00:00",
         "state": "idle"
       },
       {
@@ -530,24 +548,6 @@
         "kind": "dispatched",
         "first": "2026-11-20T20:45:42+00:00",
         "last": "2026-11-20T20:45:53+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "f83241ec",
-        "title": "",
-        "seat": "ai_eatery",
-        "kind": "dispatched",
-        "first": "2026-11-20T20:16:23+00:00",
-        "last": "2026-11-20T20:29:18+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "f8dbfdc5",
-        "title": "",
-        "seat": "ai_darkhero",
-        "kind": "dispatched",
-        "first": "2026-11-20T20:02:24+00:00",
-        "last": "2026-11-20T20:07:20+00:00",
         "state": "idle"
       }
     ]
