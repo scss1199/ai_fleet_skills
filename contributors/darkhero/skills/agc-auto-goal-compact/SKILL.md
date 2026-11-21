@@ -129,6 +129,7 @@ operator 2026-10-15～10-21 在 ai_trader、ai_career、ai_darkhero、jci_taipei
 2. 讀：每個對話只讀最後一則 wrap-up／回覆和它最後一個 operator 指令（`export_transcript` 或 transcript 尾端）。抽出未完成待辦、未驗證主張（當 UNKNOWN 重驗，不抄成「已完成」）、分支或未推的 commit、還在跑的背景工作。
 3. 併：寫進本對話計畫，再 `goal_compact.py park <seat> "merged <n> sessions"`，讓 AGC compact 帶著合併後的目標。
 4. 關：還有背景工作、或在等 operator 回答的對話留著；其餘 `archive_session`（可 unarchive，不是刪除）。
+   背景工作接手（ai_metadata 2026-11-21，app 拒絕封存有背景工作的對話）：先分類。等待者（sleep／until 迴圈、Monitor、輪詢某檔或某程序）＝接續對話用同一個條件重建等待者並回報已收到，原對話再 TaskStop 自己的等待者後封存；實際工作（build、render、下載、測試）＝程序屬於啟動它的對話，新對話接不走，不准為了封存而停掉它，留到它結束；之後要長跑的工作改用脫離對話的 pythonw／CREATE_NO_WINDOW 程序把結果寫固定檔，接續對話只等那個檔。
 5. 回報：一行列出併了哪些、關了哪些、留下哪些和原因。
 
 ## 命令（TR0）

@@ -43,7 +43,10 @@ Two habits, mechanised by `_skill/engines/session-consolidate.py`:
    `start_session` with `user_asked`; on a turn the app refuses starts (session events, hooks, ticks) use a
    headless `f1s_station.py run` child with the brief embedded in the prompt, or a curator order sent into the
    seat's open chat. A session opened for another seat's cwd is detached to top level right after it starts. The parent only folds
-   results back in after reading the child's commit, tests or files. `session-consolidate.py wip` lists every repo's
+   results back in after reading the child's commit, tests or files. Topic hub (jci_taipei 2026-11-18 元月刊、
+   tpejc): once the operator names a chat as the hub for a topic, every ask on that topic goes into that chat; the
+   hub compares state, opens the child, reads its evidence back, and never opens a second chat for the same topic.
+   `session-consolidate.py wip` lists every repo's
    uncommitted / unpushed / unmerged-branch work as such suggestions, routed to the owning seat (cwd basename);
    `plan --seat <seat>` turns them plus the seat's pending sessions into briefs.
 2. **Merge.** At session open, line "6. SESSIONS/WIP" of the ZCT plan reports the seat's idle sessions (from
