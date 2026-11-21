@@ -2,40 +2,58 @@
   "conversations": {
     "schema": 1,
     "host": "darkhero",
-    "generated": "2026-11-21T18:01:03+00:00",
+    "generated": "2026-11-21T20:19:57+00:00",
     "counts": {
-      "total": 1913,
-      "desktop": 506,
-      "dispatched": 1407,
-      "active_48h": 228
+      "total": 1919,
+      "desktop": 503,
+      "dispatched": 1416,
+      "active_48h": 206
     },
     "rows": [
-      {
-        "id": "317e3635",
-        "title": "",
-        "seat": "ai_nuwa",
-        "kind": "desktop",
-        "first": "2026-11-21T17:16:24+00:00",
-        "last": "2026-11-21T18:02:36+00:00",
-        "state": "running"
-      },
       {
         "id": "599be194",
         "title": "",
         "seat": "ai_theater",
         "kind": "desktop",
         "first": "2026-11-21T17:37:28+00:00",
-        "last": "2026-11-21T18:02:33+00:00",
-        "state": "running"
+        "last": "2026-11-21T20:15:26+00:00",
+        "state": "idle"
       },
       {
-        "id": "bee70fa9",
+        "id": "e6820546",
+        "title": "",
+        "seat": "ai_nuwa",
+        "kind": "dispatched",
+        "first": "2026-10-15T03:46:48+00:00",
+        "last": "2026-11-21T20:14:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "317e3635",
+        "title": "",
+        "seat": "ai_nuwa",
+        "kind": "desktop",
+        "first": "2026-11-21T17:16:24+00:00",
+        "last": "2026-11-21T20:12:00+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "79456167",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T20:02:44+00:00",
+        "last": "2026-11-21T20:06:37+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "f3d81deb",
         "title": "",
         "seat": "ai_darkhero",
         "kind": "desktop",
-        "first": "2026-11-21T17:34:16+00:00",
-        "last": "2026-11-21T18:02:32+00:00",
-        "state": "running"
+        "first": "2026-11-21T18:48:18+00:00",
+        "last": "2026-11-21T19:47:50+00:00",
+        "state": "idle"
       },
       {
         "id": "7516a67d",
@@ -43,16 +61,79 @@
         "seat": "ai_darkhero",
         "kind": "desktop",
         "first": "2026-11-21T17:35:01+00:00",
-        "last": "2026-11-21T18:02:00+00:00",
-        "state": "running"
+        "last": "2026-11-21T19:47:43+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "7be8c994",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "dispatched",
+        "first": "2026-11-21T19:44:47+00:00",
+        "last": "2026-11-21T19:46:46+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "dcc11e66",
+        "title": "",
+        "seat": "ai_demo",
+        "kind": "dispatched",
+        "first": "2026-11-21T19:05:14+00:00",
+        "last": "2026-11-21T19:16:35+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "f388ff4f",
+        "title": "",
+        "seat": "ai_theater",
+        "kind": "dispatched",
+        "first": "2026-11-19T02:12:52+00:00",
+        "last": "2026-11-21T18:39:20+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "b18b73eb",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "dispatched",
+        "first": "2026-11-21T18:37:28+00:00",
+        "last": "2026-11-21T18:39:07+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "c02c3fe9",
+        "title": "",
+        "seat": "sdnext_a770",
+        "kind": "desktop",
+        "first": "2026-11-19T02:13:56+00:00",
+        "last": "2026-11-21T18:34:01+00:00",
+        "state": "idle"
       },
       {
         "id": "f90f6190",
         "title": "",
         "seat": "ai_trader",
-        "kind": "desktop",
+        "kind": "dispatched",
         "first": "2026-11-21T17:47:38+00:00",
-        "last": "2026-11-21T17:52:57+00:00",
+        "last": "2026-11-21T18:27:08+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "bf25f973",
+        "title": "",
+        "seat": "ai_search",
+        "kind": "dispatched",
+        "first": "2026-11-21T18:12:52+00:00",
+        "last": "2026-11-21T18:13:31+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "bee70fa9",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T17:34:16+00:00",
+        "last": "2026-11-21T18:07:20+00:00",
         "state": "idle"
       },
       {
@@ -74,39 +155,12 @@
         "state": "idle"
       },
       {
-        "id": "e6820546",
-        "title": "",
-        "seat": "ai_nuwa",
-        "kind": "desktop",
-        "first": "2026-10-15T03:46:48+00:00",
-        "last": "2026-11-21T17:46:23+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "f388ff4f",
-        "title": "",
-        "seat": "ai_theater",
-        "kind": "desktop",
-        "first": "2026-11-19T02:12:52+00:00",
-        "last": "2026-11-21T17:44:54+00:00",
-        "state": "idle"
-      },
-      {
         "id": "fb914973",
         "title": "",
         "seat": "ai_career",
         "kind": "dispatched",
         "first": "2026-11-21T17:35:29+00:00",
         "last": "2026-11-21T17:35:40+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "c02c3fe9",
-        "title": "",
-        "seat": "sdnext_a770",
-        "kind": "desktop",
-        "first": "2026-11-19T02:13:56+00:00",
-        "last": "2026-11-21T17:34:36+00:00",
         "state": "idle"
       },
       {
@@ -494,60 +548,6 @@
         "kind": "dispatched",
         "first": "2026-11-21T09:04:22+00:00",
         "last": "2026-11-21T09:11:31+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "83c1d482",
-        "title": "",
-        "seat": "ai_darkhero",
-        "kind": "dispatched",
-        "first": "2026-11-21T06:32:27+00:00",
-        "last": "2026-11-21T06:36:04+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "d697e67a",
-        "title": "",
-        "seat": "ai_trader",
-        "kind": "dispatched",
-        "first": "2026-11-21T05:43:49+00:00",
-        "last": "2026-11-21T05:45:08+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "00a632c9",
-        "title": "",
-        "seat": "ai_darkhero",
-        "kind": "dispatched",
-        "first": "2026-11-21T05:02:26+00:00",
-        "last": "2026-11-21T05:06:03+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "9695ed01",
-        "title": "",
-        "seat": "ai_trader",
-        "kind": "dispatched",
-        "first": "2026-11-21T04:43:53+00:00",
-        "last": "2026-11-21T04:53:51+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "c8b1560a",
-        "title": "",
-        "seat": "ai_darkhero",
-        "kind": "dispatched",
-        "first": "2026-11-21T04:02:49+00:00",
-        "last": "2026-11-21T04:05:11+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "01569136",
-        "title": "",
-        "seat": "sdnext_a770",
-        "kind": "dispatched",
-        "first": "2026-11-21T03:46:25+00:00",
-        "last": "2026-11-21T03:48:00+00:00",
         "state": "idle"
       }
     ]
