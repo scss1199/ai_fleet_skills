@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261121T114336Z-0979f2d7",
+  "target_host": "dark-hero-z790",
+  "kind": "prompt",
+  "seat": "ai_darkhero",
+  "prompt": "在這裡執行此任務：更正前一張工作 20261121T114257Z-8ce9fdde（F1S 跨機對話索引）的發佈內容。altos 機 2026-11-21 驗證：carrier repo scss1199/ai_fleet_skills 是公開的（未登入 GET https://api.github.com/repos/scss1199/ai_fleet_skills 回 private=false；raw.githubusercontent.com 上的 contributors/altos/f1s-daily/digest-2026-11-21.json 未登入回 200）。請在主機自行重驗。\n\n因此：\n1. 發佈到 carrier 的 conversations.rows 一律不放對話標題：title 欄固定空字串。只留 id 前 8 碼、seat、kind、first、last、state 與 counts。標題只能在本機解析後顯示（讀取面對本機對話用本機標題，對別台只顯示 id 前 8 碼＋seat＋時間）。若前一張工作已把標題推上 carrier，請用新 commit 把標題清成空字串（不 force push、不改寫歷史），並在結果寫出受影響的 commit。\n2. 在結果列出主機目前發佈到這個公開 repo 的檔案中，哪些含 operator 原話、對話標題或對話內容摘錄（只列路徑與欄位名，不貼內容）。是否把 repo 改私有、是否清歷史屬於 operator 決定，不要自行執行；請寫成一行「需要你決定」。\n3. 其餘照前一張工作。限制相同：T1 紅線、不印金鑰、不刪檔、繁體中文。\n",
+  "from": "ai_altos",
+  "created_at": "2026-11-21T11:43:36+00:00",
+  "expires_at": "2026-11-23T11:43:36+00:00"
+}
