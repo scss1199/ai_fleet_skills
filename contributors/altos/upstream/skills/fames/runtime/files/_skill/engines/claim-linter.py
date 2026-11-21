@@ -26,7 +26,11 @@ _VERSION = re.compile(r"\bv?\d+\.\d+(\.\d+)?\b")
 _PERCENT = re.compile(r"\b\d{1,3}%\b")
 _DONE_CLAIM = re.compile(
     r"(?i)(已完成|已修復|已部署|shipped|deployed|fixed|passes|all tests pass|"
-    r"100%|done|merged|已上線|驗證通過)"
+    r"100%|done|merged|已上線|驗證通過|"
+    # RL gate hunt 2026-11-22: completion phrasings the list above never matched
+    r"\bfinished\b|\b(?:task|implementation|migration|work|fix)\s+(?:is\s+)?complete(?:d)?\b|\bworks\s+now\b|"
+    r"\b(?:completed|resolved)\s+the\b|\btests?\s+(?:are\s+)?(?:green|passing)\b|\bready,?\s+(?:to\s+)?ship\b|"
+    r"完成了|全部完成|搞定|修好|已解決|已解决|已經上線|已經完成|已经完成|測試全過|测试全过|都通過|都通过|問題解決|问题解决)"
 )
 _COUNT = re.compile(r"(?i)\b(\d+)\s*(agents?|files?|tests?|seats?|errors?)\b")
 
@@ -35,6 +39,34 @@ _GROUND = re.compile(
     r"(?i)(cite:|verify:|unknown\s*[—\-]\s*check|unverified|hypothesis|"
     r"`[^`]+`|```|evidence:|proof:|rc=0|pytest|py_compile|wiki_cite:|mtm-wiki-query)"
 )
+
+# A completion claim is grounded only by an artifact: a path-like or multi-word backtick span (not a bare word like
+# `x`), a pass count, or a cite/verify/evidence/proof tag followed by a path.  A bare tag word, `pytest` or `rc=0`
+# is decoration (RL gate hunt 2026-11-22: "已完成 evidence: yes" passed).
+_HONEST = re.compile(r"(?i)(unknown\s*[—\-]\s*check|unverified|hypothesis|\bUNKNOWN\b|未知|未驗證|未验证)")
+_STRONG = re.compile(
+    r"(?i)(`[^`\s]*[\\/.][^`\s]*\w`|`[^`\n]*\s[^`\n]*`|```|\b\d+\s+(?:passed|tests?\s+pass)\b|"
+    r"(?:cite|verify|evidence|proof|wiki_cite):\s*`?[\w.~%-]*[\\/][\w.\\/:~%-]+|"
+    r"(?:cite|verify|evidence|proof):\s*`?\w+\.\w{1,5}\b|mtm-wiki-query)"
+)
+
+
+_ABS_PATH = re.compile(r"[A-Za-z]:[\\/][^\s`'\"<>|]+")
+
+
+def _cited_paths_exist(stripped: str) -> bool:
+    """True when the line cites no absolute drive path, or at least one cited path exists on disk."""
+    paths = [m.group(0).rstrip(".,;:)") for m in _ABS_PATH.finditer(stripped)]
+    return not paths or any(os.path.exists(p) for p in paths)
+
+
+def _grounded(stripped: str) -> bool:
+    if _HONEST.search(stripped):
+        return True
+    if _DONE_CLAIM.search(stripped):
+        return bool(_STRONG.search(stripped)) and _cited_paths_exist(stripped)
+    return bool(_GROUND.search(stripped))
+
 
 # Knowledge-class claims need wiki_cite (PFKT v3 Wiki-first)
 _KNOWLEDGE = re.compile(
@@ -115,9 +147,9 @@ def lint_text(text: str) -> dict:
     violations = _math_violations(text)
     for i, line in enumerate(lines, 1):
         stripped = line.strip()
-        if not stripped or len(stripped) < 8:
+        if not stripped or (len(stripped) < 8 and not _DONE_CLAIM.search(stripped)):
             continue
-        if _GROUND.search(stripped):
+        if _grounded(stripped):
             continue
         triggers = []
         if _PATH.search(stripped):

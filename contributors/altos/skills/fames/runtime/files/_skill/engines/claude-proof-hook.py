@@ -35,6 +35,7 @@ Evidence: every decision is appended to _registry/proof/log.jsonl (claim class, 
 """
 from __future__ import annotations
 
+import html as _html
 import importlib.util
 import json
 import os
@@ -276,7 +277,7 @@ DOC_CREATE = re.compile(
     r"(?i)(?<!不准)(?<!不要)(?<!禁止)(?<!不得)(?:寫|產出|产出|建立|新增|生成|存成|存為|輸出成)[一個份篇成到入下]{0,3}\s*"
     r"[^\s，。,.；;]{0,6}?(?:文件|報告|报告|筆記|笔记|說明檔|\.md|\.json|markdown|README)"
     r"|\b(?:write|create|generate|draft|save)\b\W+(?:\w+\W+){0,3}?(?:report|document|notes?|write-?up|README|markdown|md|json)\b")
-MD_WRITE_CMD = re.compile(r"(?<![<\d=!-])>{1,2}\s*\"?'?([^\s\"'|;&]+\.(?:md|json))\b|(?:tee|Set-Content|Out-File|Add-Content)\s+(?:-(?:Literal|File)?Path\s+)?\"?'?([^\s\"'|;&]+\.(?:md|json))\b", re.I)
+MD_WRITE_CMD = re.compile(r"(?<![<=!-])>{1,2}\|?\s*\"?'?([^\s\"'|;&]+\.(?:md|json))\b|(?:tee|Set-Content|Out-File|Add-Content)\s+(?:-(?:Literal|File)?Path\s+)?\"?'?([^\s\"'|;&]+\.(?:md|json))\b", re.I)
 JUNK_EXT = (".md", ".json")
 
 
@@ -290,6 +291,80 @@ HERESTRING_BODY = re.compile(r"@(['\"])\r?\n.*?\r?\n\1@", re.S)
 # was denied as creating `.json)#(b/<id>.json`.  A quoted redirect TARGET never contains `>`, so only quoted strings
 # that contain one are blanked before the redirect scan.
 QUOTED_GT = re.compile(r"'[^'\n]*>[^'\n]*'|\"[^\"\n]*>[^\"\n]*\"")
+# RL gate hunt 2026-11-22 (ai_darkhero/evidence/rl-gate-hunt-20261122): 37 ways to create a .md/.json that this gate did
+# not see.  Each class below is one of them; $VAR / eval of an UNKNOWN value stays fail-open by design.
+_QUOTED_TEXT = re.compile(r"'[^'\n]*[\s;|&<>][^'\n]*'|\"[^\"\n]*[\s;|&<>][^\"\n]*\"")
+_GLUE = re.compile(r"(?<=[^\s;&|<>(])(['\"])([^'\"\s]*)\1|(['\"])([^'\"\s]*)\3(?=[^\s;&|<>)])")
+_SEG_SPLIT = re.compile(r"\s*(?:&&|\|\||[;|\n])\s*")
+SHELL_INNER = re.compile(r"(?:\beval|\b(?:ba|z|da|k)?sh\s+-[a-z]*c|\bcmd(?:\.exe)?\s+/[ck]|\b(?:pwsh|powershell)(?:\.exe)?\s+(?:-\w+\s+)*-c(?:ommand)?)\s+(['\"])(.*?)\1", re.I | re.S)
+_EXT = r"[^\s'\"`;|&<>()]+\.(?:md|json)"
+INLINE_WRITE = (
+    re.compile(r"\bopen\s*\(\s*['\"](" + _EXT + r")['\"]\s*,\s*['\"][^'\"]*[wax+]", re.I),                  # python open(p,'w')
+    re.compile(r"['\"](" + _EXT + r")['\"]\s*\)\s*\.\s*write_(?:text|bytes)\b", re.I),                       # Path(p).write_text
+    re.compile(r"\b(?:writeFileSync|writeFile|appendFileSync|appendFile|createWriteStream)\s*\(\s*['\"`](" + _EXT + r")", re.I),
+    re.compile(r"\bopen\s*\(?\s*\w+\s*,\s*['\"]\s*\+?>>?\s*(" + _EXT + r")", re.I),                          # perl open(F,">p")
+    re.compile(r"\[(?:System\.)?IO\.File\]::(?:WriteAll\w+|AppendAll\w+|Create\w*|Open\w*)\(\s*['\"](" + _EXT + r")", re.I),
+)
+_DEST_LAST = {"cp", "mv", "install", "copy", "copy-item", "cpi", "move-item", "mi", "move", "ren", "rename-item", "rni", "ln", "xcopy"}
+_ALL_POS = {"touch", "ni", "new-item", "out-file", "set-content", "add-content", "sc", "ac", "tee", "tee-object",
+            "export-csv", "export-clixml"}
+_VALUE_OPTS = {"-value", "-inputobject", "-encoding", "-itemtype", "-stream", "-width", "-delimiter", "-filter", "-include", "-exclude"}
+_SED_W = re.compile(r"(?:^|[\s'\"/;{}\d$])w\s+([^\s'\";}]+\.(?:md|json))\b", re.I)
+_AWK_REDIR = re.compile(r">>?\s*\\?[\"']?([^\s\"'\\]+\.(?:md|json))\b", re.I)
+
+
+def _is_md(tok: str) -> bool:
+    return tok.lower().endswith(JUNK_EXT)
+
+
+def _seg_targets(seg: str) -> list[str]:
+    """Positional / option destinations of one simple command that writes a file without a `>` redirect."""
+    toks = seg.split()
+    while toks and (re.match(r"^[A-Za-z_]\w*=", toks[0]) or toks[0].lower() in ("sudo", "command", "time", "env", "nohup", "builtin")):
+        toks.pop(0)
+    if not toks:
+        return []
+    cmd = re.split(r"[\\/]", toks[0].lower())[-1]
+    cmd = cmd[:-4] if cmd.endswith(".exe") else cmd
+    args = toks[1:]
+    clean = lambda t: t.strip("\"'")
+    out: list[str] = []
+    if cmd in _DEST_LAST:
+        first_seen = False
+        prev = ""
+        for t in args:
+            ct = clean(t)
+            if prev in ("-destination", "-newname") and _is_md(ct):
+                out.append(ct)
+            elif not t.startswith("-"):
+                if first_seen and _is_md(ct) and prev not in ("-path", "-literalpath"):
+                    out.append(ct)
+                first_seen = True
+            prev = t.lower()
+    elif cmd in _ALL_POS:
+        prev = ""
+        for t in args:
+            ct = clean(t)
+            if _is_md(ct) and prev not in _VALUE_OPTS:
+                out.append(ct)
+            prev = t.lower()
+    elif cmd in ("curl", "wget"):
+        for i, t in enumerate(args):
+            lo = t.lower()
+            nxt = clean(args[i + 1]) if i + 1 < len(args) else ""
+            if (t == "-o" or lo == "--output" or (cmd == "wget" and t == "-O") or lo == "--output-document") and _is_md(nxt):
+                out.append(nxt)
+            elif lo.startswith(("--output=", "--output-document=")) and _is_md(clean(t.split("=", 1)[1])):
+                out.append(clean(t.split("=", 1)[1]))
+            elif cmd == "curl" and t.startswith("-o") and len(t) > 2 and _is_md(clean(t[2:])):
+                out.append(clean(t[2:]))
+    elif cmd == "dd":
+        out.extend(clean(t[3:]) for t in args if t.startswith("of=") and _is_md(clean(t[3:])))
+    elif cmd == "sed":
+        out.extend(m.group(1) for m in _SED_W.finditer(" ".join(args)))
+    elif cmd in ("awk", "gawk", "mawk", "nawk"):
+        out.extend(m.group(1) for m in _AWK_REDIR.finditer(" ".join(args)))
+    return out
 
 
 def _bash_md_targets(command: str) -> list[str]:
@@ -297,24 +372,45 @@ def _bash_md_targets(command: str) -> list[str]:
     command and relative paths resolved against the last `cd` in it.  A target that still carries an
     unexpanded variable is unknown and is NOT reported (fail open)."""
     command = HERESTRING_BODY.sub("", HEREDOC_BODY.sub(lambda m: m.group(1), command or ""))
-    command = QUOTED_GT.sub("''", command)
-    env ={m.group(1): m.group(2).strip("\"'") for m in SHELL_ASSIGN.finditer(command or "")}
-    cds = [m.group(1) for m in SHELL_CD.finditer(command or "")]
+    found: list[str] = []
+    for m in SHELL_INNER.finditer(command):                      # eval 'echo x > a.json' / sh -c '...' : the quoted text IS code
+        found.extend(_bash_md_targets(m.group(2)))
+    for rx in INLINE_WRITE:                                      # python -c / node -e / perl -e / [IO.File]:: write calls
+        found.extend(m.group(1) for m in rx.finditer(command))
+    for m in re.finditer(r"\bsed\b[^\n|]*", command):            # sed 'w out.json' : the script is quoted, so read it raw
+        found.extend(x.group(1) for x in _SED_W.finditer(m.group(0)))
+    for m in re.finditer(r"\b[gmn]?awk\b[^\n]*", command):       # awk '{print > "out.json"}'
+        found.extend(x.group(1) for x in _AWK_REDIR.finditer(m.group(0)))
+    env = {m.group(1): m.group(2).strip("\"'") for m in SHELL_ASSIGN.finditer(command)}
+    cds = [m.group(1) for m in SHELL_CD.finditer(command)]
+    segtext = _GLUE.sub(lambda m: m.group(2) if m.group(2) is not None else m.group(4), _QUOTED_TEXT.sub("''", command))
+    for _ in range(3):
+        segtext = re.sub(r"\$\{?([A-Za-z_]\w*)\}?", lambda mm: env.get(mm.group(1), mm.group(0)), segtext)
+    for seg in _SEG_SPLIT.split(segtext):
+        found.extend(_seg_targets(seg))
+    redir = _GLUE.sub(lambda m: m.group(2) if m.group(2) is not None else m.group(4), QUOTED_GT.sub("''", command))
+    for _ in range(3):
+        redir = re.sub(r"\$\{?([A-Za-z_]\w*)\}?", lambda mm: env.get(mm.group(1), mm.group(0)), redir)
+    for m in MD_WRITE_CMD.finditer(redir):
+        found.append((m.group(1) or m.group(2) or ""))
     out: list[str] = []
-    for m in MD_WRITE_CMD.finditer(command or ""):
-        target = (m.group(1) or m.group(2) or "").strip("\"'")
+    for target in found:
+        target = target.strip("\"'")
         for _ in range(3):
             target = re.sub(r"\$\{?([A-Za-z_]\w*)\}?", lambda mm: env.get(mm.group(1), mm.group(0)), target)
         if "$" in target or not target:
             continue
         if not re.match(r"^(?:[A-Za-z]:[\\/]|/|~)", target) and cds:
             target = cds[-1].rstrip("/\\") + "/" + target
-        out.append(target)
+        if target not in out:
+            out.append(target)
     return out
 
 
 def _win_path(raw: str, cwd: str = "") -> Path:
-    """A Write / shell target as a Windows path: `/c/x` -> `C:/x`, relative -> under `cwd`."""
+    """A Write / shell target as a Windows path: `/c/x` -> `C:/x`, relative -> under `cwd`.  Windows drops trailing
+    spaces and dots from a file name, so `data.json ` and `data.json.` are `data.json`."""
+    raw = re.sub(r"(?<=[^\s./\\])[ .]+$", "", raw)
     m = re.match(r"^/([a-zA-Z])/(.*)$", raw)
     if m:
         raw = f"{m.group(1).upper()}:/{m.group(2)}"
@@ -326,11 +422,12 @@ def _win_path(raw: str, cwd: str = "") -> Path:
 
 def junk_target(p: Path, cfg: dict) -> bool:
     """A .md / .json outside machine-state directories and not a charter / receipt name."""
-    if p.suffix.lower() not in JUNK_EXT:
+    name = p.name.split(":", 1)[0]                    # NTFS stream: `x.json::$DATA` / `x.json:s` is the file x.json
+    if not name.lower().endswith(JUNK_EXT):
         return False
     allowed_dirs = {d.lower() for d in (cfg.get("md_allowed_dirs") or DEFAULTS["md_allowed_dirs"])}
     allowed_names = {n.lower() for n in (cfg.get("md_allowed_names") or DEFAULTS["md_allowed_names"])}
-    return not ({x.lower() for x in p.parts[:-1]} & (allowed_dirs | {"tmp"}) or p.name.lower() in allowed_names)
+    return not ({x.lower() for x in p.parts[:-1]} & (allowed_dirs | {"tmp"}) or name.lower() in allowed_names)
 
 
 def doc_requested(p: Path, prompt_text: str) -> bool:
@@ -482,8 +579,42 @@ POPUP_RULES = (
 POPUP_ANYWHERE_RULES = ("create-window",)
 # The tray owns the fleet's only deliberate overlays; this gate's own test quotes the forms it denies.
 POPUP_WINDOW_OWNER_PATH = re.compile(r"(?i)[\\/]ai_darkhero[\\/]tray[\\/]|[\\/]_delete[\\/]|[\\/]test_proof_popup_gate\.py$")
-POPUP_WEB_RULE = ("browser-modal", re.compile(r"(?<![\w.])(?:alert|confirm|prompt)\s*\(|window\.open\s*\("),
+# RL gate hunt 2026-11-22: the old one-line rule (`alert(` / `window.open(` with no gap) was bypassed by window.alert, a gap or
+# comment before "(", bracket / alias / call / eval-concat forms, a unicode escape, an HTML entity, a tagged template.
+_WG = r"(?:document\s*\.\s*defaultView|window|self|globalThis|top|parent|frames|opener)"
+_WCALL = r"(?:\s*\??\.?\s*[(`]|\s*\.\s*(?:call|apply|bind)\s*\()"
+_WMODAL = r"(?:alert|confirm|prompt)"
+POPUP_WEB_PAT = re.compile(
+    r"(?<![\w.$])(?:" + _WG + r"\s*\??\.\s*)?" + _WMODAL + _WCALL
+    + r"|(?<![\w$])" + _WG + r"\s*\??\.\s*open" + _WCALL
+    + r"|(?<![\w.$])" + _WG + r"\s*\??\.?\s*\[\s*['\"`][^\]\n]*\]" + _WCALL                       # window['al'+'ert'](x)
+    + r"|(?:[=,(]|\breturn\b|\bapply\()\s*(?:" + _WG + r"\s*\??\.\s*)?" + _WMODAL + r"\s*(?=[;,)\n]|$)"   # var a=alert; (0,alert)(x)
+    + r"|(?:^|[;{}\n])[ \t]*open\s*\([^()\n]*\)[ \t]*(?:;|$|[\"'\n}<>])"
+    + r"|(?:>|javascript:|\bon[a-z]+\s*=\s*[\"']?)[ \t]*open\([^()\n]*\)[ \t]*(?:;|$|[\"'\n}<>])",   # bare open(x) = window.open
+    re.M)
+POPUP_WEB_DYN = re.compile(r"(?<![\w.$])(?:eval|Function|setTimeout|setInterval)\s*\(\s*['\"`]")
+POPUP_WEB_RULE = ("browser-modal", POPUP_WEB_PAT,
                   "前端 alert()/confirm()/prompt()/window.open() 是模態彈窗，改用頁內 toast 與兩段式按鈕")
+POPUP_COMMENT_LINE = re.compile(r"(?i)^\s*(#|//|\*|rem\b|<!--|-- )")
+_UNI_ESC = re.compile(r"\\u(?:([0-9a-fA-F]{4})|\{([0-9a-fA-F]{1,6})\})")
+
+
+def _popup_web_match(text: str, html_like: bool) -> str:
+    """The first browser-modal call a web-source text would run, or ''.  Entities and unicode escapes are decoded
+    first; only whole-line comments are dropped (a line that merely contains grep/sed/.match( is still code)."""
+    t = "\n".join(l for l in text.splitlines() if not POPUP_COMMENT_LINE.search(l))
+    if html_like:
+        t = _html.unescape(t)
+    t = re.sub(r"/\*.*?\*/", " ", t, flags=re.S)           # a block comment between the name and "(" is whitespace
+    t = _UNI_ESC.sub(lambda m: chr(int(m.group(1) or m.group(2), 16)) if int(m.group(1) or m.group(2), 16) < 0x110000 else "", t)
+    m = POPUP_WEB_PAT.search(t)
+    if m:
+        return t[max(0, m.start() - 30):m.end() + 40].strip()[:110]
+    for d in POPUP_WEB_DYN.finditer(t):                     # eval('al'+'ert(1)') / new Function('conf'+'irm(1)')()
+        joined = re.sub(r"['\"`+\s]", "", t[d.end() - 1:d.end() + 240].split("\n")[0])
+        if POPUP_WEB_PAT.search(joined):
+            return t[max(0, d.start() - 30):d.end() + 80].strip()[:110]
+    return ""
 POPUP_CODE_EXT = (".py", ".ps1", ".psm1", ".bat", ".cmd", ".js", ".ts", ".tsx", ".jsx", ".html", ".htm", ".vbs", ".ahk")
 POPUP_WEB_EXT = (".js", ".ts", ".tsx", ".jsx", ".html", ".htm", ".vue", ".svelte")
 OAUTH_OK = re.compile(r"(?i)oauth|authorize|login|sign[- ]?in|consent|device[_ ]code|auth[_ ]url")
@@ -539,10 +670,10 @@ def popup_violations(tool: str, ti: dict) -> list[tuple[str, str]]:
             continue                                  # the one sanctioned popup: an OAuth / login window
         out.append((rule, f"{why}: `{live[max(0, m.start() - 30):m.end() + 40].strip()[:110]}`"))
     if web:
-        rule, pat, why = POPUP_WEB_RULE
-        m = pat.search(live)
-        if m:
-            out.append((rule, f"{why}: `{live[max(0, m.start() - 30):m.end() + 40].strip()[:110]}`"))
+        rule, _pat, why = POPUP_WEB_RULE
+        snip = _popup_web_match(text, str(ti.get("file_path") or "").lower().endswith((".html", ".htm", ".vue", ".svelte")))
+        if snip:
+            out.append((rule, f"{why}: `{snip}`"))
     return out
 
 
