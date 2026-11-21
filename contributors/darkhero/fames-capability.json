@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-21T18:53:40.310634+00:00",
+  "observed_at": "2026-11-21T19:42:04.622725+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,8 +353,27 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "UNKNOWN",
-    "native_events": [],
+    "native_state": "OBSERVED_PARTIAL_POPULATION",
+    "native_events": [
+      {
+        "agent": "ai_demo",
+        "surface": "claude",
+        "observed_at": "2026-11-22T03:05:15+08:00",
+        "receipt_sha256": "92687ba990b7c1f2985b8a0e83b4f0f8661ebd2f1af4358c70928fabbf16d408"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-22T03:17:31+08:00",
+        "receipt_sha256": "7075019ae65a2ba52793cc5ae15a87b9dc36a7d585427220c49cf290a1027a90"
+      },
+      {
+        "agent": "ai_nuwa",
+        "surface": "claude",
+        "observed_at": "2026-11-22T03:18:40+08:00",
+        "receipt_sha256": "ce992c844371eddb9d112b04f76194bf9ee753969093c57a1f0a7df85240864f"
+      }
+    ],
     "runtime_release_sha256": "04b96999ffcc82f90b1d279396f1deb8b23755f6f9057a2b2095723fe1da639e"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
