@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.45.374",
+  "version": "1.45.375",
   "updated": "2026-09-23",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -2617,6 +2617,21 @@
           "Bash(git push --force*) in scss1199/ai_trader — direct force-push to master or dev",
           "Writes to sinopac-trading-system/.env, sinopac-trading-system/.env.example, or web/.env.local",
           "Bash commands that set or imply SHIOAJI_SIMULATION=false or otherwise arm live/real-money order execution"
+        ]
+      },
+      "ai_darkhero": {
+        "source": "operator 2026-11-21 approved in the altos conversation (dispatch to the main host); landed on darkhero by fleet job via fleet-job-dispatch",
+        "environment": [
+          "**Trusted repo**: C:\\ai_workspace\\ai_darkhero, remote origin https://github.com/scss1199/ai_darkhero.git, default branch master, private (confirmed via gh 2026-11-21)",
+          "**Secrets management**: local files only, gitignored in ai_darkhero/.gitignore: .env, .env.*, _secrets/, *.key, credentials.json, token.json, config/oauth.env.local; values are never printed, committed or sent off the machine",
+          "**Machine-local runtime state**: tray/state/ holds this machine's live runtime state (load_guard, hwlog logger, power_ledger, a770-window and similar files, gitignored by pattern); it is not committed, only the few baseline files already tracked there are versioned",
+          "**Primary use of Claude Code**: hub curator seat: F1S development, allocation of this box's load (tray/scripts/load_grant.py owns every load increase) and hardware stability, per the five-part SEAT-SPEC in ai_darkhero/AGENTS.md",
+          "**Curator scope**: ai_darkhero is the one seat whose sessions edit the hub _registry/ (including rules-blueprint.json) and _skill/ (including technique_output); for every other seat those paths are read-only"
+        ],
+        "soft_deny": [
+          "Writing ai_darkhero's .env, .env.*, _secrets/, credentials.json, token.json or config/oauth.env.local",
+          "Starting work that adds load to this box without asking tray/scripts/load_grant.py first, or widening load_grant's 250 W budget (BUDGET_W), its 30 W stability spread (STABLE_SPREAD_W) or load_guard's power ladder (CPU_W_MAX / COMBINED_W_MAX and the shedding steps)",
+          "Any action that adds load to the A770 GPU (starting or un-suspending a GPU model, render, benchmark or inference on it, or raising its power cap)"
         ]
       }
     }
