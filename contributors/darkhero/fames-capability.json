@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "6854f1628cbd5d0e144ec8af31b4c961504d71b891a03ad2a1e002a228f826aa",
+  "package_sha": "d830ec453bc0e5eb9730938c16ebcc062e5b450f1688450ef25a3e76d1144e4f",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-21T18:04:14.664082+00:00",
+  "observed_at": "2026-11-21T18:53:40.310634+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,142 +353,9 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "OBSERVED_PARTIAL_POPULATION",
-    "native_events": [
-      {
-        "agent": "sdnext_a770",
-        "surface": "claude",
-        "observed_at": "2026-11-22T01:25:10+08:00",
-        "receipt_sha256": "77608026144fb35382e35ce6d558212d2ee68caacdb3ec108b59d69340c3557c"
-      },
-      {
-        "agent": "ai_ziyaoastro",
-        "surface": "claude",
-        "observed_at": "2026-11-22T00:34:38+08:00",
-        "receipt_sha256": "28926f7bcee76aa5fc9ce9b8e7a652b69ccbe89fda9a338f4bbebecee42e7fbc"
-      },
-      {
-        "agent": "ai_wallpaper",
-        "surface": "claude",
-        "observed_at": "2026-11-21T22:04:58+08:00",
-        "receipt_sha256": "81e9120e79f22f9a3b4849174b9ec9da93d80e7e7fdc51b2967036f193bb26a4"
-      },
-      {
-        "agent": "ai_metadata",
-        "surface": "claude",
-        "observed_at": "2026-11-22T01:45:17+08:00",
-        "receipt_sha256": "92ab1968a9b49e4efcf7dc55e88826739bd1189cce46e7a5b67e4d73e2b4e502"
-      },
-      {
-        "agent": "ai_career",
-        "surface": "claude",
-        "observed_at": "2026-11-22T01:35:31+08:00",
-        "receipt_sha256": "fce0e3d54f6a72de184820a011c4be41923c680b6e130c3a8fedcb761965e20b"
-      },
-      {
-        "agent": "ai_trader",
-        "surface": "claude",
-        "observed_at": "2026-11-22T01:44:38+08:00",
-        "receipt_sha256": "a738ea07b76121fbcf82c8bf73f1cf7b01229b18f2c34c7defd06bbfc48e9901"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-11-21T22:22:39+08:00",
-        "receipt_sha256": "f70db776368506171c81faea9dde2024f485c0afb9b4e8ed339c724785dc36a5"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-11-22T01:35:04+08:00",
-        "receipt_sha256": "70816f200d5e8ed36db9bb870b9c57e836596eb42a961caeb0d382926eafb737"
-      },
-      {
-        "agent": "ai_metadata",
-        "surface": "claude",
-        "observed_at": "2026-11-22T00:09:53+08:00",
-        "receipt_sha256": "d1992cd1160513912a8cdd47bb564138ae0f7fc2cd5d45d66d80e0dd0471296c"
-      },
-      {
-        "agent": "ai_nuwa",
-        "surface": "claude",
-        "observed_at": "2026-11-22T01:16:28+08:00",
-        "receipt_sha256": "eacc8e7b5d62f27ff12b284ce9c311b96391c35e0a3d504c79b47fcf12168ddc"
-      },
-      {
-        "agent": "ai_trader",
-        "surface": "claude",
-        "observed_at": "2026-11-22T01:47:39+08:00",
-        "receipt_sha256": "622432f47cc78fbf41e479735f2d27e8696c7fde98fc0d8adc643118b678460d"
-      },
-      {
-        "agent": "ai_eatery",
-        "surface": "claude",
-        "observed_at": "2026-11-21T23:36:44+08:00",
-        "receipt_sha256": "d37db1f0d0ce1a27b1ac29a4762eef6341a209af07ff3a5d181ff6e3b9e02ea1"
-      },
-      {
-        "agent": "ai_theater",
-        "surface": "claude",
-        "observed_at": "2026-11-22T01:43:24+08:00",
-        "receipt_sha256": "b27f56f5dc283571f4d7448c5f18ab82249b9703002af3bcc010b4665545e74e"
-      },
-      {
-        "agent": "ai_demo",
-        "surface": "claude",
-        "observed_at": "2026-11-22T01:04:56+08:00",
-        "receipt_sha256": "3bec81b3f5dc2e626642ddab6d6d68e8213b642ee33cd0fb3f800e280f81568c"
-      },
-      {
-        "agent": "ai_busker",
-        "surface": "claude",
-        "observed_at": "2026-11-21T22:34:55+08:00",
-        "receipt_sha256": "aa1ee8921f9eada456aa3af0cb0fadfb23fa1081e19d5bfe205cc6b5a9e6cbfd"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-11-22T01:17:40+08:00",
-        "receipt_sha256": "4e7169714e582af8f8a3eb46b31af13b6562e0a95c5244a39b2f91d4cde69d91"
-      },
-      {
-        "agent": "ai_nuwa",
-        "surface": "claude",
-        "observed_at": "2026-11-22T01:46:03+08:00",
-        "receipt_sha256": "8456820293f303fd0b7d8e1716ffc1fa4b4ddcc9efd784f6bb4a5d373f1d2a26"
-      },
-      {
-        "agent": "ai_zonghe",
-        "surface": "claude",
-        "observed_at": "2026-11-21T21:16:15+08:00",
-        "receipt_sha256": "4052bccac4588bc14db682d38484351116877b5b624294bc389618e740a02f4c"
-      },
-      {
-        "agent": "ai_heartlink",
-        "surface": "claude",
-        "observed_at": "2026-11-21T21:45:12+08:00",
-        "receipt_sha256": "5d122d715632a6f41b1752e3a10a354d1d85b1605c9c95f29dee78efba359102"
-      },
-      {
-        "agent": "ai_ut",
-        "surface": "claude",
-        "observed_at": "2026-11-21T23:05:10+08:00",
-        "receipt_sha256": "9f24348378fb1debb1cfd54348fcd15305de7c4f70f9da8d6c0f8510963b1f80"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-11-22T01:44:16+08:00",
-        "receipt_sha256": "464007a893f4ab3ce23b3d0a94e2287dfe854198da16e2267a9a6b16dc06ae4d"
-      },
-      {
-        "agent": "ai_theater",
-        "surface": "claude",
-        "observed_at": "2026-11-22T01:37:33+08:00",
-        "receipt_sha256": "23049a2c3750c7b8f2929d5220b27d2214a1d85a612c19462fcf0cfc4eefb827"
-      }
-    ],
-    "runtime_release_sha256": "9a9884b1407713bd76f7e903945bfada1cf63d39c16ea1158d9e4e7dcde92cec"
+    "native_state": "UNKNOWN",
+    "native_events": [],
+    "runtime_release_sha256": "04b96999ffcc82f90b1d279396f1deb8b23755f6f9057a2b2095723fe1da639e"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
