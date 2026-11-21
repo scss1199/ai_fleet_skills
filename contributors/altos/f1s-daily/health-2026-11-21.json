@@ -1,0 +1,54 @@
+﻿{
+    "schema":  "altos-health/1",
+    "host":  "ai_altos",
+    "at":  "2026-11-21T19:31:39",
+    "for":  "ai_darkhero f1s-evolve (operator 2026-11-21: 回傳數值給f1s/darkhero去學習)",
+    "hardware":  {
+                     "model":  "Acer Altos PS548-G1",
+                     "cpu":  "i5-8250U 4C/8T",
+                     "proc_performance_pct_avg":  172,
+                     "proc_utility_pct_avg":  23.5,
+                     "ram_gb":  15.9,
+                     "ram_free_gb":  6.9,
+                     "commit_gb":  "9/16.9",
+                     "disks":  [
+                                   "Micron_2400 512GB Healthy",
+                                   "CT500MX500 500GB Healthy"
+                               ],
+                     "c_free_gb":  312.3,
+                     "d_free_gb":  454.6,
+                     "battery_health_pct":  84.5,
+                     "battery_full_mwh":  29857,
+                     "battery_design_mwh":  35340,
+                     "gpu":  "UHD 620 driver 26.20.100.7324 (2019-10-07)",
+                     "pnp_errors":  0,
+                     "smart_temp_wear":  "UNKNOWN (not admin)",
+                     "thermal":  "UNKNOWN (not admin)"
+                 },
+    "software":  {
+                     "os":  "Win11 Pro 26300",
+                     "pending_reboot":  false,
+                     "defender_realtime":  true,
+                     "defender_sig_age_d":  0,
+                     "last_kb":  "2026-11-14",
+                     "boot_errors":  [
+                                         "Firewall 2042 x2 access denied",
+                                         "CodexSandboxService 1003 x2",
+                                         "MapsBroker 7023"
+                                     ],
+                     "numlock_initial":  0,
+                     "numlock_after_boot":  false
+                 },
+    "fixes":  [
+                  "psutil 7.2.2 installed into Python312: tray remote_detect needs it, chromoting running",
+                  "omniroute gateway started healthy 466 models",
+                  "tray logon_autostart lazy subprocess import 133.9-\u003e118.8 ms CPU per ensure run (ai_altos 72ac21d)"
+              ],
+    "lessons":  [
+                    "riders rc1 ~25 min after boot: DNS for github.com not ready (fames-converge, fleet-skill-github-sync, jci-taipei-follow, fleet-job-dispatch); recovered without change; proposal: HubClock defers network riders until DNS resolves",
+                    "Python312 on altos lacked psutil so tray Chrome-RD detection silently returned local",
+                    "omniroute-gateway _cli() returned None under HubClock (19:23 run cli:null) although HubClock env has APPDATA and npm on PATH; same lookup under a hand-launched pythonw finds omniroute.cmd; root cause UNKNOWN",
+                    "curator_orders.py rollover-brief fails on altos: ModuleNotFoundError f1s_waste",
+                    "yin-yang dual-L2 trial: hot_directive records no savings evidence; single L2 in force"
+                ]
+}
