@@ -326,7 +326,7 @@ def prune(state: dict, now: float) -> None:
 # ── cross-host conversation index (operator 2026-11-21 on altos) ────────────────────────────────
 # 「每一處登入的claude code app對話不一致時間差很大」: the desktop app lists only its own local_ sessions and a fleet-job
 # (sdk-cli) conversation never appears there, so no host could see another host's conversations. Every host publishes
-# metadata only (id prefix, app title, seat, kind, first/last UTC, running|idle) to contributors/<slug>/f1s-daily/
+# metadata only (id prefix, empty title - repo is public, seat, kind, first/last UTC, running|idle) to contributors/<slug>/f1s-daily/
 # conversations.json on the carrier; the reader merges every host's newest copy into live.md. Never prompt or reply text.
 CONV_FILE = "conversations.json"
 CONV_DAYS = 14
@@ -403,7 +403,7 @@ def conversation_index(state: dict, now: float, host: str) -> dict:
     cache = state.setdefault("conv", {})
     titles, live = _app_titles(), _live_status()
     counts = {"total": 0, "desktop": 0, "dispatched": 0, "active_48h": 0}
-    rows, seen = [], set()
+    rows, seen, local = [], set(), {}
     for path in PROJECTS.glob("*/*.jsonl"):
         if any(n in path.parent.name.lower() for n in NEVER):
             continue
@@ -431,15 +431,17 @@ def conversation_index(state: dict, now: float, host: str) -> dict:
         if now - st.st_mtime > CONV_DAYS * 86400:
             continue
         seat = rec.get("seat") or ""
-        title = "" if seat in LOCAL_ONLY else redact(titles.get(sid) or rec.get("title") or "").replace("\n", " ")[:40]
+        if seat not in LOCAL_ONLY:                     # resolved for THIS host's reader only, never sent to the carrier
+            local[sid[:8]] = redact(titles.get(sid) or rec.get("title") or "").replace("\n", " ")[:40]
         status = live.get(sid)
         running = status == "busy" or (status is None and now - st.st_mtime < CONV_RUNNING_S)
-        rows.append({"id": sid[:8], "title": title, "seat": seat, "kind": kind,
+        rows.append({"id": sid[:8], "title": "", "seat": seat, "kind": kind,
                      "first": rec.get("first") or _iso(st.st_mtime), "last": _iso(st.st_mtime),
                      "state": "running" if running else "idle"})
     for sid in [s for s in cache if s not in seen]:
         cache.pop(sid)
     rows.sort(key=lambda r: r["last"], reverse=True)
+    state["conv_titles"] = {"host": host, "titles": {r["id"]: local[r["id"]] for r in rows[:CONV_ROWS] if local.get(r["id"])}}
     return {"schema": 1, "host": host, "generated": _iso(now), "counts": counts, "rows": rows[:CONV_ROWS]}
 
 
@@ -488,17 +490,21 @@ def fleet_conversations() -> list[dict]:
     return sorted(best.values(), key=lambda b: str(b.get("generated")), reverse=True)
 
 
-def conversations_section(blocks: list[dict], now: float, per_host: int = 3) -> list[str]:
+def conversations_section(blocks: list[dict], now: float, per_host: int = 3, local: dict | None = None) -> list[str]:
+    """Carrier rows carry no title (the carrier repo is public, 2026-11-21): this host's own rows get the title from
+    `local` ({"host", "titles": {id8: title}}, resolved on this machine); every other host shows id8 + seat + time."""
     if not blocks:
         return []
     lines = ["## 跨機對話狀態 (carrier contributors/*/f1s-daily conversations; app 清單只代表本機)"]
+    mine = (local or {}).get("titles") or {}
     for b in blocks:
+        names = mine if (local or {}).get("host") in (b.get("host"), b.get("contributor")) else {}
         try:
             age_h = (now - datetime.fromisoformat(str(b["generated"])).timestamp()) / 3600
         except (KeyError, ValueError):
             age_h = float("nan")
         c = b.get("counts") or {}
-        recent = "; ".join(f"{r.get('title') or r.get('id')}｜{r.get('seat')}｜{str(r.get('last'))[5:16]}Z"
+        recent = "; ".join(f"{names.get(r.get('id')) or r.get('id')}｜{r.get('seat')}｜{str(r.get('last'))[5:16]}Z"
                            + ("｜running" if r.get("state") == "running" else "")
                            for r in (b.get("rows") or [])[:per_host])
         lines.append(f"- [{b.get('host') or b.get('contributor')}] {str(b.get('generated'))[5:16]}Z ({age_h:.1f}h ago) "
@@ -526,13 +532,13 @@ def splice_section(text: str, section: list[str]) -> str:
     return text if len(text) <= LIVE_MAX_CHARS else text[:LIVE_MAX_CHARS - 40].rsplit("\n", 1)[0] + "\n(truncated)\n"
 
 
-def refresh_live_conversations(now: float) -> int:
+def refresh_live_conversations(now: float, state: dict | None = None) -> int:
     """Re-splice the cross-host block into live.md every tick (the rest of live.md is rewritten once a day)."""
     if not LIVE.is_file():
         return 0
     blocks = fleet_conversations()
     old = LIVE.read_text(encoding="utf-8")
-    new = splice_section(old, conversations_section(blocks, now))
+    new = splice_section(old, conversations_section(blocks, now, local=(state or {}).get("conv_titles")))
     if new != old:
         _write(LIVE, new)
     return len(blocks)
@@ -934,7 +940,7 @@ def tick(force_daily: bool = False, now: float | None = None) -> dict:
             result["daily"] = daily(state, now, opened)
             _write(STATE, state)
         result["conversations"] = publish_conversations(state, now)
-        result["fleet_conversations"] = refresh_live_conversations(now)
+        result["fleet_conversations"] = refresh_live_conversations(now, state)
         state.setdefault("ticks", []).append({k: result[k] for k in result if k != "at"} | {"at": result["at"]})
         state["ticks"] = state["ticks"][-20:]
         _write(STATE, state)
@@ -971,7 +977,7 @@ def main(argv=None) -> int:
         if a.cmd == "conversations":
             state, now = load_state(), _now()
             doc = publish_conversations(state, now)
-            doc["fleet_hosts"] = refresh_live_conversations(now)
+            doc["fleet_hosts"] = refresh_live_conversations(now, state)
             _write(STATE, state)
         else:
             doc = tick(a.force_daily) if a.cmd == "tick" else status()
