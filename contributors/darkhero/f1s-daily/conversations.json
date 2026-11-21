@@ -2,26 +2,35 @@
   "conversations": {
     "schema": 1,
     "host": "darkhero",
-    "generated": "2026-11-21T13:08:41+00:00",
+    "generated": "2026-11-21T13:13:04+00:00",
     "counts": {
-      "total": 1894,
+      "total": 1895,
       "desktop": 500,
-      "dispatched": 1394,
-      "active_48h": 299
+      "dispatched": 1395,
+      "active_48h": 300
     },
     "rows": [
+      {
+        "id": "e1542d48",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T13:10:17+00:00",
+        "last": "2026-11-21T13:13:04+00:00",
+        "state": "running"
+      },
       {
         "id": "6078c681",
         "title": "",
         "seat": "ai_darkhero",
         "kind": "dispatched",
         "first": "2026-11-21T13:04:39+00:00",
-        "last": "2026-11-21T13:08:29+00:00",
+        "last": "2026-11-21T13:10:05+00:00",
         "state": "running"
       },
       {
         "id": "c7d198a5",
-        "title": "免費池與自動開關協調",
+        "title": "",
         "seat": "ai_darkhero",
         "kind": "desktop",
         "first": "2026-11-21T11:24:57+00:00",
@@ -30,7 +39,7 @@
       },
       {
         "id": "a8454e0e",
-        "title": "官網協調對話（接續 8b09e1d1）",
+        "title": "",
         "seat": "jci_taipei",
         "kind": "desktop",
         "first": "2026-11-19T16:27:41+00:00",
@@ -66,7 +75,7 @@
       },
       {
         "id": "e6820546",
-        "title": "製作物品流程驗證與優化",
+        "title": "",
         "seat": "ai_nuwa",
         "kind": "desktop",
         "first": "2026-10-15T03:46:48+00:00",
@@ -84,7 +93,7 @@
       },
       {
         "id": "3fd01d63",
-        "title": "Q09 maryjane: flatten pitch toward a fla",
+        "title": "",
         "seat": "ai_nuwa",
         "kind": "desktop",
         "first": "2026-11-21T11:23:52+00:00",
@@ -120,7 +129,7 @@
       },
       {
         "id": "eb89cc83",
-        "title": "ai_trader｜陽：動手落地（陰陽）",
+        "title": "",
         "seat": "ai_trader",
         "kind": "dispatched",
         "first": "2026-11-20T21:23:33+00:00",
@@ -192,7 +201,7 @@
       },
       {
         "id": "c8d8681f",
-        "title": "Opus監控商品販售",
+        "title": "",
         "seat": "ai_darkhero",
         "kind": "desktop",
         "first": "2026-10-27T07:46:39+00:00",
@@ -201,7 +210,7 @@
       },
       {
         "id": "427c8dd3",
-        "title": "ai_metadata：免費池抽取不再被第三層卡住",
+        "title": "",
         "seat": "ai_metadata",
         "kind": "desktop",
         "first": "2026-11-19T02:13:28+00:00",
@@ -210,7 +219,7 @@
       },
       {
         "id": "3faf2a66",
-        "title": "F1S：重置前全自動推進線",
+        "title": "",
         "seat": "ai_darkhero",
         "kind": "desktop",
         "first": "2026-11-21T11:10:54+00:00",
@@ -219,7 +228,7 @@
       },
       {
         "id": "35912eba",
-        "title": "F1S｜文章線②判別：採用／逆向／捨棄",
+        "title": "",
         "seat": "ai_darkhero",
         "kind": "desktop",
         "first": "2026-11-20T05:59:34+00:00",
@@ -246,7 +255,7 @@
       },
       {
         "id": "c308d939",
-        "title": "見習講習會兩頁 DM（數位行銷委員會）",
+        "title": "",
         "seat": "jci_taipei",
         "kind": "desktop",
         "first": "2026-11-21T03:42:15+00:00",
@@ -255,7 +264,7 @@
       },
       {
         "id": "5de710a2",
-        "title": "F1S：重置前全自動推進線",
+        "title": "",
         "seat": "ai_darkhero",
         "kind": "dispatched",
         "first": "2026-11-21T03:44:00+00:00",
@@ -264,7 +273,7 @@
       },
       {
         "id": "8b09e1d1",
-        "title": "tpejc 官網協調（續）：NS 等候→app 部署、令 #76",
+        "title": "",
         "seat": "jci_taipei",
         "kind": "desktop",
         "first": "2026-11-18T00:40:55+00:00",
@@ -336,7 +345,7 @@
       },
       {
         "id": "a6102617",
-        "title": "數位發展委員會見習講習會 DM",
+        "title": "",
         "seat": "jci_taipei",
         "kind": "desktop",
         "first": "2026-11-21T03:30:26+00:00",
@@ -345,7 +354,7 @@
       },
       {
         "id": "4ad1d3a1",
-        "title": "ai_career：免費池推進（令 #58，前後數字）",
+        "title": "",
         "seat": "ai_career",
         "kind": "desktop",
         "first": "2026-11-18T06:57:53+00:00",
@@ -399,7 +408,7 @@
       },
       {
         "id": "69f7f0fe",
-        "title": "ai_trader：171 篇文章判決逐篇對原文重核",
+        "title": "",
         "seat": "ai_trader",
         "kind": "desktop",
         "first": "2026-11-19T20:25:45+00:00",
@@ -444,7 +453,7 @@
       },
       {
         "id": "4885dd18",
-        "title": "F1S：重置前全自動推進線",
+        "title": "",
         "seat": "ai_darkhero",
         "kind": "dispatched",
         "first": "2026-11-20T15:30:59+00:00",
@@ -516,7 +525,7 @@
       },
       {
         "id": "49bb1beb",
-        "title": "F1S｜陽：動手落地（陰陽試行）",
+        "title": "",
         "seat": "ai_darkhero",
         "kind": "desktop",
         "first": "2026-11-20T13:13:20+00:00",
@@ -539,15 +548,6 @@
         "kind": "dispatched",
         "first": "2026-11-20T21:01:19+00:00",
         "last": "2026-11-20T21:03:27+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "3e1bebd8",
-        "title": "",
-        "seat": "ai_ziyaoastro",
-        "kind": "dispatched",
-        "first": "2026-11-20T20:45:42+00:00",
-        "last": "2026-11-20T20:45:53+00:00",
         "state": "idle"
       }
     ]
