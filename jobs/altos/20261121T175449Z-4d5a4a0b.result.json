@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261121T175449Z-4d5a4a0b",
+  "host": "altos",
+  "started_at": "2026-11-21T17:57:01+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_altos cwd=ai_altos auth=cli_credentials_file 135.5s]\n完成：`ai_roas` 排除後剩下的 188 個檔已全部推到私有 repo `scss1199/ai_altos` 的新分支 `handoff/ai_roas-20261122`，驗證 **PASS**。\n\n**Job result（可放公開 repo：只有數字、SHA、分支名）**\n\n| 項目 | 值 |\n|---|---|\n| 排除前 | 30155 個檔 / 1,469,154,183 bytes |\n| 排除的 | 29967 個檔 / 1,427,531,129 bytes |\n| 排除後 | 188 個檔 / 41,623,054 bytes |\n| 排除後最大單檔 | 3,162,152 bytes |\n| 因 ≥95 MB 沒放進去的 | 0 個檔 / 0 bytes |\n| 分支 | `handoff/ai_roas-20261122`（orphan，1 個 commit） |\n| Commit SHA | `d4096c241fa75178dede77c537ea580c2274fbb6` |\n| `git ls-remote` | 遠端分支指向 `d4096c24…`，**PASS** |\n| 檔數比對 | 複製 188 = commit 內 188，**PASS** |\n| 內容比對 | 188 個檔逐一和來源比對 git blob SHA，0 個不符，**PASS** |\n\n- **為什麼只剩 188 個檔：** 之前說的約 4568 個檔，跟這次量到的 30155 個對不上。差異都在被排除的資料夾裡：`node_modules` 有 17058 個檔，`.work` 有 8551 個，`.venv` 有 4358 個。依檔名規則（`.env*`、金鑰、token 等）排除的是 0 個。\n- **金鑰檢查：** 推送前掃過這 188 個檔，沒有像金鑰的內容（0 個命中），也沒有內嵌的 `.git`。\n- **換行：** 臨時 worktree 關掉了 `core.autocrlf`，所以檔案的換行沒被改動。\n- **本機沒有刪除或移動任何東西：** `ai_roas` 只有讀取。`ai_altos` 的 main 分支和未提交的變更都沒動。臨時 worktree 留在 `C:\\Users\\USER\\AppData\\Local\\Temp\\roas_handoff_wt`，量測腳本和檔案清單留在 `C:\\Users\\USER\\AppData\\Local\\Temp\\roas_handoff_tool\\`，兩者都沒刪，要不要清掉由 operator 決定。\n- **建 worktree 時多出的檔：** 在 worktree 建 orphan 分支時，`ai_altos` 自己的檔案也被放進了這個臨時目錄。我先清空 index，再用檔案清單精確加入，所以 commit 裡只有那 188 個檔，這已用上面的檔數比對確認。另外有 2 個 `ai_roas` 檔和那些 `ai_altos` 檔同名，複製時蓋掉了臨時目錄裡的 `ai_altos` 副本。被蓋掉的只是臨時副本，原檔在 git 裡沒受影響。\n\n沒有下一步\n",
+  "stderr": "",
+  "finished_at": "2026-11-21T17:59:19+00:00"
+}
