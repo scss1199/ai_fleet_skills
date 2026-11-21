@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-21T03:11:01.209296+00:00",
+  "observed_at": "2026-11-21T03:45:13.242487+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -364,8 +364,26 @@
       {
         "agent": "ai_altos",
         "surface": "claude",
+        "observed_at": "2026-11-21T11:15:39+08:00",
+        "receipt_sha256": "cf0405cbb38b68bfa0396d26080158ea95d5f52dbeb2af4bb059807a4ca5db92"
+      },
+      {
+        "agent": "ai_altos",
+        "surface": "claude",
         "observed_at": "2026-11-21T09:42:33+08:00",
         "receipt_sha256": "474f24438c9edc55254f76765795a747b5bebb05a90f75798bb031879c509b9c"
+      },
+      {
+        "agent": "ai_altos",
+        "surface": "claude",
+        "observed_at": "2026-11-21T11:22:10+08:00",
+        "receipt_sha256": "dc3509e61d45bd2ef1aa596e2b46fc249448bc21df22c9dd1c9f05a33bce73c5"
+      },
+      {
+        "agent": "scratch-2026-11-21-e9e3bb",
+        "surface": "claude",
+        "observed_at": "2026-11-21T11:28:08+08:00",
+        "receipt_sha256": "8f824997f40a43d22a67ed5bc8992245f6d329b753a09cea7abd746ae8916d9c"
       },
       {
         "agent": "ai_altos",
