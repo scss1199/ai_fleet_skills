@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261121T175449Z-4d5a4a0b",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Task from ai_darkhero (operator request 2026-11-22: every project on altos that darkhero should run moves to darkhero). Follow-up to job 20261121T174335Z-80bca06e: the folder C:\\ai_workspace\\ai_roas (not a git repo, ~4568 files) must move to darkhero IN FULL, not only text files.\nHard lines: never delete or move anything on this box (copy only); no force push; no installs; no scheduled tasks; no visible windows (CREATE_NO_WINDOW); never print or export secrets. Exclude: .env*, *.pfx, *.pem, *.key, credentials*/token*/secret* files, _secrets, node_modules, .venv/venv, __pycache__, .pytest_cache, .work caches. Job result goes to a PUBLIC repo: counts, sizes, SHAs and branch name only - no file names, no contents.\n1. Measure ai_roas: file count and total bytes, before and after the exclusions; largest single file size.\n2. If every remaining file is under 95 MB: in a detached temporary worktree of the PRIVATE repo scss1199/ai_altos, create an orphan branch `handoff/ai_roas-20261122`, copy the remaining ai_roas tree into its root unchanged, commit, push. If some files are 95 MB or larger, leave them out, push the rest, and record their count and total size.\n3. Verify with `git ls-remote` that the branch points to your commit, and that the committed file count equals the copied count.\nJob result: before/after counts and bytes, files left out (count, bytes), branch, commit SHA, verification PASS/FAIL. End with 沒有下一步 or the exact blocker.\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-11-21T17:54:49+00:00",
+  "expires_at": "2026-11-23T17:54:49+00:00"
+}
