@@ -17,6 +17,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -32,6 +33,9 @@ MODULES = {
     "F1SCore": HERE / "F1SCore.lean",
     "ClaimContract": HERE / "ClaimContract.lean",
     "FamesKernel": HERE / "FamesKernel.lean",
+    "LoadGrant": HERE / "LoadGrant.lean",
+    "F1SMath": HERE / "F1SMath.lean",
+    "ProvedBound": HERE / "ProvedBound.lean",
 }
 TEXTS = {
     "hot_directive": HUB / "_registry" / "fames-protocol.json",
@@ -90,6 +94,7 @@ TEXTS = {
     "f1s_posture": HUB / "_skill" / "engines" / "f1s_posture.py",
     "skill_jci_transfer": HUB / "_skill" / "fleet-skills" / "jci-drive-line-web-transfer" / "SKILL.md",
     "skill_line_ingest": HUB / "_skill" / "fleet-skills" / "line-oa-ingest" / "SKILL.md",
+    "skill_social": HUB / "_skill" / "fleet-skills" / "social-read" / "SKILL.md",
     "social_session": HUB / "ai_darkhero" / "line" / "social_session.py",
     "knowledge_intake": HUB / "ai_darkhero" / "line" / "knowledge_intake.py",
     "zat_verify_gate": HUB / "_skill" / "engines" / "zat-verify-gate.py",
@@ -570,7 +575,7 @@ ELEMENTS = [
      "check_text": ("ship_engine", "Every ship checks the package it is about to commit")},
     # 2026-10-24 operator after two power losses 14 min apart: ai_darkhero is the one load scheduler; F1S asks it too.
     {"id": "EVO-load-grant", "element": "every planned load increase asks ai_darkhero's load grant (steady power, <= 40 W step, <= 250 W)", "verdict": "REFINE",
-     "requires": None, "detail": "windows-runtime-pitfalls rule for agents; ship-f1s and f1s-evolve wait for a grant before their gate tests; ai_theater ramp + CPU fleet ask before each step",
+     "requires": "Fames.LoadGrant.granted_within_budget", "detail": "windows-runtime-pitfalls rule for agents; ship-f1s and f1s-evolve wait for a grant before their gate tests; ai_theater ramp + CPU fleet ask before each step",
      "check_text": ("skill_runtime", "加負載先拿 load grant")},
     # 2026-10-24 operator: 「優先於 然後馬上實作疊代f1s (f1s就是會優先於其他cwd的意思 你構造f1s 用f1s統御其他cwd)」.
     {"id": "OP-f1s-governs", "element": "T1 f1s-governs: ai_darkhero correction orders outrank a seat's own decisions; red lines and the operator's own words stay above", "verdict": "REFINE",
@@ -1130,7 +1135,7 @@ ELEMENTS = [
      "requires": None, "detail": "web-ui-taste step 3 had only reference-image and phone+desktop checks, nothing comparing a new component against the existing ones in one image; step 3 now starts from the closest existing component and verifies new + existing side by side at 2-3x (size, outline/stroke, layers, existing accent colours) until all pass, with the side-by-side screenshot attached; evidence ai_darkhero/_registry/kyloren-knowledge-social/consolidate/cards/589a1ba3d1e7f2ce.json (quote at offset 3341, re-read in full.txt)",
      "check_text": ("skill_ui", "新素材與既有素材並排驗證")},
     {"id": "EVO-wait-within-cache-ttl", "element": "ai_metadata proposal 2026-11-05: background waits past ~55 min return to a cold prompt cache (7 days: >65 min cold 18/warm 0; 11 late notifications rebuilt 795k, all login/Chrome-close/multi-hour pulls)", "verdict": "REFINE",
-     "requires": None, "detail": "token-preflight 'Every wake is a full cache read' said when to background but not how long to wait; adds: slice jobs expected over 55 min into batches that report inside the window or hand them to the tick and end the turn, never a waiter on an event with no end time; stated as a window limit on run-until-no-next-step (T1 unchanged, the tick-owned step is not handed to the operator); evidence C:/Users/sc/.claude/projects/C--ai-workspace-ai-metadata/memory/cache-ttl-wait-rule.md",
+     "requires": "Fames.F1SMath.cold_wake_deferred", "detail": "token-preflight 'Every wake is a full cache read' said when to background but not how long to wait; adds: slice jobs expected over 55 min into batches that report inside the window or hand them to the tick and end the turn, never a waiter on an event with no end time; stated as a window limit on run-until-no-next-step (T1 unchanged, the tick-owned step is not handed to the operator); evidence C:/Users/sc/.claude/projects/C--ai-workspace-ai-metadata/memory/cache-ttl-wait-rule.md",
      "check_text": ("skill_preflight", "背景等待不超過快取壽命")},
     {"id": "OP-perishable-source-cadence", "element": "ai_metadata 37976db28eca (operator 2026-11-03): __queen 系列在 x.com 極易被禁，要更抓緊頻率抓 x.com 並頻繁更新同步的官網內容", "verdict": "REFINE",
      "requires": None, "detail": "already built in ai_metadata configs/acquisition_refresh.json section_hours __queen (twitter 3 h, person_page 3 h); library-bookmark-coverage Scheduling now states the general rule: cadence follows source mortality, mirror source at the same cadence, no new rider",
@@ -1527,8 +1532,59 @@ ELEMENTS = [
     {"id": "EVO-sdnext-thrash-rejected-20261118", "element": "sdnext_a770 2026-11-18 F1S proposals 2 and 4 + optional CLAUDE_CODE_DISABLE_1M_CONTEXT route", "verdict": "INFO",
      "requires": None, "detail": "not adopted: (2) a platform abort ends the turn without a Stop event, so no hub hook can fire there; the transcript-tail thrash watch (f1s_live.thrash_stuck) is the detector and now leads to a handoff. (4) the per-session goal mint is already T1 fleet-accountability and the AGC page prints the mint command (agc_lib goal_extract); an automatic mint on every SessionStart would add a per-run _logs writer (result-files-only). The env-var route changes environment variables = operator authorization, not adopted by the curator",
      "check_text": ("f1s_live", "def thrash_stuck")},
+    {"id": "EVO-metadata-claimed-deferred-order-20261119", "element": "ai_metadata 2026-11-19 F1S proposal: stop:orders blocked session 427c8dd3 twice (14:35:06Z, 14:35:18Z) on #51 after it claimed the order and said it could not answer before a real multi-unit task (deadline 2026-11-22)", "verdict": "REFINE",
+     "requires": None, "detail": "no new defer state (it would be a quiet way around T1 f1s-governs/run-until-no-next-step): the orders Stop reason now names the existing exit, answer --cannot \"not yet: <prerequisite>, <date>\", which T1 f1s-governs already allows (不能做＋原因) and curator review reopens; ai_metadata #51 is still open+claimed in _registry/curator-orders/ai_metadata.json. Measured cost after the 1.45.357 ship: 2 turns / 0.05M",
+     "check_text": ("run_until_done_hook", "when it cannot be done yet (a claim alone keeps it open")},
+    {"id": "EVO-metadata-wake-waste-dup-20261120", "element": "ai_metadata 2026-11-20 F1S proposal: wake waste 5.90M/80 wakes; post-ship stop:orders re-blocks claimed+deferred order 2x at 427c8dd3 14:35Z", "verdict": "INFO",
+     "requires": None, "detail": "not adopted: duplicate of EVO-metadata-claimed-deferred-order-20261119 (same session, same 14:35Z pushes); the orders Stop reason already names --cannot \"not yet: <prerequisite>, <date>\" and #51 was answered and closed 2026-11-20T00:09:12 in _registry/curator-orders/ai_metadata.json; the cited wake-findings.md was already digested off _inbox, so the 5.90M/80-wake figure carries no new mechanism",
+     "check_text": ("run_until_done_hook", "--cannot \\\"not yet: \"")},
+    {"id": "EVO-trader-fat-exec-rejected-20261119", "element": "ai_trader 2026-11-19 F1S proposal: fat_exec 4.43M/2d, 37-call turns at 190-205K; asks for park/compact or station hand-off before 150K because the AGC uncompact limit never fired; stop:proof wakes 9/10 no edit", "verdict": "INFO",
+     "requires": None, "detail": "not adopted: the lever exists since 2026-11-17 (curator_orders.handoff_line: FAT CHAT over 150K, ROLL OVER over 180K) and reached the named transcripts: 608fecef carried FAT CHAT 167K 3 times and ROLL OVER 183K-207K 29 times, a388177d FAT CHAT 159K-177K 12 times and ROLL OVER 180K-205K 14 times, and the work ran on there anyway; more prompt text adds nothing, and an automatic hand-over cannot open a session headlessly. The AGC uncompact limit is a silent compact-page refresh by design, not a hand-off. A PROOF wake that rewrites a claim makes no edit by design (it fixes the reply, not code)",
+     "check_text": ("curator_orders", "FAT CHAT {context // 1000}K > {over // 1000}K")},
+    {"id": "EVO-ig-account-flow-dup-20261120", "element": "ai_darkhero correction 8f82ecc10499 (ledger 36b8fb33cdd0): operator 「把這個能力流程化並傳給 jci_taipei 讓它能夠去分析自己的IG內容」", "verdict": "INFO",
+     "requires": None, "detail": "not adopted: already done 2026-11-18, _skill/engines/ig_account_analysis.py + social-read SKILL.md section 帳號分析 (read-only, viewer_is_target), and jci_taipei order #79 IG 帳號分析 is closed in _registry/curator-orders/jci_taipei.json",
+     "check_text": ("skill_social", "_skill/engines/ig_account_analysis.py")},
+    {"id": "EVO-photo-archive-refused-dup-20261120", "element": "ai_photo correction 3bb41afcd6ca (ledger 977d01f325f2): chat could not self-archive ('still has background work') after detaching its child; operator asked why and for a fix", "verdict": "INFO",
+     "requires": None, "detail": "not adopted: covered since 2026-11-18 by EVO-archive-remote-control-off-20261118; curator_orders.ARCHIVE_BG_HINT (relay = TaskStop then archive, wait = keep, sidebar = nothing to adopt) and ARCHIVE_RC_HINT (set_remote_control off, then archive; still refused with no bg = stale app task list, sidebar archive) ride the SESSION ARCHIVE DUE line; the pasted reply followed the last branch. The remaining refusal is in the app's task list, which no hub hook can clear",
+     "check_text": ("curator_orders", "the app's task list is stale, no successor helps")},
+    {"id": "EVO-sdnext-llama-pause-seat-local-20261120", "element": "sdnext_a770 correction 9a340cbfe99b (ledger 7f7ec9a452a0): operator 「先查 CPU llama-server 的作用目的…近期都沒用過它 那就暫停它 並派子對話去調查原本建立的目的」", "verdict": "INFO",
+     "requires": None, "detail": "rejected as a case, not a rule: a one-off instruction about one sdnext_a770 process; its generic parts already exist (T1 free-runtime for local models, f1s-intake no-diagnostic-questions, one session per problem). No fleet procedure or runtime trap to add; no text changed"},
+    {"id": "EVO-sdnext-no-autocompact-covered-20261121", "element": "sdnext_a770 correction 5e80a8d6dbf4 (ledger 5832e126e94f): operator 「去看f1s為什麼沒自動壓縮或是自動換對話繼續推進？」", "verdict": "INFO",
+     "requires": None, "detail": "not adopted: the sdnext_a770 occurrences (transcripts 2026-11-18T12:52Z..2026-11-19T19:46Z) all predate commit 69cc3a53 (2026-11-19T23:26Z), which added f1s_live.idle_rollover_due: a chat that finished a turn above the roll-over line is woken once while the cache is warm and hands over without anyone typing. Same root cause, already fixed; no text changed",
+     "check_text": ("f1s_live", "IDLE ROLL OVER: the last turn ended above the roll-over line")},
+    {"id": "EVO-silent-owner-cannot-handover-20261120", "element": "ai_search proposal: order #19 owner fad3b104 silent since 17:04, a non-owner --cannot is refused; measured lines 290->791 only by order #17's lean/conformance tests, f1s_prune dead 0 dup 0, commit bddec0d", "verdict": "REFINE",
+     "requires": None, "detail": "adopted: curator_orders.answer hands a silent owner's order (HANDOVER_AFTER_S, same seat, transcript readable) to a same-seat chat for a --cannot as well as for evidence; a cannot still lands in curator review, where a STALE release would have put it 3 h later. test_curator_orders silent-owner test covers #3. #19 itself closed by the curator: acceptance (slimmer) unmeetable for a measured reason, outcome declared, tests 13/13",
+     "check_text": ("curator_orders", "A measured `--cannot` hands over too")},
+    {"id": "EVO-open-source-prior-art-20261121", "element": "ai_theater correction 20d5a0d2a7fe (ledger 9901fd9194fa): before building a new project, search the free pool for an existing open-source one and reverse-engineer it", "verdict": "REFINE",
+     "requires": None, "detail": "adopted into mtm-mto-first reuse order as an open-source prior-art step (free pool, read-only per the viral-tool recipe, write 查過：無 when none); the femdom sorting / subtitle specifics stay in ai_theater",
+     "check_text": ("skill_mto", "再加一步開源先例")},
+    {"id": "EVO-drive-exposure-check-20261121", "element": "jci_taipei correction eedb32dd6b95 (ledger 441aa48e50fc): can the outside vendor's staff read the roster on Drive before the site moves to tpejc", "verdict": "REFINE",
+     "requires": None, "detail": "adopted into jci-drive-line-web-transfer: list Drive permissions of personal-data files before a vendor handover and report the measured list; changing sharing stays the operator's; parallel child chats per ask already in hot_directive L1/L2/L3",
+     "check_text": ("skill_jci_transfer", "外人看得到嗎")},
+    {"id": "EVO-defined-but-not-running-20261121", "element": "ai_darkhero correction 1cf6e2518b87 (ledger 239eb23166ab): are SCF/AEX/Lean and the many definitions actually executing", "verdict": "INFO",
+     "requires": None, "detail": "rejected as already covered: f1s_audit.py runs 8 rule families on every PostToolUse, fames-phase-conformance binds phases to Lean, fleet-accountability bans fake automation; no new rule"},
+    {"id": "EVO-article-lane-reopen-20261121", "element": "ai_darkhero correction c0bbd79d5690 (ledger 0d371af9c66f): the article-reading/notes child chat was missing; reopen it and dispatch to every cwd", "verdict": "INFO",
+     "requires": None, "detail": "rejected as already covered: curator_orders.article_lane/article_lane_line (ARTICLE_LANE_TITLE F1S｜文章線) prints ARTICLE LANE MISSING with the start_session brief when no live lane exists, session-consolidate LANE_TITLE keeps it from being archived, fames references/autonomous-knowledge.md fixes the article line mode; the dispatch-to-all-cwds half is the one-off of that day, not a rule"},
     {"id": "KB-article-proctor-standard", "element": "YouTube Media transcript: 驗收標準必須獨立於Agent之外，防止其透過修改測試程式來掩蓋錯誤", "verdict": "INFO",
      "requires": None, "detail": "驗證標準須放Agent改不到的地方；人類監考官是F1S座位設計核心；與ClaimContract.claimState模型相符"},
+    {"id": "F1SMATH-leverage-saved", "element": "f1s_waste.leverage: saved = (baseline - w) * typed per window; curator spend charged in every window, typed or not; PAID iff saved >= spent", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.idle_window_charges", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "F1SMATH-leverage-paid", "element": "f1s_waste.leverage: PAID is antitone in curator spend and equals ratio >= 1", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.paid_iff_ratio", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "F1SMATH-weight", "element": "f1s_waste.weight = input + 1.25 cache_write + 0.1 cache_read + 5 output; a cold wake costs 12.5x a warm one", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.cold_is_12_5x_warm", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "F1SMATH-cold-defer", "element": "f1s_live.cold_deferrable: a wake past 3300 s (cache TTL 3600 s - 300 s) without a real order is deferred", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.cold_wake_deferred", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "F1SMATH-hubclock-backoff", "element": "hubclock: streak backoff and learned skip never stack; a rider runs at most 4x slower (old rule 12x)", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.at_most_4x_slower", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "F1SMATH-window-need", "element": "f1s_window.need: per-cwd compact window clamps into its range and is monotone in the measured need", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.need_in_range", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "F1SMATH-learn-mult", "element": "hubclock_learn.backoff_for: multiplier stays in range and is monotone in the idle streak", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.mult_in_range", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "F1SMATH-pending", "element": "load_grant.pending_w: pending watts stay within [0, step] and fall as the measured rise grows", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.pending_bounds", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "F1SMATH-p95", "element": "f1s_control._queue_window p95 = sorted[ceil(0.95 n) - 1] (nearest rank; the old int() index was one rank low at n=21)", "verdict": "FORMALIZED",
+     "requires": "Fames.F1SMath.p95_nearest_rank", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
 ]
 
 def sha(path: Path) -> str:
@@ -1573,6 +1629,83 @@ def text_has(key: str, needle: str) -> bool:
         return False
 
 
+# PROVED means bound (ledger a06762913d, 2026-11-20): a theorem is about its model; it says something about the
+# running hub only when a conformance script compares that model with the production Python. Every theorem file
+# in these trees carries one line `-- F1S-BINDING: bound <hub-relative conformance script> <module.function,...>`
+# or `-- F1S-BINDING: model-only <reason>`. Only `bound` files whose script exists count toward a PROVED count.
+# The decision is `binding_class`, modelled in ProvedBound.lean and compared cell by cell by
+# proved_bound_conformance.py. evidence/ holds generated eval copies of the sources; those are not theorem files.
+BINDING_ROOTS = [HUB / "_lean" / "fames", HUB / "_lean" / "hubclock", HUB / "_lean" / "pfkt",
+                 HUB / "_skill" / "engines" / "lean"]
+BINDING_SKIP = {"evidence", ".lake", "__pycache__"}
+BINDING_LINE = "-- F1S-BINDING:"
+THEOREM_RE = re.compile(r"^\s*(theorem|lemma)\s", re.M)
+
+
+def binding_class(label, script_exists: bool) -> tuple[str, bool, bool]:
+    """(class, counted toward PROVED, reported as a finding) for a file's label and its script's presence.
+
+    label: None (no label line), "bound", "model-only", or "invalid" (several label lines, or an unknown word)."""
+    if label == "bound":
+        cls = "bound" if script_exists else "bound-missing-script"
+    elif label == "model-only":
+        cls = "model-only"
+    elif label is None:
+        cls = "unlabelled"
+    else:
+        cls = "invalid"
+    return cls, cls == "bound", cls not in ("bound", "model-only")
+
+
+def read_binding(text: str) -> tuple:
+    """(label, script, functions or reason) from the file's `-- F1S-BINDING:` lines."""
+    lines = [ln[len(BINDING_LINE):].strip() for ln in text.splitlines() if ln.startswith(BINDING_LINE)]
+    if not lines:
+        return None, "", ""
+    words = lines[0].split(None, 2)
+    if len(lines) > 1 or not words or words[0] not in ("bound", "model-only"):
+        return "invalid", "", lines[0]
+    if words[0] == "bound":
+        return "bound", words[1] if len(words) > 1 else "", words[2] if len(words) > 2 else ""
+    return "model-only", "", lines[0][len("model-only"):].strip()
+
+
+def binding_scan(roots=None, hub: Path = HUB) -> dict:
+    """Classify every .lean file with at least one theorem under the roots; counts and findings."""
+    files = []
+    for root in roots if roots is not None else BINDING_ROOTS:
+        for path in sorted(Path(root).rglob("*.lean")):
+            if BINDING_SKIP & set(path.relative_to(root).parts) or path.name.endswith(".hollow-probe.lean"):
+                continue
+            try:
+                text = path.read_text(encoding="utf-8-sig", errors="replace")
+            except OSError:
+                continue
+            n = len(THEOREM_RE.findall(text))
+            if not n:
+                continue
+            label, script, rest = read_binding(text)
+            exists = bool(label == "bound" and script and script.endswith(".py") and (Path(hub) / script).is_file())
+            cls, counted, reported = binding_class(label, exists)
+            files.append({"path": str(path), "theorems": n, "label": label, "class": cls, "counted": counted,
+                          "reported": reported, "script": script, "binds": rest})
+    tot = sum(f["theorems"] for f in files)
+    bound = [f for f in files if f["counted"]]
+    model = [f for f in files if f["class"] == "model-only"]
+    return {"files": files, "n_files": len(files), "bound_files": len(bound), "theorems": tot,
+            "bound_theorems": sum(f["theorems"] for f in bound), "model_only_files": len(model),
+            "model_only_theorems": sum(f["theorems"] for f in model),
+            "findings": [{"path": f["path"], "class": f["class"], "script": f["script"]} for f in files if f["reported"]]}
+
+
+def binding_line(scan: dict) -> str:
+    by = {c: sum(1 for f in scan["findings"] if f["class"] == c) for c in ("unlabelled", "bound-missing-script", "invalid")}
+    return (f"BINDING bound/total theorems {scan['bound_theorems']}/{scan['theorems']}, files {scan['bound_files']}/"
+            f"{scan['n_files']}; model-only {scan['model_only_files']} files {scan['model_only_theorems']} theorems "
+            f"(not PROVED); unlabelled {by['unlabelled']}, bound-missing-script {by['bound-missing-script']}, "
+            f"invalid {by['invalid']}")
+
+
 def main() -> int:
     started = time.time()
     proofs = {}
@@ -1609,6 +1742,10 @@ def main() -> int:
             proofs[name] = {**lean(path, receipt), "reused": False}
         MODULES_RUN[name] = path
     proved = {t for p in proofs.values() for t in p["theorems"]}
+    scan = binding_scan()
+    counted_paths = {str(Path(f["path"]).resolve()) for f in scan["files"] if f["counted"]}
+    module_bound = {name: str(Path(path).resolve()) in counted_paths for name, path in {**MODULES, **MODULES_RUN}.items()}
+    theorem_module = {t: name for name, p in proofs.items() for t in p["theorems"]}
     rows = []
     unresolved = 0
     for el in ELEMENTS:
@@ -1617,11 +1754,13 @@ def main() -> int:
         frow = formal.get(el["id"])
         if not req and frow and frow.get("theorem") in proved:      # root-namespace theorem, bound as is
             row.update(verdict="FORMALIZED", lean_theorem=frow["theorem"], lean_ok=True,
+                       lean_bound=module_bound.get(theorem_module.get(frow["theorem"], ""), False),
                        detail=f"f1s_formalize: {frow.get('kind')} proved round {frow.get('proved_round')}, faithful {frow.get('faithful')} -- {row.get('detail', '')}"[:600])
         if req:
             full = req if req.startswith("Fames.") else "Fames." + ("F1S." + req[8:] if req.startswith("F1SCore.") else req)
             row["lean_theorem"] = full
             row["lean_ok"] = full in proved
+            row["lean_bound"] = module_bound.get(theorem_module.get(full, ""), False)
             if not row["lean_ok"]:
                 row["verdict"] = "CONTRADICTION"
         chk = el.get("check_text")
@@ -1648,20 +1787,34 @@ def main() -> int:
         directive, directive_ok = "", False
     if not directive_ok:
         print(f"  FAIL hot_directive length {len(directive)} outside 100..1400 (fames_capabilities cap)")
-    ok = all(p["verdict"] == "PROVED" for p in proofs.values()) and unresolved == 0 and conf_ok and directive_ok
+    for f in scan["findings"]:
+        print(f"  FAIL binding {f['class']} {f['path']}" + (f" (script {f['script'] or '-'} not on disk)"
+                                                            if f["class"] == "bound-missing-script" else ""))
+    ok = (all(p["verdict"] == "PROVED" for p in proofs.values()) and unresolved == 0 and conf_ok and directive_ok
+          and not scan["findings"])
+    # only bound modules' theorems count as PROVED; a model-only module is still kernel-checked (verdict kept)
+    proved_counts = {k: (v["verdict"], len(v["theorems"]) if module_bound.get(k) else 0) for k, v in proofs.items()}
+    binding = {"bound_theorems": scan["bound_theorems"], "theorems": scan["theorems"], "bound_files": scan["bound_files"],
+               "files": scan["n_files"], "model_only_files": scan["model_only_files"],
+               "model_only_theorems": scan["model_only_theorems"], "findings": scan["findings"],
+               "model_only_modules": sorted(k for k in proofs if not module_bound.get(k)),
+               "proved_bound": sum(n for v, n in proved_counts.values() if v == "PROVED"),
+               "formalized_bound": sum(1 for r in rows if r["verdict"] == "FORMALIZED" and r.get("lean_bound"))}
     doc = {
         "schema": "f1s-audit/1", "ok": ok, "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "elapsed_s": round(time.time() - started, 1), "pattern": "ai_ut/ut_theory/rederive",
         "proofs": proofs, "claim_conformance_current": conf_ok, "unresolved": unresolved,
         "verdict_counts": {v: sum(1 for r in rows if r["verdict"] == v) for v in sorted({r["verdict"] for r in rows})},
-        "elements": rows,
+        "elements": rows, "binding": {**binding, "files_detail": scan["files"]},
         "bound": {k: {"path": str(p), "sha256": sha(p)} for k, p in {**MODULES, **MODULES_RUN, **TEXTS}.items()},
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    print(json.dumps({"ok": ok, "proofs": {k: (v["verdict"], len(v["theorems"])) for k, v in proofs.items()},
-                      "verdicts": doc["verdict_counts"], "claim_conformance_current": conf_ok, "unresolved": unresolved},
+    print(json.dumps({"ok": ok, "proofs": proved_counts,
+                      "verdicts": doc["verdict_counts"], "claim_conformance_current": conf_ok, "unresolved": unresolved,
+                      "binding": {k: v for k, v in binding.items() if k != "findings"} | {"findings": len(scan["findings"])}},
                      ensure_ascii=False))
+    print(binding_line(scan))
     for r in rows:
         if r["verdict"] in {"CONTRADICTION", "REFINE"}:
             print(" ", r["verdict"], r["id"], "-", r["detail"][:110])

@@ -115,7 +115,9 @@ REASON_ORDERS = (
     "run-until-done / F1S governs this cwd (T1 f1s-governs): the curator's correction order(s) {orders} for seat "
     "{seat} are still open. They outrank this seat's own plan; red lines and the operator's own words here stay "
     "above them. Before ending the turn, do the order and answer it: {command} <n> --evidence <path>, or "
-    "--cannot \"<reason>\" when a red line or the operator's instruction here forbids it. (push {n}/{cap})"
+    "--cannot \"<reason>\" when a red line or the operator's instruction here forbids it, or --cannot \"not yet: "
+    "<missing prerequisite>, <date>\" when it cannot be done yet (a claim alone keeps it open and pushes every Stop; "
+    "the curator reopens it when the prerequisite exists). (push {n}/{cap})"
 )
 REASON_CAPTURE = (
     "run-until-done / live capture (operator 2026-10-24: a Google Meet caption scraper in a background tab stalled at "

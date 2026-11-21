@@ -1,3 +1,4 @@
+-- F1S-BINDING: bound _lean/fames/phase_conformance.py phase_contract.admit,phase_contract.transition
 /-!
 Runtime phase-admission extension of FamesKernel.lean.
 The conformance composer inserts this fragment inside namespace Fames, after the

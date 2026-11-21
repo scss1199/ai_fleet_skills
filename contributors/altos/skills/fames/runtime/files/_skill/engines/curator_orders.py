@@ -454,7 +454,10 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
         raise ValueError(f"order #{n} is {order['status']}, not open")
     sid = _session_id(session)
     if owner_of(order) and owner_of(order) != sid:
-        if evidence and _silent_owner_handover(order, seat, cwd, sid):
+        # A measured `--cannot` hands over too: ai_search #19 2026-11-20, owner fad3b104 silent 3 h, the seat's measured
+        # cannot (lines up only by order #17's required tests, prune dead 0) was refused and waited for the 6 h STALE line.
+        # A cannot is judged by the curator either way, the same place a STALE release lands.
+        if _silent_owner_handover(order, seat, cwd, sid):
             order["owner"] = {"session": sid, "from": os.path.abspath(cwd), "at": _now(), "by": "handover",
                               "took_from": owner_of(order)}
         else:
@@ -694,7 +697,8 @@ def station_line(seat: str, now: float | None = None) -> str:
 def injection(seat: str, session_id: str = "") -> str:
     if out_of_scope(session_id):
         return ""
-    return "\n".join(t for t in (_injection(seat, session_id), station_line(seat), handoff_line(seat, session_id),
+    return "\n".join(t for t in (_injection(seat, session_id), station_line(seat),
+                                 anger_line(seat, session_id) or handoff_line(seat, session_id),
                                  model_lane_line(seat, session_id)) if t)
 
 
@@ -892,24 +896,39 @@ def arm_rollover(seat: str, session_id: str, brief: str, model: str = "", now: f
     return doc
 
 
+ROLLOVER_REWAKE_S = 10 * 60   # the cleared conversation's new process starts seconds after the clear; later = not it
+ROLLOVER_WAKE_AFTER_S = 45.0  # the old conversation's waiter steps in only when no cleared one took the hand-over by then
+
+
 def take_rollover(seat: str, via: str, session_id: str = "", now: float | None = None) -> dict:
     """The armed hand-over of `seat` if it is fresh, with `via` recorded as one delivery ({} otherwise). `via` is
-    "start" (SessionStart source=clear, session_id = the new conversation) or "wake" (the old conversation's idle
-    waiter, session_id = the armed one). Each via delivers at most once. Never raises."""
+    "start" (SessionStart source=clear/startup injects the brief, session_id = the new conversation), "rewake" (the new
+    conversation's SessionStart asyncRewake waiter gives it its first turn, `f1s_live.py start`) or "wake" (the old
+    conversation's idle waiter, session_id = the armed one: the fallback when no cleared conversation took it, e.g. the
+    clear was refused). Each via delivers at most once; "rewake" and "wake" exclude each other, so one turn starts the
+    hand-over; "rewake" only within ROLLOVER_REWAKE_S and never into a conversation other than the one "start" reached;
+    "wake" only ROLLOVER_WAKE_AFTER_S after arming. Never raises."""
     now = time.time() if now is None else now
     path = rollover_path(seat)
     try:
         with open(path, encoding="utf-8") as fh:
             doc = json.load(fh)
-        if not isinstance(doc, dict) or now - float(doc.get("armed_at") or 0) > ROLLOVER_TTL_S:
+        armed_at = float(doc.get("armed_at") or 0) if isinstance(doc, dict) else 0.0
+        if not isinstance(doc, dict) or now - armed_at > ROLLOVER_TTL_S:
             return {}
-        if via == "wake" and session_id != doc.get("session"):
+        if via == "wake" and (session_id != doc.get("session") or now - armed_at < ROLLOVER_WAKE_AFTER_S):
             return {}
-        if via == "start" and session_id == doc.get("session"):
+        if via in ("start", "rewake") and session_id == doc.get("session"):
             return {}
         done = [d for d in doc.get("delivered") or [] if isinstance(d, dict)]
         if any(d.get("via") == via for d in done):
             return {}
+        if via in ("wake", "rewake") and any(d.get("via") in ("wake", "rewake") for d in done):
+            return {}
+        if via == "rewake":
+            started = [d.get("session") for d in done if d.get("via") == "start"]
+            if now - armed_at > ROLLOVER_REWAKE_S or (started and session_id not in started):
+                return {}
         doc["delivered"] = done + [{"via": via, "session": session_id, "at": now}]
         _write_rollover(path, doc)
         return doc
@@ -932,6 +951,112 @@ def rollover_wake_text(seat: str, session_id: str) -> str:
     if any(d.get("via") == "start" for d in doc.get("delivered") or [] if isinstance(d, dict)):
         return "F1S ROLLOVER — the hand-over in your context (F1S ROLLOVER) is your task: carry it out now."
     return "F1S ROLLOVER — carry out this hand-over now:\n" + doc["brief"]
+
+
+def rollover_rewake_text(seat: str, session_id: str, now: float | None = None) -> str:
+    """For the cleared conversation's SessionStart asyncRewake waiter (`f1s_live.py start`): the text of its first turn.
+    2026-11-19: the desktop app's clear_session("self") restarts the process, the old idle waiter dies with it, and the
+    cleared conversation sat silent with the brief in its context until the operator typed. "" when nothing is armed."""
+    doc = take_rollover(seat, "rewake", session_id, now=now)
+    if not doc:
+        return ""
+    if any(d.get("via") == "start" and d.get("session") == session_id for d in doc.get("delivered") or [] if isinstance(d, dict)):
+        return ("F1S ROLLOVER — this conversation was cleared to continue a full one; the hand-over in your context "
+                "(F1S ROLLOVER) is your task: carry it out now, without waiting for the operator.")
+    return ("F1S ROLLOVER — this conversation was cleared to continue a full one on the same model; carry out this "
+            "hand-over now, without waiting for the operator:\n" + doc["brief"])
+
+
+def _rollover_steps(seat: str, session_id: str) -> str:
+    """The roll-over instructions shared by the size trigger and the anger trigger."""
+    sess = f" --session {session_id}" if session_id else ""
+    return ("If a background task of this conversation is still running, let it finish first. "
+            f"Run `python C:/ai_workspace/_skill/engines/curator_orders.py rollover-brief --seat {seat}{sess} --arm` (it parks the seat, "
+            "records the hand-over with the operator's request, the model and the open steps, and prints it). "
+            "Then call mcp__ccd_session_mgmt__clear_session with session_id \"self\": the same session keeps its model, folder and "
+            "permissions, it works on turns nobody typed, and when this turn ends F1S hands the cleared conversation the brief "
+            "(SessionStart) and gives it its first turn (`f1s_live.py start`). Tell the operator in one line that the conversation rolls over, then end the turn. "
+            "If clear_session is refused (Remote Control, pinned, or open live work), start a new conversation in the same cwd with "
+            "the printed text as its whole prompt (mcp__ccd_session__start_session, initiation \"user_asked\", context \"fresh\", "
+            "no worktree, model = the one in the brief) and archive this one (mcp__ccd_session_mgmt__archive_session \"self\"). "
+            + ARCHIVE_RC_HINT + " If neither works, fall back to a lean station and say so.")
+
+
+ANGER_ROLLOVER_N = 2           # `live_wake.anger_rollover_n`: scolding typed prompts that end one conversation, 0 = off
+ANGER_ROLLOVER_S = 3 * 3600
+
+
+def _anger_pattern():
+    import importlib.util as _ilu
+    spec = _ilu.spec_from_file_location("f1s_transcript_audit_anger",
+                                        os.path.join(os.path.dirname(os.path.abspath(__file__)), "f1s-transcript-audit.py"))
+    mod = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.ANGER, mod.ANGER_MAX_CHARS
+
+
+def angry_prompt_times(path, now: float | None = None, window_s: int = ANGER_ROLLOVER_S) -> list:
+    """Epoch seconds of the typed operator prompts in `path` that scold, within the last `window_s`. Same filter as
+    last_typed_request (wake turns and tool results never count), same pattern f1s-transcript-audit counts. [] on error."""
+    import calendar
+    import f1s_waste
+    try:
+        pattern, max_chars = _anger_pattern()
+    except Exception:
+        return []
+    now = time.time() if now is None else now
+    out = []
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            for raw in fh:
+                try:
+                    rec = json.loads(raw)
+                except ValueError:
+                    continue
+                if rec.get("type") != "user" or rec.get("isMeta") or rec.get("isSidechain"):
+                    continue
+                content = (rec.get("message") or {}).get("content")
+                if isinstance(content, list):
+                    if any(isinstance(b, dict) and b.get("type") == "tool_result" for b in content):
+                        continue
+                    content = "\n".join(b.get("text") or "" for b in content if isinstance(b, dict) and b.get("type") == "text")
+                if not isinstance(content, str):
+                    continue
+                text = re.sub(r"(?s)^(\s*<system-reminder>.*?</system-reminder>\s*)+", "", content).strip()
+                if not text or len(text) > max_chars or f1s_waste.wake_kind(text) != "operator" or not pattern.search(text):
+                    continue
+                try:
+                    at = calendar.timegm(time.strptime(str(rec.get("timestamp"))[:19], "%Y-%m-%dT%H:%M:%S"))
+                except ValueError:
+                    continue
+                if 0 <= now - at <= window_s:
+                    out.append(at)
+    except OSError:
+        return []
+    return out
+
+
+def anger_line(seat: str, session_id: str = "", times: list | None = None, n: int | None = None) -> str:
+    """operator 2026-11-19 「我沒有要跟 jci_taipei那個混帳cwd裡面的廢物對話一起工作 ... 你連哪個agent在浪費時間都防不住?」:
+    jci_taipei 7a7640c2 was scolded three times in 32 minutes and kept the task; F1S only counted it. A conversation the
+    operator scolded `live_wake.anger_rollover_n` times within three hours is done: the next prompt rolls it over to a
+    fresh conversation (the size roll-over's steps), so the operator never keeps working with it. "" otherwise."""
+    if n is None:
+        try:
+            with open(os.path.join(HUB, "_registry", "run-until-done.json"), encoding="utf-8-sig") as fh:
+                n = int((json.load(fh).get("live_wake") or {}).get("anger_rollover_n", ANGER_ROLLOVER_N))
+        except (OSError, ValueError, TypeError, AttributeError):
+            n = ANGER_ROLLOVER_N
+    if not n:
+        return ""
+    if times is None:
+        import glob as _glob
+        found = _glob.glob(os.path.join(CLAUDE_PROJECTS, "*", f"{session_id}.jsonl")) if session_id and session_id.replace("-", "").isalnum() else []
+        times = angry_prompt_times(found[0]) if found else []
+    if len(times) < n:
+        return ""
+    return (f"ROLL OVER (the operator scolded this conversation {len(times)} times in 3 h): it has failed the operator; do not do "
+            "this prompt's work here, a fresh conversation takes the task with the operator's own words. " + _rollover_steps(seat, session_id))
 
 
 def handoff_line(seat: str, session_id: str = "", context: int | None = None, over: int | None = None,
@@ -961,24 +1086,17 @@ def handoff_line(seat: str, session_id: str = "", context: int | None = None, ov
     if rollover is None:
         try:
             with open(os.path.join(HUB, "_registry", "run-until-done.json"), encoding="utf-8-sig") as fh:
-                rollover = int(float((json.load(fh).get("live_wake") or {}).get("rollover_over_k", ROLLOVER_OVER_K)) * 1000)
+                live = json.load(fh).get("live_wake") or {}
+            by_seat = live.get("rollover_over_k_by_seat") or {}      # a seat without a key keeps the fleet value
+            rollover = int(float(by_seat.get(seat, live.get("rollover_over_k", ROLLOVER_OVER_K))) * 1000)
         except (OSError, ValueError, TypeError, AttributeError):
             rollover = ROLLOVER_OVER_K * 1000
-    if not over or context <= over:
+    rolling = bool(rollover) and context > rollover       # a per-seat line under the FAT CHAT line still rolls over (over=0 = all off)
+    if not over or (context <= over and not rolling):
         return ""
-    if rollover and context > rollover:
-        sess = f" --session {session_id}" if session_id else ""
+    if rolling:
         return (f"ROLL OVER {context // 1000}K > {rollover // 1000}K: this conversation holds {context // 1000}K; do not do this prompt's work here. "
-                "If a background task of this conversation is still running, let it finish first. "
-                f"Run `python C:/ai_workspace/_skill/engines/curator_orders.py rollover-brief --seat {seat}{sess} --arm` (it parks the seat, "
-                "records the hand-over with the operator's request, the model and the open steps, and prints it). "
-                "Then call mcp__ccd_session_mgmt__clear_session with session_id \"self\": the same session keeps its model, folder and "
-                "permissions, it works on turns nobody typed, and when this turn ends F1S hands the cleared conversation the brief "
-                "(SessionStart) and wakes it (idle waiter). Tell the operator in one line that the conversation rolls over, then end the turn. "
-                "If clear_session is refused (Remote Control, pinned, or open live work), start a new conversation in the same cwd with "
-                "the printed text as its whole prompt (mcp__ccd_session__start_session, initiation \"user_asked\", context \"fresh\", "
-                "no worktree, model = the one in the brief) and archive this one (mcp__ccd_session_mgmt__archive_session \"self\"). "
-                + ARCHIVE_RC_HINT + " If neither works, fall back to a lean station and say so.")
+                + _rollover_steps(seat, session_id))
     cwd = os.path.join(HUB, seat).replace(os.sep, "/")
     return (f"FAT CHAT {context // 1000}K > {over // 1000}K: every tool call here re-reads {context // 1000}K. Hand execution to a lean "
             f"station (about 30K, one result row back): `python _skill/engines/f1s_station.py run --cwd {cwd} --tools Read,Grep,Glob,Bash,Edit,Write "
@@ -1085,6 +1203,44 @@ def _brief(orders: list[dict]) -> list[dict]:
     return rows + ([{"closed": closed}] if closed else [])
 
 
+ARTICLE_LANE_TITLE = "F1S｜文章線"
+
+
+def article_lane(sessions_dir=None, alive=None) -> str:
+    """Session id of the curator's live standing article chat, "" when none (operator 2026-11-14 main-chat-division;
+    2026-11-20 「是不是少開了一個子對話來讀對應的文章跟做筆記」: it had been archived and nothing reopened it)."""
+    sessions_dir = sessions_dir or os.path.join(os.path.expanduser("~"), ".claude", "sessions")
+    if alive is None:
+        try:
+            import psutil
+            alive = psutil.pid_exists
+        except ImportError:
+            alive = lambda pid: True  # noqa: E731
+    try:
+        names = os.listdir(sessions_dir)
+    except OSError:
+        return ""
+    for name in names:
+        try:
+            with open(os.path.join(sessions_dir, name), encoding="utf-8") as fh:
+                o = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        if "文章線" in str(o.get("name") or "") and o.get("pid") and alive(int(o["pid"])):
+            return str(o.get("hostSessionId") or o.get("sessionId") or "")
+    return ""
+
+
+def article_lane_line(lane: str | None = None) -> str:
+    """Where article work goes from the curator's main chat: forward to the lane, or start it when it is gone."""
+    lane = article_lane() if lane is None else lane
+    if lane:
+        return f"ARTICLE LANE — article relay and technique rows belong to {lane} ({ARTICLE_LANE_TITLE}): send_message them there, do not work them here."
+    return (f"ARTICLE LANE MISSING — no live {ARTICLE_LANE_TITLE} chat: start_session now (user_asked, fresh, cwd ai_darkhero, "
+            f"title {ARTICLE_LANE_TITLE}, Sonnet) to read the waiting articles, write their notes (f1s_vault.py) and close the "
+            "technique rows (f1s_apply.py list --seat ai_darkhero), then forward article work there.")
+
+
 def _waiting_techniques(seat: str) -> str:
     """f1s_apply orders every other seat; the curator's own rows have no order to arrive in, so they are named here."""
     try:
@@ -1096,7 +1252,8 @@ def _waiting_techniques(seat: str) -> str:
     if not waiting:
         return ""
     return (f"ARTICLE TECHNIQUES — {waiting} waiting for this seat: f1s_apply.py list --seat {seat}, apply and measure the worthwhile ones, "
-            "f1s_apply.py close <id> applied|covered --evidence <path> or rejected --note <why>; an opinion with nothing to take apart: nouse --note <why> (not handed on).")
+            "f1s_apply.py close <id> applied|covered --evidence <path> or rejected --note <why>; an opinion with nothing to take apart: nouse --note <why> (not handed on)."
+            + ("\n" + article_lane_line() if seat == curator() else ""))
 
 
 def _fanout_line() -> str:

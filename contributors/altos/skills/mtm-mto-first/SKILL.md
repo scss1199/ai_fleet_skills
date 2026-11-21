@@ -38,6 +38,9 @@ parent_skill: aex-agent-evolution
 
 - 動手前先問要不要寫新東西，依序：重用現有程式 → 標準函式庫 → 原生功能 → 已安裝套件 → 最後才自己寫。
   精簡但不省驗證、安全與錯誤處理。
+  要開一個新專案或新流程（分類器、字幕管線、整理工具）前，再加一步開源先例：用免費池（技能 `mtm-api-pool-offload`）
+  查有沒有人做過同類開源專案，有就照下面「爆紅工具的接法」①② 只讀不裝、取方法重做；查無也寫一句「查過：無」
+  （ai_theater 2026-11 校正：「用免費池去查是否有人建立過類似的專案或開源 參考並逆向工程」）。
   重用的界線：新資料源若只是替別的已登記假設會讀的 store 加欄位（例 leadlag 把每個已存市場都當 leader），要另開
   自己的 store，否則設計釘住的輸入會默默改變（ai_trader 2026-10-28：24 個世界指數進 `runtime/research/world_macro`）。
 - 改碼前先全域搜尋既有實作與用法（brownfield）；未搜尋即改碼 PROOF 擋（class `code_change`，
@@ -167,3 +170,7 @@ python %AI_WORKSPACE%\_skill\engines\mtm-token-waste-scan.py --agent <seat> --br
 - 只拿來分辨同名函式各被誰呼叫（ai_trader `prepare`、`launch` 分得出定義）。輸出和 rg 差不多大，又不印呼叫那行，省不到 token；ai_trader、ai_ziyaoastro 試完都留 rg 當預設（#78、#14）。
 - 漏答會回「0 個呼叫者」而不是報錯：用檔名跑 subprocess、importlib 載入、預設參數引用（`_skill/engines`、ai_trader）；跨檔 `db.set_ai_text_cache(...)` 也漏（ai_ziyaoastro，同樣寫法的 `L.prepare` 在 ai_trader 又查得到）。所以「No callers」不是證據，要刪或改名前照舊 rg 全域搜尋。
 - 不跑 `codegraph install`（會改全域設定），也不加 `alwaysLoad` 的 MCP（每回合都付工具 schema）。（PROOF `decision`：全域設定紅線詞）
+
+## 子對話平行（預設，operator 2026-11-19）
+
+主對話接任務後，若可拆成多個獨立單元：`f1s_parallel.py plan`，每個 unit 都要標 `kind`／`files`／`cwd`（檔案重疊的會自動排成先後）→ `run`（有驗證器的交免費池；claude_sub 依 kind 交 station、Sonnet 或 Opus 子對話，照它印出的 `start_session` brief 直接開）→ `close --evidence --session --fact k=v`（越界改檔會被拒）→ `merge --verify "<cmd>" --strict`（事實矛盾、越界或驗證失敗＝NOT MERGED）。判斷與整合留主對話。細節見 skill `token-preflight`。
