@@ -24,6 +24,7 @@ One HubClock rider (`f1s-daily`, 6 h) runs `tick`; zero Claude tokens, free pool
 Never reads fracdigi / quant transcripts; ai_ut prompt text never leaves the machine (counted, not quoted).
   python f1s_daily.py tick [--force-daily] [--json]
   python f1s_daily.py status [--json]
+  python f1s_daily.py conversations [--json]   # publish this host's conversation index now + refresh live.md
 """
 from __future__ import annotations
 
@@ -320,6 +321,221 @@ def prune(state: dict, now: float) -> None:
         state["errors"][seat] = {k: v for k, v in sigs.items() if v["last"] >= cut}
     state["urls"] = {k: v for k, v in state["urls"].items()
                      if v["status"] == "pending" or str(v.get("read_at") or v["seen"]) >= cut}
+
+
+# ── cross-host conversation index (operator 2026-11-21 on altos) ────────────────────────────────
+# 「每一處登入的claude code app對話不一致時間差很大」: the desktop app lists only its own local_ sessions and a fleet-job
+# (sdk-cli) conversation never appears there, so no host could see another host's conversations. Every host publishes
+# metadata only (id prefix, app title, seat, kind, first/last UTC, running|idle) to contributors/<slug>/f1s-daily/
+# conversations.json on the carrier; the reader merges every host's newest copy into live.md. Never prompt or reply text.
+CONV_FILE = "conversations.json"
+CONV_DAYS = 14
+CONV_ROWS = 60
+CONV_HEAD_BYTES = 128 * 1024
+CONV_RUNNING_S = 600                   # written in the last 10 min = mid-turn when no live record says otherwise
+APP_SESSIONS = Path(os.environ.get("APPDATA") or str(Path.home())) / "Claude" / "claude-code-sessions"
+LIVE_SESSIONS = Path.home() / ".claude" / "sessions"
+TITLE_ROW = re.compile(rb'"type":"(?:custom-title|ai-title)"')
+
+
+def _app_titles() -> dict:
+    """cliSessionId -> desktop app title ('' when untitled) for every session the app store knows; {} without the store."""
+    out = {}
+    for p in APP_SESSIONS.glob("*/*/local_*.json") if APP_SESSIONS.is_dir() else []:
+        d = _read(p, {})
+        sid = d.get("cliSessionId") if isinstance(d, dict) else None
+        if sid:                                        # member = the app can list it; the title may be empty
+            out[sid] = str(d.get("title") or "")
+    return out
+
+
+def _live_status() -> dict:
+    """CLI sessionId -> busy|idle from ~/.claude/sessions/<pid>.json (same source as session-consolidate.live_sessions)."""
+    out = {}
+    for p in LIVE_SESSIONS.glob("*.json") if LIVE_SESSIONS.is_dir() else []:
+        d = _read(p, {})
+        if isinstance(d, dict) and d.get("sessionId"):
+            out[d["sessionId"]] = str(d.get("status") or "")
+    return out
+
+
+def _conv_meta(path: Path, rec: dict, size: int) -> None:
+    """entrypoint / seat / first stamp from the head once; the latest app or AI title from bytes appended since."""
+    if "ep" not in rec:
+        with path.open("rb") as fh:
+            head = fh.read(CONV_HEAD_BYTES)
+        rec.update(ep="", seat="", first="")
+        for raw in head.split(b"\n"):
+            if b'"entrypoint"' not in raw and b'"cwd"' not in raw:
+                continue
+            try:
+                row = json.loads(raw.decode("utf-8", "replace"))
+            except ValueError:
+                continue
+            rec["ep"] = rec["ep"] or str(row.get("entrypoint") or "")
+            rec["seat"] = rec["seat"] or seat_of_cwd(str(row.get("cwd") or ""))
+            if not rec["first"] and row.get("timestamp"):
+                try:
+                    rec["first"] = _iso(datetime.fromisoformat(str(row["timestamp"]).replace("Z", "+00:00")).timestamp())
+                except ValueError:
+                    pass
+            if rec["ep"] and rec["seat"] and rec["first"]:
+                break
+    start = int(rec.get("toff") or 0)
+    if size < start:                                   # rewritten: read the titles again
+        start = 0
+    if size > start:
+        with path.open("rb") as fh:
+            fh.seek(start)
+            data = fh.read()
+        for raw in data.split(b"\n"):
+            if TITLE_ROW.search(raw):
+                try:
+                    row = json.loads(raw.decode("utf-8", "replace"))
+                except ValueError:
+                    continue
+                rec["title"] = str(row.get("customTitle") or row.get("aiTitle") or rec.get("title") or "")
+        rec["toff"] = size
+
+
+def conversation_index(state: dict, now: float, host: str) -> dict:
+    """The carrier `conversations` block for this host; transcript metadata is cached in state['conv'] by size."""
+    cache = state.setdefault("conv", {})
+    titles, live = _app_titles(), _live_status()
+    counts = {"total": 0, "desktop": 0, "dispatched": 0, "active_48h": 0}
+    rows, seen = [], set()
+    for path in PROJECTS.glob("*/*.jsonl"):
+        if any(n in path.parent.name.lower() for n in NEVER):
+            continue
+        try:
+            st = path.stat()
+        except OSError:
+            continue
+        sid = path.stem
+        seen.add(sid)
+        rec = cache.setdefault(sid, {})
+        try:
+            if rec.get("size") != st.st_size:
+                _conv_meta(path, rec, st.st_size)
+                rec["size"] = st.st_size
+        except OSError:
+            continue
+        if never(rec.get("seat") or ""):
+            continue
+        # desktop = the app's own store knows it (what the app list can show); a host without the store falls back
+        # to the transcript's entrypoint. 2026-11-21 darkhero: entrypoint said 720 desktop, the store held 508.
+        kind = "desktop" if (sid in titles if titles else rec.get("ep") == "claude-desktop") else "dispatched"
+        counts["total"] += 1
+        counts[kind] += 1
+        counts["active_48h"] += now - st.st_mtime < 48 * 3600
+        if now - st.st_mtime > CONV_DAYS * 86400:
+            continue
+        seat = rec.get("seat") or ""
+        title = "" if seat in LOCAL_ONLY else redact(titles.get(sid) or rec.get("title") or "").replace("\n", " ")[:40]
+        status = live.get(sid)
+        running = status == "busy" or (status is None and now - st.st_mtime < CONV_RUNNING_S)
+        rows.append({"id": sid[:8], "title": title, "seat": seat, "kind": kind,
+                     "first": rec.get("first") or _iso(st.st_mtime), "last": _iso(st.st_mtime),
+                     "state": "running" if running else "idle"})
+    for sid in [s for s in cache if s not in seen]:
+        cache.pop(sid)
+    rows.sort(key=lambda r: r["last"], reverse=True)
+    return {"schema": 1, "host": host, "generated": _iso(now), "counts": counts, "rows": rows[:CONV_ROWS]}
+
+
+def _carrier():
+    """(fleet-job-dispatch module, carrier clone, this host's contributor slug) - the fleet-hygiene publish path."""
+    fjd = _module("fleet_job_dispatch_for_daily", "fleet-job-dispatch.py")
+    hyg = _module("fleet_hygiene_for_daily", "fleet-hygiene.py")
+    return fjd, fjd.repo_root(HUB), hyg.contributor_slug(HUB, hyg.this_host())
+
+
+def publish_conversations(state: dict, now: float) -> dict:
+    """Write contributors/<slug>/f1s-daily/conversations.json on the carrier; fail-open (the digest never breaks)."""
+    try:
+        fjd, repo, slug = _carrier()
+        block = conversation_index(state, now, slug)
+        _write(OUT / CONV_FILE, {"conversations": block})
+        pub = fjd._publish(repo, HUB, {f"contributors/{slug}/f1s-daily/{CONV_FILE}": {"conversations": block}},
+                           f"chore(f1s-daily/{slug}): conversation index")
+        return {"ok": bool(pub.get("ok")), "commit": pub.get("commit"), "error": pub.get("error"),
+                "counts": block["counts"], "rows": len(block["rows"])}
+    except Exception as exc:  # noqa: BLE001 - recorded in the tick, never raised
+        return {"ok": False, "error": f"{type(exc).__name__}: {exc}"[:200]}
+
+
+def fleet_conversations() -> list[dict]:
+    """Every host's newest `conversations` block under contributors/*/f1s-daily/*.json on origin/main of the carrier."""
+    try:
+        fjd, repo, _ = _carrier()
+    except Exception:  # noqa: BLE001
+        return []
+    ls = fjd.git(repo, "ls-tree", "-r", "--name-only", "origin/main", "contributors")
+    best: dict = {}
+    for rel in (ls.stdout.splitlines() if ls.returncode == 0 else []):
+        parts = rel.split("/")
+        if len(parts) != 4 or parts[2] != "f1s-daily" or not parts[3].endswith(".json"):
+            continue
+        if not (parts[3] == CONV_FILE or parts[3].startswith("digest-")):
+            continue
+        show = fjd.git(repo, "show", f"origin/main:{rel}")
+        try:
+            block = (json.loads(show.stdout) or {}).get("conversations") if show.returncode == 0 else None
+        except ValueError:
+            block = None
+        if isinstance(block, dict) and str(block.get("generated") or "") > str(best.get(parts[1], {}).get("generated") or ""):
+            best[parts[1]] = block | {"contributor": parts[1]}
+    return sorted(best.values(), key=lambda b: str(b.get("generated")), reverse=True)
+
+
+def conversations_section(blocks: list[dict], now: float, per_host: int = 3) -> list[str]:
+    if not blocks:
+        return []
+    lines = ["## 跨機對話狀態 (carrier contributors/*/f1s-daily conversations; app 清單只代表本機)"]
+    for b in blocks:
+        try:
+            age_h = (now - datetime.fromisoformat(str(b["generated"])).timestamp()) / 3600
+        except (KeyError, ValueError):
+            age_h = float("nan")
+        c = b.get("counts") or {}
+        recent = "; ".join(f"{r.get('title') or r.get('id')}｜{r.get('seat')}｜{str(r.get('last'))[5:16]}Z"
+                           + ("｜running" if r.get("state") == "running" else "")
+                           for r in (b.get("rows") or [])[:per_host])
+        lines.append(f"- [{b.get('host') or b.get('contributor')}] {str(b.get('generated'))[5:16]}Z ({age_h:.1f}h ago) "
+                     f"total {c.get('total')} desktop {c.get('desktop')} dispatched {c.get('dispatched')} "
+                     f"48h {c.get('active_48h')}: {recent}")
+    return lines
+
+
+def splice_section(text: str, section: list[str]) -> str:
+    """Replace (or insert before `## Articles`) the cross-host block of live.md; keeps the LIVE_MAX_CHARS cap."""
+    head = "## 跨機對話狀態"
+    out, skip = [], False
+    for ln in text.splitlines():
+        if ln.startswith(head):
+            skip = True
+            continue
+        if skip and ln.startswith("- "):
+            continue
+        skip = False
+        out.append(ln)
+    if section:
+        at = next((i for i, ln in enumerate(out) if ln.startswith("## Articles") or ln == "(truncated)"), len(out))
+        out[at:at] = section
+    text = "\n".join(out) + "\n"
+    return text if len(text) <= LIVE_MAX_CHARS else text[:LIVE_MAX_CHARS - 40].rsplit("\n", 1)[0] + "\n(truncated)\n"
+
+
+def refresh_live_conversations(now: float) -> int:
+    """Re-splice the cross-host block into live.md every tick (the rest of live.md is rewritten once a day)."""
+    if not LIVE.is_file():
+        return 0
+    blocks = fleet_conversations()
+    old = LIVE.read_text(encoding="utf-8")
+    new = splice_section(old, conversations_section(blocks, now))
+    if new != old:
+        _write(LIVE, new)
+    return len(blocks)
 
 
 # ── articles ────────────────────────────────────────────────────────────────────────────────────
@@ -717,6 +933,8 @@ def tick(force_daily: bool = False, now: float | None = None) -> dict:
         if force_daily or (state.get("last_daily") != today and hour >= DAILY_AFTER_HOUR):
             result["daily"] = daily(state, now, opened)
             _write(STATE, state)
+        result["conversations"] = publish_conversations(state, now)
+        result["fleet_conversations"] = refresh_live_conversations(now)
         state.setdefault("ticks", []).append({k: result[k] for k in result if k != "at"} | {"at": result["at"]})
         state["ticks"] = state["ticks"][-20:]
         _write(STATE, state)
@@ -741,6 +959,8 @@ def status() -> dict:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
+    c = sub.add_parser("conversations", help="publish this host's conversation index and refresh live.md")
+    c.add_argument("--json", action="store_true")
     t = sub.add_parser("tick")
     t.add_argument("--force-daily", action="store_true")
     t.add_argument("--json", action="store_true")
@@ -748,7 +968,13 @@ def main(argv=None) -> int:
     s.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
     try:
-        doc = tick(a.force_daily) if a.cmd == "tick" else status()
+        if a.cmd == "conversations":
+            state, now = load_state(), _now()
+            doc = publish_conversations(state, now)
+            doc["fleet_hosts"] = refresh_live_conversations(now)
+            _write(STATE, state)
+        else:
+            doc = tick(a.force_daily) if a.cmd == "tick" else status()
     except Exception as exc:  # noqa: BLE001 — a failure never leaves the rider red forever; it is printed
         doc = {"error": f"{type(exc).__name__}: {exc}"}
     print(json.dumps(doc, ensure_ascii=False, indent=1 if getattr(a, "json", False) else None))
