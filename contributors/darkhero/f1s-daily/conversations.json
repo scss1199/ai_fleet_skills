@@ -2,21 +2,57 @@
   "conversations": {
     "schema": 1,
     "host": "darkhero",
-    "generated": "2026-11-21T11:59:27+00:00",
+    "generated": "2026-11-21T12:12:02+00:00",
     "counts": {
-      "total": 1890,
+      "total": 1892,
       "desktop": 500,
-      "dispatched": 1390,
-      "active_48h": 297
+      "dispatched": 1392,
+      "active_48h": 299
     },
     "rows": [
+      {
+        "id": "8a74fef2",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T12:11:19+00:00",
+        "last": "2026-11-21T12:11:36+00:00",
+        "state": "running"
+      },
+      {
+        "id": "c7d198a5",
+        "title": "免費池與自動開關協調",
+        "seat": "ai_darkhero",
+        "kind": "desktop",
+        "first": "2026-11-21T11:24:57+00:00",
+        "last": "2026-11-21T12:06:27+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "2fdc4f0e",
+        "title": "",
+        "seat": "ai_network",
+        "kind": "dispatched",
+        "first": "2026-11-21T12:05:41+00:00",
+        "last": "2026-11-21T12:05:55+00:00",
+        "state": "running"
+      },
+      {
+        "id": "e6820546",
+        "title": "製作物品流程驗證與優化",
+        "seat": "ai_nuwa",
+        "kind": "desktop",
+        "first": "2026-10-15T03:46:48+00:00",
+        "last": "2026-11-21T12:02:45+00:00",
+        "state": "idle"
+      },
       {
         "id": "de7afb1c",
         "title": "",
         "seat": "ai_darkhero",
         "kind": "dispatched",
         "first": "2026-11-21T11:52:38+00:00",
-        "last": "2026-11-21T11:59:25+00:00",
+        "last": "2026-11-21T12:02:30+00:00",
         "state": "running"
       },
       {
@@ -25,8 +61,8 @@
         "seat": "ai_nuwa",
         "kind": "desktop",
         "first": "2026-11-21T11:23:52+00:00",
-        "last": "2026-11-21T11:59:22+00:00",
-        "state": "running"
+        "last": "2026-11-21T12:02:27+00:00",
+        "state": "idle"
       },
       {
         "id": "aa9f8d18",
@@ -35,15 +71,6 @@
         "kind": "dispatched",
         "first": "2026-11-21T11:41:19+00:00",
         "last": "2026-11-21T11:43:40+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "c7d198a5",
-        "title": "免費池與自動開關協調",
-        "seat": "ai_darkhero",
-        "kind": "desktop",
-        "first": "2026-11-21T11:24:57+00:00",
-        "last": "2026-11-21T11:40:45+00:00",
         "state": "idle"
       },
       {
@@ -152,15 +179,6 @@
         "kind": "desktop",
         "first": "2026-11-19T02:13:28+00:00",
         "last": "2026-11-21T11:24:26+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "e6820546",
-        "title": "製作物品流程驗證與優化",
-        "seat": "ai_nuwa",
-        "kind": "desktop",
-        "first": "2026-10-15T03:46:48+00:00",
-        "last": "2026-11-21T11:23:53+00:00",
         "state": "idle"
       },
       {
@@ -530,24 +548,6 @@
         "kind": "dispatched",
         "first": "2026-11-20T20:02:24+00:00",
         "last": "2026-11-20T20:07:20+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "a69c1f6a",
-        "title": "",
-        "seat": "ai_ut",
-        "kind": "dispatched",
-        "first": "2026-11-20T19:46:18+00:00",
-        "last": "2026-11-20T19:48:46+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "227b3450",
-        "title": "",
-        "seat": "ai_metadata",
-        "kind": "dispatched",
-        "first": "2026-11-20T19:14:59+00:00",
-        "last": "2026-11-20T19:15:11+00:00",
         "state": "idle"
       }
     ]
