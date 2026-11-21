@@ -291,4 +291,7 @@ parent_skill: ztm-verify-before-done
   Bash 產生含反斜線的原始碼，先用 Write 工具把腳本寫成檔案再執行（Write 不收反斜線），或用 `chr(92) + "x00"` 拼；落地後用
   Python `bytes([0]) in data` 檢查有沒有 NUL。（ai_trader 2026-10-29 order #14 連踩三次；ai_darkhero 同日 patch f1s-sources.py
   的 `[ \t]+` 與 PAGE_STUB 正規表示式同樣走樣；memory bash-tool-heredoc-backslash-collapse、bash-tool-quirks）
+  長腳本（超過幾行）一律先 Write 成檔再用一行命令執行，不用 heredoc／python -c 內嵌：`unexpected EOF while looking
+  for matching` 在 heredoc 後面還接指令時 1.7%（無後接 0.2%），本文奇數撇號再升到 4.0%；非寫 heredoc 不可時讓它當最後一段、
+  註解與 docstring 不放撇號。（ai_trader 2026-11-21 order #179，3,400 次 heredoc 量測，24h 重複錯誤 x34）
 - **閘門訊號要帶年齡，寫入者死了的「最後一筆」不得永久擋工作**：`_registry/network-signal.json` 的寫入者（ai_network）2026-09-01 停了，它最後一筆 `congested=true`（jitter 81.93ms）讓 garytalks-feed 每 6 小時 0.1 秒就跳出，連續 59 天沒 poll，zt-guard CHECK6 天天紅卻沒人看懂；acquisition_hub 也照同一筆把頻寬打七五折。做法：讀閘門訊號時先算 `generated`／`probe_ts` 的年齡，超過訊號應有的刷新週期（這裡 6 h）就當作沒有訊號（UNKNOWN 不阻擋），並在 verdict 裡寫出年齡；寫入者要有 liveness（rider 結果或 CHECK6 列），沒有就把讀取端的過期保護當成唯一防線。（ai_darkhero/brain/insight/network_polite.py `load_signal(max_age_s)`、_skill/engines/acquisition_hub.py `_signal_stale`；F1S 2026-10-31 curator audit）
