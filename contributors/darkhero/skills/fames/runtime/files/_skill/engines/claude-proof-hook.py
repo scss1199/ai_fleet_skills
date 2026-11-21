@@ -600,7 +600,8 @@ JUNK_WRITER_REASON = (
     "file nobody reads — {what}. Rewrite it so the run leaves no residue: one fixed-name file overwritten in place "
     "(write tmp + os.replace), or append to one .jsonl ledger / sqlite store; intermediates live in tempfile and are "
     "gone when the run ends; tests use tmp_path. If the files truly have a reader or a lifetime, say so on that line "
-    "or the one above: `# retention: <who reads it / TTL>`. Kill switch: _registry/proof.json classes.junk_writer_gate=false."
+    "or the one above: `# retention: <who reads it / TTL>`. Re-sending the same lines is blocked again: change the "
+    "writer, never retry it unchanged. Kill switch: _registry/proof.json classes.junk_writer_gate=false."
 )
 
 
