@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-21T22:35:20.309366+00:00",
+  "observed_at": "2026-11-21T23:05:19.699363+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,10 +356,16 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
+        "agent": "ai_trader",
+        "surface": "claude",
+        "observed_at": "2026-11-22T06:45:12+08:00",
+        "receipt_sha256": "634e801eef384e42136a764b8790147fe112df832ad21087503d005cc03c2e68"
+      },
+      {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-11-22T06:14:29+08:00",
-        "receipt_sha256": "44947b47903102de26535216521effd3f5cdaba44e3e00f4794522947db405d1"
+        "observed_at": "2026-11-22T06:46:25+08:00",
+        "receipt_sha256": "4a1a3775972da3990f81df533e39bc2ff36e9afafb7f4c75545fa33dfe86a33e"
       }
     ],
     "runtime_release_sha256": "d76279e2e8e6a442668c20999cedf3685007d8be72bada576dfcc76a4eac4b44"
