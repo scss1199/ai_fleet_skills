@@ -1,0 +1,555 @@
+{
+  "conversations": {
+    "schema": 1,
+    "host": "darkhero",
+    "generated": "2026-11-21T11:59:27+00:00",
+    "counts": {
+      "total": 1890,
+      "desktop": 500,
+      "dispatched": 1390,
+      "active_48h": 297
+    },
+    "rows": [
+      {
+        "id": "de7afb1c",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T11:52:38+00:00",
+        "last": "2026-11-21T11:59:25+00:00",
+        "state": "running"
+      },
+      {
+        "id": "3fd01d63",
+        "title": "Q09 maryjane: flatten pitch toward a fla",
+        "seat": "ai_nuwa",
+        "kind": "desktop",
+        "first": "2026-11-21T11:23:52+00:00",
+        "last": "2026-11-21T11:59:22+00:00",
+        "state": "running"
+      },
+      {
+        "id": "aa9f8d18",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T11:41:19+00:00",
+        "last": "2026-11-21T11:43:40+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "c7d198a5",
+        "title": "免費池與自動開關協調",
+        "seat": "ai_darkhero",
+        "kind": "desktop",
+        "first": "2026-11-21T11:24:57+00:00",
+        "last": "2026-11-21T11:40:45+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "41e47e38",
+        "title": "",
+        "seat": "ai_theater",
+        "kind": "dispatched",
+        "first": "2026-11-21T11:39:57+00:00",
+        "last": "2026-11-21T11:40:10+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "3c3250ba",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T11:33:03+00:00",
+        "last": "2026-11-21T11:39:12+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "eb89cc83",
+        "title": "ai_trader｜陽：動手落地（陰陽）",
+        "seat": "ai_trader",
+        "kind": "dispatched",
+        "first": "2026-11-20T21:23:33+00:00",
+        "last": "2026-11-21T11:36:06+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "a081d73c",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T11:32:39+00:00",
+        "last": "2026-11-21T11:32:58+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "dca0d1cd",
+        "title": "",
+        "seat": "ai_ziyaoastro",
+        "kind": "dispatched",
+        "first": "2026-11-21T11:29:11+00:00",
+        "last": "2026-11-21T11:29:14+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "3280ac3b",
+        "title": "",
+        "seat": "ai_metadata",
+        "kind": "dispatched",
+        "first": "2026-11-21T11:29:02+00:00",
+        "last": "2026-11-21T11:29:07+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "162deafa",
+        "title": "",
+        "seat": "ai_nuwa",
+        "kind": "dispatched",
+        "first": "2026-11-21T11:28:56+00:00",
+        "last": "2026-11-21T11:28:59+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "54f1fc25",
+        "title": "",
+        "seat": "ai_career",
+        "kind": "dispatched",
+        "first": "2026-11-21T11:28:41+00:00",
+        "last": "2026-11-21T11:28:53+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "fa714393",
+        "title": "",
+        "seat": "ai_career",
+        "kind": "dispatched",
+        "first": "2026-11-21T11:28:26+00:00",
+        "last": "2026-11-21T11:28:38+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "17c561d3",
+        "title": "",
+        "seat": "ai_career",
+        "kind": "dispatched",
+        "first": "2026-11-21T11:28:11+00:00",
+        "last": "2026-11-21T11:28:24+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "c8d8681f",
+        "title": "Opus監控商品販售",
+        "seat": "ai_darkhero",
+        "kind": "desktop",
+        "first": "2026-10-27T07:46:39+00:00",
+        "last": "2026-11-21T11:24:30+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "427c8dd3",
+        "title": "ai_metadata：免費池抽取不再被第三層卡住",
+        "seat": "ai_metadata",
+        "kind": "desktop",
+        "first": "2026-11-19T02:13:28+00:00",
+        "last": "2026-11-21T11:24:26+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "e6820546",
+        "title": "製作物品流程驗證與優化",
+        "seat": "ai_nuwa",
+        "kind": "desktop",
+        "first": "2026-10-15T03:46:48+00:00",
+        "last": "2026-11-21T11:23:53+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "3faf2a66",
+        "title": "F1S：重置前全自動推進線",
+        "seat": "ai_darkhero",
+        "kind": "desktop",
+        "first": "2026-11-21T11:10:54+00:00",
+        "last": "2026-11-21T11:23:21+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "35912eba",
+        "title": "F1S｜文章線②判別：採用／逆向／捨棄",
+        "seat": "ai_darkhero",
+        "kind": "desktop",
+        "first": "2026-11-20T05:59:34+00:00",
+        "last": "2026-11-21T11:23:16+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "bfb6f0e3",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "dispatched",
+        "first": "2026-11-21T11:18:32+00:00",
+        "last": "2026-11-21T11:18:56+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "c2d02dbc",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T11:08:19+00:00",
+        "last": "2026-11-21T11:13:37+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "c308d939",
+        "title": "見習講習會兩頁 DM（數位行銷委員會）",
+        "seat": "jci_taipei",
+        "kind": "desktop",
+        "first": "2026-11-21T03:42:15+00:00",
+        "last": "2026-11-21T11:12:59+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "5de710a2",
+        "title": "F1S：重置前全自動推進線",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T03:44:00+00:00",
+        "last": "2026-11-21T11:10:36+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "8b09e1d1",
+        "title": "tpejc 官網協調（續）：NS 等候→app 部署、令 #76",
+        "seat": "jci_taipei",
+        "kind": "desktop",
+        "first": "2026-11-18T00:40:55+00:00",
+        "last": "2026-11-21T11:09:51+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "a8454e0e",
+        "title": "官網協調對話（接續 8b09e1d1）",
+        "seat": "jci_taipei",
+        "kind": "desktop",
+        "first": "2026-11-19T16:27:41+00:00",
+        "last": "2026-11-21T11:09:50+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "10f3b3bb",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T09:04:22+00:00",
+        "last": "2026-11-21T09:11:31+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "83c1d482",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T06:32:27+00:00",
+        "last": "2026-11-21T06:36:04+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "d697e67a",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "dispatched",
+        "first": "2026-11-21T05:43:49+00:00",
+        "last": "2026-11-21T05:45:08+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "00a632c9",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T05:02:26+00:00",
+        "last": "2026-11-21T05:06:03+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "9695ed01",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "dispatched",
+        "first": "2026-11-21T04:43:53+00:00",
+        "last": "2026-11-21T04:53:51+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "c8b1560a",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T04:02:49+00:00",
+        "last": "2026-11-21T04:05:11+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "01569136",
+        "title": "",
+        "seat": "sdnext_a770",
+        "kind": "dispatched",
+        "first": "2026-11-21T03:46:25+00:00",
+        "last": "2026-11-21T03:48:00+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "a6102617",
+        "title": "數位發展委員會見習講習會 DM",
+        "seat": "jci_taipei",
+        "kind": "desktop",
+        "first": "2026-11-21T03:30:26+00:00",
+        "last": "2026-11-21T03:42:47+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "4ad1d3a1",
+        "title": "ai_career：免費池推進（令 #58，前後數字）",
+        "seat": "ai_career",
+        "kind": "desktop",
+        "first": "2026-11-18T06:57:53+00:00",
+        "last": "2026-11-21T03:38:08+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "8887221e",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "dispatched",
+        "first": "2026-11-21T03:17:42+00:00",
+        "last": "2026-11-21T03:18:00+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "4158a3f3",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "dispatched",
+        "first": "2026-11-21T01:44:36+00:00",
+        "last": "2026-11-21T01:44:54+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "48e9cb94",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T01:32:20+00:00",
+        "last": "2026-11-21T01:36:00+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "ec7acc63",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "dispatched",
+        "first": "2026-11-21T00:34:00+00:00",
+        "last": "2026-11-21T00:34:11+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "664c3d1d",
+        "title": "",
+        "seat": "jci_taipei",
+        "kind": "dispatched",
+        "first": "2026-11-21T00:05:23+00:00",
+        "last": "2026-11-21T00:05:39+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "69f7f0fe",
+        "title": "ai_trader：171 篇文章判決逐篇對原文重核",
+        "seat": "ai_trader",
+        "kind": "desktop",
+        "first": "2026-11-19T20:25:45+00:00",
+        "last": "2026-11-20T23:35:59+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "aa80528e",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-20T23:10:41+00:00",
+        "last": "2026-11-20T23:15:11+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "f0ad5562",
+        "title": "",
+        "seat": "ai_nuwa",
+        "kind": "dispatched",
+        "first": "2026-11-20T23:04:48+00:00",
+        "last": "2026-11-20T23:05:16+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "11b09d6d",
+        "title": "",
+        "seat": "ai_search",
+        "kind": "dispatched",
+        "first": "2026-11-20T22:36:32+00:00",
+        "last": "2026-11-20T22:47:07+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "23b0e616",
+        "title": "",
+        "seat": "sdnext_a770",
+        "kind": "dispatched",
+        "first": "2026-11-20T22:06:45+00:00",
+        "last": "2026-11-20T22:20:31+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "4885dd18",
+        "title": "F1S：重置前全自動推進線",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-20T15:30:59+00:00",
+        "last": "2026-11-20T21:37:00+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "2e1992e9",
+        "title": "",
+        "seat": "ai_career",
+        "kind": "dispatched",
+        "first": "2026-11-20T21:35:43+00:00",
+        "last": "2026-11-20T21:36:27+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "a9f79c75",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "dispatched",
+        "first": "2026-11-20T21:22:46+00:00",
+        "last": "2026-11-20T21:22:52+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "47928ae1",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "dispatched",
+        "first": "2026-11-20T21:22:32+00:00",
+        "last": "2026-11-20T21:22:39+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "8217598a",
+        "title": "",
+        "seat": "ai_search",
+        "kind": "dispatched",
+        "first": "2026-11-20T21:22:21+00:00",
+        "last": "2026-11-20T21:22:26+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "9b5927ec",
+        "title": "",
+        "seat": "ai_search",
+        "kind": "dispatched",
+        "first": "2026-11-20T21:22:12+00:00",
+        "last": "2026-11-20T21:22:15+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "b670dda7",
+        "title": "",
+        "seat": "ai_nuwa",
+        "kind": "dispatched",
+        "first": "2026-11-20T21:22:04+00:00",
+        "last": "2026-11-20T21:22:08+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "b35a6c97",
+        "title": "",
+        "seat": "ai_career",
+        "kind": "dispatched",
+        "first": "2026-11-20T21:21:54+00:00",
+        "last": "2026-11-20T21:21:58+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "49bb1beb",
+        "title": "F1S｜陽：動手落地（陰陽試行）",
+        "seat": "ai_darkhero",
+        "kind": "desktop",
+        "first": "2026-11-20T13:13:20+00:00",
+        "last": "2026-11-20T21:21:37+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "4a833b7a",
+        "title": "",
+        "seat": "ai_demo",
+        "kind": "dispatched",
+        "first": "2026-11-20T21:16:59+00:00",
+        "last": "2026-11-20T21:21:13+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "566cf29a",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-20T21:01:19+00:00",
+        "last": "2026-11-20T21:03:27+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "3e1bebd8",
+        "title": "",
+        "seat": "ai_ziyaoastro",
+        "kind": "dispatched",
+        "first": "2026-11-20T20:45:42+00:00",
+        "last": "2026-11-20T20:45:53+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "f83241ec",
+        "title": "",
+        "seat": "ai_eatery",
+        "kind": "dispatched",
+        "first": "2026-11-20T20:16:23+00:00",
+        "last": "2026-11-20T20:29:18+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "f8dbfdc5",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-20T20:02:24+00:00",
+        "last": "2026-11-20T20:07:20+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "a69c1f6a",
+        "title": "",
+        "seat": "ai_ut",
+        "kind": "dispatched",
+        "first": "2026-11-20T19:46:18+00:00",
+        "last": "2026-11-20T19:48:46+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "227b3450",
+        "title": "",
+        "seat": "ai_metadata",
+        "kind": "dispatched",
+        "first": "2026-11-20T19:14:59+00:00",
+        "last": "2026-11-20T19:15:11+00:00",
+        "state": "idle"
+      }
+    ]
+  }
+}
