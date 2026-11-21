@@ -56,3 +56,34 @@ curator/FAMES package and SEAL gates. Idle owners remain visibly pending.
 LINE HTTP acceptance is not recipient read confirmation. Outbound content and
 retry receipts are persisted locally; the bot's inbound archive alone is not a
 two-way delivery proof. Whole-task token savings require matched complete usage.
+
+## Article line fixed mode (operator 2026-11-20)
+
+Measured 2026-11-20: four standing lanes (intake, judge, adopt, REA) read about
+26M cache tokens for one applied row. Because of that, the fixed mode is two
+conversations plus mechanisms:
+
+- **Intake (no chat).** Capture, harvest and vault refresh stay on the
+  zero-model article-relay tick. Unreadable links are recorded with a reason.
+- **Judge chat (smartest model).** Before reading a row, run MTM first:
+  `f1s_apply.py preread` and `recipe`. A row whose `where` names an existing
+  path closes as covered mechanically. Only the rows left get a full-text read.
+  Every ADOPT the judge hands off carries a before/after acceptance number (FP).
+- **Executor chat.** It implements ADOPT rows. It also runs REA rows in a
+  subagent, on demand.
+- **Closing rows.** Rows close through `f1s_apply.py close`. The close writes
+  the phase receipt: FP (an acceptance test exists), SCF (before/after
+  numbers), SEAL (the evidence exists at close). The AEX batch yield counts only
+  rows where SCF passed.
+- **Lean checks code, not only models.** Any adopted change that adds or edits
+  a pure decision ships with three things:
+  - a Lean model of that decision;
+  - an exhaustive conformance table against the running Python, with 0
+    mismatches;
+  - a `--prove-detection` mutation control that must fail.
+
+  Reference implementation: `_lean/fames/ArticleClose.lean` and
+  `article_close_conformance.py`, hub commit 2b114e1d: 10 theorems, 320
+  cells. The same pattern is used in `LoadGrant.lean`.
+- **Lifecycle.** Lanes that sit idle are archived. Executor work for another
+  cwd goes to that seat as an order.

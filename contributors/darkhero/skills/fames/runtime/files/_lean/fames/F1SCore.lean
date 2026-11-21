@@ -1,3 +1,4 @@
+-- F1S-BINDING: model-only consistency model of the F1S rule texts (which rule sets are satisfiable); no production Python function makes this decision
 /-!
 F1SCore.lean — machine-checked consistency of F1S (FAMES 一套系統) as a rule system.
 

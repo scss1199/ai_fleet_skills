@@ -1172,11 +1172,14 @@ class HubClock:
 
     def _backed_off(self, job, now):
         """A non-protected interval rider in a failure streak fires on every BACKOFF_EVERY-th boundary only."""
+        return self._streak_applies(job) and boundary_key(job, now) % BACKOFF_EVERY != 0
+
+    def _streak_applies(self, job):
         row = self.results.get(job.get("id")) or {}
         if int(row.get("consecutive_failures") or 0) < DRIVE_STREAK or _job_priority(job) >= PROTECTED_PRIORITY:
             return False
         p = parse_cadence(job.get("cadence"))
-        return bool(p and p[0] == "interval" and boundary_key(job, now) % BACKOFF_EVERY != 0)
+        return bool(p and p[0] == "interval")
 
     def _record_result(self, jid, rc, fired, epoch, info=None, handoff=True):
         """Fold one observed completion into the rider's durable row.
@@ -1407,7 +1410,7 @@ class HubClock:
         Never for protected riders, daily/@ cadences or periods of a day or more."""
         jid = job["id"]
         k = self._rider(jid).get("k") or 1
-        if k <= 1 or self._protected(job):
+        if k <= 1 or self._protected(job) or self._streak_applies(job):   # k <= 4: the streak rule alone is max(k, 4)
             return False
         p = parse_cadence(job.get("cadence"))
         if not p or p[0] != "interval" or p[1] >= 86400:

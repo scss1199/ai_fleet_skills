@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-24",
+  "updated": "2026-11-20",
   "purpose": "The standing ruleset EVERY agent loads and obeys EVERY turn. Single machine-readable source; claude.html 'rules' tab renders this for humans.",
   "load_hint": "Agents: this file is small - read whole at session start / after compaction. Each rule carries its authority source; a curated source overrides your default behavior.",
   "authored_by": "ai_wallpaper compliance audit 2026-06-12, operator-directed; content = master/hub standing directives + global CLAUDE.md; 2026-06-13 master +automation(HubClock/auto-ship)+portal-authority",
@@ -108,7 +108,7 @@
         },
         {
           "id": "no-modal-popup",
-          "rule": "前端零彈窗(總禁令,operator 2026-06-16,全 fleet,非僅 claude.html):任何 agent 出貨的前端 UI 一律 inline、非阻塞——嚴禁 alert()/confirm()/prompt() 與 window.open() 及任何搶焦點的模態或彈出視窗。確認動作用就地兩段式按鈕(arm→再點 confirm),圖片用頁內 lightbox 而非 window.open,通知用非阻塞 inline toast(pointer-events 關閉、自動淡出)。同一條「不搶使用者焦點」紅線:背景不彈 cmd、前端不彈模態。機器強制:zt-popup-gate.py(已接 ship-queue.py,違規 exit 1 擋 push);各 agent 另須把同道閘加進自家 ship 流程。違反即停。",
+          "rule": "前端零彈窗(總禁令,operator 2026-06-16,全 fleet,非僅 claude.html):任何 agent 出貨的前端 UI 一律 inline、非阻塞——嚴禁 alert()/confirm()/prompt() 與 window.open() 及任何搶焦點的模態或彈出視窗。確認動作用就地兩段式按鈕(arm→再點 confirm),圖片用頁內 lightbox 而非 window.open,通知用非阻塞 inline toast(pointer-events 關閉、自動淡出)。機器強制:zt-popup-gate.py(已接 ship-queue.py,違規 exit 1 擋 push);各 agent 另須把同道閘加進自家 ship 流程。違反即停。",
           "source": [
             "_registry/rules-blueprint.json#zero-foreground",
             "_skill/engines/zt-popup-gate.py",
@@ -177,6 +177,13 @@
             "operator 2026-10-24 「你來想一個好辦法解決 ai_darkhero 的對話擁有最高權限來校正除了你以外的cwd內容」",
             "operator 2026-10-24 「優先於 然後馬上實作疊代f1s (f1s就是會優先於其他cwd的意思 你構造f1s 用f1s統御其他cwd)」",
             "_skill/engines/curator_orders.py"
+          ]
+        },
+        {
+          "id": "lean-cost",
+          "rule": "【operator 2026-11-20】省 CPU/RAM/硬碟讀寫靠更高效演算法（增量、快取、事件驅動、批次），不得忽略需求；附同法量測前後數字與輸出不變測試。",
+          "source": [
+            "operator 2026-11-20 「依照f1s的邏輯去減少CPU/RAM或硬碟讀寫的不必要開銷 減少的方法是建立更高效的演算法而不是忽略需求(以此為f1s新的運作法則)」"
           ]
         }
       ]

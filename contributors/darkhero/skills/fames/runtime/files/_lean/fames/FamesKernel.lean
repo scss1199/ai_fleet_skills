@@ -1,3 +1,4 @@
+-- F1S-BINDING: bound _lean/fames/conformance.py fames_fleet.validate_run,fames_fleet.validate_autonomic,claude-claim-integrity-hook.lint_message,claude-claim-integrity-hook.evaluate_hook,lean_gate.evidence_ok
 /-!
 # FAMES decision kernel
 
