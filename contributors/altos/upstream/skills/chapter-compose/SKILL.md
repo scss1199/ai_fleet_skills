@@ -48,6 +48,7 @@ Claude writes the brief and the prompts; the pipeline does the work (0 model tok
 - Brand is a parameter (`meta.brand` -> `ai_demo/brand/<name>/brand.json`); never hard-code a logo or colour.
 - Logos/posters: `visual.fit: contain`; photos: default `cover`. Ken Burns is on unless `motion: none`.
 - Chapter length follows narration (+0.5 s); pictures are frozen/padded, never cut short.
+- Missing visual, in this order: authorised real photo/footage (seat site, event photos, licensed city shots) + CPU ffmpeg Ken Burns -> plain text design card. No A770 text-to-image unless the operator names it for that chapter (T1 free-runtime: A770 load = power-loss risk; curator 2026-11-06 jci 2027 teaser). `--allow-pending` is review-only: never ship a frame reading pending/待生成.
 - Do not merge this into a consumer seat (ai_demo SEAT-SPEC constraint); consumers submit briefs.
 
 ## Evidence

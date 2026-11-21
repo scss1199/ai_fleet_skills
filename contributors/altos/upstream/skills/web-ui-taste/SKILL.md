@@ -28,6 +28,9 @@ Playwright CLI = `microsoft/playwright-cli`（Apache-2.0）。F1S 只取做法�
 
 1. **設計系統**：專案已有設計 token／DESIGN.md 就照它。沒有才從 awesome-design-md 挑**一份**最接近的
    DESIGN.md（配色、字型、間距、按鈕），放進該 repo 既有的設計檔位置；不要在同一頁混兩套。
+   沒有現成 DESIGN.md 可挑時，用本機 UI/UX Pro Max 檢索（MIT，pin 2de1134，純 stdlib BM25，CPU、零網路）：
+   `python -IB C:/ai_workspace/_harness/tools/ui-ux-pro-max/scripts/search.py "<產品用語>" --design-system --json`
+   取 style／colors／typography／pattern；不加 `--persist`（除非該 seat 要求），不 `npx ... init`、不全域安裝。
 2. **品味／方向**：先寫三句 art direction（用途、氣氛、一個參考），再動手；避免預設灰底卡片＋藍按鈕的通用樣子。
    Taste Skill 的原則：明確層級、留白一致、只用一到兩個強調色、互動要有狀態。
    **動畫給數字，不給形容詞**（「更順」「更絲滑」交給模型只會更差；做法來自 transitions.dev，IG reel DfetS3zJH-I）：
@@ -39,6 +42,9 @@ Playwright CLI = `microsoft/playwright-cli`（Apache-2.0）。F1S 只取做法�
    完成後把幾個既有元件和新元件放在同一張圖（同一頁）上，放大 2–3 倍截圖，逐項比對尺寸、輪廓／線寬、圖層、
    顏色（只用既有強調色）；任何一項不一致就改到全過才停，結案附那張並排截圖（做法來自 kubai087/kubai-icons 的自檢：
    幾個既有圖示放在新圖示旁、整張 sheet 3× 渲染比對）。
+   **醜的元素修不好就先不顯示**（反向學習自 ai_metadata 2026-11-18「去找任何美學系統來解決截圖內圈起來很醜的東西?
+   如果找不到你就先不要顯示」）：使用者圈出的醜元素，先找既有設計系統／美學引擎修；找不到可用的就把該元素
+   隱藏（不刪資料、不刪程式），結案寫明隱藏了什麼、要哪個系統才能重新顯示，不交付仍然醜的版本。
 4. **機械規範檢查（0 token）**：
    ```bash
    python %AI_WORKSPACE%\_skill\engines\ui-guideline-lint.py <changed files or app dir> --summary

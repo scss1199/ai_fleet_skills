@@ -600,7 +600,8 @@ JUNK_WRITER_REASON = (
     "file nobody reads — {what}. Rewrite it so the run leaves no residue: one fixed-name file overwritten in place "
     "(write tmp + os.replace), or append to one .jsonl ledger / sqlite store; intermediates live in tempfile and are "
     "gone when the run ends; tests use tmp_path. If the files truly have a reader or a lifetime, say so on that line "
-    "or the one above: `# retention: <who reads it / TTL>`. Kill switch: _registry/proof.json classes.junk_writer_gate=false."
+    "or the one above: `# retention: <who reads it / TTL>`. Re-sending the same lines is blocked again: change the "
+    "writer, never retry it unchanged. Kill switch: _registry/proof.json classes.junk_writer_gate=false."
 )
 
 
@@ -1472,6 +1473,15 @@ def _test_scan_note(command: str, result: str, green: bool, is_error) -> str | N
 SESSION_ID = re.compile(r"session_id: (local_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
 
 
+def _seat_of(path: str) -> str:
+    """The seat a folder belongs to: its first component under the hub root; the root itself is ai_darkhero."""
+    parts = [p for p in re.split(r"[\\/]+", str(path).lower()) if p]
+    if "ai_workspace" in parts:
+        rest = parts[parts.index("ai_workspace") + 1:]
+        return rest[0] if rest else "ai_darkhero"
+    return "/".join(parts)
+
+
 def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
     exec_mod = _exec_module()
     uses: dict[str, tuple[str, dict]] = {}
@@ -1513,7 +1523,11 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
                 f["tool_calls"] += 1
                 command = str(tool_input.get("command") or "")
                 if ok and name.endswith(("__start_session", "__hand_off_to_session")):
-                    f["started_sessions"].extend(i for i in SESSION_ID.findall(result or "") if i not in f["started_sessions"])
+                    for i in SESSION_ID.findall(result or ""):
+                        if i not in f["started_sessions"]:
+                            f["started_sessions"].append(i)
+                        # 2026-11-18: where it runs; "" = this chat's own folder (same seat)
+                        f.setdefault("started_cwds", {})[i] = str(tool_input.get("cwd") or "")
                 if ok and name.endswith("__detach_session"):
                     f["detached_sessions"].append(str(tool_input.get("session_id") or ""))
                 if size < MAX_HAYSTACK:
@@ -1624,10 +1638,14 @@ def _negated(line: str, start: int) -> bool:
 
 
 def _resolve_path(token: str, cwd: str, write_paths: list[str]) -> bool:
+    return _existing_path(token, cwd, write_paths) is not None
+
+
+def _existing_path(token: str, cwd: str, write_paths: list[str]) -> Path | None:
     token = token.strip().strip("`'\"<>()[]{}，。、；：,;:").rstrip(".")
     token = re.sub(r":\d+(?::\d+)?$", "", token)
     if not token or token.startswith("--"):
-        return False
+        return None
     candidates = []
     try:
         p = Path(token).expanduser()
@@ -1641,10 +1659,92 @@ def _resolve_path(token: str, cwd: str, write_paths: list[str]) -> bool:
                 candidates += [Path(w) for w in write_paths if Path(w).name == base]
         for c in candidates:
             if c.exists():
-                return True
+                return c
     except (OSError, ValueError, RuntimeError):
-        return False
+        return None
+    return None
+
+
+def cited_files(text: str, cwd: str, write_paths: list[str], limit: int = 12) -> list[str]:
+    """Existing FILES the reply cites (directories cannot be hashed), in order, de-duplicated."""
+    out: list[str] = []
+    for m in PATH_TOKEN.finditer(URL.sub(" ", text or "")):
+        hit = _existing_path(m.group(0), cwd, write_paths)
+        try:
+            name = str(hit.resolve()) if hit is not None and hit.is_file() else ""
+        except (OSError, RuntimeError):
+            name = ""
+        if name and name not in out:
+            out.append(name)
+            if len(out) >= limit:
+                break
+    return out
+
+
+def completion_claimed(text: str) -> bool:
+    """A completion line judge() would examine: outside fences and quotes, not hedged, not negated."""
+    fenced = False
+    for raw in (text or "").splitlines():
+        stripped = raw.strip()
+        if stripped.startswith("```"):
+            fenced = not fenced
+            continue
+        if fenced or not stripped or stripped.startswith(">"):
+            continue
+        line = QUOTED.sub(" ", URL.sub(" ", stripped))
+        if QUALIFIER.search(line):
+            continue
+        hit = CLASS_PATTERNS["completion"].search(line)
+        if hit and not _negated(line, hit.start()):
+            return True
     return False
+
+
+AUTO_SEAL_ENGINE = Path(__file__).resolve().parent / "fames-receipt.py"
+
+
+def _prompt_epoch(prompt: dict | None) -> float:
+    try:
+        from datetime import datetime
+        return datetime.fromisoformat(str((prompt or {}).get("timestamp")).replace("Z", "+00:00")).timestamp()
+    except (ValueError, TypeError):
+        return 0.0
+
+
+def auto_seal(doc: dict, text: str, f: dict, prompt: dict | None, cfg: dict) -> str:
+    """F1S 2026-11-19 (audit: 903 tasks, 0 SCF/AEX/SEAL receipts in 7 days): when this Stop ADMITS a completion
+    claim, write its phase receipts mechanically in a windowless background child (fames-receipt.py auto) instead
+    of relying on the model to run the receipt commands. Never blocks, never changes the verdict; fail-open."""
+    if not cfg.get("auto_seal", True) or str(doc.get("hook_event_name") or "") != "Stop":
+        return "off"
+    if not completion_claimed(text):
+        return "no_completion_claim"
+    session_id = str(doc.get("session_id") or "")
+    if not session_id or not AUTO_SEAL_ENGINE.is_file():
+        return "no_session"
+    cwd = str(doc.get("cwd") or "")
+    files = cited_files(text, cwd, f.get("write_paths") or [])
+    if not files:  # completion anchored by a commit only: bind the files this turn wrote
+        files = [w for w in dict.fromkeys(f.get("write_paths") or []) if Path(w).is_file()][:12]
+    if not files:
+        return "no_artifact_file"
+    seat = _seat_of(cwd) if cwd else ""
+    agent = seat if seat and (HUB / seat).is_dir() else "hub"
+    argv = [sys.executable, str(AUTO_SEAL_ENGINE), "auto", "--session-id", session_id, "--agent", agent,
+            "--not-before", str(_prompt_epoch(prompt))]
+    for name in files:
+        argv += ["--path", name]
+    import subprocess
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+    breakaway = 0x01000000 if os.name == "nt" else 0  # CREATE_BREAKAWAY_FROM_JOB: outlive the hook's job object
+    for extra in (breakaway, 0):
+        try:
+            subprocess.Popen(argv, cwd=str(HUB), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                             stderr=subprocess.DEVNULL, close_fds=True, creationflags=flags | extra)
+            return "spawned:%d" % len(files)
+        except OSError:
+            continue
+    return "spawn_failed"
 
 
 def _message_paths_exist(text: str, cwd: str, write_paths: list[str]) -> bool:
@@ -1727,6 +1827,10 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
 
     if classes.get("attached_session", True):
         for sid in f.get("started_sessions") or []:
+            # 2026-11-18 (ai_darkhero#2): a child in this chat's own seat may nest (operator jci_taipei
+            # 2026-11-18 「有小任務就開子對話來完成並回報你」); only another seat's work must detach.
+            if cwd and _seat_of(cwd) == _seat_of((f.get("started_cwds") or {}).get(sid) or cwd):
+                continue
             if sid not in (f.get("detached_sessions") or []):
                 violations.append({"line": 0, "class": "attached_session", "snippet": sid[:SNIPPET],
                                    "need": LIE_NEEDS["attached_session"]})
@@ -1937,6 +2041,10 @@ def evaluate(doc: dict, cfg: dict | None = None) -> dict | None:
     })
     if not violations:
         entry.update({"verdict": "allow", "matched": "all_claims_supported"})
+        try:
+            entry["auto_seal"] = auto_seal(doc, text, f, prompt, cfg)
+        except Exception as exc:  # noqa: BLE001 - receipts are best effort; the Stop verdict never depends on them
+            entry["auto_seal"] = "error:" + type(exc).__name__
         _log(entry)
         return None
 

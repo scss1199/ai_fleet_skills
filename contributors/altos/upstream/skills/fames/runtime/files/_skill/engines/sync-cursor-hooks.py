@@ -33,7 +33,12 @@ CLAUDE_PROOF_HOOK = os.path.join(COMMON, "_skill", "engines", "claude-proof-hook
 # install (2026-10-28: scar3 had the script since 16:22 but no settings entry; only darkhero was hand-wired).
 CLAUDE_LIVE_WAKE_HOOK = os.path.join(COMMON, "_skill", "engines", "f1s_live.py")
 CLAUDE_LIVE_WAKE_TIMEOUT = 259200  # 72 h; f1s_live.LIFETIME_S (70 h) exits before the host kills it
-CLAUDE_PLAIN_COMMANDS = {CLAUDE_LIVE_WAKE_HOOK: (("wait",), {"asyncRewake": True})}
+CLAUDE_PLAIN_COMMANDS = {CLAUDE_LIVE_WAKE_HOOK: (("wait",), {"asyncRewake": True}),
+                         # 2026-11-19: a rolled-over chat (rollover-brief --arm + clear_session "self") gets its first
+                         # turn from its own SessionStart: the desktop app restarts the process on a clear, so the old
+                         # chat's Stop waiter dies with it. Keyed by (event, script): same script, another entry point.
+                         ("SessionStart", CLAUDE_LIVE_WAKE_HOOK): (("start",), {"asyncRewake": True})}
+CLAUDE_LIVE_START_TIMEOUT = 300  # f1s_live.START_GRACE_S + START_WAIT_S, with room
 
 # F1S auto-mode posture (operator 2026-10-31): the classifier rows Claude Code reads from ~/.claude/settings.json
 # autoMode are rendered from _registry/fames-protocol.json#auto_mode_posture, so every host carries the T1 red lines
@@ -171,6 +176,7 @@ def claude_managed_hooks() -> list:
         rows.append(("PreToolUse", CLAUDE_PROOF_HOOK, 10))
     if os.path.isfile(CLAUDE_LIVE_WAKE_HOOK):
         rows.append(("Stop", CLAUDE_LIVE_WAKE_HOOK, CLAUDE_LIVE_WAKE_TIMEOUT))
+        rows.append(("SessionStart", CLAUDE_LIVE_WAKE_HOOK, CLAUDE_LIVE_START_TIMEOUT))
     return rows
 
 
@@ -550,7 +556,7 @@ def _fail_open_entry(entry: dict) -> dict:
 
 
 def _claude_command_group(script: str, timeout: int, event: str = "") -> dict:
-    plain = CLAUDE_PLAIN_COMMANDS.get(script)
+    plain = CLAUDE_PLAIN_COMMANDS.get((event, script)) or CLAUDE_PLAIN_COMMANDS.get(script)
     if plain:
         args, extra = plain
         handler = {"type": "command",

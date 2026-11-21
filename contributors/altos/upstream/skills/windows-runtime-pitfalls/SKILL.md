@@ -245,6 +245,12 @@ parent_skill: ztm-verify-before-done
   托盤狀態列顯示目前功率與最新一次放行。
   全機控制權歸 ai_darkhero（operator 2026-11-11）：電源姿態 sleep/nap/awake、夜間佇列、tray、load grant 的設定只由
   ai_darkhero 改；其他 seat 只用 `load_grant.py wait/run` 與 `f1s_posture.py` 排隊申請，要改設定就向 ai_darkhero 提案，不自己動。
+- **「A770 現在有沒有負載／兩個模型一起跑會不會不穩」先讀紀錄，不做同時加壓測試**（sdnext_a770 2026-11-21）：
+  有沒有負載看 `python C:/ai_workspace/ai_darkhero/tray/scripts/a770_window.py status`（A770 W、CPU W、感測年齡），
+  斷電是否與 A770+CPU 同時重載有關看 `a770_window.py report`；另一個 seat 的 ollama「沒用 A770」要量到才算：
+  `ollama ps` 的 PROCESSOR 欄是 `100% CPU`（API `/api/ps` 的 `size_vram` 為 0），且同一時段 A770 功率沒跟著升。
+  量到它走了 GPU＝設定錯誤，修它的 num_gpu／裝置可見性，不是做相容測試。刻意讓 ollama 與 A770 工作同時起跑來
+  「測穩定度」本身就是疊加負載（斷電紅線），不做；要比較只用既有紀錄的時段對照。
 
 ## 音訊擷取與通話偵測
 
