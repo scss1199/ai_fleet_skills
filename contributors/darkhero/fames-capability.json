@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-21T16:34:12.966538+00:00",
+  "observed_at": "2026-11-21T17:34:09.530836+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,6 +356,18 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
+        "agent": "sdnext_a770",
+        "surface": "claude",
+        "observed_at": "2026-11-22T01:25:10+08:00",
+        "receipt_sha256": "77608026144fb35382e35ce6d558212d2ee68caacdb3ec108b59d69340c3557c"
+      },
+      {
+        "agent": "ai_ziyaoastro",
+        "surface": "claude",
+        "observed_at": "2026-11-22T00:34:38+08:00",
+        "receipt_sha256": "28926f7bcee76aa5fc9ce9b8e7a652b69ccbe89fda9a338f4bbebecee42e7fbc"
+      },
+      {
         "agent": "ai_wallpaper",
         "surface": "claude",
         "observed_at": "2026-11-21T22:04:58+08:00",
@@ -374,16 +386,46 @@
         "receipt_sha256": "d1992cd1160513912a8cdd47bb564138ae0f7fc2cd5d45d66d80e0dd0471296c"
       },
       {
+        "agent": "ai_nuwa",
+        "surface": "claude",
+        "observed_at": "2026-11-22T01:16:28+08:00",
+        "receipt_sha256": "e9d2a87d55f424a74e63689aeeeda9afb9741e9e4f6ca7cf8d9bc7227af56de6"
+      },
+      {
         "agent": "ai_eatery",
         "surface": "claude",
         "observed_at": "2026-11-21T23:36:44+08:00",
         "receipt_sha256": "d37db1f0d0ce1a27b1ac29a4762eef6341a209af07ff3a5d181ff6e3b9e02ea1"
       },
       {
+        "agent": "ai_theater",
+        "surface": "claude",
+        "observed_at": "2026-11-22T01:24:05+08:00",
+        "receipt_sha256": "506f17ba36976f1b8532fa0316d14b72fc24021a330531c57432b6481f54abe9"
+      },
+      {
+        "agent": "ai_demo",
+        "surface": "claude",
+        "observed_at": "2026-11-22T01:04:56+08:00",
+        "receipt_sha256": "3bec81b3f5dc2e626642ddab6d6d68e8213b642ee33cd0fb3f800e280f81568c"
+      },
+      {
         "agent": "ai_busker",
         "surface": "claude",
         "observed_at": "2026-11-21T22:34:55+08:00",
         "receipt_sha256": "aa1ee8921f9eada456aa3af0cb0fadfb23fa1081e19d5bfe205cc6b5a9e6cbfd"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-22T01:17:40+08:00",
+        "receipt_sha256": "4e7169714e582af8f8a3eb46b31af13b6562e0a95c5244a39b2f91d4cde69d91"
+      },
+      {
+        "agent": "ai_nuwa",
+        "surface": "claude",
+        "observed_at": "2026-11-22T01:15:33+08:00",
+        "receipt_sha256": "df4f5f34dc07d94508e9b767ac5f8cc56704c9eea94fa418437459e1342c3d13"
       },
       {
         "agent": "ai_zonghe",
