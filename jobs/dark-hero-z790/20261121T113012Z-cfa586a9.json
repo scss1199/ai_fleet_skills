@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261121T113012Z-cfa586a9",
+  "target_host": "dark-hero-z790",
+  "kind": "prompt",
+  "seat": "ai_darkhero",
+  "prompt": "在這裡執行此任務：替 ai_darkhero 座位補上 autoMode 區段（operator 2026-11-21 在 altos 機的對話核准「派工到主機」，由 altos 經 fleet-job-dispatch 送達）。\n\n背景（altos 機 2026-11-21 讀到的事實，請在主機自行重驗，不要照單全收）：\n- _registry/fames-protocol.json 的 auto_mode_posture.seats 只有 ai_trader，沒有 ai_darkhero；SessionStart 狀態列寫「seat ai_darkhero section none」。\n- 該檔由主機套件出貨到各從機，從機本地修改會被下一次同步覆寫，所以必須在主機改。\n- 寫入器是 _skill/engines/sync-cursor-hooks.py 的 render_auto_mode（python _skill/engines/sync-cursor-hooks.py --claude-only）；F1S 只寫 environment 與 soft_deny，永不寫 allow 或 hard_deny。\n\n要做：\n1. 在 _registry/fames-protocol.json 的 auto_mode_posture.seats 新增 \"ai_darkhero\"，格式比照 ai_trader（source、environment、soft_deny）。source 寫明：operator 2026-11-21 經 altos 對話核准，由 fleet job 落地。\n2. environment 建議列（每列在主機查證後才寫，查不到的寫 None configured，不要猜）：\n   - Trusted repo: C:\\ai_workspace\\ai_darkhero，remote origin https://github.com/scss1199/ai_darkhero.git，預設分支 master；repo 可見性請用 gh 查證後填。\n   - Secrets management: 依 .gitignore 的 .env、.env.*、_secrets/、*.key、credentials.json、token.json、config/oauth.env.local；值不得列印、提交或外傳。\n   - Machine-local runtime state: tray/state/ 為機器本地狀態，不提交。\n   - Primary use: hub curator seat（F1S 發展、本機負載分配 load_grant、硬體穩定度），依 AGENTS.md 五段落 SEAT-SPEC。\n   - Curator scope: 可寫 _registry/ 與 _skill/（含 rules-blueprint.json 與 technique_output），其他座位唯讀。\n3. soft_deny 建議列（只收窄、不放寬；與 fleet 既有列重複的不要再寫）：\n   - 寫入 ai_darkhero 的 .env*、_secrets/、credentials.json、token.json 或 config/oauth.env.local。\n   - 不經 tray/scripts/load_grant.py 直接啟動加重本機負載的工作，或放寬 load_grant 的 250 W 預算、30 W 穩定窗與 load_guard 的功率階梯。\n   - 任何增加 A770 GPU 負載的動作。\n4. 跑寫入器套用到本機 ~/.claude/settings.json，讀回確認 AUTO-MODE POSTURE 為 IN_SYNC 且列出 ai_darkhero 區段。\n5. 依主機既有流程出貨（測試與 Lean 稽核全綠才出貨，ship-f1s.py），讓各從機下一次同步拿到。\n\n限制：\n- 不新增 allow 或 hard_deny；不改動 ai_trader 區段與 fleet 區段；不碰任何紅線；不新增排程；不新開 .md/.json 檔。\n- 你判斷某一列不該寫，就不要寫，並在結果說明原因。\n\n回報（結果文字內）：新增的 environment 與 soft_deny 列數、寫入器讀回狀態、出貨的 package_sha 或 commit；任何一步沒做成就寫 UNKNOWN 加原因，不要報成功。\n",
+  "from": "ai_altos",
+  "created_at": "2026-11-21T11:30:12+00:00",
+  "expires_at": "2026-11-23T11:30:12+00:00"
+}
