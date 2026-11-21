@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261119T104214Z-9a17f7f0",
+  "host": "altos",
+  "started_at": "2026-11-21T03:22:01+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_altos cwd=ai_altos auth=cli_credentials_file 248.7s]\nD:\\jci_taipei-backup 備份已同步到最新版本，各項驗證都通過。只有 Drive 上的 snapshot zip 大小不符，判定 FAIL。\n\n| check | value | PASS/FAIL |\n|---|---|---|\n| D:\\jci_taipei-backup 已存在且為該 repo 的 clone → `pull --ff-only origin master` | rc=0 | PASS |\n| `rev-parse HEAD` 是否等於 `ls-remote refs/heads/master` | `483bbb020c6b`，兩者相同 | PASS |\n| `status --porcelain` 行數 | 0 | PASS |\n| tracked files | 1487 | — |\n| /meetings/ 下的 tracked .docx（不含 /meetings/work/） | 31 | — |\n| _line/ 下的 tracked files | 246 | — |\n| D: 剩餘空間 | 488.16 GB | — |\n| D:\\jcitaipei1957\\jci_taipei 是否存在 | 存在 | PASS |\n| source_snapshot\\jci_taipei-snapshot.zip 大小 | 173729040 bytes，預期 173698207；3 分鐘後再查一次仍是 173729040 | **FAIL** |\n\n- 執行時 git 以 CREATE_NO_WINDOW 啟動，沒有用 reset、clean 或任何 force 選項。\n- D:\\jci_taipei-backup 以外的地方都沒有寫入；Drive 資料夾只做了 stat，沒有開啟或 hash 任何檔案。\n- 輸出只有計數，沒有印出任何檔名、內容或憑證值。\n- 執行腳本在 `%TEMP%\\jcibk\\run.py`。\n\nDrive 上的檔案比預期大 30833 bytes，等了 3 分鐘後大小沒變。原因 unknown：可能是上傳的版本和預期不同，也可能 Drive 還沒同步到新檔。要查的話，可以比對上傳端產生這個 zip 時的大小。\n\n沒有下一步：zip 大小要由上傳端確認，本 seat 不能修改 Drive。\n",
+  "stderr": "",
+  "finished_at": "2026-11-21T03:26:13+00:00"
+}
