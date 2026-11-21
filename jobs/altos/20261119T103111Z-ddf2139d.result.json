@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261119T103111Z-ddf2139d",
+  "host": "altos",
+  "started_at": "2026-11-21T01:42:01+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_altos cwd=ai_altos auth=cli_credentials_file 381.4s]\n備份已更新且驗證通過；但 Drive 上的 snapshot zip 大小與預期不符，這一項判 **FAIL**。\n\n| check | value | PASS/FAIL |\n|---|---|---|\n| D:\\jci_taipei-backup | 原本就存在，origin 是 scss1199/jci_taipei → `pull --ff-only origin master` rc=0 | PASS |\n| HEAD == ls-remote master | `483bbb020c6b` == `483bbb020c6b` | PASS |\n| status --porcelain | 0 行 | PASS |\n| tracked files | 1487 | — |\n| /meetings/ 下的 .docx（不含 /meetings/work/） | 31 | — |\n| _line/ 下的 tracked files | 246 | — |\n| D: 剩餘空間 | 454.64 GiB | — |\n| D:\\jcitaipei1957\\jci_taipei 存在 | True | PASS |\n| snapshot zip 大小 | 173729040 bytes（隔 3 分鐘再讀一次仍是 173729040；預期 168080937） | FAIL |\n\n- **大小不符的原因：unknown。** 實際檔案比預期大 5,648,103 bytes，兩次讀到的數字一樣，所以看起來不是 Drive 還沒同步完。可能是預期值訂好之後又上傳了新的 snapshot，但我沒有驗證這一點。查法：重新產生 zip，用本機那份的大小去對 Drive 上這份。\n- **做了什麼：** git 都用 CREATE_NO_WINDOW 從 Python 啟動。D:\\ 只在 D:\\jci_taipei-backup 裡用 fast-forward pull 寫入。Drive 資料夾只讀大小，沒有開檔，也沒有算 hash。\n- **暫存腳本：** 腳本放在 `C:\\Users\\USER\\AppData\\Local\\Temp\\jcibk\\run.py`，依刪除紅線我沒有刪，要不要清掉由你決定。\n\n沒有下一步。\n",
+  "stderr": "",
+  "finished_at": "2026-11-21T01:48:49+00:00"
+}
