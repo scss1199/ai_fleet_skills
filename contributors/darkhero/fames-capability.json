@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-22T10:41:20.666197+00:00",
+  "observed_at": "2026-11-22T11:41:20.115914+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -362,6 +362,12 @@
         "receipt_sha256": "6e8c9512ec0077bf93f28c0543fc73568a8697c88e117f90b94d873273fa6015"
       },
       {
+        "agent": "ai_nuwa",
+        "surface": "claude",
+        "observed_at": "2026-11-22T19:36:22+08:00",
+        "receipt_sha256": "da94eef76bd056104cabd4e9348c7187f39d4c5b55578f67668e4f482f4ae2aa"
+      },
+      {
         "agent": "ai_metadata",
         "surface": "claude",
         "observed_at": "2026-11-22T17:00:01+08:00",
@@ -374,10 +380,16 @@
         "receipt_sha256": "0a55f4895004f9fcdc9ee4553325d2669dea422d62502b021a0a59c90fba16bf"
       },
       {
+        "agent": "ai_search",
+        "surface": "claude",
+        "observed_at": "2026-11-22T18:49:16+08:00",
+        "receipt_sha256": "ad82a5de713612395de52eb0d5f4f1ac360bc2edb24899625066063266e808e6"
+      },
+      {
         "agent": "ai_darkhero",
         "surface": "claude",
         "observed_at": "2026-11-22T17:17:14+08:00",
-        "receipt_sha256": "d1ac6886bd95d480afe77b11a8c37ad09475554ef44428ed5917781c9d9d00b0"
+        "receipt_sha256": "c47aca0661099ffe57a84c31694be99242134622eb03627fc61a40ad828b52bd"
       },
       {
         "agent": "ai_ut",
@@ -402,6 +414,12 @@
         "surface": "claude",
         "observed_at": "2026-11-22T18:18:43+08:00",
         "receipt_sha256": "fe75b6b38510424944d31384473d8781de5e4ec7e72b3a00631426c295959f23"
+      },
+      {
+        "agent": "ai_demo",
+        "surface": "claude",
+        "observed_at": "2026-11-22T19:18:48+08:00",
+        "receipt_sha256": "2335ebf283dc95469a17bf68933f4cc4e2a3e1e254cbc9670e846c20488e09d9"
       }
     ],
     "runtime_release_sha256": "e51e64557bce7b3081d3c4bf79f4548ae3ea7b921c7da4155fb895234ba9269b"
