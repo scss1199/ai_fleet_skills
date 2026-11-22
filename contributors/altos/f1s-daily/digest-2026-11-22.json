@@ -369,7 +369,7 @@
  "conversations": {
   "schema": 1,
   "host": "altos",
-  "generated": "2026-11-22T07:05:01+00:00",
+  "generated": "2026-11-22T08:01:00+00:00",
   "counts": {
    "total": 69,
    "desktop": 19,
@@ -377,6 +377,15 @@
    "active_48h": 12
   },
   "rows": [
+   {
+    "id": "9d301d2a",
+    "title": "",
+    "seat": "ai_darkhero",
+    "kind": "desktop",
+    "first": "2026-11-16T04:05:40.614Z",
+    "last": "2026-11-22T07:45:52+00:00",
+    "state": "running"
+   },
    {
     "id": "d99c99f3",
     "title": "",
@@ -393,15 +402,6 @@
     "kind": "desktop",
     "first": "2026-11-21T11:34:50.656Z",
     "last": "2026-11-22T06:19:40+00:00",
-    "state": "running"
-   },
-   {
-    "id": "9d301d2a",
-    "title": "",
-    "seat": "ai_darkhero",
-    "kind": "desktop",
-    "first": "2026-11-16T04:05:40.614Z",
-    "last": "2026-11-22T02:00:48+00:00",
     "state": "running"
    },
    {

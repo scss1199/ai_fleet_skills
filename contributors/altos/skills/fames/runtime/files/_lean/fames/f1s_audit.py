@@ -1658,6 +1658,9 @@ ELEMENTS = [
      "requires": "Fames.AexStall.stalled_never_active", "detail": "the proof found a real bug: the old if/elif tested stall == 3 before stall >= 6, so stall 4 and 5 went back to active (old_bug_stall4). Fixed engine: classify(stall) with >= thresholds; theorems stalled_never_active, classify_monotone, novelty_resets, iteration_reaches_prune (6 idle ticks reach prune from any count); 13 cells 0 mismatch, 2/2 mutants killed; receipt evidence/aex-stall-conformance.json"},
     {"id": "EVO-lean-parallel-audited-20261122", "element": "_lean/fames/F1SParallel.lean (lane matrix: accepted_implies_verified, escalation_bounded, mergeComplete_iff_all) now re-checked by f1s_audit on every ship", "verdict": "REFINE",
      "requires": "Fames.F1SParallel.mergeComplete_iff_all", "detail": "was proved and bound by parallel_conformance.py (2112 cells 0 mismatch) but missing from f1s_audit MODULES, so a ship did not re-check it"},
+    {"id": "EVO-eocc-sac-20261122", "element": "EoCC (yang hands over near a full window) vs SAC (single-action L3 unit in a fresh context with a state card); f1s_parallel validate_units refuses history:true", "verdict": "INFO",
+     "detail": "NVIDIA You Don't Need Long Context (jzPInuXHkqs): a unit that must recall early raw history stays in yang unless its history is a file it can grep; test_history_routes_eocc_or_sac; commit c946ea29",
+     "check_text": ("hot_directive", "EoCC")},
 ]
 def sha(path: Path) -> str:
     try:

@@ -88,6 +88,13 @@ def _log(row: dict) -> None:
         pass
 
 
+MAX_PLAUSIBLE_W = 1500.0      # CPU + A770 package cannot exceed this; anything above is a corrupt sample
+
+
+def _finite(x) -> bool:
+    return isinstance(x, (int, float)) and not isinstance(x, bool) and x == x and abs(x) != float("inf")
+
+
 def recent_power(window_s: float = WINDOW_S, ring: str = RING) -> dict:
     """Total CPU + A770 package watts over the last `window_s` seconds of the newest hwlog segment."""
     files = sorted(glob.glob(os.path.join(ring, "hwlog-*.csv")), key=os.path.getmtime)
@@ -114,9 +121,11 @@ def recent_power(window_s: float = WINDOW_S, ring: str = RING) -> dict:
     for line in lines[-int(window_s * 2):]:
         row = next(csv.reader([line.rstrip("\r")]), [])
         try:
-            totals.append(sum(float(row[i]) for i in idx))
+            tot = sum(float(row[i]) for i in idx)
         except (ValueError, IndexError):
             continue
+        if _finite(tot) and 0 <= tot <= MAX_PLAUSIBLE_W:        # nan / inf / negative / absurd cell = bad sample, skipped
+            totals.append(tot)
     totals = totals[-int(window_s):]
     if len(totals) < window_s * 0.8:
         return {"ok": False, "reason": f"too_few_samples_{len(totals)}"}
@@ -244,6 +253,13 @@ def decide(owner: str, step_w: float, power: dict, last: dict, now: float, measu
     this owner's earlier grants really added (learned_step); it is charged when larger than what it announces.
     `pending` is granted load that has not shown up in the sensors yet (pending_w); it counts against the budget.
     `posture` (load_posture.read()): 'sleep' widens the step to SLEEP_MAX_STEP_W; nap and awake use MAX_STEP_W."""
+    # RL gate hunt 2026-11-22: NaN / negative / non-numeric inputs made every comparison below false, so the gate
+    # granted (and charged NaN or a negative number) instead of refusing. Unknown or nonsensical input = no grant.
+    for _name, _v in (("step", step_w), ("measured", measured_w), ("pending", pending), ("last epoch", last.get("epoch") or 0)):
+        if not _finite(_v) or (_v < 0 and _name != "last epoch"):
+            return {"ok": False, "reason": f"bad_input_{_name.replace(' ', '_')}"}
+    if power.get("ok") and not all(_finite(power.get(k)) and power[k] >= 0 for k in ("now_w", "spread_w")):
+        return {"ok": False, "reason": "bad_input_power"}
     limit = max_step_w(posture)
     if measured_w > step_w:
         if measured_w > limit:
@@ -258,7 +274,8 @@ def decide(owner: str, step_w: float, power: dict, last: dict, now: float, measu
     if power["spread_w"] > STABLE_SPREAD_W:
         # sleep posture (operator 2026-11-11: fill the CPU at night): bursty CPU work never holds a 30 W window, so the
         # gate stayed shut with 100 W of budget unused. There the budget is judged against the window's PEAK instead.
-        if posture != "sleep" or float(power.get("max_w") or 1e9) + pending + step_w > BUDGET_W:
+        peak = power.get("max_w")
+        if posture != "sleep" or not peak or not _finite(peak) or float(peak) + pending + step_w > BUDGET_W:
             return {"ok": False, "reason": f"unsteady: {power['spread_w']} W spread in {WINDOW_S} s"}
         level = float(power["max_w"])
     if level + pending + step_w > BUDGET_W:
