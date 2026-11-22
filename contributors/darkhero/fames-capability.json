@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-22T14:37:28.402672+00:00",
+  "observed_at": "2026-11-22T15:16:18.767498+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -358,14 +358,26 @@
       {
         "agent": "jci_taipei",
         "surface": "claude",
-        "observed_at": "2026-11-22T22:37:15+08:00",
-        "receipt_sha256": "5262c36ab4f438fe59efb25b8d1617470bcd9d738777a9189a91ac544f1642b3"
+        "observed_at": "2026-11-22T22:43:57+08:00",
+        "receipt_sha256": "ed00255c53be3c31fae5e0e33c38edcb9d95951d93ac27be7c58f06c7cf275dc"
+      },
+      {
+        "agent": "sdnext_a770",
+        "surface": "claude",
+        "observed_at": "2026-11-22T23:14:36+08:00",
+        "receipt_sha256": "1e69a0e48c3c99a3a78576b81995f21b835980ddbe53d5dfa173789f3f8e054a"
       },
       {
         "agent": "ai_darkhero",
         "surface": "claude",
         "observed_at": "2026-11-22T22:15:24+08:00",
         "receipt_sha256": "06ff67e85e2ed5d267649dbe210c4e18ab4d3b1e506094da023470a1ee265f66"
+      },
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-11-22T23:15:37+08:00",
+        "receipt_sha256": "7284dbb655babc4c2762b122f0bcbc880acf1f3aca5de23c7b18160f04e8f695"
       }
     ],
     "runtime_release_sha256": "e7353b59a11fe6e09126654e60677b334a3974c5ffd417a98b818f8fdc1be6c5"
