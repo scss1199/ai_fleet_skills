@@ -77,6 +77,7 @@ TEXTS = {
     "websearch_engine": HUB / "_skill" / "engines" / "websearch.py",
     "skill_preflight": HUB / "_skill" / "fleet-skills" / "token-preflight" / "SKILL.md",
     "session_tax": HUB / "_skill" / "engines" / "audit-session-tax.py",
+    "session_consolidate": HUB / "_skill" / "engines" / "session-consolidate.py",
     "transcript_audit": HUB / "_skill" / "engines" / "f1s-transcript-audit.py",
     "git_smart": HUB / "_skill" / "engines" / "git_smart.py",
     "cred_sync": HUB / "_skill" / "engines" / "fleet-credential-sync.py",
@@ -1639,6 +1640,9 @@ ELEMENTS = [
     {"id": "EVO-index-from-disk-trader-20261122", "element": "ai_trader 2026-11-22 F1S proposal: memory index named 21 of 74 on-disk verdict folders (53 drifted); fix money_potential.py --find TERM (commit 909e09c85)", "verdict": "REFINE",
      "requires": None, "detail": "generalized into mtm-mto-first tool discipline: memory notes must not hand-copy lists of on-disk artifacts; a read-only query command scans disk and memory keeps the one command line; no red line touched",
      "check_text": ("skill_mto", "索引從磁碟推導，不靠手記")},
+    {"id": "EVO-dead-pid-ended-trader-20261122", "element": "ai_trader 2026-11-22 F1S proposal: order #190 leftover, archive second conversation 7bd0d339 (ai-trader-25, 6.1 d, status busy); answering chat has no archive tool", "verdict": "REFINE",
+     "requires": None, "detail": "measured: sessions/<pid>.json for 7bd0d339 has pid 63700 not alive and no hostSessionId, so it is an exited headless tick run, not a second chat, and has no archive_session target; the defect is session-consolidate reporting a dead pid's stale busy status; seat_sessions now marks it ended and classify gives gone:ended (test_dead_pid_busy_record_is_ended_not_a_second_chat); the archive request itself is a one-off and is not adopted; no red line touched",
+     "check_text": ("session_consolidate", "a dead pid's sessions/<pid>.json still says busy")},
 ]
 
 def sha(path: Path) -> str:

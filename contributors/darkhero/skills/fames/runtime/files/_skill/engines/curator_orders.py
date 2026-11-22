@@ -791,6 +791,11 @@ def last_typed_request(path) -> str:
 
 
 ROLLOVER_TTL_S = 30 * 60      # an armed hand-over nobody picked up within this is stale
+# 2026-11-22 (文章線 local_759ab229, ecfbe43f armed 03:32Z, delivered []): with Remote Control on, clear_session("self")
+# left the desktop conversation without a process until the operator typed 113 min later (SessionStart startup), past
+# the 30 min TTL, so the cleared chat came back empty. A start in the SAME desktop conversation (host id) is the cleared
+# chat however late it comes; a start in another conversation of the seat never takes it.
+ROLLOVER_SAME_HOST_TTL_S = 24 * 3600
 ROLLOVER_TASKS = 12
 
 
@@ -814,6 +819,8 @@ def transcript_state(path) -> tuple[str, list[str]]:
                     continue
                 if not isinstance(msg, dict):
                     continue
+                if '"isSidechain": true' in raw or '"isSidechain":true' in raw:
+                    continue                       # a subagent's model is not the conversation's (2026-11-22: sonnet)
                 if str(msg.get("model") or "").startswith("claude-"):
                     model = msg["model"]
                 for b in msg.get("content") or []:
@@ -890,7 +897,7 @@ def arm_rollover(seat: str, session_id: str, brief: str, model: str = "", now: f
     """Record the hand-over for the conversation that clears itself next (clear_session "self" keeps the session's
     model, folder and permissions, and unlike start_session it is not refused on a turn nobody typed)."""
     now = time.time() if now is None else now
-    doc = {"seat": seat, "session": session_id, "model": model, "brief": brief, "armed_at": now,
+    doc = {"seat": seat, "session": session_id, "host": _host_of(session_id), "model": model, "brief": brief, "armed_at": now,
            "armed_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)), "delivered": []}
     _write_rollover(rollover_path(seat), doc)
     return doc
@@ -898,6 +905,16 @@ def arm_rollover(seat: str, session_id: str, brief: str, model: str = "", now: f
 
 ROLLOVER_REWAKE_S = 10 * 60   # the cleared conversation's new process starts seconds after the clear; later = not it
 ROLLOVER_WAKE_AFTER_S = 45.0  # the old conversation's waiter steps in only when no cleared one took the hand-over by then
+
+
+def _host_of(session_id: str = "") -> str:
+    """Desktop conversation id (local_...) of this process (CLAUDE_CODE_HOST_SESSION_ID), else of `session_id` from
+    ~/.claude/sessions/<pid>.json; "" when unknown."""
+    env = os.environ.get("CLAUDE_CODE_HOST_SESSION_ID") or ""
+    if env.startswith("local_"):
+        return env
+    ids = _projects_host_ids(session_id) if session_id else []
+    return ids[0] if ids else ""
 
 
 def take_rollover(seat: str, via: str, session_id: str = "", now: float | None = None) -> dict:
@@ -914,7 +931,16 @@ def take_rollover(seat: str, via: str, session_id: str = "", now: float | None =
         with open(path, encoding="utf-8") as fh:
             doc = json.load(fh)
         armed_at = float(doc.get("armed_at") or 0) if isinstance(doc, dict) else 0.0
-        if not isinstance(doc, dict) or now - armed_at > ROLLOVER_TTL_S:
+        if not isinstance(doc, dict):
+            return {}
+        armed_host = str(doc.get("host") or "")
+        same_host = False
+        if armed_host and via in ("start", "rewake"):
+            here = _host_of(session_id)
+            if here and here != armed_host:
+                return {}                          # another conversation of this seat: never steal its hand-over
+            same_host = here == armed_host
+        if now - armed_at > (ROLLOVER_SAME_HOST_TTL_S if same_host else ROLLOVER_TTL_S):
             return {}
         if via == "wake" and (session_id != doc.get("session") or now - armed_at < ROLLOVER_WAKE_AFTER_S):
             return {}
@@ -927,7 +953,7 @@ def take_rollover(seat: str, via: str, session_id: str = "", now: float | None =
             return {}
         if via == "rewake":
             started = [d.get("session") for d in done if d.get("via") == "start"]
-            if now - armed_at > ROLLOVER_REWAKE_S or (started and session_id not in started):
+            if (now - armed_at > ROLLOVER_REWAKE_S and not same_host) or (started and session_id not in started):
                 return {}
         doc["delivered"] = done + [{"via": via, "session": session_id, "at": now}]
         _write_rollover(path, doc)
