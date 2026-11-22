@@ -1630,6 +1630,15 @@ ELEMENTS = [
      "requires": "Fames.F1SMath.pending_bounds", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
     {"id": "F1SMATH-p95", "element": "f1s_control._queue_window p95 = sorted[ceil(0.95 n) - 1] (nearest rank; the old int() index was one rank low at n=21)", "verdict": "FORMALIZED",
      "requires": "Fames.F1SMath.p95_nearest_rank", "detail": "F1SMath.lean (Mathlib) 2026-11-20; bound cell by cell to the engine by f1smath_conformance.py (evidence/f1smath-conformance.json)"},
+    {"id": "EVO-tone-entj-memory-career-20261122", "element": "ai_career 2026-11-22 F1S proposal (ledger acddba537dc3): reverse-learn memory outbound-tone-entj-facts (recruiter messages short, facts only, no flattery/self-deprecation/boasting)", "verdict": "INFO",
+     "requires": None, "detail": "duplicate of EVO-tone-facts-only-career-20261114: f1s-intake §4 tone bullet already names all three failures and brevity; the ENTJ label and recruiter scope are ai_career's own memory, nothing new to generalize",
+     "check_text": ("skill_intake", "語氣只講事實：不討好")},
+    {"id": "EVO-stale-ref-viewport-jci-20261122", "element": "jci_taipei 2026-11-22 F1S proposal (ledger 97c8b1ce61a3): repeated tool error x12 'ref is entirely outside the viewport (center (0, 0))' in the built-in browser", "verdict": "REFINE",
+     "requires": None, "detail": "transcripts show the same stale/unrendered ref retried on GAS function selector, Drive share, WordPress Quick Edit, Meet join; web-page-atlas step 4: never retry the same ref, re-read after opening its parent or act by coordinates, second miss becomes a !! quirk; no red line touched",
+     "check_text": ("skill_atlas", "Never retry the same ref")},
+    {"id": "EVO-index-from-disk-trader-20261122", "element": "ai_trader 2026-11-22 F1S proposal: memory index named 21 of 74 on-disk verdict folders (53 drifted); fix money_potential.py --find TERM (commit 909e09c85)", "verdict": "REFINE",
+     "requires": None, "detail": "generalized into mtm-mto-first tool discipline: memory notes must not hand-copy lists of on-disk artifacts; a read-only query command scans disk and memory keeps the one command line; no red line touched",
+     "check_text": ("skill_mto", "索引從磁碟推導，不靠手記")},
 ]
 
 def sha(path: Path) -> str:

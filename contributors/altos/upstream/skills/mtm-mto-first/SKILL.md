@@ -95,6 +95,8 @@ parent_skill: aex-agent-evolution
   確認新對話已收到後才 `archive_session` 自己；不在舊對話裡換模型續跑，也不把交接留給使用者按。
 - 無人看管的 xhigh／max 長跑，先寫明 token 或回合上限再開始。
 - 大型工具輸出（log、清單、截圖）留在檔案，只把路徑和摘要帶進 context。
+- 索引從磁碟推導，不靠手記：記憶筆記不得手抄「有哪些研究／結論／產物」清單（ai_trader 2026-11-22：記憶索引只列 74 個 verdict 資料夾中的 21 個，53 個漂移）；
+  寫一個唯讀的查詢指令直接掃磁碟（例 `money_potential.py --find TERM` 讀 runtime/research），記憶只留指令一行。
 
 ## MTO 四步（TR0，0 LLM token）
 
