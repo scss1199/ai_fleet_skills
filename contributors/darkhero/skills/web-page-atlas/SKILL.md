@@ -94,6 +94,12 @@ block holds durable account facts (account ids, what's missing) that explain qui
 2. Hit something new (a working URL, a gotcha, a dead end) → `add` it immediately,
    while it's fresh. Set `status` to `ok`, `broken-*`, or `blocked-*` honestly.
 3. Before trusting an old entry on a flaky site → `radar` to see what's stale.
+4. A click answers "ref is entirely outside the viewport (center (0, 0))" → the ref is
+   stale or its element is not rendered (hover-only row actions, a closed dropdown or
+   menu, a dialog that re-rendered). Never retry the same ref: re-run `read_page`/`find`
+   for a fresh ref after opening its parent (hover the row, open the menu), or act by
+   screenshot coordinates. Second miss on one control → record it as a `!!` quirk.
+   (jci_taipei 2026-11: the same ref retried 12x across GAS, Drive, WordPress, Meet.)
 
 ## Honest boundary
 
