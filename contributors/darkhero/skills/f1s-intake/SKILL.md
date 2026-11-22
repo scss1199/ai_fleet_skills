@@ -35,6 +35,7 @@ Prompt 說「要做什麼」，這個技能教「該怎麼接需求」。SSOT：
 
 - 不擴大、不縮小、不替換；不引入使用者沒說過的新概念或術語。
 - 使用者已決定的事不再問；已給過的值不再要。
+- 整機設定（電源姿態 sleep/nap/awake、背景佇列、tray、load grant）歸 ai_darkhero：其他 cwd 碰到不量測、不提案，一行 `inbox.py send ai_darkhero <seat>` 轉過去（operator 2026-11-11 ai_trader）。
 
 補完順序（ai_ut 2026-10-15，Lean `f1s_completion_iff`／`f1s_underdetermined` PROVED；實測 51 句：一半以「把」開頭、
 過半含「也」）：① 原話的對象與動詞；②「也／同樣／剩下的」＝本對話上一輪同類請求的完整流程與驗收，不重問；

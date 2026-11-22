@@ -168,6 +168,7 @@ version 端點回 `built_at`（ai_ziyaoastro 51ed1a1，/api/version built_at 202
 首頁 HTML 的 BUILD_ID（deploy-nextjs-cloudflare）；(2) 多輪重複，看 ok-rate 再看中位數，一次冷啟動不能定案，
 不穩或慢的目標加輪；遇 429/503 降並發；模型要用正式環境實際用的那把 key 和實際大小的 prompt（暗號藏在長 system prompt 裡），
 api-matrix／key 健康狀態或一字 ping 都不算；(3) 每次存一份 run 檔，與上一份比，超過門檻才標 regressed。
+共用資源上的速度（網路線路／CPE、CPU、GPU）旁邊有人在用就不是乾淨量測：數字旁寫同時間還有誰在用（別台主機、背景下載、rider），寧可用 operator 指定的測法，也不從忙碌時段的吞吐量推結論（ai_network 2026-08-22：darkhero 和 scar3 共吃 CPE 流量）。
 重用範本：`ai_ziyaoastro/scripts/llm_provider_probe.py`（模型）、`jci_taipei/jci_taipei_website/scripts/page_latency_probe.py`（頁面）。
 
 ## 「X 有效／X 預測 Y」要先登記再算（ai_trader c874f3bc7，F1S 2026-10-24 吸收）

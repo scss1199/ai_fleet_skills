@@ -1666,6 +1666,12 @@ ELEMENTS = [
     {"id": "EVO-yinyang-data-event-20261123", "element": "_skill/engines/f1s_yinyang.py tick --event NAME (alternative to --commit) for riders whose verifier reads runtime receipts that change with no commit", "verdict": "INFO",
      "detail": "ai_trader proposal: fx_grid/fx_kill receipts refresh nightly in trading_day_eod_chain.py (HubClock 18:18) with no commit, so the commit-only tick never judged them. The round id is event:<name>@<utc>; the existing unchanged-metric skip keeps a no-op refresh from being a round, so R1-R5 are untouched. Wiring the call into the chain is ai_trader's own edit; test_tick_on_a_data_event_judges_a_receipt_that_changed_without_a_commit",
      "check_text": ("yinyang_engine", "tg.add_argument(\"--event\")")},
+    {"id": "EVO-shared-resource-speed-20261123", "element": "_skill/fleet-skills/ztm-verify-before-done/SKILL.md latency-evidence section: a speed number on a shared resource (line/CPE, CPU, GPU) must name what else was using it", "verdict": "INFO",
+     "detail": "ai_network reverse-learn 8e8883423c3e (memory cpe-speed-readings-are-shared): darkhero and scar3 both draw on the CPE, so busy-hour throughput is no verdict; generalised from CPE to any shared resource, the dated band note (B8_only) stays in ai_network's memory",
+     "check_text": ("skill_verify", "共用資源上的速度")},
+    {"id": "EVO-box-settings-owner-20261123", "element": "_skill/fleet-skills/f1s-intake/SKILL.md section 1: box-wide settings (power posture, background queue, tray, load grant) belong to ai_darkhero; other cwds forward one inbox line", "verdict": "INFO",
+     "detail": "ai_trader reverse-learn f92b239bb8e3 (memory feedback-machine-control-belongs-to-darkhero-20261111, operator 2026-11-11): matches SEAT-SPEC mandate (b) and load_grant as sole load owner; no red line touched, a seat's own riders stay its own",
+     "check_text": ("skill_intake", "整機設定（電源姿態")},
 ]
 def sha(path: Path) -> str:
     try:
