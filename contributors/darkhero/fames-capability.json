@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-22T09:41:17.379071+00:00",
+  "observed_at": "2026-11-22T10:11:16.619072+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,10 +356,10 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
-        "agent": "ai_trader",
+        "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-11-22T17:40:10+08:00",
-        "receipt_sha256": "58cba105cece9ea79f904e60cf4ac3e7cbb728421558dbde7bc761c8dbf03258"
+        "observed_at": "2026-11-22T17:55:05+08:00",
+        "receipt_sha256": "6e8c9512ec0077bf93f28c0543fc73568a8697c88e117f90b94d873273fa6015"
       },
       {
         "agent": "ai_metadata",
@@ -378,6 +378,12 @@
         "surface": "claude",
         "observed_at": "2026-11-22T17:17:14+08:00",
         "receipt_sha256": "d1ac6886bd95d480afe77b11a8c37ad09475554ef44428ed5917781c9d9d00b0"
+      },
+      {
+        "agent": "ai_ut",
+        "surface": "claude",
+        "observed_at": "2026-11-22T17:54:06+08:00",
+        "receipt_sha256": "15f50ee36f2432de2048b03f4a049c70a9a08a26cbe95d42bfbddcaabe90bb2a"
       },
       {
         "agent": "ai_darkhero",
