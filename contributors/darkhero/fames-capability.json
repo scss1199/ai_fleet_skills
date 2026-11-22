@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "fdc7a9c4b11cfd02e2fb83be7434ec1fe7008586bad52ee29fc7be633bf0e526",
+  "package_sha": "1f025b27923ca4dac6b58114ad1aa5a524fb8c162596643710c13ec0d61fcf3f",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-22T13:14:08.347398+00:00",
+  "observed_at": "2026-11-22T13:59:03.832923+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,82 +353,9 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "OBSERVED_PARTIAL_POPULATION",
-    "native_events": [
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-11-22T17:55:05+08:00",
-        "receipt_sha256": "6e8c9512ec0077bf93f28c0543fc73568a8697c88e117f90b94d873273fa6015"
-      },
-      {
-        "agent": "ai_nuwa",
-        "surface": "claude",
-        "observed_at": "2026-11-22T19:59:11+08:00",
-        "receipt_sha256": "03bf38bd0aa1169eb971fcc9ae1abc456c0ff3486ab2a076476006314fe57d93"
-      },
-      {
-        "agent": "ai_metadata",
-        "surface": "claude",
-        "observed_at": "2026-11-22T17:00:01+08:00",
-        "receipt_sha256": "cd40cca650340524daf7c7abb405388e308b83ddde23188e4dcb23b5b6d3fbda"
-      },
-      {
-        "agent": "sdnext_a770",
-        "surface": "claude",
-        "observed_at": "2026-11-22T16:37:25+08:00",
-        "receipt_sha256": "0a55f4895004f9fcdc9ee4553325d2669dea422d62502b021a0a59c90fba16bf"
-      },
-      {
-        "agent": "ai_search",
-        "surface": "claude",
-        "observed_at": "2026-11-22T18:49:16+08:00",
-        "receipt_sha256": "ad82a5de713612395de52eb0d5f4f1ac360bc2edb24899625066063266e808e6"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-11-22T17:17:14+08:00",
-        "receipt_sha256": "c47aca0661099ffe57a84c31694be99242134622eb03627fc61a40ad828b52bd"
-      },
-      {
-        "agent": "ai_career",
-        "surface": "claude",
-        "observed_at": "2026-11-22T19:48:38+08:00",
-        "receipt_sha256": "7b582243575c545b87adb5dcd15d27116f815ff94150199dab65b7f1bab507a2"
-      },
-      {
-        "agent": "ai_ut",
-        "surface": "claude",
-        "observed_at": "2026-11-22T17:54:06+08:00",
-        "receipt_sha256": "15f50ee36f2432de2048b03f4a049c70a9a08a26cbe95d42bfbddcaabe90bb2a"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-11-22T16:42:38+08:00",
-        "receipt_sha256": "8111a06a7a5c11e0ed0457a0854bba31a421e24f86fce896515e296ec22e8a95"
-      },
-      {
-        "agent": "ai_busker",
-        "surface": "claude",
-        "observed_at": "2026-11-22T17:17:16+08:00",
-        "receipt_sha256": "4e342948c7a86192cad08bdbc6f065576bb3d730b9f056e41435f039ba1419ef"
-      },
-      {
-        "agent": "ai_eatery",
-        "surface": "claude",
-        "observed_at": "2026-11-22T18:18:43+08:00",
-        "receipt_sha256": "fe75b6b38510424944d31384473d8781de5e4ec7e72b3a00631426c295959f23"
-      },
-      {
-        "agent": "ai_demo",
-        "surface": "claude",
-        "observed_at": "2026-11-22T19:18:48+08:00",
-        "receipt_sha256": "2335ebf283dc95469a17bf68933f4cc4e2a3e1e254cbc9670e846c20488e09d9"
-      }
-    ],
-    "runtime_release_sha256": "e51e64557bce7b3081d3c4bf79f4548ae3ea7b921c7da4155fb895234ba9269b"
+    "native_state": "UNKNOWN",
+    "native_events": [],
+    "runtime_release_sha256": "e7353b59a11fe6e09126654e60677b334a3974c5ffd417a98b818f8fdc1be6c5"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
