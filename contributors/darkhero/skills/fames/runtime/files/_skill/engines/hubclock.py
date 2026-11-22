@@ -252,6 +252,20 @@ def _job_priority(job):
         return 0
 
 
+def dispatch_order(candidates, deferred, is_protected):
+    """The capacity race order: protected riders first, then aging (capacity races lost), then priority.
+
+    Proved in _lean/hubclock/HubClockKernel.lean (`dispatch`: protected first, then the rest, cut to the cap) and
+    bound by _lean/fames/hubclock_dispatch_conformance.py. Before 2026-11-22 aging was the first key, so a
+    non-protected rider that had lost one race displaced a protected rider that was due on its own boundary.
+    The sort is stable, so equal keys keep the registration order."""
+    return sorted(
+        candidates,
+        key=lambda j: (is_protected(j) is True, deferred.get(j.get("id"), 0), _job_priority(j)),
+        reverse=True,
+    )
+
+
 def base_tick(jobs):
     """1s only if a sub-minute interval job exists; else 60s. Daily/period jobs don't force a fast tick."""
     for j in jobs:
@@ -1341,13 +1355,9 @@ class HubClock:
                 continue  # refused at this boundary already: only the minute tick retries (one log line a minute)
             candidates.append(job)
 
-        # Aging is the primary key: after losing one capacity race even a
-        # legacy priority-0 rider runs before a freshly-due high-priority one.
-        # Priority remains useful for the first race and equal-age peers.
-        candidates.sort(
-            key=lambda j: (self.deferred.get(j.get("id"), 0), _job_priority(j)),
-            reverse=True,
-        )
+        # Protected riders first (HubClockKernel.lean `dispatch`); then aging: after losing one capacity race
+        # even a legacy priority-0 rider runs before a freshly-due high-priority one; priority breaks the rest.
+        candidates = dispatch_order(candidates, self.deferred, lambda j: self._protected(j) is True)
         capacity = max(0, max_concurrent() - len(self.running))
         queued = set()
         for job in candidates:
