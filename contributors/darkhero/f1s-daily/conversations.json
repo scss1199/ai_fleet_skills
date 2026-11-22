@@ -2,40 +2,31 @@
   "conversations": {
     "schema": 1,
     "host": "darkhero",
-    "generated": "2026-11-21T23:53:33+00:00",
+    "generated": "2026-11-22T00:07:02+00:00",
     "counts": {
-      "total": 1924,
+      "total": 1926,
       "desktop": 503,
-      "dispatched": 1421,
-      "active_48h": 193
+      "dispatched": 1423,
+      "active_48h": 195
     },
     "rows": [
-      {
-        "id": "5bf144a2",
-        "title": "",
-        "seat": "ai_darkhero",
-        "kind": "dispatched",
-        "first": "2026-11-21T23:41:23+00:00",
-        "last": "2026-11-21T23:45:25+00:00",
-        "state": "running"
-      },
       {
         "id": "599be194",
         "title": "",
         "seat": "ai_theater",
         "kind": "desktop",
         "first": "2026-11-21T17:37:28+00:00",
-        "last": "2026-11-21T23:36:03+00:00",
+        "last": "2026-11-22T00:06:09+00:00",
         "state": "idle"
       },
       {
-        "id": "f3d81deb",
+        "id": "9cf06b98",
         "title": "",
-        "seat": "ai_darkhero",
+        "seat": "ai_trader",
         "kind": "desktop",
-        "first": "2026-11-21T18:48:18+00:00",
-        "last": "2026-11-21T22:46:30+00:00",
-        "state": "idle"
+        "first": "2026-11-21T23:57:13+00:00",
+        "last": "2026-11-22T00:05:31+00:00",
+        "state": "running"
       },
       {
         "id": "7516a67d",
@@ -43,7 +34,34 @@
         "seat": "ai_darkhero",
         "kind": "desktop",
         "first": "2026-11-21T17:35:01+00:00",
-        "last": "2026-11-21T22:46:24+00:00",
+        "last": "2026-11-22T00:05:27+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "8d6ee266",
+        "title": "",
+        "seat": "jci_taipei",
+        "kind": "dispatched",
+        "first": "2026-11-22T00:04:42+00:00",
+        "last": "2026-11-22T00:04:52+00:00",
+        "state": "running"
+      },
+      {
+        "id": "f3d81deb",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T18:48:18+00:00",
+        "last": "2026-11-21T23:57:35+00:00",
+        "state": "running"
+      },
+      {
+        "id": "5bf144a2",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-21T23:41:23+00:00",
+        "last": "2026-11-21T23:45:25+00:00",
         "state": "idle"
       },
       {
@@ -530,24 +548,6 @@
         "kind": "dispatched",
         "first": "2026-11-21T11:28:41+00:00",
         "last": "2026-11-21T11:28:53+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "fa714393",
-        "title": "",
-        "seat": "ai_career",
-        "kind": "dispatched",
-        "first": "2026-11-21T11:28:26+00:00",
-        "last": "2026-11-21T11:28:38+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "17c561d3",
-        "title": "",
-        "seat": "ai_career",
-        "kind": "dispatched",
-        "first": "2026-11-21T11:28:11+00:00",
-        "last": "2026-11-21T11:28:24+00:00",
         "state": "idle"
       }
     ]
