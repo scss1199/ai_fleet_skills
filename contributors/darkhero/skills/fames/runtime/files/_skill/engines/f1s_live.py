@@ -815,8 +815,11 @@ def claim_review(session_id: str, now: float | None = None, sleep=time.sleep) ->
     now = now if now is not None else _now()
     key = hashlib.sha256(json.dumps(queue, ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
     held = _read(REVIEW_CLAIM)
-    if held.get("key") == key and now - float(held.get("at") or 0) < REVIEW_LEASE_S:
-        return held.get("session") == session_id
+    if held.get("key") == key and (held.get("session") == session_id or now - float(held.get("at") or 0) < REVIEW_LEASE_S):
+        # 2026-11-22: the same unchanged queue re-woke the curator after every lease expiry and every order-file touch
+        # (claim, deliver, close): 16 of 28 curator live wakes in a day ran no tool. A queue this conversation already
+        # took is not woken for again; it rides the next prompt. A new answer changes the key and wakes once.
+        return False
     try:
         _write(REVIEW_CLAIM, {"key": key, "session": session_id, "at": now, "iso": _iso(now), "queue": queue})
         sleep(REVIEW_CONFIRM_S)

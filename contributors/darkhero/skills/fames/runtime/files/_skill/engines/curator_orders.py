@@ -1206,9 +1206,11 @@ def _brief(orders: list[dict]) -> list[dict]:
 ARTICLE_LANE_TITLE = "F1S｜文章線"
 
 
-def article_lane(sessions_dir=None, alive=None) -> str:
+def article_lane(sessions_dir=None, alive=None, app_dir=None) -> str:
     """Session id of the curator's live standing article chat, "" when none (operator 2026-11-14 main-chat-division;
     2026-11-20 「是不是少開了一個子對話來讀對應的文章跟做筆記」: it had been archived and nothing reopened it)."""
+    if sessions_dir and app_dir is None:
+        app_dir = ""                                       # a caller-given store (tests) is not mixed with the real app's
     sessions_dir = sessions_dir or os.path.join(os.path.expanduser("~"), ".claude", "sessions")
     if alive is None:
         try:
@@ -1219,7 +1221,7 @@ def article_lane(sessions_dir=None, alive=None) -> str:
     try:
         names = os.listdir(sessions_dir)
     except OSError:
-        return ""
+        names = []
     for name in names:
         try:
             with open(os.path.join(sessions_dir, name), encoding="utf-8") as fh:
@@ -1228,7 +1230,30 @@ def article_lane(sessions_dir=None, alive=None) -> str:
             continue
         if "文章線" in str(o.get("name") or "") and o.get("pid") and alive(int(o["pid"])):
             return str(o.get("hostSessionId") or o.get("sessionId") or "")
-    return ""
+    return _app_article_lane(app_dir)
+
+
+def _app_article_lane(app_dir=None) -> str:
+    """An idle desktop lane whose CLI process exited is still the lane: the app restarts it on the next send_message.
+    2026-11-22: a pid-only check called it MISSING in 16 curator wakes in a day, and each one flipped the curator's
+    contract. Only an unarchived app record titled 文章線 counts."""
+    if app_dir == "":
+        return ""
+    app_dir = app_dir or os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), "Claude", "claude-code-sessions")
+    import glob as _glob
+    best = ("", "")
+    for p in _glob.glob(os.path.join(app_dir, "*", "*", "local_*.json")):
+        try:
+            with open(p, encoding="utf-8") as fh:
+                o = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        if not isinstance(o, dict) or "文章線" not in str(o.get("title") or "") or o.get("isArchived"):
+            continue
+        stamp = str(o.get("lastActivityAt") or "")
+        if stamp >= best[1]:
+            best = (os.path.splitext(os.path.basename(p))[0], stamp)
+    return best[0]
 
 
 def article_lane_line(lane: str | None = None) -> str:
