@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-22T03:21:07.004152+00:00",
+  "observed_at": "2026-11-22T04:11:31.191599+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,8 +353,27 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "UNKNOWN",
-    "native_events": [],
+    "native_state": "OBSERVED_PARTIAL_POPULATION",
+    "native_events": [
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-22T11:29:30+08:00",
+        "receipt_sha256": "debcd78ff14abfa79b63e8d3011f4d69d7a1b88251dbb185dd5a263d4a523dab"
+      },
+      {
+        "agent": "ai_trader",
+        "surface": "claude",
+        "observed_at": "2026-11-22T11:50:28+08:00",
+        "receipt_sha256": "b6f329892046404771dd5ec49e8100fd50413c5020ff7ccb87538244e317442b"
+      },
+      {
+        "agent": "ai_theater",
+        "surface": "claude",
+        "observed_at": "2026-11-22T12:05:10+08:00",
+        "receipt_sha256": "0ff75f6da4ce35efe24d63d28f5cf64231a6c741e70204b18b92a1ff149a32bb"
+      }
+    ],
     "runtime_release_sha256": "ee9eabd1f01872a9342303fc60ba8694e02cd2fc5394e333a78ee0e0c8c80173"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
