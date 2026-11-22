@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261122T083308Z-3118b7f4",
+  "target_host": "altos",
+  "kind": "prompt",
+  "seat": "ai_altos",
+  "prompt": "Operator order relayed by ai_darkhero (2026-11-22): altos is verified CURRENT on FAMES package 5a683961b156; shut altos down now.\nDo exactly this and nothing else:\n1. Run: shutdown /s /t 240 /c \"ai_darkhero: operator ordered shutdown\"\n2. Confirm the command returned exit code 0 and reply with one line: SHUTDOWN_SCHEDULED rc=<code>.\nDo not cancel it, do not change any other setting, do not close or kill other programs yourself.\n",
+  "from": "ai_darkhero",
+  "created_at": "2026-11-22T08:33:08+00:00",
+  "expires_at": "2026-11-22T10:33:08+00:00"
+}
