@@ -37,6 +37,7 @@ Already wired in `ai_demo/scripts/render-brief.mjs` (video-brief/3) and `make-vi
 - Resolution passed to `buildCaptionAss` MUST equal the encoded frame size, or libass rescales again. Checked by `ai_demo/scripts/check-captions.py` (PlayRes vs stream resolution).
 - Card chapters put title/subtitle at screen centre; captions stay in the bottom band — never move either. `check-captions.py` fails Alignment != 2 (bottom-centre).
 - Verify with a frame grab (`ffmpeg -ss <t> -i out.mp4 -frames:v 1 f.png`) and look at it; ffprobe cannot see layout.
+- Captions must never cover text already in the frame (logo wording, signs, UI labels): before reporting a render, grab one frame per shot and look for caption/on-screen-text overlap; move the caption out of that region or swap the full-bleed image (reverse-learned from ai_demo captions-avoid-onscreen-text, 2026-11-21).
 
 ## Evidence
 `ai_darkhero/evidence/ai-demo-pivot-20261011/` (render self-test frames 2026-10-11).

@@ -81,6 +81,9 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 | MyMemory 翻譯 | INDEX.md | 免 key 200、1.5 秒，日→繁中「明天會下雨。」 | 未接（只做詞句；`translate` 已有 nvidia） |
 | FreeLLMAPI、「2000+ 免費 API」清單 | IG reel DfKOWvRA_N8、DfgbKnslNAs | 文章沒給網址；後者是資料 API 清單、不是 LLM | 不路由（無端點可測） |
 | Perplexity、TypeSafe Jev、Claude／ChatGPT 方案 API 額度 | 多篇 | 付費或沒有免費層 | 永不路由 |
+| Tavily | IG／Threads 多篇 | 無 key 打 `api.tavily.com/search` 回 401（2026-11-20）；金鑰表與 token-onboard 都沒有它；免費層 1000 次/月要 operator 開帳號 | 不路由（搜尋已有 jina-DDG／Bing 免 key，0.6 秒 20/20 相關，見上表） |
+| AssemblyAI | IG／Threads 多篇 | 無 key 打 `api.assemblyai.com/v2/transcript` 回 401（2026-11-20）；金鑰表沒有；音檔會外送 | 不路由（本機 faster-whisper 不外送，Deepgram 已 ok:4 為雲端備援） |
+| Codex | 多篇 | 本機 2026-08-13 起隔離（_delete/2026-08-13-codex-purge），不可呼叫 | 拒絕（隔離，永不路由） |
 | Gemini 新模型（AI Studio 免費層） | 2026-11-14 Hydrogen 文章（「free tier in AI Studio」）、Gemini Decision 1 文章 | 同 3 把 gemini key，4 任務：gemini-3.5-flash-lite 4/4 0.9–1.5 秒、gemini-3.8-flash 3/4 4.5–6.0 秒（1 次 503）、gemini-4-hydrogen 3/4 19–63 秒（1 次 503）、gemini-decision-1 免費層 404 | 已接：`Pool.GEMINI_FREE`，金鑰表模型 429/503/404 時同 key 換下一個模型（強制 404 實測 0.9 秒回答）；hydrogen 太慢不列 |
 | OpenRouter `openrouter/free` 路由器 | 2026-10-18 OpenRouter 免費模型文章 | 清單有列（共 15 個 free id）；4 任務全 429「free-models-per-day」 | 不另接：與 `:free` 名單共用同一個每日額度，不增加容量 |
 | DeepSeek API | 多篇（V4 免費開源） | `/user/balance`：granted 0.00、topped_up −0.22 USD、is_available=False；開源權重免費但 API 是儲值計費 | 不路由（付費） |
