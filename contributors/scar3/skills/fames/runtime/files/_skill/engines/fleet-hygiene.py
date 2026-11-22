@@ -1134,8 +1134,28 @@ def publish(hub: Path, host: str, doc: dict) -> dict:
     try:
         repo = fjd.repo_root(hub)
         slug = contributor_slug(hub, host)
-        return fjd._publish(repo, hub, {f"contributors/{slug}/hygiene.json": doc}, f"chore(hygiene/{slug}): fleet hygiene report")
+        pub = fjd._publish(repo, hub, {f"contributors/{slug}/hygiene.json": doc}, f"chore(hygiene/{slug}): fleet hygiene report")
     except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"{type(exc).__name__}: {exc}"[:200]}
+    pub["conversations"] = conversations_fallback(hub)
+    return pub
+
+
+def conversations_fallback(hub: Path) -> dict:
+    """A follower without the f1s-daily rider still publishes its conversation index (operator 2026-11-21: every
+    host's conversations on the carrier) on this existing converge path; skipped when f1s_daily did it within 12 h."""
+    local = hub / "_registry" / "f1s-daily" / "conversations.json"
+    try:
+        if local.is_file() and _now() - local.stat().st_mtime < 12 * 3600:
+            return {"skipped": "fresh"}
+        daily = _module("f1s_daily.py")
+        if daily is None:
+            return {"ok": False, "error": "f1s_daily.py missing or broken on this host"}
+        state = daily.load_state()
+        res = daily.publish_conversations(state, _now())
+        daily._write(daily.STATE, state)
+        return res
+    except Exception as exc:  # noqa: BLE001 - never fails the hygiene report
         return {"ok": False, "error": f"{type(exc).__name__}: {exc}"[:200]}
 
 

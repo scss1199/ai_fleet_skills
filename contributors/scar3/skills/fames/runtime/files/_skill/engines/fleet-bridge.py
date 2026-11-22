@@ -105,7 +105,23 @@ def local_seats(hub: Path = HUB) -> list[str]:
     return out
 
 
+def _curator_hostnames(hub: Path = HUB) -> set[str]:
+    """Hostnames of the upstream_curator node in _registry/fleet-skill-github.json (empty = not declared)."""
+    try:
+        proto = json.loads((hub / "_registry" / "fleet-skill-github.json").read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return set()
+    return {str(h).strip().lower() for n in (proto.get("nodes") or {}).values()
+            if isinstance(n, dict) and n.get("role") == "upstream_curator" for h in (n.get("hostnames") or [])}
+
+
 def is_authority(hub: Path = HUB) -> bool:
+    """The curator host is the one the fleet registry names. altos keeps a chartered ai_darkhero folder, so the
+    folder test alone made altos an authority: it never exported f1s-learn.json and imported other hosts' mail
+    (found 2026-11-21). The folder test stays only as the fallback when no hostname is declared."""
+    names = _curator_hostnames(hub)
+    if names:
+        return this_host() in names
     return CURATOR in local_seats(hub)
 
 

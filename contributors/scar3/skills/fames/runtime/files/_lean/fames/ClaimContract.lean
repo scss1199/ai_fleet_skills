@@ -1,3 +1,4 @@
+-- F1S-BINDING: bound _lean/fames/claim_conformance.py claude-proof-hook.admissible
 /-!
 ClaimContract.lean — the admission rule for the claim classes a reply may assert at the end of
 a turn (operator 2026-10-13: 「f1s 藉由 LEAN / JEV 等架構直接杜絕任何可能的說謊與假裝」;

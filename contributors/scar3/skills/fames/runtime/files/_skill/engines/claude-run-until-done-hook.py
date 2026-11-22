@@ -40,6 +40,7 @@ STATE_DIR = HUB / "_registry" / "run-until-done"
 CLAUDE_PROJECTS_ROOT = Path.home() / ".claude" / "projects"
 TAIL_BYTES = 4 * 1024 * 1024      # how much of the transcript tail to scan
 TAIL_CHARS = 1800                 # judge only the closing part of the reply
+STANDING_REASONS = ("pinned_unshipped:", "curator_orders:", "unattended_capture:")  # same state every turn until acted on
 MAX_ROWS = 400                    # rows walked backwards before giving up
 
 DEFAULTS = {
@@ -115,7 +116,9 @@ REASON_ORDERS = (
     "run-until-done / F1S governs this cwd (T1 f1s-governs): the curator's correction order(s) {orders} for seat "
     "{seat} are still open. They outrank this seat's own plan; red lines and the operator's own words here stay "
     "above them. Before ending the turn, do the order and answer it: {command} <n> --evidence <path>, or "
-    "--cannot \"<reason>\" when a red line or the operator's instruction here forbids it. (push {n}/{cap})"
+    "--cannot \"<reason>\" when a red line or the operator's instruction here forbids it, or --cannot \"not yet: "
+    "<missing prerequisite>, <date>\" when it cannot be done yet (a claim alone keeps it open and pushes every Stop; "
+    "the curator reopens it when the prerequisite exists). (push {n}/{cap})"
 )
 REASON_CAPTURE = (
     "run-until-done / live capture (operator 2026-10-24: a Google Meet caption scraper in a background tab stalled at "
@@ -360,6 +363,25 @@ def closing_text(path: Path) -> tuple[str, str | None]:
     return "\n".join(parts).strip(), turn_uuid
 
 
+def acted_since_feedback(path: Path) -> bool:
+    """True when the model ran a tool after the last Stop-hook feedback row (or no such row is in the tail)."""
+    walked = 0
+    for row in _tail_rows(path):
+        walked += 1
+        if walked > MAX_ROWS:
+            return True
+        kind = row.get("type")
+        if kind == "assistant" and any(isinstance(b, dict) and b.get("type") == "tool_use" for b in _blocks(row)):
+            return True
+        if kind == "user":
+            content = (row.get("message") or {}).get("content")
+            text = content if isinstance(content, str) else " ".join(
+                str(b.get("text") or "") for b in content or [] if isinstance(b, dict) and b.get("type") == "text")
+            if "Stop hook" in text[:900]:
+                return False
+    return True
+
+
 # ---------------------------------------------------------------- state / log
 
 
@@ -486,8 +508,25 @@ def _decide(doc: dict, cfg: dict) -> dict | None:
         return None
 
     state = _load_state(session_id)
+    ignored = list(state.get("ignored") or [])
+    standing = str(matched).startswith(STANDING_REASONS)
+    if (doc.get("stop_hook_active") and str(state.get("last_matched") or "").startswith(STANDING_REASONS)
+            and not acted_since_feedback(path)):
+        # The model read this block and answered with text alone: the same block again only re-reads the context
+        # (2026-11-22: 24 of 29 pinned-file blocks in the curator chat in two days drew no tool call). Not repeated in
+        # this session; a different reason (another file, another order) still blocks.
+        if state["last_matched"] not in ignored:
+            ignored.append(state["last_matched"])
+    if standing and matched in ignored:
+        entry.update({"verdict": "allow", "matched": f"ignored_repeat:{matched}"})
+        state["ignored"] = ignored[-20:]
+        _save_state(session_id, state)
+        _log(entry)
+        return None
     if state.get("turn") != turn_uuid:
         state = {"turn": turn_uuid, "blocks": 0, "session_blocks": int(state.get("session_blocks") or 0)}
+    state["ignored"] = ignored[-20:]
+    state["last_matched"] = matched
     per_turn = int(cfg.get("max_blocks_per_turn") or 0)
     per_session = int(cfg.get("max_blocks_per_session") or 0)
     if state.get("blocks", 0) >= per_turn or state.get("session_blocks", 0) >= per_session:

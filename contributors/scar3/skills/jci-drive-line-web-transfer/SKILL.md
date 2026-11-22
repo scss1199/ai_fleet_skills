@@ -63,6 +63,9 @@ clasp 權杖做不到的寫入 → 改走 GAS `drive_*`；兩者都不行才是�
 - 會議夾：`manifest.json` 與會議 JSON 的 `agenda_url` 已更新。
 - 網站：GET 正式頁（`https://jci-taipei-website.vercel.app/...`）看到新內容；沒讀回就寫 UNKNOWN。
 - 收稿／名冊類 sheet：只寫內容欄，公式欄（ARRAYFORMULA 的狀態、字數、進度）不蓋；operator 給了本機檔就上傳 Drive、開知道連結者可檢視、把連結填進去，不回報「缺連結」；稿件掛哪一列由 operator 確認，不自行認定（2026-11-09 元月刊收稿表）；寫完用 gviz 讀回。
+- 外人看得到嗎（網站後台交給外部廠商、搬到別的網域前，operator 2026-11 問「Nita 公司的人可以翻到我在 drive 上的名冊?」）：
+  對含個資的檔（會員名冊 sheet、簽到表）用 clasp 權杖讀 Drive API `files/<id>/permissions?fields=permissions(type,role,emailAddress,domain)`，
+  列出 `anyone`／外部網域／個人帳號各有誰，再加上檔案所在共用雲端硬碟的成員，回報實測名單；改分享權限是 operator 的決定，只列不改。
 
 ## 4 找不到檔案／登入／授權
 

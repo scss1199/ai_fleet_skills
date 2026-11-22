@@ -483,7 +483,10 @@ class Pool:
         "translate":["gemini",NV_ULTRA,NV_FAST,"cf_ai","openrouter","omniroute:ddgw/gpt-5.4-mini","omniroute:cfp/zai-org/glm-5.2",
                      "omniroute:auto/reasoning"],
     }
-    def _gateway(self,model,messages,max_tokens=1500,timeout=120):
+    def _gateway(self,model,messages,max_tokens=1500,timeout=120,task=None):
+        """OmniRoute local gateway; a direct call writes one pool-tiers row (record only), nested calls none."""
+        return self._recorded(task or "via","omniroute",lambda: self._gateway_call(model,messages,max_tokens,timeout))
+    def _gateway_call(self,model,messages,max_tokens=1500,timeout=120):
         """OmniRoute local gateway (127.0.0.1:20128, Anthropic format); token from the vault, never printed."""
         try:
             import _secrets
@@ -642,8 +645,24 @@ class Pool:
             return out
         with ThreadPoolExecutor(max_workers=max(1,min(workers,len(jobs)))) as ex:
             return list(ex.map(one,enumerate(jobs)))
-    def chat_via(self,provider,messages,jsonmode=False,max_tokens=1500,timeout=None):
-        """Call one provider with persistent failure isolation and attribution."""
+    def chat_via(self,provider,messages,jsonmode=False,max_tokens=1500,timeout=None,task=None):
+        """Call one provider with persistent failure isolation and attribution.
+        2026-11-19: a direct call writes one pool-tiers row (record only, never gates); inside chat/chat_for it adds none."""
+        return self._recorded(task or "via",provider,lambda: self._chat_via(provider,messages,jsonmode,max_tokens,timeout))
+    def _recorded(self,task,provider,call):
+        if getattr(_TIER_LOCAL,"depth",0): return call()
+        _TIER_LOCAL.depth=1
+        try:
+            out=call()
+        finally:
+            _TIER_LOCAL.depth=0
+        try:
+            if not str(out).startswith("__ERR__"): self.last_served=provider
+            self._tier("note",task,out)
+        except Exception:
+            pass
+        return out
+    def _chat_via(self,provider,messages,jsonmode=False,max_tokens=1500,timeout=None):
         p=(provider or "").lower()
         if p!="ollama" and self._creds(p) is False:
             # 2026-10-27 audit: cerebras/cf_ai/hf/... had no status=ok key, yet every fallback chain called them and

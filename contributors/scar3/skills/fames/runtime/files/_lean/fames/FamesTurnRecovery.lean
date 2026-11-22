@@ -1,3 +1,4 @@
+-- F1S-BINDING: bound _lean/fames/turn_recovery_contract.py turn_recovery_contract.recovery_allowed
 /-!
 Turn-recovery admission only. These facts must be recomputed from original native
 evidence by the caller. This model neither authenticates artifacts nor proves
