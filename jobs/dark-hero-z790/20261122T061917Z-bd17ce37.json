@@ -1,0 +1,11 @@
+{
+  "schema": "fleet-job/1",
+  "id": "20261122T061917Z-bd17ce37",
+  "target_host": "dark-hero-z790",
+  "kind": "prompt",
+  "seat": "jci_taipei",
+  "prompt": "在這裡執行此任務：把 11/21 Canva 實戰課補到的 email 回填到報名主表。（operator 2026-11-22 從 altos 指派給 darkhero 的 jci_taipei；回填已由 operator 核准，不用再問。）\n\n兩份 Google 試算表（operator 帳號可讀寫）：\n- 主表（要寫入）：第七十屆【Canva 實戰課】工作坊 報名表 (回覆)，file id 1nUcO_l9PgLUGrm--gESdkUFuU6_74q-jZR0tQpJnWeA，分頁「表單回覆 1」(gid 2144265107)。欄 B=姓名、M=「11/21有到」、N=「Email」。\n- 來源（唯讀）：11/21 Canva 實戰課｜Email 登記 (回覆)，file id 1850NErMcA9fdx9ObmIKpzetSlkKo50Yd0D813ycL3gE，分頁「表單回覆 1」(gid 738772833)。欄 B=電子郵件地址、C=姓名。\n\n要做：\n1. 先讀回兩表現況。\n2. 對來源表每一列，用姓名對主表 B 欄（來源姓名可能帶括號註記如「（首府）」，比對時去掉括號）。主表該列 N 欄是空的才填入來源 email；N 欄已有值就不動（若值不同，只在回報列出，不覆寫）。\n   2026-11-21 在 altos 讀到的狀態：來源 9 筆，其中 4 筆在主表 N 欄是空的需要回填，其餘 5 筆主表已有相同 email。以你讀回的現況為準。\n3. 寫完再讀回主表驗證。\n\n不要做：\n- 不改 N 欄以外的任何儲存格；不動「11/21有到」「LINE群組內」等勾選欄；不新增或刪除列。\n- 主表最下方幾列的 N 欄放的是「姓名」不是 email（手動補的出席者），維持原樣。\n- 不寄信、不聯絡任何人；不把姓名或 email 寫進任何 repo、job result 或 log（result 只回報筆數與儲存格位址）。\n\n驗收：\n- 回報填了哪幾個儲存格（例如 N6），以及讀回驗證的結果。\n- 回報 M 欄有打勾但 N 欄仍無 email 的列數與列號（2026-11-21 讀到是 6 列：2 列有報名資料、4 列是最下方只有名字的手動列）。\n- 另列出但不處理：來源表有填 email、主表 M 欄卻沒打勾的列號（2026-11-21 讀到 1 列），留給 operator 判斷是否漏勾。\n- 做不到就回「不能做＋原因」（例如沒有 Sheets 寫入權限），不要猜、不要假裝完成。\n",
+  "from": "scratch-altos",
+  "created_at": "2026-11-22T06:19:17+00:00",
+  "expires_at": "2026-11-24T06:19:17+00:00"
+}
