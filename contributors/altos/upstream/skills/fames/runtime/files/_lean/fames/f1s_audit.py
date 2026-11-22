@@ -77,6 +77,7 @@ TEXTS = {
     "websearch_engine": HUB / "_skill" / "engines" / "websearch.py",
     "skill_preflight": HUB / "_skill" / "fleet-skills" / "token-preflight" / "SKILL.md",
     "session_tax": HUB / "_skill" / "engines" / "audit-session-tax.py",
+    "session_consolidate": HUB / "_skill" / "engines" / "session-consolidate.py",
     "transcript_audit": HUB / "_skill" / "engines" / "f1s-transcript-audit.py",
     "git_smart": HUB / "_skill" / "engines" / "git_smart.py",
     "cred_sync": HUB / "_skill" / "engines" / "fleet-credential-sync.py",
@@ -1639,6 +1640,15 @@ ELEMENTS = [
     {"id": "EVO-index-from-disk-trader-20261122", "element": "ai_trader 2026-11-22 F1S proposal: memory index named 21 of 74 on-disk verdict folders (53 drifted); fix money_potential.py --find TERM (commit 909e09c85)", "verdict": "REFINE",
      "requires": None, "detail": "generalized into mtm-mto-first tool discipline: memory notes must not hand-copy lists of on-disk artifacts; a read-only query command scans disk and memory keeps the one command line; no red line touched",
      "check_text": ("skill_mto", "索引從磁碟推導，不靠手記")},
+    {"id": "EVO-dead-pid-ended-trader-20261122", "element": "ai_trader 2026-11-22 F1S proposal: order #190 leftover, archive second conversation 7bd0d339 (ai-trader-25, 6.1 d, status busy); answering chat has no archive tool", "verdict": "REFINE",
+     "requires": None, "detail": "measured: sessions/<pid>.json for 7bd0d339 has pid 63700 not alive and no hostSessionId, so it is an exited headless tick run, not a second chat, and has no archive_session target; the defect is session-consolidate reporting a dead pid's stale busy status; seat_sessions now marks it ended and classify gives gone:ended (test_dead_pid_busy_record_is_ended_not_a_second_chat); the archive request itself is a one-off and is not adopted; no red line touched",
+     "check_text": ("session_consolidate", "a dead pid's sessions/<pid>.json still says busy")},
+    {"id": "EVO-archive-step-is-app-tool-trader-20261122", "element": "ai_trader 2026-11-22 F1S proposal (same #190 leftover): session-consolidate.py has no park/archive subcommand, the answering chat has no archive tool", "verdict": "REFINE",
+     "requires": None, "detail": "the hot_directive 'absorb→park→archive' read as three session-consolidate subcommands; it now names goal_compact.py park and the archive_session app tool, says gone:ended needs no archive, and routes chats without the tool to ai_darkhero by inbox; 7bd0d339 measured gone:ended in _registry/session-consolidate/ai_trader.json, so no archive was done; no red line touched",
+     "check_text": ("hot_directive", "archive_session（app 工具，不是子命令")},
+    {"id": "EVO-rollover-pending-per-host-darkhero-20261122", "element": "ai_darkhero 2026-11-22 F1S proposal: 文章線 rollover hand-over never delivered (delivered=[], startup past 30 min TTL); one file per seat so two chats overwrite; brief model said sonnet", "verdict": "REFINE",
+     "requires": None, "detail": "TTL and model parts were already fixed in b495a9ec (ROLLOVER_SAME_HOST_TTL_S, sidechain rows skipped); the remaining overwrite: arm_rollover now carries other desktop conversations' fresh undelivered hand-overs in 'pending' and take_rollover serves a start/rewake from its own host's entry (test_a_second_chat_rolling_over_keeps_the_first_chats_hand_over); no red line touched",
+     "check_text": ("curator_orders", "Undelivered fresh hand-overs of OTHER desktop conversations ride along")},
 ]
 
 def sha(path: Path) -> str:
