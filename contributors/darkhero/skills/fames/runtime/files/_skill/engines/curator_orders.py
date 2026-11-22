@@ -897,8 +897,28 @@ def arm_rollover(seat: str, session_id: str, brief: str, model: str = "", now: f
     """Record the hand-over for the conversation that clears itself next (clear_session "self" keeps the session's
     model, folder and permissions, and unlike start_session it is not refused on a turn nobody typed)."""
     now = time.time() if now is None else now
-    doc = {"seat": seat, "session": session_id, "host": _host_of(session_id), "model": model, "brief": brief, "armed_at": now,
+    host = _host_of(session_id)
+    doc = {"seat": seat, "session": session_id, "host": host, "model": model, "brief": brief, "armed_at": now,
            "armed_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)), "delivered": []}
+    # 2026-11-22: one file per seat, so a second chat of the seat rolling over erased the first chat's hand-over
+    # before its cleared conversation started. Undelivered fresh hand-overs of OTHER desktop conversations ride along
+    # in "pending" until their own conversation takes them (take_rollover) or they age out.
+    try:
+        with open(rollover_path(seat), encoding="utf-8") as fh:
+            prior = json.load(fh)
+    except (OSError, ValueError):
+        prior = {}
+    keep = []
+    for old in ([prior] + list(prior.get("pending") or [])) if isinstance(prior, dict) else []:
+        if not isinstance(old, dict) or not old.get("host") or old.get("host") == host:
+            continue
+        if now - float(old.get("armed_at") or 0) > ROLLOVER_SAME_HOST_TTL_S:
+            continue
+        if any(isinstance(d, dict) and d.get("via") == "start" for d in old.get("delivered") or []):
+            continue
+        keep.append({k: v for k, v in old.items() if k != "pending"})
+    if keep:
+        doc["pending"] = keep
     _write_rollover(rollover_path(seat), doc)
     return doc
 
@@ -933,12 +953,18 @@ def take_rollover(seat: str, via: str, session_id: str = "", now: float | None =
         armed_at = float(doc.get("armed_at") or 0) if isinstance(doc, dict) else 0.0
         if not isinstance(doc, dict):
             return {}
+        top, slot = doc, None
         armed_host = str(doc.get("host") or "")
         same_host = False
         if armed_host and via in ("start", "rewake"):
             here = _host_of(session_id)
             if here and here != armed_host:
-                return {}                          # another conversation of this seat: never steal its hand-over
+                pend = [p for p in doc.get("pending") or [] if isinstance(p, dict) and p.get("host") == here]
+                if not pend:
+                    return {}                      # another conversation of this seat: never steal its hand-over
+                slot = (doc.get("pending") or []).index(pend[-1])
+                doc = pend[-1]                     # this conversation's own hand-over, carried by a later arm
+                armed_at, armed_host = float(doc.get("armed_at") or 0), here
             same_host = here == armed_host
         if now - armed_at > (ROLLOVER_SAME_HOST_TTL_S if same_host else ROLLOVER_TTL_S):
             return {}
@@ -956,7 +982,9 @@ def take_rollover(seat: str, via: str, session_id: str = "", now: float | None =
             if (now - armed_at > ROLLOVER_REWAKE_S and not same_host) or (started and session_id not in started):
                 return {}
         doc["delivered"] = done + [{"via": via, "session": session_id, "at": now}]
-        _write_rollover(path, doc)
+        if slot is not None:
+            top["pending"][slot] = doc
+        _write_rollover(path, top)
         return doc
     except (OSError, ValueError, TypeError, AttributeError):
         return {}
