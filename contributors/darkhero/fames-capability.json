@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-22T11:41:20.115914+00:00",
+  "observed_at": "2026-11-22T12:13:51.384198+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -364,8 +364,8 @@
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-11-22T19:36:22+08:00",
-        "receipt_sha256": "da94eef76bd056104cabd4e9348c7187f39d4c5b55578f67668e4f482f4ae2aa"
+        "observed_at": "2026-11-22T19:59:11+08:00",
+        "receipt_sha256": "03bf38bd0aa1169eb971fcc9ae1abc456c0ff3486ab2a076476006314fe57d93"
       },
       {
         "agent": "ai_metadata",
@@ -390,6 +390,12 @@
         "surface": "claude",
         "observed_at": "2026-11-22T17:17:14+08:00",
         "receipt_sha256": "c47aca0661099ffe57a84c31694be99242134622eb03627fc61a40ad828b52bd"
+      },
+      {
+        "agent": "ai_career",
+        "surface": "claude",
+        "observed_at": "2026-11-22T19:48:38+08:00",
+        "receipt_sha256": "7b582243575c545b87adb5dcd15d27116f815ff94150199dab65b7f1bab507a2"
       },
       {
         "agent": "ai_ut",
