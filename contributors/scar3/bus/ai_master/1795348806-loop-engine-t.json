@@ -1,0 +1,8 @@
+{
+  "id": "1795348806-loop-engine-t",
+  "from": "loop-engine",
+  "at": "2026-11-22 20:00:06",
+  "text": "[loop escalate] fleet inbox Σ=106, 6 agents have unacked coaches. Curator: inbox-hygiene run + fleet-inbox-sweep + rollup stale directives.",
+  "kind": "task",
+  "relayed_from": "scar3"
+}
