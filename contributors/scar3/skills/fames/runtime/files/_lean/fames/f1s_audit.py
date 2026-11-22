@@ -39,6 +39,7 @@ MODULES = {
     "YinYang": HERE / "YinYang.lean",
     "AexStall": HERE / "AexStall.lean",
     "F1SParallel": HERE / "F1SParallel.lean",
+    "Krylov": HERE / "Krylov.lean",
 }
 TEXTS = {
     "hot_directive": HUB / "_registry" / "fames-protocol.json",
