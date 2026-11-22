@@ -369,7 +369,7 @@
  "conversations": {
   "schema": 1,
   "host": "altos",
-  "generated": "2026-11-22T06:05:01+00:00",
+  "generated": "2026-11-22T06:35:01+00:00",
   "counts": {
    "total": 69,
    "desktop": 19,
@@ -377,6 +377,24 @@
    "active_48h": 12
   },
   "rows": [
+   {
+    "id": "d99c99f3",
+    "title": "",
+    "seat": "scratch",
+    "kind": "desktop",
+    "first": "2026-11-21T01:35:34.370Z",
+    "last": "2026-11-22T06:19:53+00:00",
+    "state": "running"
+   },
+   {
+    "id": "cb4b7d2d",
+    "title": "",
+    "seat": "scratch",
+    "kind": "desktop",
+    "first": "2026-11-21T11:34:50.656Z",
+    "last": "2026-11-22T06:19:40+00:00",
+    "state": "running"
+   },
    {
     "id": "9d301d2a",
     "title": "",
@@ -423,30 +441,12 @@
     "state": "running"
    },
    {
-    "id": "cb4b7d2d",
-    "title": "",
-    "seat": "scratch",
-    "kind": "desktop",
-    "first": "2026-11-21T11:34:50.656Z",
-    "last": "2026-11-21T13:25:22+00:00",
-    "state": "running"
-   },
-   {
     "id": "f502f706",
     "title": "",
     "seat": "ai_altos",
     "kind": "desktop",
     "first": "2026-11-17T17:21:51.546Z",
     "last": "2026-11-21T11:31:59+00:00",
-    "state": "running"
-   },
-   {
-    "id": "d99c99f3",
-    "title": "",
-    "seat": "scratch",
-    "kind": "desktop",
-    "first": "2026-11-21T01:35:34.370Z",
-    "last": "2026-11-21T11:31:35+00:00",
     "state": "running"
    },
    {

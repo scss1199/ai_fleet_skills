@@ -36,6 +36,9 @@ MODULES = {
     "LoadGrant": HERE / "LoadGrant.lean",
     "F1SMath": HERE / "F1SMath.lean",
     "ProvedBound": HERE / "ProvedBound.lean",
+    "YinYang": HERE / "YinYang.lean",
+    "AexStall": HERE / "AexStall.lean",
+    "F1SParallel": HERE / "F1SParallel.lean",
 }
 TEXTS = {
     "hot_directive": HUB / "_registry" / "fames-protocol.json",
@@ -1649,8 +1652,13 @@ ELEMENTS = [
     {"id": "EVO-rollover-pending-per-host-darkhero-20261122", "element": "ai_darkhero 2026-11-22 F1S proposal: 文章線 rollover hand-over never delivered (delivered=[], startup past 30 min TTL); one file per seat so two chats overwrite; brief model said sonnet", "verdict": "REFINE",
      "requires": None, "detail": "TTL and model parts were already fixed in b495a9ec (ROLLOVER_SAME_HOST_TTL_S, sidechain rows skipped); the remaining overwrite: arm_rollover now carries other desktop conversations' fresh undelivered hand-overs in 'pending' and take_rollover serves a start/rewake from its own host's entry (test_a_second_chat_rolling_over_keeps_the_first_chats_hand_over); no red line touched",
      "check_text": ("curator_orders", "Undelivered fresh hand-overs of OTHER desktop conversations ride along")},
+    {"id": "EVO-lean-yinyang-20261122", "element": "_skill/engines/f1s_yinyang.py judge (yin side of the yin/yang pair, R1-R4) modelled in _lean/fames/YinYang.lean, bound by yinyang_conformance.py", "verdict": "REFINE",
+     "requires": "Fames.YinYang.iteration_terminates", "detail": "operator 2026-11-22: every F1S mechanism proved in Lean (yin/yang, matrix, iteration). 7 theorems for every input: failed verifier / no metric never ACCEPT, ACCEPT strictly beats the best, REJECT after REJECT = STOP, token-unit ACCEPT from round 2 means saving >= spend, and the iteration terminates (lower-is-better nonnegative metric STOPs within 2*best+3 rounds whatever yang does). 1080-cell table 0 mismatch, 10/10 mutants killed, seeded mismatch exits 1; receipt evidence/yinyang-conformance.json"},
+    {"id": "EVO-lean-aex-stall-20261122", "element": "_skill/engines/aex-evolve-tick.py classify (AEX iteration status) modelled in _lean/fames/AexStall.lean, bound by aex_stall_conformance.py", "verdict": "REFINE",
+     "requires": "Fames.AexStall.stalled_never_active", "detail": "the proof found a real bug: the old if/elif tested stall == 3 before stall >= 6, so stall 4 and 5 went back to active (old_bug_stall4). Fixed engine: classify(stall) with >= thresholds; theorems stalled_never_active, classify_monotone, novelty_resets, iteration_reaches_prune (6 idle ticks reach prune from any count); 13 cells 0 mismatch, 2/2 mutants killed; receipt evidence/aex-stall-conformance.json"},
+    {"id": "EVO-lean-parallel-audited-20261122", "element": "_lean/fames/F1SParallel.lean (lane matrix: accepted_implies_verified, escalation_bounded, mergeComplete_iff_all) now re-checked by f1s_audit on every ship", "verdict": "REFINE",
+     "requires": "Fames.F1SParallel.mergeComplete_iff_all", "detail": "was proved and bound by parallel_conformance.py (2112 cells 0 mismatch) but missing from f1s_audit MODULES, so a ship did not re-check it"},
 ]
-
 def sha(path: Path) -> str:
     try:
         return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -1770,6 +1778,37 @@ def binding_line(scan: dict) -> str:
             f"invalid {by['invalid']}")
 
 
+def receipt_drift(evidence: Path = HERE / "evidence") -> list[dict]:
+    """Conformance receipts whose bound files (engine, lean model, runner...) changed since they were written."""
+    out = []
+    for receipt in sorted(Path(evidence).glob("*conformance*.json")):
+        try:
+            doc = json.loads(receipt.read_text(encoding="utf-8-sig"))
+        except (OSError, ValueError):
+            continue
+        bound = doc.get("bound") if isinstance(doc.get("bound"), dict) else {}
+        runner = (bound.get("runner") or {}).get("path") if isinstance(bound.get("runner"), dict) else None
+        if not runner:
+            continue
+        changed = [k for k, v in bound.items() if isinstance(v, dict) and v.get("path") and v.get("sha256")
+                   and (not Path(v["path"]).is_file() or sha(Path(v["path"])) != v["sha256"])]
+        if changed or doc.get("ok") is not True:
+            out.append({"receipt": str(receipt), "runner": runner, "changed": changed, "was_ok": doc.get("ok")})
+    return out
+
+
+def reprove_drift(drift: list[dict], timeout: float = 900.0) -> list[dict]:
+    """A changed mechanism is re-proved, not waved through: re-run its runner (it rewrites the receipt)."""
+    for d in drift:
+        try:
+            run = subprocess.run([sys.executable, d["runner"]], capture_output=True, text=True, timeout=timeout,
+                                 cwd=str(Path(d["runner"]).parent), creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+            d["reproved"] = run.returncode == 0
+        except (OSError, subprocess.SubprocessError):
+            d["reproved"] = False
+    return drift
+
+
 def main() -> int:
     started = time.time()
     proofs = {}
@@ -1854,8 +1893,14 @@ def main() -> int:
     for f in scan["findings"]:
         print(f"  FAIL binding {f['class']} {f['path']}" + (f" (script {f['script'] or '-'} not on disk)"
                                                             if f["class"] == "bound-missing-script" else ""))
+    # 2026-11-22 (operator: every F1S mechanism must be strictly proved in Lean after each fix): a receipt whose
+    # bound engine/model changed is stale proof; re-prove it here, and only a failed re-proof fails the audit.
+    drift = reprove_drift(receipt_drift()) if "--no-reprove" not in sys.argv[1:] else receipt_drift()
+    for d in drift:
+        print(f"  {'REPROVED' if d.get('reproved') else 'FAIL'} receipt-drift {Path(d['receipt']).name} changed={d['changed']}")
+    drift_ok = all(d.get("reproved") for d in drift)
     ok = (all(p["verdict"] == "PROVED" for p in proofs.values()) and unresolved == 0 and conf_ok and directive_ok
-          and not scan["findings"])
+          and not scan["findings"] and drift_ok)
     # only bound modules' theorems count as PROVED; a model-only module is still kernel-checked (verdict kept)
     proved_counts = {k: (v["verdict"], len(v["theorems"]) if module_bound.get(k) else 0) for k, v in proofs.items()}
     binding = {"bound_theorems": scan["bound_theorems"], "theorems": scan["theorems"], "bound_files": scan["bound_files"],
@@ -1869,7 +1914,7 @@ def main() -> int:
         "elapsed_s": round(time.time() - started, 1), "pattern": "ai_ut/ut_theory/rederive",
         "proofs": proofs, "claim_conformance_current": conf_ok, "unresolved": unresolved,
         "verdict_counts": {v: sum(1 for r in rows if r["verdict"] == v) for v in sorted({r["verdict"] for r in rows})},
-        "elements": rows, "binding": {**binding, "files_detail": scan["files"]},
+        "elements": rows, "binding": {**binding, "files_detail": scan["files"]}, "receipt_drift": drift,
         "bound": {k: {"path": str(p), "sha256": sha(p)} for k, p in {**MODULES, **MODULES_RUN, **TEXTS}.items()},
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
