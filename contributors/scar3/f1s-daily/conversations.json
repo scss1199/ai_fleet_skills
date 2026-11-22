@@ -1,0 +1,51 @@
+{
+  "conversations": {
+    "schema": 1,
+    "host": "scar3",
+    "generated": "2026-11-22T06:37:34+00:00",
+    "counts": {
+      "total": 52,
+      "desktop": 35,
+      "dispatched": 17,
+      "active_48h": 0
+    },
+    "rows": [
+      {
+        "id": "fe96b74a",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-18T15:28:14+00:00",
+        "last": "2026-11-18T15:28:20+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "39bdc7f6",
+        "title": "",
+        "seat": "ai_scar3",
+        "kind": "desktop",
+        "first": "2026-11-06T08:12:28+00:00",
+        "last": "2026-11-10T14:41:56+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "ad104d8a",
+        "title": "",
+        "seat": "ai_wallpaper",
+        "kind": "desktop",
+        "first": "2026-11-06T04:23:48+00:00",
+        "last": "2026-11-10T04:48:08+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "e8a6d7f7",
+        "title": "",
+        "seat": "ai_wallpaper",
+        "kind": "desktop",
+        "first": "2026-11-09T14:19:11+00:00",
+        "last": "2026-11-09T14:44:42+00:00",
+        "state": "idle"
+      }
+    ]
+  }
+}
