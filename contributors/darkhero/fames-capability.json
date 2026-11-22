@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "4a99a0ae2b8b90d5b1851e6fe7246ba740c8507884e85a566ef69b2f27a92f15",
+  "package_sha": "33d800f796254c77891fd950c3e3f7ee43b961a6ee297fca6b06fc1a09d859eb",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-22T02:35:03.851300+00:00",
+  "observed_at": "2026-11-22T02:51:58.892259+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,34 +353,9 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "OBSERVED_PARTIAL_POPULATION",
-    "native_events": [
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-11-22T10:34:41+08:00",
-        "receipt_sha256": "ab57cd431de24b50014880596f42febbc38ac1e067a6d9b16b526358f48488c8"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-11-22T09:49:48+08:00",
-        "receipt_sha256": "20f4a05f3de4475dd3d06f5d28be95966e14c83568389d222b6cb05d2a6cc13c"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-11-22T10:26:50+08:00",
-        "receipt_sha256": "2d442b2127915681ff22a0a117446822aee25fdce402b677b097dca17b6a5ed6"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-11-22T10:20:48+08:00",
-        "receipt_sha256": "36c46c73538fa9a9ddada3b2e813203ded6d89e2e2f6a934c20ca004f4370cfb"
-      }
-    ],
-    "runtime_release_sha256": "df2e90e76932a5aa1d7def15b1f196732755f07d1066633db66ea0157838e191"
+    "native_state": "UNKNOWN",
+    "native_events": [],
+    "runtime_release_sha256": "f6e2d97893817ad3d1afffbcac43a72b8b25aa52eec2543928feacf12f1e5239"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
