@@ -2,7 +2,7 @@
   "conversations": {
     "schema": 1,
     "host": "darkhero",
-    "generated": "2026-11-22T06:10:04+00:00",
+    "generated": "2026-11-22T06:13:10+00:00",
     "counts": {
       "total": 1940,
       "desktop": 507,
@@ -11,12 +11,12 @@
     },
     "rows": [
       {
-        "id": "89d9f08b",
+        "id": "9031a918",
         "title": "",
-        "seat": "jci_taipei",
+        "seat": "ai_darkhero",
         "kind": "desktop",
-        "first": "2026-11-22T05:39:39+00:00",
-        "last": "2026-11-22T06:10:06+00:00",
+        "first": "2026-11-22T05:50:25+00:00",
+        "last": "2026-11-22T06:13:04+00:00",
         "state": "running"
       },
       {
@@ -25,17 +25,17 @@
         "seat": "ai_darkhero",
         "kind": "desktop",
         "first": "2026-11-22T06:05:47+00:00",
-        "last": "2026-11-22T06:10:05+00:00",
-        "state": "running"
+        "last": "2026-11-22T06:12:31+00:00",
+        "state": "idle"
       },
       {
-        "id": "9031a918",
+        "id": "89d9f08b",
         "title": "",
-        "seat": "ai_darkhero",
+        "seat": "jci_taipei",
         "kind": "desktop",
-        "first": "2026-11-22T05:50:25+00:00",
-        "last": "2026-11-22T06:09:58+00:00",
-        "state": "running"
+        "first": "2026-11-22T05:39:39+00:00",
+        "last": "2026-11-22T06:11:42+00:00",
+        "state": "idle"
       },
       {
         "id": "c8d8681f",
@@ -44,7 +44,7 @@
         "kind": "desktop",
         "first": "2026-10-27T07:46:39+00:00",
         "last": "2026-11-22T06:00:30+00:00",
-        "state": "running"
+        "state": "idle"
       },
       {
         "id": "2b1a1409",
