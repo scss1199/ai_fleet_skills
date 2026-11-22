@@ -38,6 +38,7 @@ import re
 import secrets
 import subprocess
 import sys
+import tempfile
 import time
 import traceback
 from pathlib import Path
@@ -316,8 +317,30 @@ def render_audit(nonce: str) -> str:
         .replace("{max_theorems}", str(MAX_THEOREMS)).replace("{{", "{").replace("}}", "}")
 
 
+def kernel_replay(full: str, *, env: dict, timeout: float) -> dict:
+    """Second, independent check: compile the same text to an .olean and let `leanchecker` re-run the
+    kernel on every constant it adds. The elaborator can add a declaration without kernel checking
+    (`addDecl` under `debug.skipKernelTC` from a metaprogram, which no text flag sees); the replay
+    refuses it (11-22 probe: Bad.lean proved `False`, lean rc=0, audit clean, leanchecker rc=1)."""
+    tc = toolchain_dir()
+    with tempfile.TemporaryDirectory(prefix="leanctl-replay-") as tmp:
+        src = Path(tmp) / "LeanctlReplay.lean"
+        src.write_text(full, encoding="utf-8")
+        rc, out, err = run([str(tc / "bin" / "lean.exe"), "-o", str(Path(tmp) / "LeanctlReplay.olean"), str(src)],
+                           env=env, timeout=timeout, cwd=Path(tmp))
+        if rc != 0:
+            return {"ran": False, "ok": False, "stage": "compile", "rc": rc, "detail": (err or out).strip()[-600:]}
+        renv = dict(env)
+        renv["LEAN_PATH"] = os.pathsep.join([str(tc / "lib" / "lean"), tmp]
+                                            + [x for x in env.get("LEAN_PATH", "").split(os.pathsep) if x])
+        rc, out, err = run([str(tc / "bin" / "leanchecker.exe"), "LeanctlReplay"], env=renv, timeout=timeout,
+                           cwd=Path(tmp))
+        return {"ran": True, "ok": rc == 0, "stage": "leanchecker", "rc": rc,
+                "detail": (err or out).strip()[-600:]}
+
+
 def check_source(source: str, *, mathlib: bool | None = None, timeout: float = DEFAULT_TIMEOUT_S,
-                 memory_mb: int | None = None, audit: bool = True) -> dict:
+                 memory_mb: int | None = None, audit: bool = True, replay: bool = True) -> dict:
     started = time.time()
     tc = toolchain_dir()
     lean = tc / "bin" / "lean.exe"
@@ -491,6 +514,15 @@ def check_source(source: str, *, mathlib: bool | None = None, timeout: float = D
             reasons.append(f"the {len(theorems)} listed proposition(s) are marked `synthetic`: Lean generated them "
                            f"for the file's definitions (e.g. `{theorems[0]['name']}`), the caller stated none")
 
+    replay_info = None
+    if verdict == "PROVED" and replay:
+        replay_info = kernel_replay(full, env=env, timeout=timeout)
+        if not replay_info["ok"]:
+            verdict = "UNVERIFIED"
+            reasons.append("independent kernel replay rejected the file (" + replay_info["stage"] + " rc="
+                           + str(replay_info["rc"]) + "): a declaration was added without kernel checking; "
+                           + replay_info["detail"][:300])
+
     # Cautions never change the verdict; they say what a reader must not take from the receipt.
     cautions = []
     if theorems and verdict != "PROVED":
@@ -528,6 +560,7 @@ def check_source(source: str, *, mathlib: bool | None = None, timeout: float = D
         "ok": verdict in ("PROVED", "CHECKED"),
         "verdict": verdict,
         "reasons": reasons,
+        "replay": replay_info,
         "cautions": cautions,
         "messages": user_messages,
         "stderr": err.strip()[-2000:],
