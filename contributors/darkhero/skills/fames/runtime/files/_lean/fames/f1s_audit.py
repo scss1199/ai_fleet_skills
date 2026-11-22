@@ -84,6 +84,7 @@ TEXTS = {
     "session_consolidate": HUB / "_skill" / "engines" / "session-consolidate.py",
     "transcript_audit": HUB / "_skill" / "engines" / "f1s-transcript-audit.py",
     "git_smart": HUB / "_skill" / "engines" / "git_smart.py",
+    "yinyang_engine": HUB / "_skill" / "engines" / "f1s_yinyang.py",
     "cred_sync": HUB / "_skill" / "engines" / "fleet-credential-sync.py",
     "f1s_apply": HUB / "_skill" / "engines" / "f1s_apply.py",
     "fg_guard": HUB / "_skill" / "engines" / "zt-foreground-guard.py",
@@ -1662,6 +1663,9 @@ ELEMENTS = [
     {"id": "EVO-eocc-sac-20261122", "element": "EoCC (yang hands over near a full window) vs SAC (single-action L3 unit in a fresh context with a state card); f1s_parallel validate_units refuses history:true", "verdict": "INFO",
      "detail": "NVIDIA You Don't Need Long Context (jzPInuXHkqs): a unit that must recall early raw history stays in yang unless its history is a file it can grep; test_history_routes_eocc_or_sac; commit c946ea29",
      "check_text": ("hot_directive", "EoCC")},
+    {"id": "EVO-yinyang-data-event-20261123", "element": "_skill/engines/f1s_yinyang.py tick --event NAME (alternative to --commit) for riders whose verifier reads runtime receipts that change with no commit", "verdict": "INFO",
+     "detail": "ai_trader proposal: fx_grid/fx_kill receipts refresh nightly in trading_day_eod_chain.py (HubClock 18:18) with no commit, so the commit-only tick never judged them. The round id is event:<name>@<utc>; the existing unchanged-metric skip keeps a no-op refresh from being a round, so R1-R5 are untouched. Wiring the call into the chain is ai_trader's own edit; test_tick_on_a_data_event_judges_a_receipt_that_changed_without_a_commit",
+     "check_text": ("yinyang_engine", "tg.add_argument(\"--event\")")},
 ]
 def sha(path: Path) -> str:
     try:
