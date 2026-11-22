@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-22T16:28:19.167743+00:00",
+  "observed_at": "2026-11-22T17:13:33.703339+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -350,7 +350,7 @@
     "C:\\ai_workspace\\_skill\\fleet-skills\\fames\\references\\cases.json"
   ],
   "execution_adoption": {
-    "runtime_state": "PASS",
+    "runtime_state": "UNKNOWN",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
     "native_state": "OBSERVED_PARTIAL_POPULATION",
@@ -358,14 +358,14 @@
       {
         "agent": "ai_trader",
         "surface": "claude",
-        "observed_at": "2026-11-23T00:13:43+08:00",
-        "receipt_sha256": "84648a692dd6bcdfff0af61d788f4b4ee02e3ddcd30e0fa7e7dd330cba8fe3a5"
+        "observed_at": "2026-11-23T00:34:39+08:00",
+        "receipt_sha256": "abc6dbf396721274f4ec676ca47e9e87c5bbb1f05f8d84a1b0a4c757f5ae6e5a"
       },
       {
         "agent": "ai_nuwa",
         "surface": "claude",
-        "observed_at": "2026-11-23T00:13:08+08:00",
-        "receipt_sha256": "37d7302271046b749e5733ff65168fc2eb325f21ee6ffdc69d94236399d9044d"
+        "observed_at": "2026-11-23T01:12:01+08:00",
+        "receipt_sha256": "5f0d6f09b5fc31286232d6e968945dc26058c0d9a562b51d9af52ad19a7bec5f"
       },
       {
         "agent": "jci_taipei",
@@ -376,8 +376,8 @@
       {
         "agent": "ai_metadata",
         "surface": "claude",
-        "observed_at": "2026-11-23T00:13:05+08:00",
-        "receipt_sha256": "931e608614378a613db5c5bad86e1d4468bb3e5a6b490d6a6f3a0c8ecb8f5074"
+        "observed_at": "2026-11-23T00:35:03+08:00",
+        "receipt_sha256": "3811f2830f827b6f690ff74217c5a9820e1c11d8c584a14f530344fa2c37fcce"
       },
       {
         "agent": "sdnext_a770",
@@ -386,16 +386,28 @@
         "receipt_sha256": "1e69a0e48c3c99a3a78576b81995f21b835980ddbe53d5dfa173789f3f8e054a"
       },
       {
-        "agent": "ai_nuwa",
+        "agent": "ai_theater",
         "surface": "claude",
-        "observed_at": "2026-11-23T00:15:20+08:00",
-        "receipt_sha256": "9b315408324ba3f961843194c241c0254c5bb537a3b133c13547a9d11b7c3a24"
+        "observed_at": "2026-11-23T00:33:07+08:00",
+        "receipt_sha256": "ad8db6a3de9f78e1735aff5a92cdc54bf7c4e982e9859a13cbf271789be57ec6"
       },
       {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-11-23T00:04:28+08:00",
-        "receipt_sha256": "9e0152ef697952e839210ff1048f5cca8c4dc2762644f1c59dda4be110508b92"
+        "observed_at": "2026-11-23T01:08:36+08:00",
+        "receipt_sha256": "eff8dfd4c2c3a83b402b759b9a7dad2e45f7b4d759d8eaa301e75c4bded2296c"
+      },
+      {
+        "agent": "ai_nuwa",
+        "surface": "claude",
+        "observed_at": "2026-11-23T00:15:20+08:00",
+        "receipt_sha256": "0b88b77ad2a4e1e84d0f9794636bd6a9a53dd02e5efc699d472240b23c293d68"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-23T00:34:49+08:00",
+        "receipt_sha256": "c50b920525c3f28e62006d16448c4761c023f4130c814091a0f22f7a69f07739"
       },
       {
         "agent": "ai_zonghe",
@@ -408,6 +420,12 @@
         "surface": "claude",
         "observed_at": "2026-11-23T00:17:25+08:00",
         "receipt_sha256": "e06e5331c21316fbb7d6e05ab2b10973006ff0217e0210cedd0ca497a37b86fe"
+      },
+      {
+        "agent": "ai_theater",
+        "surface": "claude",
+        "observed_at": "2026-11-23T00:50:54+08:00",
+        "receipt_sha256": "00a2030f4fe22a7a7dc16c9f73d8a5d4d0bff77038b1f5220f1e85303a81803a"
       }
     ],
     "runtime_release_sha256": "e7353b59a11fe6e09126654e60677b334a3974c5ffd417a98b818f8fdc1be6c5"
