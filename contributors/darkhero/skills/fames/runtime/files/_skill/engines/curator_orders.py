@@ -834,8 +834,67 @@ def transcript_state(path) -> tuple[str, list[str]]:
     return model, open_steps[:ROLLOVER_TASKS]
 
 
+CARD_ITEMS = 6          # per state-card field; the card stays a few hundred tokens
+
+
+def transcript_card(path) -> dict:
+    """Mechanical half of the state card: the completed steps of the last update_plan list and the dead ends (tool
+    calls whose result came back as an error, newest last, deduped). {} when unreadable."""
+    done, uses, dead = [], {}, []
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            for raw in fh:
+                if '"isSidechain": true' in raw or '"isSidechain":true' in raw:
+                    continue
+                try:
+                    msg = json.loads(raw).get("message") or {}
+                except ValueError:
+                    continue
+                if not isinstance(msg, dict) or not isinstance(msg.get("content"), list):
+                    continue
+                for b in msg["content"]:
+                    if not isinstance(b, dict):
+                        continue
+                    if b.get("type") == "tool_use":
+                        inp = b.get("input") or {}
+                        name = str(b.get("name") or "")
+                        if name.endswith("update_plan") and isinstance(inp.get("items"), list):
+                            done = [str(i.get("content") or "") for i in inp["items"]
+                                    if isinstance(i, dict) and i.get("status") == "completed" and i.get("content")]
+                        what = inp.get("command") or inp.get("file_path") or inp.get("pattern") or ""
+                        uses[b.get("id")] = f"{name}: {str(what).splitlines()[0][:160] if what else ''}".rstrip(": ")
+                    elif b.get("type") == "tool_result" and b.get("is_error") and b.get("tool_use_id") in uses:
+                        call = uses[b["tool_use_id"]]
+                        if call in dead:
+                            dead.remove(call)
+                        dead.append(call)
+    except OSError:
+        return {}
+    return {"done": done[-CARD_ITEMS:], "dead_ends": dead[-CARD_ITEMS:]}
+
+
+def _card_lines(goal: str, open_tasks: list | None, card: dict | None) -> list:
+    """The action brief of the NVIDIA EoCC paper (operator 2026-11-22, video jzPInuXHkqs): one-line goal, verified
+    observations apart from unverified hypotheses, what was done, dead ends, the next exact command. Current valid
+    state only; the raw history stays in files and is looked up, never inlined."""
+    card = card or {}
+
+    def field(label: str, items, empty: str) -> str:
+        items = [str(i)[:200] for i in (items or []) if str(i).strip()][-CARD_ITEMS:]
+        return f"{label} " + ("; ".join(items) if items else empty)
+
+    nxt = card.get("next") or (open_tasks[:1] if open_tasks else [])
+    return ["State card (current valid state only):",
+            f"Goal: {goal.strip().splitlines()[0][:200] if goal.strip() else '(see the park file)'}",
+            field("Verified:", card.get("verified"), "(none recorded: re-verify before relying on anything)"),
+            field("Hypotheses (unverified, test before use):", card.get("hypotheses"), "(none recorded)"),
+            field("Done:", card.get("done"), "(none recorded)"),
+            field("Dead ends (do not retry):", card.get("dead_ends"), "(none recorded)"),
+            field("Next command:", nxt, "(read the park file's last entry)")]
+
+
 def rollover_brief_text(seat: str, session_id: str, context: int, last_request: str, model: str = "",
-                        open_tasks: list | None = None) -> str:
+                        open_tasks: list | None = None, card: dict | None = None) -> str:
     """The whole prompt of the conversation that takes over a rolled-over one. Pure: no file is read or written."""
     k = f"{context // 1000}K"
     sid = session_id or "unknown"
@@ -853,13 +912,15 @@ def rollover_brief_text(seat: str, session_id: str, context: int, last_request: 
     if open_tasks:
         lines.append("Open steps left by the old conversation (finish them; drop any the request above already covers):\n"
                      + "\n".join(f"- {t[:200]}" for t in open_tasks))
+    lines += _card_lines(last_request, open_tasks, card)
     lines += ["Reply rules: report in Traditional Chinese, conclusion first in two sentences, numbers only from measurements made in this "
               "conversation, no questions about mechanical work.",
-              f"The old conversation's transcript ({transcript}) is for exact details only."]
+              f"History stays in files, looked up on demand: the old transcript ({transcript}) and the park file, read with "
+              "grep or sed in 6-8K-character slices, never whole."]
     return "\n".join(lines)
 
 
-def rollover_brief(seat: str, session_id: str = "", park: bool = True, arm: bool = False) -> str:
+def rollover_brief(seat: str, session_id: str = "", park: bool = True, arm: bool = False, card: dict | None = None) -> str:
     import glob as _glob
     from pathlib import Path as _Path
     if park:
@@ -874,12 +935,16 @@ def rollover_brief(seat: str, session_id: str = "", park: bool = True, arm: bool
     if found:
         request = last_typed_request(found[0])
         model, tasks = transcript_state(found[0])
+        mech = transcript_card(found[0])
+        card = dict(card or {})
+        for key in ("done", "dead_ends"):
+            card[key] = list(mech.get(key) or []) + [x for x in card.get(key) or [] if x not in (mech.get(key) or [])]
         try:
             import f1s_live
             context = f1s_live.context_tokens(_Path(found[0]), settled=True)
         except Exception:
             pass
-    text = rollover_brief_text(seat, session_id, context, request, model, tasks)
+    text = rollover_brief_text(seat, session_id, context, request, model, tasks, card)
     if arm:
         arm_rollover(seat, session_id, text, model)
     return text
@@ -1026,7 +1091,9 @@ def _rollover_steps(seat: str, session_id: str) -> str:
     sess = f" --session {session_id}" if session_id else ""
     return ("If a background task of this conversation is still running, let it finish first. "
             f"Run `python C:/ai_workspace/_skill/engines/curator_orders.py rollover-brief --seat {seat}{sess} --arm` (it parks the seat, "
-            "records the hand-over with the operator's request, the model and the open steps, and prints it). "
+            "records the hand-over with the operator's request, the model and the open steps, and prints it), adding one "
+            "`--verified \"...\"` per fact checked here, `--hypothesis \"...\"` per unchecked guess, `--dead-end \"...\"` per failed "
+            "approach and `--next \"<exact command>\"` (failed tool calls and done steps are added by themselves). "
             "Then call mcp__ccd_session_mgmt__clear_session with session_id \"self\": the same session keeps its model, folder and "
             "permissions, it works on turns nobody typed, and when this turn ends F1S hands the cleared conversation the brief "
             "(SessionStart) and gives it its first turn (`f1s_live.py start`). Tell the operator in one line that the conversation rolls over, then end the turn. "
@@ -1538,9 +1605,13 @@ def main(argv=None) -> int:
     s.add_argument("--session", default="")
     s.add_argument("--no-park", action="store_true")
     s.add_argument("--arm", action="store_true", help="record it for clear_session(self): SessionStart and the idle waiter deliver it")
+    for flag, help_ in (("--verified", "a fact checked this conversation (repeat)"), ("--hypothesis", "an unchecked guess (repeat)"),
+                        ("--dead-end", "an approach that failed (repeat)"), ("--next", "the next exact command")):
+        s.add_argument(flag, action="append", default=[], help=help_)
     a = ap.parse_args(argv)
     if a.cmd == "rollover-brief":
-        text = rollover_brief(a.seat, a.session, park=not a.no_park, arm=a.arm)
+        card = {"verified": a.verified, "hypotheses": a.hypothesis, "dead_ends": a.dead_end, "next": a.next}
+        text = rollover_brief(a.seat, a.session, park=not a.no_park, arm=a.arm, card=card)
         try:
             print(text)
         except UnicodeEncodeError:
