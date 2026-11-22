@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-job-result/1",
+  "job": "20261122T083308Z-3118b7f4",
+  "host": "altos",
+  "started_at": "2026-11-22T08:37:01+00:00",
+  "kind": "prompt",
+  "ok": true,
+  "exit": 0,
+  "stdout": "[runtime=claude_local lane=anthropic seat=ai_altos cwd=ai_altos auth=cli_credentials_file 19.0s]\nSHUTDOWN_SCHEDULED rc=0\n",
+  "stderr": "",
+  "finished_at": "2026-11-22T08:37:36+00:00"
+}
