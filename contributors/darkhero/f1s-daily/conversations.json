@@ -2,7 +2,7 @@
   "conversations": {
     "schema": 1,
     "host": "darkhero",
-    "generated": "2026-11-22T05:37:39+00:00",
+    "generated": "2026-11-22T05:38:51+00:00",
     "counts": {
       "total": 1935,
       "desktop": 504,
@@ -26,7 +26,7 @@
         "kind": "dispatched",
         "first": "2026-11-22T05:16:37+00:00",
         "last": "2026-11-22T05:28:09+00:00",
-        "state": "running"
+        "state": "idle"
       },
       {
         "id": "8741b36f",
