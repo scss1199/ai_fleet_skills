@@ -1672,6 +1672,12 @@ ELEMENTS = [
     {"id": "EVO-box-settings-owner-20261123", "element": "_skill/fleet-skills/f1s-intake/SKILL.md section 1: box-wide settings (power posture, background queue, tray, load grant) belong to ai_darkhero; other cwds forward one inbox line", "verdict": "INFO",
      "detail": "ai_trader reverse-learn f92b239bb8e3 (memory feedback-machine-control-belongs-to-darkhero-20261111, operator 2026-11-11): matches SEAT-SPEC mandate (b) and load_grant as sole load owner; no red line touched, a seat's own riders stay its own",
      "check_text": ("skill_intake", "整機設定（電源姿態")},
+    {"id": "EVO-gate-cheat-negative-control-20261123", "element": "_skill/fleet-skills/ztm-verify-before-done/SKILL.md verifier-is-not-the-goal section: every new or changed gate is first attacked with the cheapest do-nothing pass (reward-hacking path) as a negative control and must FAIL", "verdict": "REFINE",
+     "detail": "ai_darkhero reverse-learn c9aed4645593 (operator 2026-11-22: use RL to catch holes, not to do the task; youtu.be/VDoQ6KWK2qs): the defensive side already exists (verify.test_weakened hint, verifier-is-not-the-goal section); this adds the offensive check on the gate itself",
+     "check_text": ("skill_verify", "把獎勵駭客反過來用來抓漏洞")},
+    {"id": "EVO-project-host-darkhero-20261123", "element": "_skill/fleet-skills/f1s-intake/SKILL.md section 1: projects on altos run from darkhero; work opened on altos moves to the same cwd on darkhero", "verdict": "INFO",
+     "detail": "ai_darkhero reverse-learn c9aed4645593 (operator 2026-11-22): consistent with SEAT-SPEC mandate (b) allocation and followers being sync-only; the actual migration of the altos work is a case, not a rule, and stays with the conversation that owns it",
+     "check_text": ("skill_intake", "專案執行機是 darkhero")},
 ]
 def sha(path: Path) -> str:
     try:
