@@ -2,7 +2,7 @@
   "conversations": {
     "schema": 1,
     "host": "darkhero",
-    "generated": "2026-11-23T09:54:27+00:00",
+    "generated": "2026-11-23T09:54:53+00:00",
     "counts": {
       "total": 2012,
       "desktop": 526,
@@ -11,21 +11,21 @@
     },
     "rows": [
       {
-        "id": "64af5399",
-        "title": "",
-        "seat": "ai_trader",
-        "kind": "desktop",
-        "first": "2026-11-23T07:14:19+00:00",
-        "last": "2026-11-23T09:54:31+00:00",
-        "state": "running"
-      },
-      {
         "id": "f83cd8e2",
         "title": "",
         "seat": "ai_nuwa",
         "kind": "desktop",
         "first": "2026-11-22T16:15:18+00:00",
-        "last": "2026-11-23T09:54:18+00:00",
+        "last": "2026-11-23T09:54:49+00:00",
+        "state": "running"
+      },
+      {
+        "id": "64af5399",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "desktop",
+        "first": "2026-11-23T07:14:19+00:00",
+        "last": "2026-11-23T09:54:48+00:00",
         "state": "running"
       },
       {
@@ -34,8 +34,26 @@
         "seat": "ai_photo",
         "kind": "desktop",
         "first": "2026-11-23T09:33:29+00:00",
-        "last": "2026-11-23T09:54:18+00:00",
+        "last": "2026-11-23T09:54:47+00:00",
         "state": "running"
+      },
+      {
+        "id": "427c8dd3",
+        "title": "",
+        "seat": "ai_metadata",
+        "kind": "desktop",
+        "first": "2026-11-19T02:13:28+00:00",
+        "last": "2026-11-23T09:54:45+00:00",
+        "state": "running"
+      },
+      {
+        "id": "a611b97b",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "desktop",
+        "first": "2026-11-23T07:38:27+00:00",
+        "last": "2026-11-23T09:54:44+00:00",
+        "state": "idle"
       },
       {
         "id": "b514e095",
@@ -54,15 +72,6 @@
         "first": "2026-11-22T05:39:39+00:00",
         "last": "2026-11-23T09:51:20+00:00",
         "state": "idle"
-      },
-      {
-        "id": "427c8dd3",
-        "title": "",
-        "seat": "ai_metadata",
-        "kind": "desktop",
-        "first": "2026-11-19T02:13:28+00:00",
-        "last": "2026-11-23T09:49:12+00:00",
-        "state": "running"
       },
       {
         "id": "a3333acb",
@@ -143,15 +152,6 @@
         "kind": "dispatched",
         "first": "2026-11-23T08:22:03+00:00",
         "last": "2026-11-23T08:22:24+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "a611b97b",
-        "title": "",
-        "seat": "ai_trader",
-        "kind": "desktop",
-        "first": "2026-11-23T07:38:27+00:00",
-        "last": "2026-11-23T08:05:06+00:00",
         "state": "idle"
       },
       {
