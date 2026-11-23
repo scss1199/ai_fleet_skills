@@ -147,6 +147,9 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
   畫面類同理：判定看產品最終輸出的截圖，不看頁面狀態或視窗標題——擷取／投影串流用產品自己的截圖 API 對來源與輸出
   各取兩張、相隔約 0.7 s，量亮度與變化（有畫面且在動），視窗只用 PID 對，關閉後輪詢輸出恢復（ai_wallpaper scar3
   8fc35b0：頁面與標題檢查誤判 FAIL，OBS GetSourceScreenshot 5 種播放路徑 32/32 PASS）。
+- 把獎勵駭客反過來用來抓漏洞：新建或改動的閘／驗證器／rider 檢查，先寫出「不做事也能過關」的最便宜路徑
+  （空輸出、改測試、寫死預期值、只碰檔案時間戳）當負對照跑一次，閘必須判 FAIL；過了＝閘本身是洞，先補閘再宣稱
+  （operator 2026-11-22 ai_darkhero c9aed4645593，youtu.be/VDoQ6KWK2qs：強化學習會找獎勵漏洞，就讓它去找）。
 - 生成者不得是自己產出的唯一裁判（程式審查段已成規則）：同一個 agent 既做事又替自己打分，分數會向可規避處漂移。
 - 「進度」只算使用者看得到的真實成果，不是通過了多少自家檢查；report／alert／驗證腳本的數量不是進度（本段已有）。
 - 未經外部查核的基準分數是指標不是事實（F1S ④）：自評「金牌／全綠」在外部裁判看過前只是待證，寫法對照
@@ -168,6 +171,7 @@ version 端點回 `built_at`（ai_ziyaoastro 51ed1a1，/api/version built_at 202
 首頁 HTML 的 BUILD_ID（deploy-nextjs-cloudflare）；(2) 多輪重複，看 ok-rate 再看中位數，一次冷啟動不能定案，
 不穩或慢的目標加輪；遇 429/503 降並發；模型要用正式環境實際用的那把 key 和實際大小的 prompt（暗號藏在長 system prompt 裡），
 api-matrix／key 健康狀態或一字 ping 都不算；(3) 每次存一份 run 檔，與上一份比，超過門檻才標 regressed。
+共用資源上的速度（網路線路／CPE、CPU、GPU）旁邊有人在用就不是乾淨量測：數字旁寫同時間還有誰在用（別台主機、背景下載、rider），寧可用 operator 指定的測法，也不從忙碌時段的吞吐量推結論（ai_network 2026-08-22：darkhero 和 scar3 共吃 CPE 流量）。
 重用範本：`ai_ziyaoastro/scripts/llm_provider_probe.py`（模型）、`jci_taipei/jci_taipei_website/scripts/page_latency_probe.py`（頁面）。
 
 ## 「X 有效／X 預測 Y」要先登記再算（ai_trader c874f3bc7，F1S 2026-10-24 吸收）
@@ -236,7 +240,8 @@ VIX 資訊（VVIX→TWII −0.396 但增量 R² 0.009）；加三道閘後碰巧
 **把參考的像素／段落貼到主體上不算達到參考**，光線與陰影對不上就會不自然、不對稱；(3) 做完再量一次主體，
 結案要附「參考值／改前／改後」三欄與並排對照（左原圖、中舊版、右新版），舊版留 `_prev` 不覆寫；
 給 operator 看的對照圖寫成 PNG 放 `C:\Users\sc\Downloads\_quick_output`（檔名含日期）並 SendUserFile，不埋在 runtime 裡
-（operator 2026-10-31，ai_nuwa）；(4) 沒量到參考值的部位要寫明沒動；
+（operator 2026-10-31，ai_nuwa）；使用者點名的輸出位置對整個任務的結果與測試都有效，不只對照圖：每個任務一個 `yyyymmdd-<任務代號>` 資料夾
+（例 `_quick_output\20261123-q09`），結果、測試圖、量測檔全進去，回報附該資料夾路徑；被問「為什麼沒出到那裡」＝這條漏了（ai_nuwa 2026-11-23）；(4) 沒量到參考值的部位要寫明沒動；
 (5) 逐部位回饋（「男生可以、女生眼睛回到上一版」「眉毛維持 d5、眼睛降到 d4~d5」「其他不要亂動」）＝每個部位各自記住核可的版本與等級，
 已核可部位從核可版原樣帶入，只重做被點名的部位，不整張重跑；結案逐部位列「來源版／等級」（ai_photo、ai_nuwa 2026-11-07）。
 量測數值與口味（哪種臉要多亮）留在座位自己的 memory，這裡只留程序。
