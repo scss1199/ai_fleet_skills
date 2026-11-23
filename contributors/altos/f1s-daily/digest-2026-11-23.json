@@ -362,14 +362,32 @@
  "conversations": {
   "schema": 1,
   "host": "altos",
-  "generated": "2026-11-23T12:04:02+00:00",
+  "generated": "2026-11-23T12:34:01+00:00",
   "counts": {
-   "total": 71,
+   "total": 73,
    "desktop": 19,
-   "dispatched": 52,
-   "active_48h": 9
+   "dispatched": 54,
+   "active_48h": 11
   },
   "rows": [
+   {
+    "id": "b6ecaaff",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-23T12:07:21.274Z",
+    "last": "2026-11-23T12:11:34+00:00",
+    "state": "running"
+   },
+   {
+    "id": "96ce4761",
+    "title": "",
+    "seat": "ai_darkhero",
+    "kind": "dispatched",
+    "first": "2026-11-23T12:07:10.357Z",
+    "last": "2026-11-23T12:07:18+00:00",
+    "state": "running"
+   },
    {
     "id": "3d2b4779",
     "title": "",
