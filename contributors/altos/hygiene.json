@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "desktop-rsniapr",
-  "at": "2026-11-22T06:01:17",
+  "at": "2026-11-23T19:16:13",
   "hub": "C:\\ai_workspace",
-  "seconds": 26.4,
+  "seconds": 75.8,
   "check": {
     "seats": [
       {
@@ -20,7 +20,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-22",
+        "newest_file": "2026-11-23",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -36,7 +36,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-21",
+        "newest_file": "2026-11-22",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
