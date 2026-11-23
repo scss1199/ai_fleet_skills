@@ -2,12 +2,12 @@
   "conversations": {
     "schema": 1,
     "host": "darkhero",
-    "generated": "2026-11-23T16:33:45+00:00",
+    "generated": "2026-11-23T17:43:57+00:00",
     "counts": {
-      "total": 2035,
+      "total": 2043,
       "desktop": 534,
-      "dispatched": 1501,
-      "active_48h": 150
+      "dispatched": 1509,
+      "active_48h": 154
     },
     "rows": [
       {
@@ -16,44 +16,8 @@
         "seat": "ai_nuwa",
         "kind": "desktop",
         "first": "2026-11-23T16:22:46+00:00",
-        "last": "2026-11-23T16:33:47+00:00",
+        "last": "2026-11-23T17:44:02+00:00",
         "state": "running"
-      },
-      {
-        "id": "afa19147",
-        "title": "",
-        "seat": "ai_photo",
-        "kind": "desktop",
-        "first": "2026-11-23T09:33:29+00:00",
-        "last": "2026-11-23T16:33:47+00:00",
-        "state": "running"
-      },
-      {
-        "id": "f83cd8e2",
-        "title": "",
-        "seat": "ai_nuwa",
-        "kind": "desktop",
-        "first": "2026-11-22T16:15:18+00:00",
-        "last": "2026-11-23T16:33:36+00:00",
-        "state": "running"
-      },
-      {
-        "id": "310f6bc7",
-        "title": "",
-        "seat": "jci_taipei",
-        "kind": "desktop",
-        "first": "2026-11-23T11:58:49+00:00",
-        "last": "2026-11-23T16:29:38+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "a8db6d96",
-        "title": "",
-        "seat": "ai_nuwa",
-        "kind": "desktop",
-        "first": "2026-11-21T20:23:30+00:00",
-        "last": "2026-11-23T16:26:40+00:00",
-        "state": "idle"
       },
       {
         "id": "892e20f3",
@@ -61,7 +25,7 @@
         "seat": "ai_darkhero",
         "kind": "desktop",
         "first": "2026-11-23T07:30:09+00:00",
-        "last": "2026-11-23T16:24:46+00:00",
+        "last": "2026-11-23T17:43:56+00:00",
         "state": "idle"
       },
       {
@@ -70,7 +34,160 @@
         "seat": "ai_darkhero",
         "kind": "desktop",
         "first": "2026-11-22T06:05:47+00:00",
-        "last": "2026-11-23T16:24:23+00:00",
+        "last": "2026-11-23T17:43:41+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "f83cd8e2",
+        "title": "",
+        "seat": "ai_nuwa",
+        "kind": "desktop",
+        "first": "2026-11-22T16:15:18+00:00",
+        "last": "2026-11-23T17:43:16+00:00",
+        "state": "running"
+      },
+      {
+        "id": "9783176c",
+        "title": "",
+        "seat": "ai_photo",
+        "kind": "dispatched",
+        "first": "2026-11-23T17:42:55+00:00",
+        "last": "2026-11-23T17:43:03+00:00",
+        "state": "running"
+      },
+      {
+        "id": "afa19147",
+        "title": "",
+        "seat": "ai_photo",
+        "kind": "desktop",
+        "first": "2026-11-23T09:33:29+00:00",
+        "last": "2026-11-23T17:40:38+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "b514e095",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "desktop",
+        "first": "2026-11-23T09:02:53+00:00",
+        "last": "2026-11-23T17:31:54+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "e8e49f5d",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "desktop",
+        "first": "2026-11-23T09:03:07+00:00",
+        "last": "2026-11-23T17:31:47+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "cf309d7f",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-23T17:18:18+00:00",
+        "last": "2026-11-23T17:23:50+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "740effd9",
+        "title": "",
+        "seat": "sdnext_a770",
+        "kind": "dispatched",
+        "first": "2026-11-23T17:21:26+00:00",
+        "last": "2026-11-23T17:23:16+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "64af5399",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "desktop",
+        "first": "2026-11-23T07:14:19+00:00",
+        "last": "2026-11-23T17:22:01+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "a8db6d96",
+        "title": "",
+        "seat": "ai_nuwa",
+        "kind": "desktop",
+        "first": "2026-11-21T20:23:30+00:00",
+        "last": "2026-11-23T17:08:01+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "0337eca1",
+        "title": "",
+        "seat": "ai_career",
+        "kind": "desktop",
+        "first": "2026-11-23T07:06:13+00:00",
+        "last": "2026-11-23T16:59:08+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "427c8dd3",
+        "title": "",
+        "seat": "ai_metadata",
+        "kind": "desktop",
+        "first": "2026-11-19T02:13:28+00:00",
+        "last": "2026-11-23T16:49:23+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "744e68a9",
+        "title": "",
+        "seat": "hub",
+        "kind": "dispatched",
+        "first": "2026-11-23T16:46:34+00:00",
+        "last": "2026-11-23T16:47:18+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "4d32dc75",
+        "title": "",
+        "seat": "hub",
+        "kind": "dispatched",
+        "first": "2026-11-23T16:46:33+00:00",
+        "last": "2026-11-23T16:47:14+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "5ca611ec",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-23T16:40:12+00:00",
+        "last": "2026-11-23T16:43:56+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "310f6bc7",
+        "title": "",
+        "seat": "jci_taipei",
+        "kind": "desktop",
+        "first": "2026-11-23T11:58:49+00:00",
+        "last": "2026-11-23T16:40:36+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "8aac11ee",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "dispatched",
+        "first": "2026-11-23T16:39:53+00:00",
+        "last": "2026-11-23T16:40:00+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "d0840dc9",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-23T16:39:28+00:00",
+        "last": "2026-11-23T16:39:50+00:00",
         "state": "idle"
       },
       {
@@ -80,7 +197,7 @@
         "kind": "dispatched",
         "first": "2026-11-23T16:20:19+00:00",
         "last": "2026-11-23T16:24:01+00:00",
-        "state": "running"
+        "state": "idle"
       },
       {
         "id": "0db2bc62",
@@ -107,15 +224,6 @@
         "kind": "dispatched",
         "first": "2026-11-23T16:11:42+00:00",
         "last": "2026-11-23T16:11:53+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "b514e095",
-        "title": "",
-        "seat": "ai_trader",
-        "kind": "desktop",
-        "first": "2026-11-23T09:02:53+00:00",
-        "last": "2026-11-23T16:09:30+00:00",
         "state": "idle"
       },
       {
@@ -155,15 +263,6 @@
         "state": "idle"
       },
       {
-        "id": "64af5399",
-        "title": "",
-        "seat": "ai_trader",
-        "kind": "desktop",
-        "first": "2026-11-23T07:14:19+00:00",
-        "last": "2026-11-23T16:06:02+00:00",
-        "state": "idle"
-      },
-      {
         "id": "713f9836",
         "title": "",
         "seat": "jci_taipei",
@@ -191,24 +290,6 @@
         "state": "idle"
       },
       {
-        "id": "e8e49f5d",
-        "title": "",
-        "seat": "ai_trader",
-        "kind": "desktop",
-        "first": "2026-11-23T09:03:07+00:00",
-        "last": "2026-11-23T16:05:51+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "427c8dd3",
-        "title": "",
-        "seat": "ai_metadata",
-        "kind": "desktop",
-        "first": "2026-11-19T02:13:28+00:00",
-        "last": "2026-11-23T15:54:10+00:00",
-        "state": "idle"
-      },
-      {
         "id": "e3ebe367",
         "title": "",
         "seat": "ai_darkhero",
@@ -233,15 +314,6 @@
         "kind": "dispatched",
         "first": "2026-11-23T14:53:22+00:00",
         "last": "2026-11-23T15:06:14+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "0337eca1",
-        "title": "",
-        "seat": "ai_career",
-        "kind": "desktop",
-        "first": "2026-11-23T07:06:13+00:00",
-        "last": "2026-11-23T14:55:52+00:00",
         "state": "idle"
       },
       {
@@ -476,78 +548,6 @@
         "kind": "dispatched",
         "first": "2026-11-23T05:46:09+00:00",
         "last": "2026-11-23T05:46:51+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "a768431b",
-        "title": "",
-        "seat": "ai_wallpaper",
-        "kind": "dispatched",
-        "first": "2026-11-23T05:16:46+00:00",
-        "last": "2026-11-23T05:18:42+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "34ec9feb",
-        "title": "",
-        "seat": "ai_heartlink",
-        "kind": "dispatched",
-        "first": "2026-11-23T04:46:04+00:00",
-        "last": "2026-11-23T04:46:17+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "e0462fab",
-        "title": "",
-        "seat": "ai_trader",
-        "kind": "dispatched",
-        "first": "2026-11-23T04:45:43+00:00",
-        "last": "2026-11-23T04:45:54+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "4e6c4a39",
-        "title": "",
-        "seat": "ai_photo",
-        "kind": "dispatched",
-        "first": "2026-11-23T04:18:04+00:00",
-        "last": "2026-11-23T04:22:32+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "75ac0182",
-        "title": "",
-        "seat": "ai_network",
-        "kind": "dispatched",
-        "first": "2026-11-23T03:49:22+00:00",
-        "last": "2026-11-23T03:58:39+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "4812ed7b",
-        "title": "",
-        "seat": "ai_ut",
-        "kind": "dispatched",
-        "first": "2026-11-23T03:39:58+00:00",
-        "last": "2026-11-23T03:40:06+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "4c47c9ac",
-        "title": "",
-        "seat": "ai_heartlink",
-        "kind": "dispatched",
-        "first": "2026-11-23T03:39:46+00:00",
-        "last": "2026-11-23T03:39:56+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "7d6ae4b1",
-        "title": "",
-        "seat": "ai_heartlink",
-        "kind": "dispatched",
-        "first": "2026-11-23T03:39:38+00:00",
-        "last": "2026-11-23T03:39:44+00:00",
         "state": "idle"
       }
     ]
