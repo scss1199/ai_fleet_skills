@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "scar3",
-  "at": "2026-11-22T14:37:34",
+  "at": "2026-11-23T12:12:36",
   "hub": "C:\\ai_workspace",
-  "seconds": 216.1,
+  "seconds": 149.6,
   "check": {
     "seats": [
       {
@@ -32,7 +32,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-22",
+        "newest_file": "2026-11-23",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -55,7 +55,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-22",
+        "newest_file": "2026-11-23",
         "activity": "ACTIVE"
       },
       {
@@ -63,14 +63,14 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 20,
+        "dirty": 22,
         "unpushed": 0,
         "last_commit": "2026-11-10",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-22",
+        "newest_file": "2026-11-23",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -88,7 +88,7 @@
         "worktrees_prunable": 1,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-22",
+        "newest_file": "2026-11-23",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -756,30 +756,25 @@
   },
   "sweep": {
     "applied": true,
-    "planned": 1,
-    "planned_bytes": 207,
-    "by_class": {
-      "orphan_inbox": {
-        "count": 1,
-        "bytes": 207
-      }
-    },
+    "planned": 0,
+    "planned_bytes": 0,
+    "by_class": {},
     "skipped": {
       "git_tracked": 284,
       "protected": 0
     },
-    "moved": 1,
-    "engine": "fleet-residue-quarantine.py",
+    "moved": 0,
+    "engine": null,
     "errors": []
   },
   "seat_budget": {
     "ok": true,
     "applied": true,
-    "seats": 4,
+    "seats": 2,
     "deny_rows": 0,
     "pins_moved": 0
   },
-  "delete_bytes": 9891978115,
+  "delete_bytes": 9892015109,
   "summary": {
     "seats": 7,
     "violations": 5,
@@ -797,9 +792,9 @@
     "claude_cli_drift": [
       "2.1.248 behind 82: claude update"
     ],
-    "seat_budget": "applied seats=4 deny+0 pins->sonnet 0",
-    "moved": 1,
-    "planned_bytes": 207,
+    "seat_budget": "applied seats=2 deny+0 pins->sonnet 0",
+    "moved": 0,
+    "planned_bytes": 0,
     "applied": true
   }
 }
