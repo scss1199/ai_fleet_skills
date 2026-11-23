@@ -2,14 +2,23 @@
   "conversations": {
     "schema": 1,
     "host": "scar3",
-    "generated": "2026-11-22T06:37:34+00:00",
+    "generated": "2026-11-23T04:15:14+00:00",
     "counts": {
-      "total": 52,
+      "total": 53,
       "desktop": 35,
-      "dispatched": 17,
-      "active_48h": 0
+      "dispatched": 18,
+      "active_48h": 1
     },
     "rows": [
+      {
+        "id": "62c33a81",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-22T08:29:11+00:00",
+        "last": "2026-11-22T08:29:15+00:00",
+        "state": "idle"
+      },
       {
         "id": "fe96b74a",
         "title": "",
@@ -20,12 +29,255 @@
         "state": "idle"
       },
       {
+        "id": "347510c3",
+        "title": "",
+        "seat": "ai_cctv",
+        "kind": "desktop",
+        "first": "2026-10-20T06:53:45+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "5723c996",
+        "title": "",
+        "seat": "ai_cctv",
+        "kind": "desktop",
+        "first": "2026-10-19T02:38:45+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "e5adea2f",
+        "title": "",
+        "seat": "ai_cctv",
+        "kind": "desktop",
+        "first": "2026-10-23T14:05:53+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "9d51d73d",
+        "title": "",
+        "seat": "ai_karaoke",
+        "kind": "desktop",
+        "first": "2026-10-23T14:05:45+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "d1376036",
+        "title": "",
+        "seat": "ai_karaoke",
+        "kind": "desktop",
+        "first": "2026-08-18T16:46:41+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "1c6a38e7",
+        "title": "",
+        "seat": "ai_scar3",
+        "kind": "desktop",
+        "first": "2026-10-23T14:06:02+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "2edf44a9",
+        "title": "",
+        "seat": "ai_scar3",
+        "kind": "desktop",
+        "first": "2026-10-12T15:54:29+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "31f72991",
+        "title": "",
+        "seat": "ai_scar3",
+        "kind": "desktop",
+        "first": "2026-10-15T02:05:28+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
         "id": "39bdc7f6",
         "title": "",
         "seat": "ai_scar3",
         "kind": "desktop",
         "first": "2026-11-06T08:12:28+00:00",
-        "last": "2026-11-10T14:41:56+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "4a93c0c4",
+        "title": "",
+        "seat": "ai_scar3",
+        "kind": "desktop",
+        "first": "2026-10-28T08:21:56+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "7a7567cb",
+        "title": "",
+        "seat": "ai_scar3",
+        "kind": "desktop",
+        "first": "2026-10-14T06:21:02+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "99388386",
+        "title": "",
+        "seat": "ai_scar3",
+        "kind": "desktop",
+        "first": "2026-10-30T15:53:19+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "99e5607e",
+        "title": "",
+        "seat": "ai_scar3",
+        "kind": "desktop",
+        "first": "2026-08-14T04:22:42+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "ca2d61c9",
+        "title": "",
+        "seat": "ai_scar3",
+        "kind": "desktop",
+        "first": "2026-10-16T11:45:18+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "d0782a09",
+        "title": "",
+        "seat": "ai_scar3",
+        "kind": "desktop",
+        "first": "2026-10-11T18:56:07+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "f595759a",
+        "title": "",
+        "seat": "ai_scar3",
+        "kind": "desktop",
+        "first": "2026-10-03T10:01:15+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "f9718d32",
+        "title": "",
+        "seat": "ai_scar3",
+        "kind": "desktop",
+        "first": "2026-08-22T11:46:46+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "fc44e42b",
+        "title": "",
+        "seat": "ai_scar3",
+        "kind": "desktop",
+        "first": "2026-08-31T18:43:48+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "09353bcc",
+        "title": "",
+        "seat": "ai_wallpaper",
+        "kind": "desktop",
+        "first": "2026-08-17T08:25:40+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "1e61c032",
+        "title": "",
+        "seat": "ai_wallpaper",
+        "kind": "desktop",
+        "first": "2026-08-14T08:54:29+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "217ae55c",
+        "title": "",
+        "seat": "ai_wallpaper",
+        "kind": "desktop",
+        "first": "2026-08-24T15:44:48+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "23e29ca6",
+        "title": "",
+        "seat": "ai_wallpaper",
+        "kind": "desktop",
+        "first": "2026-08-23T16:04:39+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "26423783",
+        "title": "",
+        "seat": "ai_wallpaper",
+        "kind": "desktop",
+        "first": "2026-10-03T23:47:53+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "33997d99",
+        "title": "",
+        "seat": "ai_wallpaper",
+        "kind": "desktop",
+        "first": "2026-08-19T09:29:30+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "3cd8e722",
+        "title": "",
+        "seat": "ai_wallpaper",
+        "kind": "desktop",
+        "first": "2026-08-23T03:04:53+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "68fe7a01",
+        "title": "",
+        "seat": "ai_wallpaper",
+        "kind": "desktop",
+        "first": "2026-10-23T14:05:32+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "8cc60d0c",
+        "title": "",
+        "seat": "ai_wallpaper",
+        "kind": "desktop",
+        "first": "2026-08-27T13:51:27+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "9105d9a6",
+        "title": "",
+        "seat": "ai_wallpaper",
+        "kind": "desktop",
+        "first": "2026-09-28T06:57:20+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
         "state": "idle"
       },
       {
@@ -34,7 +286,34 @@
         "seat": "ai_wallpaper",
         "kind": "desktop",
         "first": "2026-11-06T04:23:48+00:00",
-        "last": "2026-11-10T04:48:08+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "bfc19059",
+        "title": "",
+        "seat": "ai_wallpaper",
+        "kind": "desktop",
+        "first": "2026-09-06T16:27:00+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "c771d759",
+        "title": "",
+        "seat": "ai_wallpaper",
+        "kind": "desktop",
+        "first": "2026-09-01T14:36:12+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "d38e669d",
+        "title": "",
+        "seat": "ai_wallpaper",
+        "kind": "desktop",
+        "first": "2026-10-02T19:22:09+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
         "state": "idle"
       },
       {
@@ -43,7 +322,25 @@
         "seat": "ai_wallpaper",
         "kind": "desktop",
         "first": "2026-11-09T14:19:11+00:00",
-        "last": "2026-11-09T14:44:42+00:00",
+        "last": "2026-11-15T13:35:34+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "1f000f1a",
+        "title": "",
+        "seat": "ai_karaoke",
+        "kind": "desktop",
+        "first": "2026-08-15T11:19:46+00:00",
+        "last": "2026-11-15T13:35:32+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "6c511779",
+        "title": "",
+        "seat": "ai_scar3",
+        "kind": "desktop",
+        "first": "2026-10-10T12:16:54+00:00",
+        "last": "2026-11-15T13:35:32+00:00",
         "state": "idle"
       }
     ]
