@@ -2,14 +2,59 @@
   "conversations": {
     "schema": 1,
     "host": "altos",
-    "generated": "2026-11-21T22:01:50+00:00",
+    "generated": "2026-11-23T11:17:42+00:00",
     "counts": {
-      "total": 69,
+      "total": 71,
       "desktop": 19,
-      "dispatched": 50,
-      "active_48h": 12
+      "dispatched": 52,
+      "active_48h": 10
     },
     "rows": [
+      {
+        "id": "3d2b4779",
+        "title": "",
+        "seat": "ai_altos",
+        "kind": "dispatched",
+        "first": "2026-11-22T08:37:18+00:00",
+        "last": "2026-11-22T08:37:35+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "372a6899",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-22T08:37:08+00:00",
+        "last": "2026-11-22T08:37:16+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "9d301d2a",
+        "title": "",
+        "seat": "",
+        "kind": "desktop",
+        "first": "2026-11-16T04:05:31+00:00",
+        "last": "2026-11-22T07:45:52+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "d99c99f3",
+        "title": "",
+        "seat": "",
+        "kind": "desktop",
+        "first": "2026-11-21T01:35:28+00:00",
+        "last": "2026-11-22T06:19:53+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "cb4b7d2d",
+        "title": "",
+        "seat": "",
+        "kind": "desktop",
+        "first": "2026-11-21T11:33:51+00:00",
+        "last": "2026-11-22T06:19:40+00:00",
+        "state": "idle"
+      },
       {
         "id": "44581067",
         "title": "",
@@ -38,29 +83,11 @@
         "state": "idle"
       },
       {
-        "id": "9d301d2a",
-        "title": "",
-        "seat": "",
-        "kind": "desktop",
-        "first": "2026-11-16T04:05:31+00:00",
-        "last": "2026-11-21T13:25:23+00:00",
-        "state": "idle"
-      },
-      {
         "id": "adeec148",
         "title": "",
         "seat": "ai_darkhero",
         "kind": "desktop",
         "first": "2026-11-21T11:40:35+00:00",
-        "last": "2026-11-21T13:25:22+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "cb4b7d2d",
-        "title": "",
-        "seat": "",
-        "kind": "desktop",
-        "first": "2026-11-21T11:33:51+00:00",
         "last": "2026-11-21T13:25:22+00:00",
         "state": "idle"
       },
@@ -71,15 +98,6 @@
         "kind": "desktop",
         "first": "2026-11-17T17:21:51+00:00",
         "last": "2026-11-21T11:31:59+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "d99c99f3",
-        "title": "",
-        "seat": "",
-        "kind": "desktop",
-        "first": "2026-11-21T01:35:28+00:00",
-        "last": "2026-11-21T11:31:35+00:00",
         "state": "idle"
       },
       {
