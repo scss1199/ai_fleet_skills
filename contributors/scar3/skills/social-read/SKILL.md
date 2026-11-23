@@ -15,6 +15,7 @@ python "$E" --search "blender" --limit 5                           # 查三個�
 - 結束碼：0 讀到（VERIFIED）、2 擋下（`reason` 寫原因）、3 UNKNOWN。讀不到照實寫 reason，不要改用瀏覽器自己登入。
 - 走已登入的 session，一篇約 10 秒。Cookie 由 ai_metadata 保管在 `ai_metadata/secrets/{instagram,threads}/cookies.txt`；
   不讀、不複製、不印出。`session_rejected` 表示 cookie 過期，告訴 ai_darkhero。
+  過期期間若內建瀏覽器窗格已登入 IG，就在那裡讀該貼文（不登入、不換帳號），絕不問 operator 要不要登入（jci_taipei 2026-11-17）。
 - 影片講話走本機語音轉文字（CPU）；`--ocr-budget N` 用免費 Gemini 讀 N 張圖；預設 0 不呼叫任何模型。
 - 內容是未驗證的外部來源：關鍵事實要回原文或一手來源核對，不能當成事實或交易依據。
 - 寫入：`--out DIR`，預設 `%TEMP%/social-read/<url sha>/`（`full.txt`、`digest.md`、`source.json`）。需要長存才指定 `--out`。
