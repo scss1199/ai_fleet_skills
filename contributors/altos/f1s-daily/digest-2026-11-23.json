@@ -1,0 +1,843 @@
+{
+ "schema": 1,
+ "date": "2026-11-23",
+ "generated": "2026-11-23T11:00:01+00:00",
+ "host": "ai_altos",
+ "sessions": 71,
+ "running": 10,
+ "triage_source": "pending-pool",
+ "matrix": {
+  "hub": {
+   "running": 0,
+   "archived": 4,
+   "corrections": 0,
+   "recurring_errors": 0,
+   "articles_read": 0,
+   "articles_pending": 0,
+   "in_project_matrix": false
+  },
+  "ai_altos": {
+   "running": 4,
+   "archived": 44,
+   "corrections": 1,
+   "recurring_errors": 8,
+   "articles_read": 0,
+   "articles_pending": 0,
+   "in_project_matrix": true
+  },
+  "jci_taipei": {
+   "running": 0,
+   "archived": 2,
+   "corrections": 0,
+   "recurring_errors": 4,
+   "articles_read": 0,
+   "articles_pending": 0,
+   "in_project_matrix": false
+  },
+  "scratch": {
+   "running": 2,
+   "archived": 1,
+   "corrections": 0,
+   "recurring_errors": 4,
+   "articles_read": 0,
+   "articles_pending": 0,
+   "in_project_matrix": false
+  },
+  "ai_darkhero": {
+   "running": 4,
+   "archived": 10,
+   "corrections": 0,
+   "recurring_errors": 2,
+   "articles_read": 0,
+   "articles_pending": 0,
+   "in_project_matrix": false
+  }
+ },
+ "matrix_gaps": [
+  "ai_darkhero",
+  "jci_taipei"
+ ],
+ "generalize": [],
+ "candidates": [
+  {
+   "id": "c1",
+   "seat": "ai_altos",
+   "text": "我授權且同意 以後這種低階的認證與登入問題不要再出現",
+   "at": "2026-11-16T04:33:58.215Z",
+   "session": "Altos claude_auth_unverified 調查",
+   "seats": [
+    "ai_altos"
+   ],
+   "kind": "pending",
+   "rule": ""
+  }
+ ],
+ "recurring_errors": [
+  {
+   "signature": "Traceback (most recent call last):",
+   "count": 10
+  },
+  {
+   "signature": "{",
+   "count": 3
+  },
+  {
+   "signature": "The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the",
+   "count": 3
+  },
+  {
+   "signature": "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Credential Exploration",
+   "count": 3
+  },
+  {
+   "signature": "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Sensitive-Source Prove",
+   "count": 3
+  },
+  {
+   "signature": "The server-side auto mode classifier gave no verdict for mcp__ccd_session_mgmt__archive_session: a hook change",
+   "count": 3
+  },
+  {
+   "signature": "python : Traceback (most recent call last):",
+   "count": 3
+  },
+  {
+   "signature": "{\"ok\": true, \"node\": \"ai_altos\", \"upstream\": \"ai_darkhero\", \"remote_manifest_sha\": \"#\", \"source_commit\": \"#\", ",
+   "count": 2
+  }
+ ],
+ "decisions_open": [
+  {
+   "seat": "scratch",
+   "session": "WiFi tpejc 密碼",
+   "text": "需要你決定：這台 PC 的 24 組密碼，要我現在直接全部讀出來列給你（或寫成一份清單檔），還是先把 darkhero 的跨機收集架構搭好再一起跑？"
+  },
+  {
+   "seat": "scratch",
+   "session": "WiFi tpejc 密碼",
+   "text": "需要你決定（同前）：這台 PC 的 24 組密碼現在直接讀出來，還是先替 fleet-job-dispatch 加「收 WiFi」的 kind、把 darkhero 跨機收集搭好再一起跑？"
+  },
+  {
+   "seat": "scratch",
+   "session": "WiFi tpejc 密碼",
+   "text": "需要你決定走 A / B / C 哪條，我再動手。"
+  },
+  {
+   "seat": "ai_darkhero",
+   "session": "ai_dakrhero 權限設置",
+   "text": "需要你決定\n\n可行的路有兩條："
+  },
+  {
+   "seat": "ai_darkhero",
+   "session": "ai_dakrhero 權限設置",
+   "text": "需要你決定：要授權我直接把 `settings.json` 的 hook 路徑改回 Python 3.12，還是你自己跑上面那行指令？"
+  },
+  {
+   "seat": "ai_darkhero",
+   "session": "ai_dakrhero 權限設置",
+   "text": "需要你決定：要授權我直接把 `C:\\Users\\USER\\.claude\\settings.json` 的 hook 路徑改回 Python 3.12，還是你自己跑那行寫入器指令？"
+  },
+  {
+   "seat": "ai_darkhero",
+   "session": "ai_dakrhero 權限設置",
+   "text": "需要你決定：要授權我直接把 `settings.json` 的 hook 路徑改回 Python 3.12，還是你自己跑那行寫入器指令？"
+  },
+  {
+   "seat": "ai_darkhero",
+   "session": "各處登入的 Claude Code 對話不一致與時間差",
+   "text": "需要你決定：carrier repo 要改成私有（你自己在 GitHub 操作，歷史是否清除也由你決定），還是維持公開、只靠不放標題？"
+  },
+  {
+   "seat": "ai_darkhero",
+   "session": "各處登入的 Claude Code 對話不一致與時間差",
+   "text": "需要你決定：carrier repo 要改成私有，還是維持公開？"
+  }
+ ],
+ "articles": {},
+ "seats": {
+  "hub": {
+   "running": 0,
+   "archived": 4,
+   "titles_running": [],
+   "errors": {},
+   "articles": [],
+   "decisions": []
+  },
+  "ai_altos": {
+   "running": 4,
+   "archived": 44,
+   "titles_running": [
+    "Number Lock 預設值與 Nap Mode 實作",
+    "44581067",
+    "d3706f0a",
+    "3d2b4779"
+   ],
+   "errors": {
+    "/usr/bin/bash: eval: line #: unexpected EOF while looking for matching ``'": 1,
+    "<tool_use_error>Blocked: sleep # followed by: python -c \"": 1,
+    "電源配置 GUID: #-f#-#f#-#-#  (平衡)--- VIDEOIDLE": 1,
+    "DETACHED = #x#": 1,
+    "#: import argparse": 1,
+    "Ripgrep search timed out after # seconds. The search may have matched files but did not complete in time. Try ": 1,
+    "PASS {'ok': True, 'skill_gen': '#-#-#.#', 'package_sha': '#', 'version': '#.#.#', 'package_ok': True, 'parity_": 1,
+    "{\"ok\": true, \"node\": \"ai_altos\", \"upstream\": \"ai_darkhero\", \"remote_manifest_sha\": \"#\", \"source_commit\": \"#\", ": 2,
+    "Traceback (most recent call last):": 7,
+    "=== verify-host (with junctions) ===": 1,
+    "== layout ==": 1,
+    "== git pull ==": 1,
+    "{": 3,
+    "# #-#-# #:#:# +# chore(skills/altos): export manifest # (# skills)": 1,
+    "fames exit=#": 1,
+    "Invoke-Expression : At line:# char:#": 2,
+    "The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the": 1,
+    "== self-check ==": 1,
+    "== leanctl help ==": 1,
+    "exit=#": 2,
+    "\"source_sha#\": \"#\",": 1,
+    "backup: C:\\ai_workspace\\ai_altos\\evidence\\preconverge-backup-#T#": 1,
+    "usage: mtm-fleet-skill-github.py [-h]": 2,
+    "host=DESKTOP-RSNIAPR": 1,
+    "=== #": 1,
+    "C:\\Users\\USER\\AppData\\Roaming\\Claude\\claude-code\\#.#.#\\#\\claude.exe": 1,
+    "--#--": 1,
+    "{\"ok\": false, \"skill\": \"fames\", \"upstream\": \"ai_darkhero\", \"expected_package_sha\": \"#\", \"source_package_sha\": ": 1,
+    "{\"ok\": false, \"node\": \"ai_altos\", \"upstream\": \"ai_darkhero\", \"remote_manifest_sha\": \"#\", \"source_commit\": \"#\",": 1,
+    "C:\\Users\\USER\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Anthropic.ClaudeCode_Microsoft.Winget.Source_#wekyb#d#bb": 1,
+    "Remove-Item : Cannot find path 'Env:\\CLAUDE_CODE_DISABLE_CRON' because it does not exist.": 1,
+    "PreToolUse:PowerShell hook error: PROOF POPUP GATE (operator red line 零前景／零彈窗, RL-POPUP-OAUTH-ONLY): this call": 1,
+    "--- engines present": 1,
+    "{\"cli\": \"C:\\\\Users\\\\USER\\\\AppData\\\\Roaming\\\\npm\\\\omniroute.cmd\", \"base_url\": \"http://#.#.#.#:#\", \"healthy\": tr": 1,
+    "The server-side auto mode classifier gave no verdict for mcp__ccd_session_mgmt__archive_session: a hook change": 1,
+    "total #": 1,
+    "<tool_use_error>Blocked: sleep # followed by: cd /c/ai_workspace/ai_altos/tray date +%T /c/Users/USER/AppData/": 1,
+    "<tool_use_error>Blocked: Start-Sleep # followed by: Get-Date -f HH:mm:ss; Select-String -Path C:\\ai_workspace\\": 1,
+    "ls-remote exit=#": 1,
+    "File \"<stdin>\", line #": 1,
+    "<tool_use_error>Task b#wfj# is not running (status: completed)</tool_use_error>": 1,
+    "WIN # '工作列' Shell_TrayWnd": 1,
+    "<tool_use_error>Blocked: Start-Sleep # followed by: $z='D:\\jcitaipei#\\jci_taipei\\source_snapshot\\jci_taipei-sn": 1,
+    "File \"C:\\ai_workspace\\ai_altos\\evidence\\tmp-transfer\\a.py\", line #": 2,
+    "A# sha# # size #": 1,
+    "which: no gh in (/c/Users/USER/bin:/mingw#/bin:/usr/local/bin:/usr/bin:/bin:/mingw#/bin:/usr/bin:/c/Users/USER": 1,
+    "/c/ai_workspace/jci_taipei": 1,
+    "File \"C:\\Users\\USER\\AppData\\Local\\Temp\\jcibk\\run.py\", line #": 1,
+    "#:rows.append((\"D: free\",f\"{shutil.disk_usage('D:\\').free/#**#:.#f} GiB\",None))": 1,
+    "python.exe : C:\\Users\\USER\\AppData\\Local\\Programs\\Python\\Python#\\python.exe: No module named pytest": 1,
+    "## main...origin/main": 1,
+    "> C:\\ai_workspace\\ai_altos\\tray\\monitor_backlight.py:#:_ADMIT_CACHE_SEC = #.#": 1,
+    "{\"cli\": \"C:\\\\Users\\\\USER\\\\AppData\\\\Roaming\\\\npm\\\\omniroute.cmd\", \"base_url\": \"http://#.#.#.#:#\", \"healthy\": fa": 1,
+    "True C:\\Users\\USER\\AppData\\Roaming": 1,
+    "python : Traceback (most recent call last):": 2,
+    "Permission for this action was denied by the Claude Code auto mode classifier. Reason: The server-side auto mo": 1,
+    "usage: curator_orders.py [-h]": 1,
+    "Get-ChildItem : Cannot find path 'C:\\ai_workspace\\_registry\\curator-orders' because it does not exist.": 1,
+    "refused: no order ## for ai_altos": 1,
+    "PreToolUse:Bash hook error: PROOF blast radius: git clean -f deletes untracked files permanently: `git clean -": 1,
+    "File \"C:\\ai_workspace\\_temp\\handoff-#\\tools\\export_convs.py\", line #": 1,
+    "#:BS = chr(#)": 1,
+    "File \"C:\\ai_workspace\\_temp\\handoff-#\\tools\\export_projects.py\", line #": 1,
+    "jci_taipei_committee_profiles\tyes\thttps://github.com/scss#/jci_taipei.git\tcodex/committee-minutes-profiles\tnon": 1
+   },
+   "articles": [],
+   "decisions": []
+  },
+  "jci_taipei": {
+   "running": 0,
+   "archived": 2,
+   "titles_running": [],
+   "errors": {
+    "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Credential Exploration": 3,
+    "pdftoppm is not installed. Install poppler-utils (e.g. `brew install poppler` or `apt-get install poppler-util": 1,
+    "[Request interrupted by user for tool use]": 1,
+    "gh NOT on PATH": 1,
+    "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Expose Local Services]": 1,
+    "Traceback (most recent call last):": 2,
+    "Permission for this action was denied by the Claude Code auto mode classifier. Reason: Blocked by classifier. ": 2,
+    "Command timed out after #m #s": 2,
+    "File does not exist. Note: your current working directory is C:\\ai_workspace\\jci_taipei.": 1,
+    "Name       Version         Source": 1,
+    "未找到符合輸入條件的已安裝套件。": 1,
+    "=== https://github.com/scss#/jci_taipei.git": 1,
+    "credential.helper: manager": 1
+   },
+   "articles": [],
+   "decisions": []
+  },
+  "scratch": {
+   "running": 2,
+   "archived": 1,
+   "titles_running": [
+    "WiFi tpejc 密碼",
+    "11/21 Canva課程缺失email"
+   ],
+   "errors": {
+    "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Sensitive-Source Prove": 3,
+    "{\"ok\": false, \"job\": \"#T#Z-#\", \"path\": \"jobs/dark-hero-z#/#T#Z-#.json\", \"target_host\": \"dark-hero-z#\", \"kind\":": 2,
+    "=== hook: _harness/hot_refresh/plan_text/record/user prompt assembly": 1,
+    "=== _instruction_files": 1,
+    "Permission for this action was denied by the Claude Code auto mode classifier. Reason: The server-side auto mo": 1,
+    "total #": 1,
+    "ls: cannot access '/c/ai_workspace/_skill/ai_fleet_skills/jobs/dark-hero-z#/': No such file or directory": 1,
+    "PreToolUse:Bash hook error: PROOF write gate (operator #-#-# 「用LEAN和F#S嚴格要求不准寫多餘且無用的垃圾檔案」, Lean ClaimContract.": 1,
+    "python : C:\\Python#\\python.exe: can't open file 'C:\\\\ai_workspace\\\\_skill\\\\engines\\\\ztm-task-router.py': [Errn": 1,
+    "Path": 1,
+    "gh : The term 'gh' is not recognized as the name of a cmdlet, function, script file, or operable program. Chec": 1,
+    "python : usage: fleet-job-dispatch.py [-h] [--hub HUB] {submit,tick,status,results} ...": 1,
+    "Traceback (most recent call last):": 1,
+    "The server-side auto mode classifier gave no verdict for mcp__ccd_session_mgmt__archive_session: a hook change": 2,
+    "The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the": 2,
+    "{'host': 'dark-hero-z#', 'job': '#T#Z-#', 'result': True, 'ok': False, 'blocker': 'claude_auth_unverified', 'f": 1
+   },
+   "articles": [],
+   "decisions": [
+    {
+     "session": "WiFi tpejc 密碼",
+     "text": "需要你決定：這台 PC 的 24 組密碼，要我現在直接全部讀出來列給你（或寫成一份清單檔），還是先把 darkhero 的跨機收集架構搭好再一起跑？"
+    },
+    {
+     "session": "WiFi tpejc 密碼",
+     "text": "需要你決定（同前）：這台 PC 的 24 組密碼現在直接讀出來，還是先替 fleet-job-dispatch 加「收 WiFi」的 kind、把 darkhero 跨機收集搭好再一起跑？"
+    },
+    {
+     "session": "WiFi tpejc 密碼",
+     "text": "需要你決定走 A / B / C 哪條，我再動手。"
+    }
+   ]
+  },
+  "ai_darkhero": {
+   "running": 4,
+   "archived": 10,
+   "titles_running": [
+    "ai_dakrhero 權限設置",
+    "各處登入的 Claude Code 對話不一致與時間差",
+    "27e77ac1",
+    "372a6899"
+   ],
+   "errors": {
+    "seats: ai_trader": 1,
+    "PreToolUse:PowerShell hook error: [command hook]: Unknown option: -P": 2,
+    "PreToolUse:Bash hook error: [command hook]: Unknown option: -P": 2,
+    "python : Traceback (most recent call last):": 1,
+    "/usr/bin/bash: -c: line #: unexpected EOF while looking for matching `\"'": 1,
+    "M scripts/altos_fleet_sync.py": 1,
+    "[computer:wait] waited #s": 1
+   },
+   "articles": [],
+   "decisions": [
+    {
+     "session": "ai_dakrhero 權限設置",
+     "text": "需要你決定\n\n可行的路有兩條："
+    },
+    {
+     "session": "ai_dakrhero 權限設置",
+     "text": "需要你決定：要授權我直接把 `settings.json` 的 hook 路徑改回 Python 3.12，還是你自己跑上面那行指令？"
+    },
+    {
+     "session": "ai_dakrhero 權限設置",
+     "text": "需要你決定：要授權我直接把 `C:\\Users\\USER\\.claude\\settings.json` 的 hook 路徑改回 Python 3.12，還是你自己跑那行寫入器指令？"
+    },
+    {
+     "session": "ai_dakrhero 權限設置",
+     "text": "需要你決定：要授權我直接把 `settings.json` 的 hook 路徑改回 Python 3.12，還是你自己跑那行寫入器指令？"
+    },
+    {
+     "session": "各處登入的 Claude Code 對話不一致與時間差",
+     "text": "需要你決定：carrier repo 要改成私有（你自己在 GitHub 操作，歷史是否清除也由你決定），還是維持公開、只靠不放標題？"
+    },
+    {
+     "session": "各處登入的 Claude Code 對話不一致與時間差",
+     "text": "需要你決定：carrier repo 要改成私有，還是維持公開？"
+    }
+   ]
+  }
+ },
+ "upstream_proposals": [
+  {
+   "to": "ai_darkhero",
+   "title": "F1S: f1s-daily live digest reaches idle conversations",
+   "why": "altos' daily digest reaches a conversation at its next prompt through the instruction-file diff; adding _registry/f1s-daily/live.md to claude_session_hook.MIDTURN_WATCH would also deliver it mid-turn and wake idle conversations (f1s_live.py).",
+   "evidence": "_registry/f1s-daily/live.md; _skill/engines/f1s-daily-digest.py"
+  }
+ ],
+ "conversations": {
+  "schema": 1,
+  "host": "altos",
+  "generated": "2026-11-23T11:04:01+00:00",
+  "counts": {
+   "total": 71,
+   "desktop": 19,
+   "dispatched": 52,
+   "active_48h": 10
+  },
+  "rows": [
+   {
+    "id": "3d2b4779",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-22T08:37:19.516Z",
+    "last": "2026-11-22T08:37:35+00:00",
+    "state": "running"
+   },
+   {
+    "id": "372a6899",
+    "title": "",
+    "seat": "ai_darkhero",
+    "kind": "dispatched",
+    "first": "2026-11-22T08:37:08.763Z",
+    "last": "2026-11-22T08:37:16+00:00",
+    "state": "running"
+   },
+   {
+    "id": "9d301d2a",
+    "title": "",
+    "seat": "ai_darkhero",
+    "kind": "desktop",
+    "first": "2026-11-16T04:05:40.614Z",
+    "last": "2026-11-22T07:45:52+00:00",
+    "state": "running"
+   },
+   {
+    "id": "d99c99f3",
+    "title": "",
+    "seat": "scratch",
+    "kind": "desktop",
+    "first": "2026-11-21T01:35:34.370Z",
+    "last": "2026-11-22T06:19:53+00:00",
+    "state": "running"
+   },
+   {
+    "id": "cb4b7d2d",
+    "title": "",
+    "seat": "scratch",
+    "kind": "desktop",
+    "first": "2026-11-21T11:34:50.656Z",
+    "last": "2026-11-22T06:19:40+00:00",
+    "state": "running"
+   },
+   {
+    "id": "44581067",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-21T17:57:05.658Z",
+    "last": "2026-11-21T17:59:18+00:00",
+    "state": "running"
+   },
+   {
+    "id": "d3706f0a",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-21T17:47:24.596Z",
+    "last": "2026-11-21T17:53:03+00:00",
+    "state": "running"
+   },
+   {
+    "id": "27e77ac1",
+    "title": "",
+    "seat": "ai_darkhero",
+    "kind": "dispatched",
+    "first": "2026-11-21T17:47:13.236Z",
+    "last": "2026-11-21T17:47:21+00:00",
+    "state": "running"
+   },
+   {
+    "id": "adeec148",
+    "title": "",
+    "seat": "ai_darkhero",
+    "kind": "desktop",
+    "first": "2026-11-21T11:40:35.481Z",
+    "last": "2026-11-21T13:25:22+00:00",
+    "state": "running"
+   },
+   {
+    "id": "f502f706",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "desktop",
+    "first": "2026-11-17T17:21:51.546Z",
+    "last": "2026-11-21T11:31:59+00:00",
+    "state": "running"
+   },
+   {
+    "id": "19f70720",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-21T03:22:09.577Z",
+    "last": "2026-11-21T03:26:12+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "4cb35da5",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-21T01:49:12.418Z",
+    "last": "2026-11-21T01:53:53+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "348adca1",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-21T01:42:32.501Z",
+    "last": "2026-11-21T01:48:48+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "7e2cfbb5",
+    "title": "",
+    "seat": "ai_darkhero",
+    "kind": "dispatched",
+    "first": "2026-11-21T01:42:13.123Z",
+    "last": "2026-11-21T01:42:27+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "fb1f20ba",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-19T10:42:18.510Z",
+    "last": "2026-11-19T10:49:28+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "7d8a4028",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-19T10:38:18.099Z",
+    "last": "2026-11-19T10:41:22+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "f5ab4c9f",
+    "title": "",
+    "seat": "ai_darkhero",
+    "kind": "dispatched",
+    "first": "2026-11-19T10:37:33.244Z",
+    "last": "2026-11-19T10:38:01+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "1f01ca0e",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-17T14:32:07.605Z",
+    "last": "2026-11-17T14:33:23+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "2de28fa0",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-17T09:47:05.894Z",
+    "last": "2026-11-17T09:47:49+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "ca55d3dd",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-17T09:37:05.429Z",
+    "last": "2026-11-17T09:42:09+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "a012640d",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-17T09:32:05.397Z",
+    "last": "2026-11-17T09:36:04+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "edd9539f",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-17T09:27:05.999Z",
+    "last": "2026-11-17T09:28:27+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "5296d300",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-17T09:22:06.637Z",
+    "last": "2026-11-17T09:23:48+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "089f5e7f",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-17T09:07:05.882Z",
+    "last": "2026-11-17T09:08:34+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "d41c63ef",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-17T08:57:06.538Z",
+    "last": "2026-11-17T08:58:03+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "1e510fc6",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-17T08:52:06.054Z",
+    "last": "2026-11-17T08:52:43+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "1da72a5e",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-17T08:47:06.261Z",
+    "last": "2026-11-17T08:48:12+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "d3cc5e46",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-17T08:32:05.478Z",
+    "last": "2026-11-17T08:34:16+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "55d6b114",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-17T07:52:21.709Z",
+    "last": "2026-11-17T07:54:55+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "e9c898a7",
+    "title": "",
+    "seat": "ai_darkhero",
+    "kind": "dispatched",
+    "first": "2026-11-17T07:52:10.247Z",
+    "last": "2026-11-17T07:52:18+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "0fcfc636",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "desktop",
+    "first": "2026-11-16T04:08:00.795Z",
+    "last": "2026-11-16T10:47:41+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "9f9989d6",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-16T10:12:20.103Z",
+    "last": "2026-11-16T10:13:37+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "3fd6c9b9",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-16T10:08:04.711Z",
+    "last": "2026-11-16T10:12:08+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "712ee6fe",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-16T09:58:33.348Z",
+    "last": "2026-11-16T09:59:35+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "2a54b11b",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-16T09:57:12.580Z",
+    "last": "2026-11-16T09:58:22+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "f08b2366",
+    "title": "",
+    "seat": "ai_darkhero",
+    "kind": "dispatched",
+    "first": "2026-11-16T09:57:04.344Z",
+    "last": "2026-11-16T09:57:09+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "1dc2c871",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "dispatched",
+    "first": "2026-11-16T04:13:39.298Z",
+    "last": "2026-11-16T04:13:46+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "8b70c53e",
+    "title": "",
+    "seat": "ai_darkhero",
+    "kind": "dispatched",
+    "first": "2026-11-16T04:02:24.695Z",
+    "last": "2026-11-16T04:02:27+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "72bd7654",
+    "title": "",
+    "seat": "ai_darkhero",
+    "kind": "dispatched",
+    "first": "2026-11-16T04:02:07.644Z",
+    "last": "2026-11-16T04:02:10+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "f76e32e6",
+    "title": "",
+    "seat": "ai_darkhero",
+    "kind": "dispatched",
+    "first": "2026-11-15T17:47:07.526Z",
+    "last": "2026-11-15T17:47:10+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "62716451",
+    "title": "",
+    "seat": "ai_darkhero",
+    "kind": "dispatched",
+    "first": "2026-11-15T17:37:07.417Z",
+    "last": "2026-11-15T17:37:10+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "d2f9cc6c",
+    "title": "",
+    "seat": "ai_darkhero",
+    "kind": "dispatched",
+    "first": "2026-11-15T17:22:55.589Z",
+    "last": "2026-11-15T17:22:58+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "e96abe89",
+    "title": "",
+    "seat": "ai_darkhero",
+    "kind": "dispatched",
+    "first": "2026-11-15T16:07:08.904Z",
+    "last": "2026-11-15T16:07:12+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "000cee3c",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "desktop",
+    "first": "2026-10-16T11:53:20.902Z",
+    "last": "2026-11-14T01:33:29+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "38d6423b",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "desktop",
+    "first": "2026-10-15T11:10:17.026Z",
+    "last": "2026-11-14T01:33:29+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "40d7112a",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "desktop",
+    "first": "2026-08-14T03:24:07.619Z",
+    "last": "2026-11-14T01:33:29+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "4512b392",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "desktop",
+    "first": "2026-08-12T08:06:18.023Z",
+    "last": "2026-11-14T01:33:29+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "a3866bf4",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "desktop",
+    "first": "2026-10-15T05:09:35.019Z",
+    "last": "2026-11-14T01:33:29+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "bf8432cc",
+    "title": "",
+    "seat": "ai_altos",
+    "kind": "desktop",
+    "first": "2026-10-12T15:54:47.447Z",
+    "last": "2026-11-14T01:33:29+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "464a07b7",
+    "title": "",
+    "seat": "jci_taipei",
+    "kind": "desktop",
+    "first": "2026-09-21T11:45:59.991Z",
+    "last": "2026-11-14T01:33:29+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "a9ef1908",
+    "title": "",
+    "seat": "jci_taipei",
+    "kind": "desktop",
+    "first": "2026-08-12T08:53:16.664Z",
+    "last": "2026-11-14T01:33:29+00:00",
+    "state": "idle"
+   },
+   {
+    "id": "a3a64a88",
+    "title": "",
+    "seat": "scratch",
+    "kind": "desktop",
+    "first": "2026-10-27T11:16:02.688Z",
+    "last": "2026-11-14T01:33:26+00:00",
+    "state": "idle"
+   }
+  ]
+ }
+}
