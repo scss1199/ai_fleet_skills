@@ -88,6 +88,23 @@ def _log(row: dict) -> None:
         pass
 
 
+REPLACE_TRIES = 6             # ~1.5 s total backoff for a reader/scanner holding the target open
+
+
+def _replace(tmp: str, dst: str, tries: int = REPLACE_TRIES) -> None:
+    """os.replace with a bounded retry on PermissionError (2026-11-23, ai_theater SIMG-329: four parallel film
+    processes; WinError 5 on load_grant.learned.json.tmp -> load_grant.learned.json while another process or a
+    scanner held the target open without FILE_SHARE_DELETE). Writers already hold LOCK; the retry covers readers."""
+    for i in range(tries):
+        try:
+            os.replace(tmp, dst)
+            return
+        except PermissionError:
+            if i == tries - 1:
+                raise
+            time.sleep(0.05 * (2 ** i))
+
+
 MAX_PLAUSIBLE_W = 1500.0      # CPU + A770 package cannot exceed this; anything above is a corrupt sample
 
 
@@ -197,9 +214,14 @@ def observe_last(last: dict, now: float, ring: str = RING) -> dict | None:
                                                               "rise": rise}]
         doc[last.get("owner") or "?"] = rows[-LEARN_KEEP * 2:]
         tmp = LEARNED + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as fh:
-            json.dump(doc, fh)
-        os.replace(tmp, LEARNED)
+        try:
+            with open(tmp, "w", encoding="utf-8") as fh:
+                json.dump(doc, fh)
+            _replace(tmp, LEARNED)
+        except PermissionError as exc:
+            # learned rows only ever RAISE a later charge; losing one row delays learning, it never loosens the
+            # budget, step or spacing checks. A crash here killed the caller's whole job (SIMG-329).
+            _log({"ok": None, "owner": last.get("owner"), "reason": f"learned_write_skipped: {exc}"})
     return last
 
 
@@ -247,6 +269,15 @@ def max_step_w(posture: str = "awake") -> float:
     return SLEEP_MAX_STEP_W if posture == "sleep" else MAX_STEP_W
 
 
+def settling_note(pending: float, granted: bool = False) -> str:
+    """Reason-text suffix for load granted earlier that the sensors do not show yet; empty when none.
+    Kept out of `decide` so decide holds only the decision the Lean grid checks (load_grant_conformance.py);
+    the text itself is checked by tests/test_load_grant.py."""
+    if not pending:
+        return ""
+    return f" (+{pending:.0f} W settling)" if granted else f" + {pending:.0f} W still settling from earlier grants"
+
+
 def decide(owner: str, step_w: float, power: dict, last: dict, now: float, measured_w: float = 0.0,
            pending: float = 0.0, posture: str = "awake") -> dict:
     """Pure decision (tested without sensors): {'ok': bool, 'reason': str, 'charged_w': float}. `measured_w` is what
@@ -279,13 +310,12 @@ def decide(owner: str, step_w: float, power: dict, last: dict, now: float, measu
             return {"ok": False, "reason": f"unsteady: {power['spread_w']} W spread in {WINDOW_S} s"}
         level = float(power["max_w"])
     if level + pending + step_w > BUDGET_W:
-        settling = f" + {pending:.0f} W still settling from earlier grants" if pending else ""
-        return {"ok": False, "reason": f"{level} W{settling} + {step_w:.0f} W > budget {BUDGET_W:.0f} W"}
+        return {"ok": False, "reason": f"{level} W{settling_note(pending)} + {step_w:.0f} W > budget {BUDGET_W:.0f} W"}
     since = now - float(last.get("epoch") or 0)
     if since < SPACING_S:
         return {"ok": False, "reason": f"last grant {since:.0f} s ago to {last.get('owner')}"}
     return {"ok": True, "charged_w": step_w, "reason": f"steady {power['spread_w']} W spread at {power['now_w']} W"
-                                                       + (f" (+{pending:.0f} W settling)" if pending else "")}
+                                                       + settling_note(pending, granted=True)}
 
 
 def unmetered_host(ring: str = RING, host: str | None = None) -> bool:
@@ -326,7 +356,7 @@ def try_grant(owner: str, step_w: float) -> dict:
                 tmp = STATE + ".tmp"
                 with open(tmp, "w", encoding="utf-8") as fh:
                     json.dump(last, fh)
-                os.replace(tmp, STATE)
+                _replace(tmp, STATE)
             power = recent_power()
             recent = unsettled(last, now)
             pending = pending_w(recent, power["now_w"]) if power.get("ok") else 0.0
@@ -340,7 +370,7 @@ def try_grant(owner: str, step_w: float) -> dict:
                 with open(tmp, "w", encoding="utf-8") as fh:
                     json.dump({"owner": owner, "step_w": step_w, "epoch": now, "power": power,
                                "recent": recent}, fh)
-                os.replace(tmp, STATE)
+                _replace(tmp, STATE)
                 if pre is not None:
                     a770_window.open_window(owner, now, pre, "grant")
             return {**result, "owner": owner, "step_w": step_w, "power": power}

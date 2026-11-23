@@ -229,6 +229,27 @@ def station_route(index: dict | None, known, context: int) -> tuple[list[int], i
     return sorted(o["n"] for o in new if o not in held), len(held)
 
 
+PRIORITY = HUB / "_registry" / "cwd-priority.json"   # operator 2026-11-23: per-cwd wake tiers
+
+
+def seat_tier(seat: str) -> str:
+    """The seat's tier from cwd-priority.json (T0 wakes at once). Fail-open: a missing or broken file, or a seat that
+    is not listed, returns the file's default ("T2"), which keeps the holds exactly as before."""
+    try:
+        doc = json.loads(PRIORITY.read_text(encoding="utf-8-sig"))
+        for tier, seats in (doc.get("tiers") or {}).items():
+            if isinstance(seats, list) and seat in seats:
+                return str(tier)
+        return str(doc.get("default") or "T2")
+    except (OSError, ValueError, AttributeError, TypeError):
+        return "T2"
+
+
+def holds_apply(seat: str) -> bool:
+    """False for a T0 seat: the cold_deferrable and station_route holds do not apply, the conversation is woken."""
+    return seat_tier(seat) != "T0"
+
+
 def spawn_station(seat: str, cwd: str, n: int) -> None:
     """Hand one order to f1s_station in a detached, windowless process (pythonw + CREATE_NO_WINDOW)."""
     import subprocess
@@ -961,10 +982,10 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
                     text = ""                              # another curator chat took this review
                 elif directive_only and not upgrade_wake():
                     text = ""                              # an upgrade alone: the next prompt carries it, no wake
-                elif base == state["base"] and cold_deferrable(titles, known, _now() - start):
+                elif (holds := holds_apply(sig_seat)) and base == state["base"] and cold_deferrable(titles, known, _now() - start):
                     text = ""                              # cache gone, only self-review/prune: the next prompt carries it
                     state["cold_held"] = int(state.get("cold_held") or 0) + 1
-                elif (route := station_route(index, known, context_tokens(transcript))) is not None:
+                elif holds and (route := station_route(index, known, context_tokens(transcript))) is not None:
                     text = ""                              # too large to wake for a routine order: a lean station does it
                                                            # (also when an upgrade came with it: the next prompt carries that)
                     for n in route[0]:
