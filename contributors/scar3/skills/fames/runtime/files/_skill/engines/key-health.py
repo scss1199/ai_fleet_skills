@@ -251,7 +251,7 @@ def run_probe(args):
             continue
         ep = eps.get(p) if isinstance(eps.get(p), dict) else None
         schema = (ep or {}).get("schema", "")
-        model = k.get("model") or ((ep or {}).get("models", [None]) or [None])[0]
+        model = k.get("model") or ((ep or {}).get("models", [None]) or [None])[0] or (ep or {}).get("model")
         evidence = "none"
         if not ep or schema == "openai-local":
             res = "skip"; skipped += 1

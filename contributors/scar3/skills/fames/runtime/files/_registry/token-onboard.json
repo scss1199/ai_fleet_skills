@@ -337,6 +337,20 @@
       "install_tool_hint": "no CLI (no Windows build); turso-db-setup.py uses the Platform REST API",
       "service_key": "turso.tech",
       "note": "ADDED 2026-10-21: hosted SQLite for ziyaoastro on Render Free; the platform token lets a script create the DB and its auth token straight into the vault."
+    },
+    "dashscope": {
+      "kind": "llm",
+      "token_url": "https://bailian.console.alibabacloud.com/?apiKey=1",
+      "scopes": [],
+      "verify_http": {
+        "url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/models",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        },
+        "expect_status": 200
+      },
+      "service_key": "dashscope.aliyuncs.com",
+      "note": "Qwen via Alibaba Model Studio (intl). Free quota per model for new accounts; OpenAI-compatible base https://dashscope-intl.aliyuncs.com/compatible-mode/v1. No-key probe 2026-11-23 = 401."
     }
   }
 }
