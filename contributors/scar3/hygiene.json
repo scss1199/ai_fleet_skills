@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "scar3",
-  "at": "2026-11-23T12:12:36",
+  "at": "2026-11-24T22:18:59",
   "hub": "C:\\ai_workspace",
-  "seconds": 149.6,
+  "seconds": 326.7,
   "check": {
     "seats": [
       {
@@ -32,7 +32,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-23",
+        "newest_file": "2026-11-24",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -47,7 +47,7 @@
           "charter_missing:CLAUDE.md,AGENTS.md,.cursor\\hooks.json"
         ],
         "repo": "hub",
-        "newest_file": "2026-11-22",
+        "newest_file": "2026-11-24",
         "activity": "ACTIVE"
       },
       {
@@ -55,7 +55,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-23",
+        "newest_file": "2026-11-24",
         "activity": "ACTIVE"
       },
       {
@@ -70,7 +70,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-23",
+        "newest_file": "2026-11-24",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -88,7 +88,7 @@
         "worktrees_prunable": 1,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-23",
+        "newest_file": "2026-11-24",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -118,8 +118,8 @@
     "claude_cli_drift": [
       {
         "cli": "2.1.248",
-        "npm": "2.1.330",
-        "behind": 82,
+        "npm": "2.1.331",
+        "behind": 83,
         "limit": 10,
         "path": "C:\\Users\\scss1\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Anthropic.ClaudeCode_Microsoft.Winget.Source_8wekyb3d8bbwe\\claude.EXE",
         "fix": "claude update"
@@ -307,7 +307,7 @@
               "PYSEC-2026-1374",
               "PYSEC-2026-1375"
             ],
-            "latest": "4.3.0"
+            "latest": "4.3.1"
           },
           {
             "package": "fsspec",
@@ -623,7 +623,7 @@
               "GHSA-qr6x-7v33-6qmg",
               "PYSEC-2026-2274"
             ],
-            "latest": "2.0.87"
+            "latest": "2.0.88"
           },
           {
             "package": "requests",
@@ -748,7 +748,7 @@
               "GHSA-8rjx-v5ww-45pp",
               "GHSA-94p9-xgh2-xp45"
             ],
-            "latest": "21.15.12"
+            "latest": "21.15.13"
           }
         ]
       }
@@ -756,15 +756,24 @@
   },
   "sweep": {
     "applied": true,
-    "planned": 0,
-    "planned_bytes": 0,
-    "by_class": {},
+    "planned": 4,
+    "planned_bytes": 1829142,
+    "by_class": {
+      "cache_dir": {
+        "count": 3,
+        "bytes": 1828935
+      },
+      "orphan_inbox": {
+        "count": 1,
+        "bytes": 207
+      }
+    },
     "skipped": {
       "git_tracked": 284,
       "protected": 0
     },
-    "moved": 0,
-    "engine": null,
+    "moved": 4,
+    "engine": "fleet-residue-quarantine.py",
     "errors": []
   },
   "seat_budget": {
@@ -774,7 +783,7 @@
     "deny_rows": 0,
     "pins_moved": 0
   },
-  "delete_bytes": 9892015109,
+  "delete_bytes": 9893888240,
   "summary": {
     "seats": 7,
     "violations": 5,
@@ -790,11 +799,11 @@
     "memory_index_oversize": 0,
     "runtime_cves": 1,
     "claude_cli_drift": [
-      "2.1.248 behind 82: claude update"
+      "2.1.248 behind 83: claude update"
     ],
     "seat_budget": "applied seats=2 deny+0 pins->sonnet 0",
-    "moved": 0,
-    "planned_bytes": 0,
+    "moved": 4,
+    "planned_bytes": 1829142,
     "applied": true
   }
 }
