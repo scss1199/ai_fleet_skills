@@ -2,14 +2,23 @@
   "conversations": {
     "schema": 1,
     "host": "darkhero",
-    "generated": "2026-11-25T15:15:52+00:00",
+    "generated": "2026-11-25T15:40:44+00:00",
     "counts": {
-      "total": 2244,
+      "total": 2245,
       "desktop": 546,
-      "dispatched": 1698,
+      "dispatched": 1699,
       "active_48h": 242
     },
     "rows": [
+      {
+        "id": "963f1278",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-25T15:25:59+00:00",
+        "last": "2026-11-25T15:39:41+00:00",
+        "state": "running"
+      },
       {
         "id": "99ecdf4e",
         "title": "",
@@ -35,7 +44,7 @@
         "kind": "dispatched",
         "first": "2026-11-25T15:13:00+00:00",
         "last": "2026-11-25T15:13:54+00:00",
-        "state": "running"
+        "state": "idle"
       },
       {
         "id": "97b3cbeb",
@@ -539,15 +548,6 @@
         "kind": "dispatched",
         "first": "2026-11-25T09:40:50+00:00",
         "last": "2026-11-25T09:41:36+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "adacdafe",
-        "title": "",
-        "seat": "ai_photo",
-        "kind": "dispatched",
-        "first": "2026-11-25T09:27:07+00:00",
-        "last": "2026-11-25T09:34:45+00:00",
         "state": "idle"
       }
     ]
