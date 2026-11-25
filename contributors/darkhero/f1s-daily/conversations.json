@@ -2,7 +2,7 @@
   "conversations": {
     "schema": 1,
     "host": "darkhero",
-    "generated": "2026-11-25T02:10:31+00:00",
+    "generated": "2026-11-25T02:11:35+00:00",
     "counts": {
       "total": 2156,
       "desktop": 543,
@@ -11,30 +11,21 @@
     },
     "rows": [
       {
-        "id": "afa19147",
+        "id": "a3333acb",
         "title": "",
-        "seat": "ai_photo",
+        "seat": "ai_theater",
         "kind": "desktop",
-        "first": "2026-11-23T09:33:29+00:00",
-        "last": "2026-11-25T02:11:05+00:00",
+        "first": "2026-11-22T02:02:24+00:00",
+        "last": "2026-11-25T02:11:37+00:00",
         "state": "running"
       },
       {
-        "id": "a8db6d96",
+        "id": "7f016734",
         "title": "",
-        "seat": "ai_nuwa",
+        "seat": "ai_trader",
         "kind": "desktop",
-        "first": "2026-11-21T20:23:30+00:00",
-        "last": "2026-11-25T02:11:01+00:00",
-        "state": "running"
-      },
-      {
-        "id": "0337eca1",
-        "title": "",
-        "seat": "ai_career",
-        "kind": "desktop",
-        "first": "2026-11-23T07:06:13+00:00",
-        "last": "2026-11-25T02:11:00+00:00",
+        "first": "2026-11-24T18:56:39+00:00",
+        "last": "2026-11-25T02:11:34+00:00",
         "state": "running"
       },
       {
@@ -43,16 +34,34 @@
         "seat": "ai_darkhero",
         "kind": "desktop",
         "first": "2026-11-24T19:02:22+00:00",
-        "last": "2026-11-25T02:10:59+00:00",
+        "last": "2026-11-25T02:11:33+00:00",
         "state": "running"
       },
       {
-        "id": "a3333acb",
+        "id": "a8db6d96",
         "title": "",
-        "seat": "ai_theater",
+        "seat": "ai_nuwa",
         "kind": "desktop",
-        "first": "2026-11-22T02:02:24+00:00",
-        "last": "2026-11-25T02:10:59+00:00",
+        "first": "2026-11-21T20:23:30+00:00",
+        "last": "2026-11-25T02:11:31+00:00",
+        "state": "running"
+      },
+      {
+        "id": "afa19147",
+        "title": "",
+        "seat": "ai_photo",
+        "kind": "desktop",
+        "first": "2026-11-23T09:33:29+00:00",
+        "last": "2026-11-25T02:11:17+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "0337eca1",
+        "title": "",
+        "seat": "ai_career",
+        "kind": "desktop",
+        "first": "2026-11-23T07:06:13+00:00",
+        "last": "2026-11-25T02:11:06+00:00",
         "state": "running"
       },
       {
@@ -98,15 +107,6 @@
         "kind": "desktop",
         "first": "2026-11-18T06:57:53+00:00",
         "last": "2026-11-25T02:10:44+00:00",
-        "state": "running"
-      },
-      {
-        "id": "7f016734",
-        "title": "",
-        "seat": "ai_trader",
-        "kind": "desktop",
-        "first": "2026-11-24T18:56:39+00:00",
-        "last": "2026-11-25T02:10:42+00:00",
         "state": "running"
       },
       {
