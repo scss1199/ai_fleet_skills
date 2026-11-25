@@ -5,7 +5,7 @@ description: The single public contract for outcome-driven skill selection, opti
 
 # FAMES
 
-FAMES-GEN: 2026-11-25.4
+FAMES-GEN: 2026-11-26.2
 
 FAMES is the single public contract for intent-to-skill selection, optional Jev advice and applicable Lean verification. Users state outcomes and constraints without naming internal components or skills. Infer required capabilities from the request and actual available skill descriptions; select the smallest applicable set. Unmatched local rules use current-model judgment. Jev retains its provider/projection gates; Lean checks explicitly formalized obligations, with UNKNOWN where applicability or evidence is missing.
 
@@ -41,7 +41,7 @@ Main conversation history cannot be selectively erased by this skill. Use fresh 
 | Context budgets, reuse and complete usage accounting | [Minimal context](references/minimal-context.md) |
 | Code and capability review, coverage and changed-file routing | [Incremental review](references/incremental-review.md) |
 | External articles, routing, trial and absorption | [Autonomous knowledge](references/autonomous-knowledge.md) |
-| Other FAMES capabilities: cognitive checks, hardware, background, documents, missions, federation | [Operator reference](references/operator-manual.md), select one heading |
+| Other FAMES capabilities: cognitive checks, hardware, background, documents, missions, federation, conversation layers and yin-yang | [Operator reference](references/operator-manual.md), select one heading |
 | Exact machine-readable acceptance fields | [FAMES protocol](references/protocols/fames-protocol.json), select one capability |
 
 Do not promise arbitrary semantic correctness from schema validation. Savings need matched task/model/acceptance and complete parent, child and retry usage, including caches. Report character counts separately. Missing/stale evidence fails closed as UNKNOWN. Before claiming delivery, use the relevant verifier and SEAL; apply changed packages through the registered convergence route and read back destination identity.

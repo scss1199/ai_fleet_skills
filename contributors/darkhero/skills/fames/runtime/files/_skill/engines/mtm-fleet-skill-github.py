@@ -1478,22 +1478,6 @@ def _package_sha_of_dir(skill_dir: str) -> tuple[str | None, str]:
     return package_sha, "walked"
 
 
-def _manifest_package_sha(node: dict, proto: dict, skill: str) -> tuple[str | None, str]:
-    """(package_sha, reason) for one node's contributor manifest row."""
-    manifest_path = os.path.join(_export_root(node, proto), "manifest.json")
-    if not os.path.isfile(manifest_path):
-        return None, "missing node manifest"
-    try:
-        manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8-sig"))
-    except Exception as exc:  # noqa: BLE001 - reported, not raised
-        return None, f"unreadable manifest: {exc}"
-    for row in manifest.get("skills") or []:
-        if row.get("name") == skill:
-            sha = row.get("package_sha")
-            return (sha, "") if sha else (None, f"{skill} row carries no package_sha")
-    return None, f"missing {skill} row"
-
-
 def _remote_package_sha(node: dict, skill: str) -> tuple[str | None, str]:
     try:
         manifest = _remote_manifest(node)

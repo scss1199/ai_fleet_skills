@@ -107,16 +107,18 @@ def posture_from_doc(doc: dict | None, now: float, stale_s: float = STALE_S) -> 
 
 
 # ------------------------------------------------------------------ state file
-def load_doc(path: str = STATE_FILE) -> dict:
+def load_doc(path: str | None = None) -> dict:
     # shared read: a reader must never block save_doc's replace (WinError 5 on 11-25, tray-tick-posture)
-    return shared_io.read_json_shared(path, encoding="utf-8")
+    # path resolved per call: a `= STATE_FILE` default froze the live path, so tests that patched STATE_FILE
+    # read and WROTE the tray's real load_posture.json (11-26: test_phone_back flaked on the live posture)
+    return shared_io.read_json_shared(path or STATE_FILE, encoding="utf-8")
 
 
-def save_doc(doc: dict, path: str = STATE_FILE) -> None:
-    shared_io.write_json_atomic(path, doc, indent=1)
+def save_doc(doc: dict, path: str | None = None) -> None:
+    shared_io.write_json_atomic(path or STATE_FILE, doc, indent=1)
 
 
-def read(path: str = STATE_FILE, now: float | None = None) -> str:
+def read(path: str | None = None, now: float | None = None) -> str:
     """For load_guard / load_grant (other processes): the current posture, 'awake' when missing or stale."""
     return posture_from_doc(load_doc(path), time.time() if now is None else now)
 

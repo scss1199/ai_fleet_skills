@@ -641,6 +641,37 @@ def _log_refusal(jid, cmd, rule, viols):
         pass
 
 
+def _widen_affinity(proc):
+    """Give a rider the whole system CPU mask instead of the daemon's own pin.
+
+    fames-local-compute.json rule `hubclock-resident` pins the daemon to p=1 e=1 ([0, 16]), and Windows children
+    inherit the parent's mask, so on 2026-11-25 all 8 concurrent riders shared those 2 logical CPUs: rc 124 at
+    600 s, fames-converge/fleet-skill-pulse 2 h overdue, metadata-acq-tick holding the heavy slot ~3 h. The pin was
+    meant for the light resident loop, not its work. Fail-open: a refused call leaves the inherited mask.
+    """
+    if os.name != "nt":
+        return
+    handle = getattr(proc, "_handle", None)
+    if not handle:
+        return
+    try:
+        import ctypes
+        from ctypes import wintypes
+        k32 = ctypes.WinDLL("kernel32", use_last_error=True)  # private prototypes: 64-bit HANDLEs, not c_int
+        get_mask = k32.GetProcessAffinityMask
+        get_mask.argtypes = [wintypes.HANDLE, ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t)]
+        get_mask.restype = wintypes.BOOL
+        set_mask = k32.SetProcessAffinityMask
+        set_mask.argtypes = [wintypes.HANDLE, ctypes.c_size_t]
+        set_mask.restype = wintypes.BOOL
+        pmask, smask = ctypes.c_size_t(), ctypes.c_size_t()
+        if get_mask(wintypes.HANDLE(int(handle)), ctypes.byref(pmask), ctypes.byref(smask)) and smask.value:
+            if smask.value != pmask.value:
+                set_mask(wintypes.HANDLE(int(handle)), smask.value)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def dispatch(job):
     """Fire-and-forget: spawn the command with NO console window, do NOT wait. Returns the Popen (or None)."""
     jid = job.get("id", "?")
@@ -690,6 +721,7 @@ def dispatch(job):
                 proc = subprocess.Popen(cmd, shell=True, **kw)
             else:
                 proc = subprocess.Popen(argv, shell=False, **kw)
+            _widen_affinity(proc)  # before the rider can start children; fail-open
             _attach_meter(proc)  # before the rider can start children; fail-open, counts only
         finally:
             if err:

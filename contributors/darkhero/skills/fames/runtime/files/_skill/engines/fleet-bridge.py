@@ -148,10 +148,6 @@ def _front(t: str) -> dict:
     return fm
 
 
-def _memory_dir(seat: str) -> Path:
-    return PROJECTS / ("C--ai-workspace-" + seat.replace("_", "-")) / "memory"
-
-
 def learn_doc(hub: Path = HUB, projects: Path | None = None) -> dict:
     """What this host knows that the curator's harvest cannot see: seat memories, local skills, lessons."""
     projects = projects or PROJECTS

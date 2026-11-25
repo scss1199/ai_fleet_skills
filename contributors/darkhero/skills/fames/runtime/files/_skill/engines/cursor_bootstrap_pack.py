@@ -183,7 +183,7 @@ def _body(agent: str, rel_path: str) -> str:
 
 > Identity + mandate load only when **cwd = `{seat}`**. Hub root `C:\\ai_workspace` silently makes you this machine's curator seat (`_registry/machine.json`; default `{HUB_CURATOR}`).
 > **THIS file is the seat charter.** `CLAUDE.md` starts with `@AGENTS.md`, so every engine reads the same bytes.
-> (T1 hard lines come first on purpose: a body over {MAX_BYTES} bytes fails this generator, and the cut it still writes loses only the tail.)
+> (T1 first on purpose: a body over {MAX_BYTES} B fails this generator; its cut loses only the tail.)
 
 ## Standing rules (portal rules tab = this source)
 
