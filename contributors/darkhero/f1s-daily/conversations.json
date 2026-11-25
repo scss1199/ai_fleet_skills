@@ -2,22 +2,49 @@
   "conversations": {
     "schema": 1,
     "host": "darkhero",
-    "generated": "2026-11-25T12:14:13+00:00",
+    "generated": "2026-11-25T12:45:43+00:00",
     "counts": {
-      "total": 2228,
+      "total": 2231,
       "desktop": 546,
-      "dispatched": 1682,
-      "active_48h": 234
+      "dispatched": 1685,
+      "active_48h": 235
     },
     "rows": [
+      {
+        "id": "335a01b3",
+        "title": "",
+        "seat": "ai_scar3",
+        "kind": "dispatched",
+        "first": "2026-11-25T12:48:00+00:00",
+        "last": "2026-11-25T12:49:15+00:00",
+        "state": "running"
+      },
+      {
+        "id": "ecba4ae4",
+        "title": "",
+        "seat": "ai_ziyaoastro",
+        "kind": "dispatched",
+        "first": "2026-11-25T12:40:37+00:00",
+        "last": "2026-11-25T12:40:49+00:00",
+        "state": "running"
+      },
+      {
+        "id": "95df3845",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "dispatched",
+        "first": "2026-11-25T12:22:01+00:00",
+        "last": "2026-11-25T12:27:44+00:00",
+        "state": "idle"
+      },
       {
         "id": "b19e9774",
         "title": "",
         "seat": "ai_heartlink",
         "kind": "dispatched",
         "first": "2026-11-25T12:12:25+00:00",
-        "last": "2026-11-25T12:21:13+00:00",
-        "state": "running"
+        "last": "2026-11-25T12:23:18+00:00",
+        "state": "idle"
       },
       {
         "id": "99ecdf4e",
@@ -521,33 +548,6 @@
         "kind": "dispatched",
         "first": "2026-11-25T07:50:05+00:00",
         "last": "2026-11-25T07:50:11+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "4b6ee438",
-        "title": "",
-        "seat": "ai_metadata",
-        "kind": "desktop",
-        "first": "2026-11-22T07:44:41+00:00",
-        "last": "2026-11-25T07:49:38+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "46709a20",
-        "title": "",
-        "seat": "ai_demo",
-        "kind": "dispatched",
-        "first": "2026-11-25T07:46:43+00:00",
-        "last": "2026-11-25T07:48:05+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "dad3ce4d",
-        "title": "",
-        "seat": "ai_busker",
-        "kind": "dispatched",
-        "first": "2026-11-25T07:40:14+00:00",
-        "last": "2026-11-25T07:42:56+00:00",
         "state": "idle"
       }
     ]
