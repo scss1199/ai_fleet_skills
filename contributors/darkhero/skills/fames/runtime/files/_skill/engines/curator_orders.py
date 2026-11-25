@@ -556,6 +556,9 @@ def _curator_change(seat: str, n: int, cwd: str | None, status: str, note: str =
             # The conversation that answered `cannot` declined the work; keeping it as owner locks out the lane that
             # does it (ai_trader #221/#222 11-25: resident yin e8e49f5d answered cannot, article lane locked out).
             order.pop("owner", None)
+    if status == "open" and owner_of(order).startswith(STATION_SESSION):
+        # A station is a finished process nobody can push: its claim would lock the reopened order (ai_heartlink #30 11-25).
+        order.pop("owner", None)
     order["status"] = status
     order[f"{status}_at" if status == "closed" else "reopened_at"] = _now()
     order["closed_from" if status == "closed" else "reopened_from"] = who
