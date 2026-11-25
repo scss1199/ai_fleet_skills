@@ -1467,7 +1467,9 @@ class HubClock:
 
     def _class_full(self, job):
         """v2 class caps: '' when the rider may start, else the reason (e.g. 'class heavy 1/1')."""
-        if self._protected(job):
+        # load_grant self-gated riders are metered per load step already (same exemption as _held); 2026-11-26 a
+        # 29-min f1s-evolve held the one heavy slot back to back and starved a 0.9 s janeliao-line-live.
+        if self._protected(job) or self._rider(job["id"]).get("self_gated"):
             return ""
         cls = self._rider(job["id"]).get("class")
         cap = (self.plan.get("caps") or {}).get(cls)
@@ -1475,7 +1477,8 @@ class HubClock:
             return ""
         by_id = {j.get("id"): j for j in self.jobs}
         n = sum(1 for rid in self.running
-                if self._rider(rid).get("class") == cls and not self._protected(by_id.get(rid) or {"id": rid}))
+                if self._rider(rid).get("class") == cls and not self._rider(rid).get("self_gated")
+                and not self._protected(by_id.get(rid) or {"id": rid}))
         return "class %s %d/%d" % (cls, n, cap) if n >= cap else ""
 
     def _held(self, job, now):
