@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "scar3",
-  "at": "2026-11-24T22:18:59",
+  "at": "2026-11-26T00:24:43",
   "hub": "C:\\ai_workspace",
-  "seconds": 326.7,
+  "seconds": 213.8,
   "check": {
     "seats": [
       {
@@ -32,7 +32,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-24",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -47,7 +47,7 @@
           "charter_missing:CLAUDE.md,AGENTS.md,.cursor\\hooks.json"
         ],
         "repo": "hub",
-        "newest_file": "2026-11-24",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE"
       },
       {
@@ -55,7 +55,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-24",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE"
       },
       {
@@ -70,7 +70,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-24",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -88,7 +88,7 @@
         "worktrees_prunable": 1,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-24",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -118,8 +118,8 @@
     "claude_cli_drift": [
       {
         "cli": "2.1.248",
-        "npm": "2.1.331",
-        "behind": 83,
+        "npm": "2.1.332",
+        "behind": 84,
         "limit": 10,
         "path": "C:\\Users\\scss1\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Anthropic.ClaudeCode_Microsoft.Winget.Source_8wekyb3d8bbwe\\claude.EXE",
         "fix": "claude update"
@@ -142,7 +142,7 @@
     "retention_antipatterns": [
       {
         "file": "_skill/engines/claude-proof-hook.py",
-        "line": 704,
+        "line": 707,
         "kind": "migrated_bak_loop",
         "text": "(\"migrated-bak\", re.compile(r\"MIGRATED-bak\"), re.compile(r\"(?i)rename|replace|move|copy|with_name|with_suffix|\\+\\s*['\\\"]|f['\\\"]\"),"
       },
@@ -718,7 +718,7 @@
               "PYSEC-2026-2288",
               "PYSEC-2026-2289"
             ],
-            "latest": "5.24.0"
+            "latest": "5.24.1"
           },
           {
             "package": "urllib3",
@@ -756,13 +756,9 @@
   },
   "sweep": {
     "applied": true,
-    "planned": 4,
-    "planned_bytes": 1829142,
+    "planned": 1,
+    "planned_bytes": 207,
     "by_class": {
-      "cache_dir": {
-        "count": 3,
-        "bytes": 1828935
-      },
       "orphan_inbox": {
         "count": 1,
         "bytes": 207
@@ -772,7 +768,7 @@
       "git_tracked": 284,
       "protected": 0
     },
-    "moved": 4,
+    "moved": 1,
     "engine": "fleet-residue-quarantine.py",
     "errors": []
   },
@@ -783,7 +779,7 @@
     "deny_rows": 0,
     "pins_moved": 0
   },
-  "delete_bytes": 9893888240,
+  "delete_bytes": 9893905174,
   "summary": {
     "seats": 7,
     "violations": 5,
@@ -799,11 +795,11 @@
     "memory_index_oversize": 0,
     "runtime_cves": 1,
     "claude_cli_drift": [
-      "2.1.248 behind 83: claude update"
+      "2.1.248 behind 84: claude update"
     ],
     "seat_budget": "applied seats=2 deny+0 pins->sonnet 0",
-    "moved": 4,
-    "planned_bytes": 1829142,
+    "moved": 1,
+    "planned_bytes": 207,
     "applied": true
   }
 }
