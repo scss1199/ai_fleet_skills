@@ -83,6 +83,7 @@ operator 2026-10-15：「把免費模型額度用在做這種背景資料搜尋�
 | Perplexity、TypeSafe Jev、Claude／ChatGPT 方案 API 額度 | 多篇 | 付費或沒有免費層 | 永不路由 |
 | Tavily | IG／Threads 多篇 | 無 key 打 `api.tavily.com/search` 回 401（2026-11-20）；金鑰表與 token-onboard 都沒有它；免費層 1000 次/月要 operator 開帳號 | 不路由（搜尋已有 jina-DDG／Bing 免 key，0.6 秒 20/20 相關，見上表） |
 | AssemblyAI | IG／Threads 多篇 | 無 key 打 `api.assemblyai.com/v2/transcript` 回 401（2026-11-20）；金鑰表沒有；音檔會外送 | 不路由（本機 faster-whisper 不外送，Deepgram 已 ok:4 為雲端備援） |
+| OpenVINO（本機 ASR／OCR 加速） | 卡片 kyloren-knowledge-social cards/bc6c9753b20673d7（Apache-2.0） | 2026-11-24 未安裝（`import openvino` ModuleNotFoundError），未量測 | 不路由，ASR 照舊 faster-whisper；要試只准 `device="CPU"`（`AUTO`／`GPU` 會挑到 A770＝紅線），先 `load_grant` 再量，同逐字稿且 CPU 秒數較低才接 |
 | Codex | 多篇 | 本機 2026-08-13 起隔離（_delete/2026-08-13-codex-purge），不可呼叫 | 拒絕（隔離，永不路由） |
 | Qwen DashScope（阿里百煉） | 2026 文章（free-pool 候選） | 無 key：key-health 與 api-matrix 都沒有 dashscope；2026-11-23 未註冊、未呼叫 | 不路由（no key, needs operator onboarding；有 key 後再用 _llm.py openai 端點探測） |
 | Gemini 新模型（AI Studio 免費層） | 2026-11-14 Hydrogen 文章（「free tier in AI Studio」）、Gemini Decision 1 文章 | 同 3 把 gemini key，4 任務：gemini-3.5-flash-lite 4/4 0.9–1.5 秒、gemini-3.8-flash 3/4 4.5–6.0 秒（1 次 503）、gemini-4-hydrogen 3/4 19–63 秒（1 次 503）、gemini-decision-1 免費層 404 | 已接：`Pool.GEMINI_FREE`，金鑰表模型 429/503/404 時同 key 換下一個模型（強制 404 實測 0.9 秒回答）；hydrogen 太慢不列 |

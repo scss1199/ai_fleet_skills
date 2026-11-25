@@ -27,6 +27,7 @@ parent_skill: ztm-verify-before-done
   呼叫端拿到 10053/10054 而不是 403，看起來像「偶發環境問題」。（ai_trader http-refusal-before-body-read-rst）
 - **判斷行程死活時，AccessDenied ≠ 已死。** 權限不足（例：S4U／session 0 起的行程）要當 UNKNOWN，不能據此再起一份，
   否則兩個 daemon 搶同一個 pid 檔一起跑。（ai_trader hubclock-duplicate-daemons）
+- **看守重啟前先試單例鎖，收據過期不等於行程死了。** 多實例共用同一個 `.tmp` 會互相寫壞收據→收據過期→看守再起一份→更多寫入失敗，雪崩到 64 個 daemon；daemon 用 msvcrt 鎖＋每 pid 自己的 tmp，看守在 spawn 前呼叫 `daemon_lock_held()`，鎖被持有就不起。（ai_janeliao desktop-liveness-probe-storm，tray/desktop_liveness.py）
 - **靜默安裝程式會提權後無聲跑好幾分鐘，一般權限看不到也殺不掉；看守要盯安裝目錄或它的 log，不是視窗。** 這台機器
   UAC `ConsentPromptBehaviorAdmin=0`，安裝程式的 `/auto`／`/S` 直接提權不彈窗（零彈窗紅線下這是預期），於是「沒視窗」不等於
   沒在裝、「殺不掉」不等於當機：完成判定用目標目錄出現主程式＋版本檔、或 `%APPDATA%` 下的 profile 資料夾，逾時再回報
@@ -265,6 +266,13 @@ parent_skill: ztm-verify-before-done
   逐段定位故障：原始封包 → reader 單獨 → mixer 單獨 → 加併行麥克風 → 分開行程。
 - **合成端到端（ffmpeg／PowerShell 佔住麥克風）證明的是機制不是整合**：真實通話觀察到之前，回報要寫清楚驗證的是哪一個。
   （hub memory linecall-asr-findings-20261019；ai_darkhero 7a07eca3、7d5f3f2e、f1d4e1b5、0948c6e8、082c860d）
+- **錄音／擷取停止後、回報完成前，驗整台電腦還能出聲**：對預設喇叭開一次 render stream，`0x88890010`
+  （AUDCLNT_E_SERVICE_NOT_RUNNING）＝audiodg.exe 已掛，即使 Audiosrv 還顯示 Running；再查 Application log 的
+  Application Error 1000 `AUDIODG.EXE`（本機兇手是第三方 APO `BongioviAPO.dll`，與錄音碼無關，但串流關閉時最常觸發）。
+  會中為防回音靜音過的 App session（claude.exe 等）要還原並讀回 mute 0。引擎掛了要管理員：在 cmd 跑自我提權的
+  `powershell -NoProfile -Command "Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -Command Restart-Service Audiosrv -Force'"`，
+  operator 按 UAC 一次；修好以測試音量喇叭峰值 >0 為準。現成實作：`jci_taipei/_line/meeting_capture_bridge.py audio_health`
+  （jci_taipei 2026-11-23「錄音完畢後不要發聲一樣的問題」：沒查就回報完成，operator 先發現沒聲音）。
 
 ## 程式可達性
 
