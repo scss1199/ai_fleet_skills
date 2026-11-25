@@ -2,7 +2,7 @@
   "conversations": {
     "schema": 1,
     "host": "darkhero",
-    "generated": "2026-11-25T12:45:43+00:00",
+    "generated": "2026-11-25T12:50:08+00:00",
     "counts": {
       "total": 2231,
       "desktop": 546,
@@ -16,7 +16,7 @@
         "seat": "ai_scar3",
         "kind": "dispatched",
         "first": "2026-11-25T12:48:00+00:00",
-        "last": "2026-11-25T12:49:15+00:00",
+        "last": "2026-11-25T12:50:12+00:00",
         "state": "running"
       },
       {
