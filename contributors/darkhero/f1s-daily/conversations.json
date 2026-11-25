@@ -2,7 +2,7 @@
   "conversations": {
     "schema": 1,
     "host": "darkhero",
-    "generated": "2026-11-25T12:50:08+00:00",
+    "generated": "2026-11-25T12:51:07+00:00",
     "counts": {
       "total": 2231,
       "desktop": 546,
@@ -11,12 +11,21 @@
     },
     "rows": [
       {
+        "id": "8b09e1d1",
+        "title": "",
+        "seat": "jci_taipei",
+        "kind": "desktop",
+        "first": "2026-11-18T00:40:55+00:00",
+        "last": "2026-11-25T12:50:30+00:00",
+        "state": "idle"
+      },
+      {
         "id": "335a01b3",
         "title": "",
         "seat": "ai_scar3",
         "kind": "dispatched",
         "first": "2026-11-25T12:48:00+00:00",
-        "last": "2026-11-25T12:50:12+00:00",
+        "last": "2026-11-25T12:50:16+00:00",
         "state": "running"
       },
       {
@@ -26,7 +35,7 @@
         "kind": "dispatched",
         "first": "2026-11-25T12:40:37+00:00",
         "last": "2026-11-25T12:40:49+00:00",
-        "state": "running"
+        "state": "idle"
       },
       {
         "id": "95df3845",
@@ -170,15 +179,6 @@
         "kind": "desktop",
         "first": "2026-11-24T18:56:39+00:00",
         "last": "2026-11-25T10:44:20+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "8b09e1d1",
-        "title": "",
-        "seat": "jci_taipei",
-        "kind": "desktop",
-        "first": "2026-11-18T00:40:55+00:00",
-        "last": "2026-11-25T10:43:19+00:00",
         "state": "idle"
       },
       {
