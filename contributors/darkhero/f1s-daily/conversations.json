@@ -2,7 +2,7 @@
   "conversations": {
     "schema": 1,
     "host": "darkhero",
-    "generated": "2026-11-25T20:09:41+00:00",
+    "generated": "2026-11-25T20:17:44+00:00",
     "counts": {
       "total": 2280,
       "desktop": 554,
@@ -11,30 +11,12 @@
     },
     "rows": [
       {
-        "id": "97b3cbeb",
-        "title": "",
-        "seat": "ai_darkhero",
-        "kind": "desktop",
-        "first": "2026-11-25T08:55:37+00:00",
-        "last": "2026-11-25T20:15:18+00:00",
-        "state": "running"
-      },
-      {
         "id": "7f016734",
         "title": "",
         "seat": "ai_trader",
         "kind": "desktop",
         "first": "2026-11-24T18:56:39+00:00",
-        "last": "2026-11-25T20:15:14+00:00",
-        "state": "running"
-      },
-      {
-        "id": "23700628",
-        "title": "",
-        "seat": "ai_darkhero",
-        "kind": "desktop",
-        "first": "2026-11-25T08:36:15+00:00",
-        "last": "2026-11-25T20:15:09+00:00",
+        "last": "2026-11-25T20:20:47+00:00",
         "state": "running"
       },
       {
@@ -43,16 +25,34 @@
         "seat": "ai_darkhero",
         "kind": "desktop",
         "first": "2026-11-22T02:04:47+00:00",
-        "last": "2026-11-25T20:15:02+00:00",
+        "last": "2026-11-25T20:20:24+00:00",
         "state": "running"
       },
       {
-        "id": "64af5399",
+        "id": "97b3cbeb",
         "title": "",
-        "seat": "ai_trader",
+        "seat": "ai_darkhero",
         "kind": "desktop",
-        "first": "2026-11-23T07:14:19+00:00",
-        "last": "2026-11-25T20:14:46+00:00",
+        "first": "2026-11-25T08:55:37+00:00",
+        "last": "2026-11-25T20:20:14+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "23700628",
+        "title": "",
+        "seat": "ai_darkhero",
+        "kind": "desktop",
+        "first": "2026-11-25T08:36:15+00:00",
+        "last": "2026-11-25T20:19:57+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "87d8ec73",
+        "title": "",
+        "seat": "ai_ziyaoastro",
+        "kind": "desktop",
+        "first": "2026-11-20T07:35:25+00:00",
+        "last": "2026-11-25T20:19:25+00:00",
         "state": "idle"
       },
       {
@@ -61,17 +61,44 @@
         "seat": "ai_busker",
         "kind": "dispatched",
         "first": "2026-11-25T20:11:39+00:00",
-        "last": "2026-11-25T20:14:32+00:00",
+        "last": "2026-11-25T20:16:31+00:00",
         "state": "running"
       },
       {
-        "id": "87d8ec73",
+        "id": "427c8dd3",
         "title": "",
-        "seat": "ai_ziyaoastro",
+        "seat": "ai_metadata",
         "kind": "desktop",
-        "first": "2026-11-20T07:35:25+00:00",
-        "last": "2026-11-25T20:13:54+00:00",
-        "state": "running"
+        "first": "2026-11-19T02:13:28+00:00",
+        "last": "2026-11-25T20:16:26+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "64af5399",
+        "title": "",
+        "seat": "ai_trader",
+        "kind": "desktop",
+        "first": "2026-11-23T07:14:19+00:00",
+        "last": "2026-11-25T20:16:26+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "07580c97",
+        "title": "",
+        "seat": "ai_metadata",
+        "kind": "desktop",
+        "first": "2026-11-25T18:27:28+00:00",
+        "last": "2026-11-25T20:16:11+00:00",
+        "state": "idle"
+      },
+      {
+        "id": "4b6ee438",
+        "title": "",
+        "seat": "ai_metadata",
+        "kind": "desktop",
+        "first": "2026-11-22T07:44:41+00:00",
+        "last": "2026-11-25T20:16:11+00:00",
+        "state": "idle"
       },
       {
         "id": "e3b17796",
@@ -83,30 +110,12 @@
         "state": "running"
       },
       {
-        "id": "07580c97",
-        "title": "",
-        "seat": "ai_metadata",
-        "kind": "desktop",
-        "first": "2026-11-25T18:27:28+00:00",
-        "last": "2026-11-25T20:07:43+00:00",
-        "state": "running"
-      },
-      {
         "id": "c2980808",
         "title": "",
         "seat": "ai_metadata",
         "kind": "desktop",
         "first": "2026-11-25T18:27:29+00:00",
         "last": "2026-11-25T19:57:32+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "427c8dd3",
-        "title": "",
-        "seat": "ai_metadata",
-        "kind": "desktop",
-        "first": "2026-11-19T02:13:28+00:00",
-        "last": "2026-11-25T19:57:29+00:00",
         "state": "idle"
       },
       {
@@ -188,15 +197,6 @@
         "kind": "dispatched",
         "first": "2026-11-25T19:15:53+00:00",
         "last": "2026-11-25T19:20:24+00:00",
-        "state": "idle"
-      },
-      {
-        "id": "4b6ee438",
-        "title": "",
-        "seat": "ai_metadata",
-        "kind": "desktop",
-        "first": "2026-11-22T07:44:41+00:00",
-        "last": "2026-11-25T19:11:08+00:00",
         "state": "idle"
       },
       {
