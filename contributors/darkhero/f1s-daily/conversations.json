@@ -2,7 +2,7 @@
   "conversations": {
     "schema": 1,
     "host": "darkhero",
-    "generated": "2026-11-25T09:40:42+00:00",
+    "generated": "2026-11-25T09:45:06+00:00",
     "counts": {
       "total": 2199,
       "desktop": 546,
@@ -16,8 +16,8 @@
         "seat": "ai_trader",
         "kind": "desktop",
         "first": "2026-11-23T07:14:19+00:00",
-        "last": "2026-11-25T09:44:42+00:00",
-        "state": "running"
+        "last": "2026-11-25T09:44:55+00:00",
+        "state": "idle"
       },
       {
         "id": "7f016734",
@@ -98,7 +98,7 @@
         "kind": "dispatched",
         "first": "2026-11-25T09:27:07+00:00",
         "last": "2026-11-25T09:34:45+00:00",
-        "state": "running"
+        "state": "idle"
       },
       {
         "id": "87a0de80",
