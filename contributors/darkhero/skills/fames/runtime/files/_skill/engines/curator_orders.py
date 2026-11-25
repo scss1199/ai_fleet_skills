@@ -187,8 +187,9 @@ def _hub_rel(path: str) -> str:
 
 
 def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None = None, routine: bool = False,
-          ledger: bool = False, machine: dict | None = None) -> dict:
-    """ledger=True: an engine reads the answer back into its own table (f1s_fanout), so any answer closes the order.
+          ledger: bool = False, machine: dict | None = None, station: bool = False) -> dict:
+    """station=True: a lean station may take it when no conversation owns it; unlike routine it is still reviewed.
+    ledger=True: an engine reads the answer back into its own table (f1s_fanout), so any answer closes the order.
     machine={...}: an engine issues it from inside a seat's own session (Stop hook), so the curator-session check is
     skipped; the order is marked `"machine": true` and the dict's fields (e.g. "gap") are stored on it. Never routine-free."""
     cwd = cwd or os.getcwd()
@@ -220,6 +221,8 @@ def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None 
         order["routine"] = True
         if ledger:
             order["ledger"] = True
+    if station and not freeze and not forbid:
+        order["station"] = True
     doc["orders"].append(order)
     _save(seat, doc)
     return order
@@ -1601,6 +1604,7 @@ def main(argv=None) -> int:
     g.add_argument("--prompt-file", help="the complete prompt, read as UTF-8 (argv mangles non-ASCII on Windows)")
     s.add_argument("--freeze", action="append", default=[])
     s.add_argument("--forbid", action="append", default=[])
+    s.add_argument("--station", action="store_true", help="an unowned one may go to a lean station; still reviewed")
     s = sub.add_parser("list")
     s.add_argument("seat", nargs="?")
     s.add_argument("--full", action="store_true", help="every field of every order, closed ones too")
@@ -1650,7 +1654,7 @@ def main(argv=None) -> int:
         return 0
     try:
         if a.cmd == "issue":
-            out = issue(a.seat, a.title, a.do if a.do is not None else open(a.prompt_file, encoding="utf-8-sig").read(), a.freeze, a.forbid)
+            out = issue(a.seat, a.title, a.do if a.do is not None else open(a.prompt_file, encoding="utf-8-sig").read(), a.freeze, a.forbid, station=a.station)
         elif a.cmd == "deliver":
             out = deliver(a.seat, a.n, a.session)
 

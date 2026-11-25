@@ -86,6 +86,8 @@ TEXTS = {
     "transcript_audit": HUB / "_skill" / "engines" / "f1s-transcript-audit.py",
     "git_smart": HUB / "_skill" / "engines" / "git_smart.py",
     "yinyang_engine": HUB / "_skill" / "engines" / "f1s_yinyang.py",
+    "process_guard": HUB / "_skill" / "engines" / "fleet-process-guard.py",
+    "hubclock_singleton_test": HUB / "_skill" / "engines" / "tests" / "test_hubclock_singleton.py",
     "cred_sync": HUB / "_skill" / "engines" / "fleet-credential-sync.py",
     "f1s_apply": HUB / "_skill" / "engines" / "f1s_apply.py",
     "fg_guard": HUB / "_skill" / "engines" / "zt-foreground-guard.py",
@@ -1776,6 +1778,14 @@ ELEMENTS = [
      "requires": None,
      "detail": "Rejected 2026-11-25: evidence is only an absent grep, no rollback or reopen incident; the idle sweeper (mtm-git-ship-tick.py) commits only --staged-only, every commit already starts a yin tick, and a daily per-cwd keep/rollback closure is a recurring curator judgment turn that the one-body LEVERAGE rule says must not grow without a measured saving",
      "check_text": ("yinyang_engine", "git_smart.py starts `tick` after each commit")},
+    {"id": "EVO-stale-test-runs-stopped-20261125", "element": "_skill/engines/fleet-process-guard.py scan_stale_tests: python/pythonw running pytest (argv or a script inside a pytest basetemp) older than stale_test_hours (12) is stopped every run, identity-checked, logged kind=stale_test_stop (registry stale_test_stop false = report only); the sandboxed HubClock daemon in tests/test_hubclock_singleton.py exits when its pytest parent dies or after 300 s", "verdict": "REFINE",
+     "requires": None,
+     "detail": "ai_trader proposal 2026-11-25: run_hubclock.py from pytest-2865/test_daemon_steps_down_only_on0 alive 21 h (~1339 cpu-s) and `python -m pytest -q -p no:cacheprovider tests` 45 h; the agent-shell whitelist hid both from the guard and a pytest killed mid-test skips the finally that stops its daemon. Both pids already gone at integration (psutil.pid_exists False), live scan 0 rows. test_stale_test_runs_are_rows_only_past_the_age_limit; test_fleet_process_guard_safety.py 17 passed, test_hubclock_singleton.py 6 passed",
+     "check_text": ("process_guard", "def scan_stale_tests(reg: dict, now: float | None = None) -> list[dict]:")},
+    {"id": "EVO-sandbox-daemon-parent-watch-20261125", "element": "tests/test_hubclock_singleton.py WRAPPER: daemon watches HUBCLOCK_TEST_PARENT and HUBCLOCK_TEST_MAX_S", "verdict": "INFO",
+     "requires": None,
+     "detail": "Root-cause half of EVO-stale-test-runs-stopped-20261125: the leaked 21 h daemon came from this test's sandbox",
+     "check_text": ("hubclock_singleton_test", "HUBCLOCK_TEST_PARENT=str(os.getpid())")},
 ]
 def sha(path: Path) -> str:
     try:
