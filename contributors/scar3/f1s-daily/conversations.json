@@ -2,7 +2,7 @@
   "conversations": {
     "schema": 1,
     "host": "scar3",
-    "generated": "2026-11-24T14:18:59+00:00",
+    "generated": "2026-11-25T16:28:25+00:00",
     "counts": {
       "total": 52,
       "desktop": 36,
@@ -16,7 +16,7 @@
         "seat": "ai_wallpaper",
         "kind": "desktop",
         "first": "2026-11-23T08:48:35+00:00",
-        "last": "2026-11-23T12:37:21+00:00",
+        "last": "2026-11-24T18:38:27+00:00",
         "state": "idle"
       },
       {
