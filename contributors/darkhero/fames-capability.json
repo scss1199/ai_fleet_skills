@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-25T08:04:09.811635+00:00",
+  "observed_at": "2026-11-25T09:04:10.388879+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -358,8 +358,38 @@
       {
         "agent": "ai_darkhero",
         "surface": "claude",
-        "observed_at": "2026-11-25T16:02:11+08:00",
-        "receipt_sha256": "bdea3ab51ae354c6fb6b27fb51eace1c0c7601ea95c20ccfc663c54332fce1a6"
+        "observed_at": "2026-11-25T16:36:16+08:00",
+        "receipt_sha256": "56d48558db322dad562afaaeb0e20590357e99cb8e38650844a94985cdf25315"
+      },
+      {
+        "agent": "ai_nuwa",
+        "surface": "claude",
+        "observed_at": "2026-11-25T16:04:41+08:00",
+        "receipt_sha256": "1892382cef9f7f87a6f02df0ae7a0edcf1aced82bf334ec062b3587cc9fbefd3"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-25T17:00:18+08:00",
+        "receipt_sha256": "d67cd5dbd961752cd603ee0145d52b7e4f29ad888c6488e9c531a9b87905ed13"
+      },
+      {
+        "agent": "ai_trader",
+        "surface": "claude",
+        "observed_at": "2026-11-25T17:00:29+08:00",
+        "receipt_sha256": "bc48e8831df7f6e3cfd0da7b536d1cef326e5fbd48272ef2dbd7baf86427cd2e"
+      },
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-11-25T16:46:56+08:00",
+        "receipt_sha256": "474f765508d2be818575ceb90fa022bd4348d21b111cc23f9a09adcbabc22928"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-25T17:00:30+08:00",
+        "receipt_sha256": "217ad459bf85a87e6d865834699628a4346ed8ed9129d1df58463bc088ca9928"
       },
       {
         "agent": "sdnext_a770",
@@ -376,8 +406,14 @@
       {
         "agent": "ai_theater",
         "surface": "claude",
+        "observed_at": "2026-11-25T16:18:19+08:00",
+        "receipt_sha256": "dd1ea66da93845a7174392883c59713f644169eb05755431ae93f15f15c8cc67"
+      },
+      {
+        "agent": "ai_theater",
+        "surface": "claude",
         "observed_at": "2026-11-25T14:57:20+08:00",
-        "receipt_sha256": "e1be01f6c75611a7ac82124782cd4e5e51244f89a578c2ba03c4152979fa89e7"
+        "receipt_sha256": "4f7ab8f509bbe06a464ecff5da12c243981649e5bbf943cd4825c26004fb2ffa"
       }
     ],
     "runtime_release_sha256": "33280ef846d61eaf47100bd2ea132f1a196f1a6b5757e9af47fd8f75e8bc16b9"
