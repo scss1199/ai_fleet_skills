@@ -30,6 +30,12 @@ import threading
 import time
 from typing import Callable
 
+import sys
+
+if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import shared_io  # noqa: E402
+
 _TRAY_DIR = os.path.dirname(os.path.abspath(__file__))
 STATE_FILE = os.path.join(_TRAY_DIR, "state", "load_posture.json")
 POSTURES = ("awake", "nap", "sleep")
@@ -102,20 +108,12 @@ def posture_from_doc(doc: dict | None, now: float, stale_s: float = STALE_S) -> 
 
 # ------------------------------------------------------------------ state file
 def load_doc(path: str = STATE_FILE) -> dict:
-    try:
-        with open(path, encoding="utf-8") as fh:
-            doc = json.load(fh)
-        return doc if isinstance(doc, dict) else {}
-    except (OSError, ValueError):
-        return {}
+    # shared read: a reader must never block save_doc's replace (WinError 5 on 11-25, tray-tick-posture)
+    return shared_io.read_json_shared(path, encoding="utf-8")
 
 
 def save_doc(doc: dict, path: str = STATE_FILE) -> None:
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as fh:
-        json.dump(doc, fh, indent=1)
-    os.replace(tmp, path)
+    shared_io.write_json_atomic(path, doc, indent=1)
 
 
 def read(path: str = STATE_FILE, now: float | None = None) -> str:

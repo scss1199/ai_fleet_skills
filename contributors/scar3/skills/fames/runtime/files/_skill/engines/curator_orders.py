@@ -62,8 +62,15 @@ MIN_FORBID_CHARS = 8  # "python" would stop half the box
 
 
 def seat_of(cwd: str) -> str:
-    """Registered seat owning `cwd` (nearest registered ancestor; hub root and hub infra -> curator)."""
+    """Registered seat owning `cwd` (nearest registered ancestor; hub root and hub infra -> curator).
+
+    A seat worktree `_worktrees/<seat>-<suffix>` belongs to <seat>, not to the hub it sits in: ai_trader-dev resolved to
+    the curator, so git_smart's yin tick never ran rounds for ai_trader's pairs (rust at rounds=0 over 5 commits, 11-25)
+    and that worktree passed _require_curator."""
     node = os.path.abspath(cwd or os.getcwd())
+    worktree = _worktree_seat(node)
+    if worktree:
+        return worktree
     while True:
         try:
             name, meta = _projects.whoami(node)
@@ -75,6 +82,22 @@ def seat_of(cwd: str) -> str:
         if parent == node:
             return "unknown"
         node = parent
+
+
+def _worktree_seat(path: str) -> str:
+    """<seat> for a path under HUB/_worktrees/<seat>-<suffix> whose <seat> is a registered seat folder, else ''."""
+    root = os.path.normcase(os.path.join(os.path.abspath(HUB), "_worktrees"))
+    rel = os.path.relpath(os.path.normcase(path), root) if os.path.normcase(path).startswith(root + os.sep) else ""
+    head = rel.split(os.sep, 1)[0] if rel else ""
+    while "-" in head:
+        head = head.rsplit("-", 1)[0]
+        try:
+            name, meta = _projects.whoami(os.path.join(HUB, head))
+        except Exception:
+            name, meta = "unknown", None
+        if meta and os.path.normcase(str(name)) == head:
+            return str(name)
+    return ""
 
 
 def curator() -> str:
@@ -164,8 +187,9 @@ def _hub_rel(path: str) -> str:
 
 
 def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None = None, routine: bool = False,
-          ledger: bool = False, machine: dict | None = None) -> dict:
-    """ledger=True: an engine reads the answer back into its own table (f1s_fanout), so any answer closes the order.
+          ledger: bool = False, machine: dict | None = None, station: bool = False) -> dict:
+    """station=True: a lean station may take it when no conversation owns it; unlike routine it is still reviewed.
+    ledger=True: an engine reads the answer back into its own table (f1s_fanout), so any answer closes the order.
     machine={...}: an engine issues it from inside a seat's own session (Stop hook), so the curator-session check is
     skipped; the order is marked `"machine": true` and the dict's fields (e.g. "gap") are stored on it. Never routine-free."""
     cwd = cwd or os.getcwd()
@@ -197,6 +221,8 @@ def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None 
         order["routine"] = True
         if ledger:
             order["ledger"] = True
+    if station and not freeze and not forbid:
+        order["station"] = True
     doc["orders"].append(order)
     _save(seat, doc)
     return order
@@ -524,7 +550,15 @@ def _curator_change(seat: str, n: int, cwd: str | None, status: str, note: str =
     doc = load(seat)
     order = _find(doc, n)
     if status == "open" and order.get("answer"):
-        order.setdefault("history", []).append(order.pop("answer"))
+        answer = order.pop("answer")
+        order.setdefault("history", []).append(answer)
+        if not answer.get("evidence") and (order.get("owner") or {}).get("by") == "answer":
+            # The conversation that answered `cannot` declined the work; keeping it as owner locks out the lane that
+            # does it (ai_trader #221/#222 11-25: resident yin e8e49f5d answered cannot, article lane locked out).
+            order.pop("owner", None)
+    if status == "open" and owner_of(order).startswith(STATION_SESSION):
+        # A station is a finished process nobody can push: its claim would lock the reopened order (ai_heartlink #30 11-25).
+        order.pop("owner", None)
     order["status"] = status
     order[f"{status}_at" if status == "closed" else "reopened_at"] = _now()
     order["closed_from" if status == "closed" else "reopened_from"] = who
@@ -1405,7 +1439,7 @@ def _waiting_techniques(seat: str) -> str:
 def _fanout_line() -> str:
     """A completed F1S fan-out the curator has not reported yet (f1s_fanout.py); empty when none or on any error."""
     lines = []
-    for name in ("f1s_fanout", "f1s_reuse", "f1s_posture"):     # one line each: fan-out due, reuse ledger, night queue
+    for name in ("f1s_fanout", "f1s_reuse", "f1s_posture", "f1s_watch"):     # one line each: fan-out due, reuse ledger, night queue, HubClock/tray RED
         try:
             lines.append(__import__(name).curator_line())
         except Exception:  # noqa: BLE001
@@ -1573,6 +1607,7 @@ def main(argv=None) -> int:
     g.add_argument("--prompt-file", help="the complete prompt, read as UTF-8 (argv mangles non-ASCII on Windows)")
     s.add_argument("--freeze", action="append", default=[])
     s.add_argument("--forbid", action="append", default=[])
+    s.add_argument("--station", action="store_true", help="an unowned one may go to a lean station; still reviewed")
     s = sub.add_parser("list")
     s.add_argument("seat", nargs="?")
     s.add_argument("--full", action="store_true", help="every field of every order, closed ones too")
@@ -1622,7 +1657,7 @@ def main(argv=None) -> int:
         return 0
     try:
         if a.cmd == "issue":
-            out = issue(a.seat, a.title, a.do if a.do is not None else open(a.prompt_file, encoding="utf-8-sig").read(), a.freeze, a.forbid)
+            out = issue(a.seat, a.title, a.do if a.do is not None else open(a.prompt_file, encoding="utf-8-sig").read(), a.freeze, a.forbid, station=a.station)
         elif a.cmd == "deliver":
             out = deliver(a.seat, a.n, a.session)
 

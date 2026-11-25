@@ -25,8 +25,9 @@ Missing lanes are capability facts, not blockers. Record the selected lane and u
 4. Inspect every load-bearing implementation path and test for false positives, fail-open behavior, omitted inputs, and host-specific assumptions. A refusal that holds only because a component is missing is also a lock (ai_trader manual-source-label-is-privileged, 2026-09-21): when a change adds a provider, observer or adapter, list the refusals that depended on its absence and check each one still holds. Also check privileged labels that are a field's default value (a default `source="manual"` skipped capability, session and cost gates for every programmatic order).
 5. Re-run safe checks independently. Never trigger live financial, deployment, credential, or destructive paths merely to review them.
 6. Review on two separate axes, as separate passes or separate subagents (mattpocock code-review): (a) Standards — code quality and the repo's own rules; (b) Spec — the diff against the operator's own words and the acceptance criteria bound by `f1s-intake`. A pass on one axis says nothing about the other.
-7. Emit findings before verdict. Any load-bearing UNKNOWN fails closed.
-8. Write a machine-readable receipt only when the governing contract authorizes the reviewer to do so.
+7. Every finding carries a repro: a command or input plus the output actually observed. A finding without a repro is downgraded to `unverified` and cannot block acceptance by itself.
+8. Emit findings before verdict. Any load-bearing UNKNOWN fails closed.
+9. Write a machine-readable receipt only when the governing contract authorizes the reviewer to do so.
 
 ## Verdict rules
 

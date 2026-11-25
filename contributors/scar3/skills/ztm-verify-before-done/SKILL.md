@@ -26,6 +26,9 @@ parent_skill: aex-agent-evolution
 - ④ 每個主張要有本回合跑過的驗證或能開的檔案，否則寫 UNKNOWN；寧可說不知道也不准自信亂答再翻供。（Lean `FamesKernel.lean` unsupported_claim_blocks；PROOF Stop hook）
   改碼後說「修好」必須在最後一次改碼之後跑過綠的測試（tdd，避免改 A 壞 B；
   Lean `ClaimContract.fix_claim_needs_test_after_write`）。
+  修 bug 的「修好／fixed」還要同一條測試指令在本回合跑兩次：改碼前紅（失敗）、改碼後綠（通過）；
+  沒有這一對，PROOF 會要你補（reproduce-first，Lauren Tan 採用 #4；`claude-proof-hook.py` fix_claim）。
+  同一個目標連兩次修不好就停：寫出自己假設的前提，先測那個前提，再做第三次（採用 #5）。
   測試與 commit 分兩步：先讀測試結果，再寫宣稱；不得把 pytest 與 git commit 串在同一指令
   （ai_nuwa f8fbd78/283559b：1 個失敗卻寫 N passed）。commit 訊息或 `--verified-by` 寫「N passed」時，
   `git_smart.py commit ... --test-cmd "<seat 測試指令>"` 會當場重跑，失敗或數量不符即拒絕 commit（exit 3）。
@@ -42,6 +45,8 @@ parent_skill: aex-agent-evolution
   被 PROOF write gate 擋下時先判斷是不是誤判（引號內的 `>`、工具必備的 manifest、harness 指定的
   side-session-notes 資料夾），誤判就改 `claude-proof-hook.py` 加測試；不是誤判就把內容寫進回覆。
   同一個檔換副檔名（.txt）或換檔名再寫＝繞過 gate，禁止（ai_theater 2026-10-26／27 x3）。
+  同一寫入被擋一次就不准原樣重試：第二次被擋＝誤判證據，交 ai_darkhero 修 hook（jci_taipei 2026-11-17 同一份
+  side-session-notes 交接檔重試 x5；根因是 `_registry/proof.json` 的舊清單蓋掉預設豁免，2026-11-25 改為只能加不能蓋）。
 - ⑥-引擎輸出紀律（operator 2026-10-31「根本就不會再被使用的中間檔…製造他們的機制是什麼該如何修正」）：
   引擎、rider、hook、測試寫出的每個檔案都要有讀回者或是使用者點名的收據，否則不准寫。每跑一次／每個 session 一個檔
   （uuid、時間戳命名）＝沒有生命週期的中間檔：改成固定檔名覆寫（staged write＋os.replace）、append-only 的 .jsonl 帳本，
@@ -147,6 +152,9 @@ python %AI_WORKSPACE%\_skill\engines\accountability_enforce.py query --agent <se
   畫面類同理：判定看產品最終輸出的截圖，不看頁面狀態或視窗標題——擷取／投影串流用產品自己的截圖 API 對來源與輸出
   各取兩張、相隔約 0.7 s，量亮度與變化（有畫面且在動），視窗只用 PID 對，關閉後輪詢輸出恢復（ai_wallpaper scar3
   8fc35b0：頁面與標題檢查誤判 FAIL，OBS GetSourceScreenshot 5 種播放路徑 32/32 PASS）。
+  證據要綁同一個候選：截圖、量測、測試都記下它驗的是哪個產物（hash／版本／build id），換過候選的舊證據不算數；
+  只有離線／靜態證據（建置成功、無頭渲染、單元測試）沒有消費端執行證據時，回報寫 `STATIC_PASS_RUNTIME_UNKNOWN`，
+  不寫 PASS（建置成功不是畫面證據，畫面證據不是執行證據）（ai_nuwa skill nuwa-hs2-asset-workflow，F1S 2026-11-25 吸收）。
 - 把獎勵駭客反過來用來抓漏洞：新建或改動的閘／驗證器／rider 檢查，先寫出「不做事也能過關」的最便宜路徑
   （空輸出、改測試、寫死預期值、只碰檔案時間戳）當負對照跑一次，閘必須判 FAIL；過了＝閘本身是洞，先補閘再宣稱
   （operator 2026-11-22 ai_darkhero c9aed4645593，youtu.be/VDoQ6KWK2qs：強化學習會找獎勵漏洞，就讓它去找）。

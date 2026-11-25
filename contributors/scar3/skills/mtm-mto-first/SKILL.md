@@ -116,6 +116,8 @@ python %AI_WORKSPACE%\_skill\engines\ztm-task-router.py "<keywords>"
 
 有 route → **只跑 cmd**，不在 chat 裡試探。
 
+router 也會印 `playbook[<type>]` 種子步驟（bug-fix/feature/refactor/research/deploy/review，每份都有 VERIFY 步）；表在 `_registry/ztm-task-routes.json` 的 `playbooks`。
+
 ### 3 NARROW READ — TR1
 
 | 禁止 (TRN) | 改用 (TR1) |

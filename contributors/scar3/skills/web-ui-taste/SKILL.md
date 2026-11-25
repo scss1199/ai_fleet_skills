@@ -31,6 +31,8 @@ Playwright CLI = `microsoft/playwright-cli`（Apache-2.0）。F1S 只取做法�
    沒有現成 DESIGN.md 可挑時，用本機 UI/UX Pro Max 檢索（MIT，pin 2de1134，純 stdlib BM25，CPU、零網路）：
    `python -IB C:/ai_workspace/_harness/tools/ui-ux-pro-max/scripts/search.py "<產品用語>" --design-system --json`
    取 style／colors／typography／pattern；不加 `--persist`（除非該 seat 要求），不 `npx ... init`、不全域安裝。
+   **元件庫按介面類型挑，不按外觀挑**（repo 已有元件庫就沿用，不另引第二套）：數據後台要圖表＋統計卡同一套規範；
+   微互動要點擊／切換回饋；無障礙要鍵盤導覽＋讀屏；整頁沒頭緒先看現成區塊模板再挑部分（IG @devaloop_leo Df7Dh01P5pa，庫名 ASR 不可信，自查）。
 2. **品味／方向**：先寫三句 art direction（用途、氣氛、一個參考），再動手；避免預設灰底卡片＋藍按鈕的通用樣子。
    Taste Skill 的原則：明確層級、留白一致、只用一到兩個強調色、互動要有狀態。
    **動畫給數字，不給形容詞**（「更順」「更絲滑」交給模型只會更差；做法來自 transitions.dev，IG reel DfetS3zJH-I）：

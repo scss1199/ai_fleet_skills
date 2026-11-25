@@ -38,6 +38,7 @@ TRAY = os.path.dirname(HERE)
 if TRAY not in sys.path:
     sys.path.insert(0, TRAY)
 import load_posture  # noqa: E402  (tray/load_posture.py: awake | nap | sleep)
+import shared_io  # noqa: E402  (tray/shared_io.py: FILE_SHARE_DELETE reads, per-process tmp)
 RING = "D:/__hwlog"
 STATE = os.path.join(TRAY, "state", "load_grant.json")
 LOCK = os.path.join(TRAY, "state", "load_grant.lock")
@@ -180,12 +181,7 @@ def window_mean(t0: float, t1: float, ring: str = RING) -> float | None:
 
 
 def _learned() -> dict:
-    try:
-        with open(LEARNED, encoding="utf-8") as fh:
-            doc = json.load(fh)
-        return doc if isinstance(doc, dict) else {}
-    except (OSError, ValueError):
-        return {}
+    return shared_io.read_json_shared(LEARNED)
 
 
 def learned_step(owner: str, now: float, learned: dict | None = None) -> float:
@@ -213,11 +209,8 @@ def observe_last(last: dict, now: float, ring: str = RING) -> dict | None:
         rows = (doc.get(last.get("owner") or "?") or []) + [{"at": epoch, "announced": float(last.get("step_w") or 0),
                                                               "rise": rise}]
         doc[last.get("owner") or "?"] = rows[-LEARN_KEEP * 2:]
-        tmp = LEARNED + ".tmp"
         try:
-            with open(tmp, "w", encoding="utf-8") as fh:
-                json.dump(doc, fh)
-            _replace(tmp, LEARNED)
+            shared_io.write_json_atomic(LEARNED, doc)   # per-process tmp + retry (2026-11-25)
         except PermissionError as exc:
             # learned rows only ever RAISE a later charge; losing one row delays learning, it never loosens the
             # budget, step or spacing checks. A crash here killed the caller's whole job (SIMG-329).
@@ -226,11 +219,7 @@ def observe_last(last: dict, now: float, ring: str = RING) -> dict | None:
 
 
 def _last_grant() -> dict:
-    try:
-        with open(STATE, encoding="utf-8") as fh:
-            return json.load(fh)
-    except (OSError, ValueError):
-        return {}
+    return shared_io.read_json_shared(STATE)
 
 
 def unsettled(last: dict, now: float) -> list:
@@ -410,7 +399,11 @@ def main(argv=None) -> int:
         return 2
     if a.cmd == "run":
         cmd = a.command[1:] if a.command[:1] == ["--"] else a.command
-        return subprocess.call(cmd, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        # Handles must be passed explicitly: with CREATE_NO_WINDOW and no redirect the child writes to its own hidden
+        # console and its whole output is lost (2026-11-25: a pytest run under a grant left nothing but the grant line).
+        sys.stdout.flush()
+        return subprocess.call(cmd, stdout=sys.stdout, stderr=sys.stderr,
+                               creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     return 0
 
 
