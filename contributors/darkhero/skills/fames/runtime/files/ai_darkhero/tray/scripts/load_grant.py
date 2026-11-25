@@ -399,7 +399,11 @@ def main(argv=None) -> int:
         return 2
     if a.cmd == "run":
         cmd = a.command[1:] if a.command[:1] == ["--"] else a.command
-        return subprocess.call(cmd, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        # Handles must be passed explicitly: with CREATE_NO_WINDOW and no redirect the child writes to its own hidden
+        # console and its whole output is lost (2026-11-25: a pytest run under a grant left nothing but the grant line).
+        sys.stdout.flush()
+        return subprocess.call(cmd, stdout=sys.stdout, stderr=sys.stderr,
+                               creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     return 0
 
 
