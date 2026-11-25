@@ -62,8 +62,15 @@ MIN_FORBID_CHARS = 8  # "python" would stop half the box
 
 
 def seat_of(cwd: str) -> str:
-    """Registered seat owning `cwd` (nearest registered ancestor; hub root and hub infra -> curator)."""
+    """Registered seat owning `cwd` (nearest registered ancestor; hub root and hub infra -> curator).
+
+    A seat worktree `_worktrees/<seat>-<suffix>` belongs to <seat>, not to the hub it sits in: ai_trader-dev resolved to
+    the curator, so git_smart's yin tick never ran rounds for ai_trader's pairs (rust at rounds=0 over 5 commits, 11-25)
+    and that worktree passed _require_curator."""
     node = os.path.abspath(cwd or os.getcwd())
+    worktree = _worktree_seat(node)
+    if worktree:
+        return worktree
     while True:
         try:
             name, meta = _projects.whoami(node)
@@ -75,6 +82,22 @@ def seat_of(cwd: str) -> str:
         if parent == node:
             return "unknown"
         node = parent
+
+
+def _worktree_seat(path: str) -> str:
+    """<seat> for a path under HUB/_worktrees/<seat>-<suffix> whose <seat> is a registered seat folder, else ''."""
+    root = os.path.normcase(os.path.join(os.path.abspath(HUB), "_worktrees"))
+    rel = os.path.relpath(os.path.normcase(path), root) if os.path.normcase(path).startswith(root + os.sep) else ""
+    head = rel.split(os.sep, 1)[0] if rel else ""
+    while "-" in head:
+        head = head.rsplit("-", 1)[0]
+        try:
+            name, meta = _projects.whoami(os.path.join(HUB, head))
+        except Exception:
+            name, meta = "unknown", None
+        if meta and os.path.normcase(str(name)) == head:
+            return str(name)
+    return ""
 
 
 def curator() -> str:
@@ -524,7 +547,12 @@ def _curator_change(seat: str, n: int, cwd: str | None, status: str, note: str =
     doc = load(seat)
     order = _find(doc, n)
     if status == "open" and order.get("answer"):
-        order.setdefault("history", []).append(order.pop("answer"))
+        answer = order.pop("answer")
+        order.setdefault("history", []).append(answer)
+        if not answer.get("evidence") and (order.get("owner") or {}).get("by") == "answer":
+            # The conversation that answered `cannot` declined the work; keeping it as owner locks out the lane that
+            # does it (ai_trader #221/#222 11-25: resident yin e8e49f5d answered cannot, article lane locked out).
+            order.pop("owner", None)
     order["status"] = status
     order[f"{status}_at" if status == "closed" else "reopened_at"] = _now()
     order["closed_from" if status == "closed" else "reopened_from"] = who
@@ -1405,7 +1433,7 @@ def _waiting_techniques(seat: str) -> str:
 def _fanout_line() -> str:
     """A completed F1S fan-out the curator has not reported yet (f1s_fanout.py); empty when none or on any error."""
     lines = []
-    for name in ("f1s_fanout", "f1s_reuse", "f1s_posture"):     # one line each: fan-out due, reuse ledger, night queue
+    for name in ("f1s_fanout", "f1s_reuse", "f1s_posture", "f1s_watch"):     # one line each: fan-out due, reuse ledger, night queue, HubClock/tray RED
         try:
             lines.append(__import__(name).curator_line())
         except Exception:  # noqa: BLE001

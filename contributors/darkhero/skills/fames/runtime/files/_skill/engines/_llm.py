@@ -116,6 +116,13 @@ class Pool:
             if not acct: continue   # key present but no account_id -> excluded (env-aware)
             self.cf_ai.append((k["key"],k.get("model","@cf/meta/llama-3.1-8b-instruct"),
                                _cftpl.format(acct=acct)))
+        # 2026-11-25 OmniRoute free-catalog diff (operator 「免費池是否都包含OmniRoute給的內容」): two KEYLESS free
+        # providers answered 42 to "17+25" with no account: kilo-gateway (kilo-auto/free, 1.4 s; api.kilo.ai, authType
+        # optional) and llm7 (api.llm7.io, any bearer, model default, 0.7-1.6 s). Both LOG PROMPTS upstream (Kilo
+        # trainsOnPrompts), so they sit LAST in the cloud chains: only non-sensitive text reaches them after every
+        # credentialed route failed. Keyless = a (None,model) pair, the same shape the local ollama pool uses.
+        self.kilo=[(None,"kilo-auto/free")]
+        self.llm7=[("unused","default")]
         # provider -> (url, family, keypool) for the extra OpenAI-compatible providers
         self.XPROV={
             "mistral":   (_url("mistral","https://api.mistral.ai/v1/chat/completions"),"mistral",self.mistral),
@@ -123,6 +130,8 @@ class Pool:
             "sambanova": (_url("sambanova","https://api.sambanova.ai/v1/chat/completions"),"llama",self.sambanova),
             "together":  (_url("together","https://api.together.xyz/v1/chat/completions"),"qwen",self.together),
             "fireworks": (_url("fireworks","https://api.fireworks.ai/inference/v1/chat/completions"),"llama",self.fireworks),
+            "kilo":      (_url("kilo","https://api.kilo.ai/api/gateway/chat/completions"),"kilo-free",self.kilo),
+            "llm7":      (_url("llm7","https://api.llm7.io/v1/chat/completions"),"llm7-free",self.llm7),
         }
     def _groq(self,messages,jsonmode,max_tokens=3000):
         if not self.groq: return "__ERR__ no-groq"   # empty pool -> avoid %0 (see api-matrix status)
@@ -315,7 +324,7 @@ class Pool:
             return False
 
     _CLOUD_FALLBACK = ("gemini", "groq", "openrouter", "cerebras", "hf", "cf_ai",
-                       "mistral", "nvidia-nim", "sambanova", "together", "fireworks")
+                       "mistral", "nvidia-nim", "sambanova", "together", "fireworks", "kilo", "llm7")
 
     def cloud_fallback(self, messages, jsonmode=False, max_tokens=1500, skip=()):
         """After a pinned provider fails, try cloud peers in decorrelated order. Local ollama only if enabled."""
@@ -364,7 +373,7 @@ class Pool:
     def _chat(self,messages,jsonmode=False,max_tokens=3000):
         last="__ERR__ no-provider"
         for prov in ("groq","cerebras","openrouter","cf_ai","hf","gemini",
-                     "mistral","nvidia-nim","sambanova","together","fireworks"):
+                     "mistral","nvidia-nim","sambanova","together","fireworks","kilo","llm7"):
             if prov not in self.available_providers():
                 continue
             last=self.chat_via(prov,messages,jsonmode=jsonmode,max_tokens=max_tokens)

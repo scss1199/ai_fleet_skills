@@ -425,8 +425,11 @@ def junk_target(p: Path, cfg: dict) -> bool:
     name = p.name.split(":", 1)[0]                    # NTFS stream: `x.json::$DATA` / `x.json:s` is the file x.json
     if not name.lower().endswith(JUNK_EXT):
         return False
-    allowed_dirs = {d.lower() for d in (cfg.get("md_allowed_dirs") or DEFAULTS["md_allowed_dirs"])}
-    allowed_names = {n.lower() for n in (cfg.get("md_allowed_names") or DEFAULTS["md_allowed_names"])}
+    # Config ADDS to the defaults, never replaces them: _registry/proof.json carried a 10-13 copy of both lists,
+    # so the side-session-notes (10-28) and clasp-manifest (10-16) exemptions never reached production and
+    # jci_taipei retried one denied hand-over note x5 (f1s-evolve 2026-11-25, ledger 95b9a8313e00).
+    allowed_dirs = {d.lower() for d in [*DEFAULTS["md_allowed_dirs"], *(cfg.get("md_allowed_dirs") or [])]}
+    allowed_names = {n.lower() for n in [*DEFAULTS["md_allowed_names"], *(cfg.get("md_allowed_names") or [])]}
     return not ({x.lower() for x in p.parts[:-1]} & (allowed_dirs | {"tmp"}) or name.lower() in allowed_names)
 
 
@@ -1060,6 +1063,9 @@ def pre_tool_use(doc: dict, cfg: dict) -> dict | None:
         "hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": reason}}
 
 
+FIX_PAIR_NEED = ("reproduce-first: this line claims a fix but this turn shows no pair of runs of the SAME test command, "
+                 "the earlier one failing and the later one passing — run the failing test before the fix and again "
+                 "after it (one command, red then green), or write the line as 未驗證")
 SCRATCH_PARTS = {"scratchpad", "temp", "tmp"}
 FIX_CLAIM = re.compile(r"(?i)修好了?|已修復|已修复|修復(?:完成|了)|已修正|修正完成|改好了|\bfixed\b|\bbug\s+is\s+fixed\b|\bnow\s+works\b")
 
@@ -1588,6 +1594,23 @@ def _green_test(exec_mod, command: str, result: str, is_error) -> bool:
     return False
 
 
+def _norm_test_cmd(command: str) -> str:
+    """The test command with its `cd <dir> &&` prefix and spacing removed, so two runs of it compare equal."""
+    c = " ".join((command or "").split())
+    return re.sub(r"^(?:cd\s+\S+\s*&&\s*)+", "", c).lower()
+
+
+def _run_state(command: str, result: str, is_error, green: bool) -> str:
+    """'green' / 'red' for a command that RUNS a test runner, '' for anything else (reads, builds)."""
+    if green:
+        return "green"
+    if not RUNNER_CMD.search(command) or READ_CMD.search(command):
+        return ""
+    if is_error is True or TEST_FAIL.search(result or ""):
+        return "red"
+    return ""
+
+
 def _test_scan_note(command: str, result: str, green: bool, is_error) -> str | None:
     """One line for the tests_pass block message: which tool results were looked at as test evidence."""
     # a `sed -n`/`grep` over tests/test_x.py is a read of a test file, not a run: only runner commands, summary
@@ -1629,7 +1652,10 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
         "test_scan": [],
         # 2026-11-06: sessions this turn started, and the ones it detached
         "started_sessions": [], "detached_sessions": [],
+        # 2026-11-25 (Lauren Tan adoption #4): same test command run red, then green, this turn
+        "fail_pass_pair": False,
     }
+    test_runs: dict[str, list[tuple[int, str]]] = {}
     last_write = -1
     last_read = -1
     last_test = -1
@@ -1708,12 +1734,24 @@ def facts(rows: list[dict], prompt: dict | None, history: str = "") -> dict:
                     if green:
                         f["tests_pass"] = True
                         last_test = index
+                    try:
+                        state = _run_state(command, result, is_error, green)
+                        if state:
+                            test_runs.setdefault(_norm_test_cmd(command), []).append((index, state))
+                    except Exception:  # noqa: BLE001 - fail open
+                        pass
                     if ok and GIT_PUSH.search(command) and not GIT_FAIL.search(result):
                         f["pushed"] = True
                     if ok and GIT_COMMIT.search(command) and not GIT_FAIL.search(result):
                         f["committed"] = True
                     if ok and DEPLOY.search(command) and not CMD_FAIL.search(result):
                         f["deployed"] = True
+    try:
+        f["fail_pass_pair"] = any(
+            any(a == "red" and b == "green" and j > i for i, a in runs for j, b in runs)
+            for runs in test_runs.values())
+    except Exception:  # noqa: BLE001 - fail open: an unreadable pair is not held against the claim
+        f["fail_pass_pair"] = True
     f["verify_after_write"] = f["code_writes"] == 0 or (last_read > last_write)
     f["test_after_write"] = f["code_writes"] == 0 or (last_test > last_write)
     f["searched_before_write"] = f["code_writes"] == 0 or (
@@ -2021,6 +2059,12 @@ def judge(text: str, f: dict, cfg: dict, cwd: str = "", earlier_decisions: list[
                 ev = {"failureObserved": f.get("failure_observed")}
             elif name == "fix_claim":
                 ev = {"testAfterWrite": f.get("test_after_write", True)}
+                # 2026-11-25: a fix made this turn also needs the same test command red, then green (Lean
+                # admissible() is unchanged: the pair only narrows the testAfterWrite bit fed to it)
+                if (ev["testAfterWrite"] and classes.get("fix_pair", True) and (f.get("code_writes") or 0) > 0
+                        and not f.get("fail_pass_pair", True)):
+                    violations.append({"line": number, "class": name, "snippet": snippet, "need": FIX_PAIR_NEED})
+                    continue
             elif name == "handback":
                 ev = {"redLineNamed": red_line_named(stripped, cwd), "failureObserved": f.get("failure_observed")}
             else:  # ask_value

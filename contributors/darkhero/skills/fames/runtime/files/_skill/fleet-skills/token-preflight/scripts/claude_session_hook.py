@@ -888,6 +888,21 @@ def _article_seen(prompt: str, session_id: str = "") -> str:
         return ""
 
 
+def _skill_candidate(prompt: str, cwd: str) -> str:
+    """operator 2026-11-25: the third time the operator sends the same instruction block in this seat, one line proposes
+    saving it as a skill (f1s_repeat.skill_candidate_line). "" when under 3 repeats, covered by a skill, or on any error."""
+    path = HUB / "_skill" / "engines" / "f1s_repeat.py"
+    try:
+        spec = importlib.util.spec_from_file_location("fames_hook_f1s_repeat", path)
+        if not (prompt or "").strip() or not path.is_file() or spec is None or spec.loader is None:
+            return ""
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return str(module.skill_candidate_line(prompt, cwd) or "")
+    except Exception:
+        return ""
+
+
 def _article_relay(agent: str, cwd: str, session_id: str = "") -> str:
     """operator 2026-10-26: on the operator's prompt to the curator, new LINE articles go to the seat they were sent
     for (kyloren_quant -> ai_trader as a curator order; the curator's own kyloren_bot articles inline). "" for every
@@ -1014,7 +1029,8 @@ def main():
                        _proof_carry(session_id), "" if machine_event else _proof_recurrence(cwd),
                        "" if machine_event else _article_relay(agent, cwd, session_id),
                        "" if machine_event else _article_seen(prompt, session_id),
-                       "" if machine_event else _expand_frame(prompt)):
+                       "" if machine_event else _expand_frame(prompt),
+                       "" if machine_event else _skill_candidate(prompt, cwd)):
             if update:
                 context=(context+"\n"+update).strip()
     else:

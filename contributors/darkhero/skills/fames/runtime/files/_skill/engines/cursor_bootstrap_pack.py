@@ -203,7 +203,7 @@ FAMES 是預設契約，不是一次叫全部（operator 2026-10-08）：每次�
 
 ## Obedience (operator 2026-06-24 — 違反=P=0)
 
-**MTM/MTO（SessionStart+每 session 1x remind 已注入）**：任務前 `prework.py`+`ztm-task-router.py` · Skill `mtm-mto-first` · 禁 TRN Read/Shell 迴圈 · `mtm-token-waste-scan.py --brief`  
+**MTM/MTO（SessionStart+每 session 1x remind 已注入）**：任務前 `prework.py`+`ztm-task-router.py` · Skill `mtm-mto-first` · 禁 TRN Read/Shell 迴圈 · `f1s_waste.py status --seat {agent}`  
 **AGC（auto-goal-compact 已注入）**：長 session 讀 `_registry/agc-compact/{agent}.md` 勿重讀 chat · Skill `agc-auto-goal-compact` · `agc-should-compact.py --agent {agent}`  
 **平行**：獨立 ZTM 葉 → Multitask/Task 同 wave 全開；禁止無 merge 就宣稱完成  
 路由：`python %AI_WORKSPACE%\\_skill\\engines\\ztm-task-router.py "<keywords>"`
