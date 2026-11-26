@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-26T04:40:11.555765+00:00",
+  "observed_at": "2026-11-26T05:34:03.230779+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -362,6 +362,18 @@
         "receipt_sha256": "89792a30116e5f6ee4295a0155f05f4c34dfe9ed40de7f606cf48f2a9972b7f3"
       },
       {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-11-26T13:31:14+08:00",
+        "receipt_sha256": "318613b2353b2bfc7ce9b6f43b79dfb10e9fe03a9a84dfc8e3e84573b8a76081"
+      },
+      {
+        "agent": "ai_zonghe",
+        "surface": "claude",
+        "observed_at": "2026-11-26T13:18:12+08:00",
+        "receipt_sha256": "acd6fffc50e49c8ddcc1faac7a41bacfe647d9460bbc35a0a157c02a1a4b8586"
+      },
+      {
         "agent": "ai_darkhero",
         "surface": "claude",
         "observed_at": "2026-11-26T12:14:23+08:00",
@@ -370,8 +382,8 @@
       {
         "agent": "jci_taipei",
         "surface": "claude",
-        "observed_at": "2026-11-26T11:47:59+08:00",
-        "receipt_sha256": "b8da8c2ee14fff429308f7c7657fc965a005ee734a851e98f32a3f8e88030392"
+        "observed_at": "2026-11-26T13:03:55+08:00",
+        "receipt_sha256": "d1f70957d5db865db991c5aace5f6e989c778556fa79ecd7c0e82e70bba25122"
       },
       {
         "agent": "ai_wallpaper",
@@ -384,6 +396,12 @@
         "surface": "claude",
         "observed_at": "2026-11-26T12:16:22+08:00",
         "receipt_sha256": "5fa13f1f7169f983c785341816923f21f6f07a859f654d911f64e9dfe720948a"
+      },
+      {
+        "agent": "ai_scar3",
+        "surface": "claude",
+        "observed_at": "2026-11-26T12:45:37+08:00",
+        "receipt_sha256": "7c246390e2b8a8cad558cbf4b4de159b843df00170ef5a55233b0af02fcbcc94"
       }
     ],
     "runtime_release_sha256": "9cc11142362539ffcc79a028bdd8af99eed6b4751d94112bb8efed73f9cc7483"
