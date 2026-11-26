@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "dark-hero-z790",
-  "at": "2026-11-25T14:43:48",
+  "at": "2026-11-26T11:29:21",
   "hub": "C:\\ai_workspace",
-  "seconds": 863.6,
+  "seconds": 279.2,
   "check": {
     "seats": [
       {
@@ -20,7 +20,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 1,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -29,7 +29,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE"
       },
       {
@@ -39,12 +39,12 @@
         "repo": "own",
         "dirty": 14,
         "unpushed": 0,
-        "last_commit": "2026-11-23",
+        "last_commit": "2026-11-25",
         "worktrees": 1,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -52,17 +52,17 @@
         "seat": "ai_darkhero",
         "missing": [],
         "findings": [
-          "dirty_files:1115"
+          "dirty_files:1133"
         ],
         "repo": "own",
-        "dirty": 1115,
+        "dirty": 1133,
         "unpushed": 0,
-        "last_commit": "2026-11-25",
+        "last_commit": "2026-11-26",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -71,14 +71,14 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 12,
+        "dirty": 22,
         "unpushed": 0,
-        "last_commit": "2026-11-22",
+        "last_commit": "2026-11-26",
         "worktrees": 1,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -87,14 +87,14 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 5,
+        "dirty": 9,
         "unpushed": 0,
         "last_commit": "2026-11-24",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -105,14 +105,14 @@
           "tracked_junction_files:1"
         ],
         "repo": "own",
-        "dirty": 10,
+        "dirty": 19,
         "unpushed": 0,
-        "last_commit": "2026-11-25",
+        "last_commit": "2026-11-26",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 1,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -135,14 +135,14 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 8,
+        "dirty": 10,
         "unpushed": 0,
-        "last_commit": "2026-11-25",
+        "last_commit": "2026-11-26",
         "worktrees": 1,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -151,14 +151,14 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 10,
+        "dirty": 9,
         "unpushed": 0,
         "last_commit": "2026-11-20",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -166,17 +166,17 @@
         "seat": "ai_nuwa",
         "missing": [],
         "findings": [
-          "worktrees:8"
+          "worktrees:7"
         ],
         "repo": "own",
         "dirty": 6,
         "unpushed": 0,
         "last_commit": "2026-11-25",
-        "worktrees": 8,
+        "worktrees": 7,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -192,7 +192,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -223,7 +223,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE"
       },
       {
@@ -233,14 +233,14 @@
           "tracked_junction_files:1"
         ],
         "repo": "own",
-        "dirty": 5,
+        "dirty": 8,
         "unpushed": 0,
         "last_commit": "2026-11-24",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 1,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -249,7 +249,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE"
       },
       {
@@ -259,14 +259,14 @@
           "worktrees:4"
         ],
         "repo": "own",
-        "dirty": 5,
+        "dirty": 6,
         "unpushed": 0,
-        "last_commit": "2026-11-25",
+        "last_commit": "2026-11-26",
         "worktrees": 4,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -275,14 +275,14 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 7,
+        "dirty": 8,
         "unpushed": 0,
         "last_commit": "2026-11-23",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -293,12 +293,12 @@
         "repo": "own",
         "dirty": 11,
         "unpushed": 0,
-        "last_commit": "2026-11-24",
+        "last_commit": "2026-11-25",
         "worktrees": 1,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -307,14 +307,14 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 6,
+        "dirty": 5,
         "unpushed": 0,
-        "last_commit": "2026-11-25",
+        "last_commit": "2026-11-26",
         "worktrees": 2,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -323,14 +323,14 @@
         "missing": [],
         "findings": [],
         "repo": "own",
-        "dirty": 4,
+        "dirty": 11,
         "unpushed": 0,
         "last_commit": "2026-11-24",
         "worktrees": 0,
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -339,25 +339,25 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE"
       },
       {
         "seat": "jci_taipei",
         "missing": [],
         "findings": [
-          "dirty_files:86",
-          "orphan_worktree_dirs:5"
+          "dirty_files:81",
+          "orphan_worktree_dirs:3"
         ],
         "repo": "own",
-        "dirty": 86,
+        "dirty": 81,
         "unpushed": 0,
-        "last_commit": "2026-11-25",
-        "worktrees": 1,
+        "last_commit": "2026-11-26",
+        "worktrees": 2,
         "worktrees_prunable": 0,
-        "worktrees_orphan": 5,
+        "worktrees_orphan": 3,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -366,15 +366,15 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-25",
+        "newest_file": "2026-11-26",
         "activity": "ACTIVE"
       }
     ],
-    "scheduled_tasks": "UNKNOWN",
+    "scheduled_tasks": [],
     "hub_stale_agent_worktrees": [
       {
         "path": "C:\\ai_workspace\\.claude\\worktrees\\agent-ac7d252149dffe921",
-        "age_d": 12,
+        "age_d": 13,
         "bytes": 3903275176,
         "recipe": "move C:\\ai_workspace\\.claude\\worktrees\\agent-ac7d252149dffe921 to _delete/<date>-worktrees, then git -C C:\\ai_workspace worktree prune"
       }
@@ -401,7 +401,7 @@
       },
       {
         "dir": "ai_darkhero/_registry/kyloren-knowledge-social/consolidate/cards",
-        "entries": 2176,
+        "entries": 2188,
         "retention_named": 0,
         "writer": "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"
       },
@@ -412,16 +412,16 @@
         "writer": "_skill/engines/inbox digest (SUBMIT receipts auto-digested)"
       },
       {
-        "dir": "_registry/fames-phase",
-        "entries": 1165,
-        "retention_named": 0,
-        "writer": "_harness/runtime/fames_phase_runtime.py (per-session dir, retained .write.lock)"
-      },
-      {
         "dir": "ai_darkhero/_registry/kyloren-knowledge-social/artifacts",
-        "entries": 1140,
+        "entries": 1146,
         "retention_named": 0,
         "writer": "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"
+      },
+      {
+        "dir": "_registry/fames-phase",
+        "entries": 1110,
+        "retention_named": 0,
+        "writer": "_harness/runtime/fames_phase_runtime.py (per-session dir, retained .write.lock)"
       },
       {
         "dir": "_temp/pt-f1sdaily/test_producers_name_the_writer0/_registry/fames-hot",
@@ -521,14 +521,36 @@
         "stale": [
           "recipes/batches/20261111/q04_bow_v1.json"
         ]
+      },
+      {
+        "seat": "ai_nuwa",
+        "memory": "C:\\Users\\sc\\.claude\\projects\\C--ai-workspace-ai-nuwa\\memory\\project_q_series_soleprint_uv_trap.md",
+        "stale": [
+          "q_variant_sole_print.py",
+          "scripts/_archive/q01_heel_transplant_q06.py"
+        ]
+      },
+      {
+        "seat": "ai_trader",
+        "memory": "C:\\Users\\sc\\.claude\\projects\\C--ai-workspace-ai-trader\\memory\\midsession-restore-host-powerloss-20260921.md",
+        "stale": [
+          "tests/restore_live_probe.py"
+        ]
+      },
+      {
+        "seat": "ai_trader",
+        "memory": "C:\\Users\\sc\\.claude\\projects\\C--ai-workspace-ai-trader\\memory\\orb-entry-rejected-late-tick.md",
+        "stale": [
+          "tests/orb_replay_late_tick.py"
+        ]
       }
     ],
     "memory_index_oversize": [
       {
         "seat": "ai_darkhero",
-        "bytes": 16982,
+        "bytes": 17289,
         "cap": 12288,
-        "files": 180
+        "files": 182
       },
       {
         "seat": "ai_nuwa",
@@ -538,7 +560,7 @@
       },
       {
         "seat": "ai_trader",
-        "bytes": 16338,
+        "bytes": 16234,
         "cap": 12288,
         "files": 149
       }
@@ -874,27 +896,31 @@
   },
   "sweep": {
     "applied": true,
-    "planned": 5,
-    "planned_bytes": 1693323983,
+    "planned": 16,
+    "planned_bytes": 65380358,
     "by_class": {
       "temp": {
-        "count": 2,
-        "bytes": 9633808
+        "count": 5,
+        "bytes": 65275536
+      },
+      "cache_dir": {
+        "count": 4,
+        "bytes": 63965
       },
       "stale": {
-        "count": 1,
-        "bytes": 709
+        "count": 4,
+        "bytes": 36579
       },
-      "orphan_worktree": {
-        "count": 2,
-        "bytes": 1683689466
+      "expired_state": {
+        "count": 3,
+        "bytes": 4278
       }
     },
     "skipped": {
       "git_tracked": 487,
       "protected": 0
     },
-    "moved": 4,
+    "moved": 15,
     "engine": "fleet-residue-quarantine.py",
     "errors": []
   },
@@ -902,10 +928,10 @@
     "ok": true,
     "applied": true,
     "seats": 20,
-    "deny_rows": 8,
+    "deny_rows": 0,
     "pins_moved": 0
   },
-  "delete_bytes": 51027425114,
+  "delete_bytes": 51096482407,
   "summary": {
     "seats": 24,
     "violations": 10,
@@ -914,16 +940,16 @@
       "IDLE": 0,
       "DORMANT": 1
     },
-    "scheduled_task_findings": "UNKNOWN",
+    "scheduled_task_findings": 0,
     "producer_leaks": 7,
     "retention_antipatterns": 9,
-    "stale_memories": 5,
+    "stale_memories": 8,
     "memory_index_oversize": 3,
     "runtime_cves": 6,
     "claude_cli_drift": [],
-    "seat_budget": "applied seats=20 deny+8 pins->sonnet 0",
-    "moved": 4,
-    "planned_bytes": 1693323983,
+    "seat_budget": "applied seats=20 deny+0 pins->sonnet 0",
+    "moved": 15,
+    "planned_bytes": 65380358,
     "applied": true
   }
 }
