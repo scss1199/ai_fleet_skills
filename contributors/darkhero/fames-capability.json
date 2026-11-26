@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-26T04:10:09.259402+00:00",
+  "observed_at": "2026-11-26T04:40:11.555765+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -356,6 +356,18 @@
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
       {
+        "agent": "ai_ut",
+        "surface": "claude",
+        "observed_at": "2026-11-26T12:20:28+08:00",
+        "receipt_sha256": "89792a30116e5f6ee4295a0155f05f4c34dfe9ed40de7f606cf48f2a9972b7f3"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-26T12:14:23+08:00",
+        "receipt_sha256": "6cfaf300ad077e9aa0e415a2057ef20861181568779c95a6407cfaa5fb4b4b38"
+      },
+      {
         "agent": "jci_taipei",
         "surface": "claude",
         "observed_at": "2026-11-26T11:47:59+08:00",
@@ -366,6 +378,12 @@
         "surface": "claude",
         "observed_at": "2026-11-26T11:48:01+08:00",
         "receipt_sha256": "9c131d2ba11737e51b5be7f591820864bb6f8770db0aab7cfd7c9bf7a13304a6"
+      },
+      {
+        "agent": "jci_taipei",
+        "surface": "claude",
+        "observed_at": "2026-11-26T12:16:22+08:00",
+        "receipt_sha256": "5fa13f1f7169f983c785341816923f21f6f07a859f654d911f64e9dfe720948a"
       }
     ],
     "runtime_release_sha256": "9cc11142362539ffcc79a028bdd8af99eed6b4751d94112bb8efed73f9cc7483"
