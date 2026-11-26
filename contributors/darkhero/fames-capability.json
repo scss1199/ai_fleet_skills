@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-26T07:07:10.832031+00:00",
+  "observed_at": "2026-11-26T07:37:10.632534+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -355,6 +355,12 @@
     "base_proof_state": "PASS",
     "native_state": "OBSERVED_PARTIAL_POPULATION",
     "native_events": [
+      {
+        "agent": "ai_heartlink",
+        "surface": "claude",
+        "observed_at": "2026-11-26T15:25:26+08:00",
+        "receipt_sha256": "e553c985be67d147938fc547c6960db008b7bcb772aa8bbb10e76e1143a5d4f1"
+      },
       {
         "agent": "ai_search",
         "surface": "claude",
