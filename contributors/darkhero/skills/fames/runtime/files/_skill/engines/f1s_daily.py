@@ -74,7 +74,9 @@ DECISION = re.compile(r"需要你決定|需要你(?:來)?(?:選|決)|請你決�
 MACHINE_ENTRY = ("sdk-cli", "sdk-py", "sdk-ts")
 # F1S-generated prompts typed into a chat by a tick (article_relay curator-order drive): not the operator's words.
 # f1s-evolve 2026-11-26: two such dispatches were harvested as operator "corrections" (ledger 8d59e0f6b788, 11c2d885a64b).
-MACHINE_PROMPT = re.compile(r"^處理 \S+ 的 curator 校正令")
+# 2026-11-26: an f1s-evolve-tick prompt quoting a 300-char-cut order ("…watch?v=UwxUt", "https://www.youtube.com/") and
+# the ARTICLE RELAY prompt itself were harvested as operator-pasted links (state urls af19c8c079fd, fef0e980f7d3).
+MACHINE_PROMPT = re.compile(r"^(?:處理 \S+ 的 curator 校正令|ARTICLE RELAY\b|You are the hub curator seat \S+, running unattended)")
 # Not articles (first tick 2026-10-27 fetched localhost, sign-in pages and the operator's own deployments): a local or
 # private address, a sign-in / console / API host, a fleet deployment, a private Google doc, a vault seat's site.
 NOT_ARTICLE = re.compile(r"^(?:localhost|127\.|10\.|192\.168\.|\[|(?:accounts|id|auth|login|signin|secure\.id|console|dash|"
