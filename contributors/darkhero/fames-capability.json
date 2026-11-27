@@ -5,7 +5,7 @@
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-27T21:41:02.003116+00:00",
+  "observed_at": "2026-11-27T22:37:02.648316+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,8 +353,51 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "UNKNOWN",
-    "native_events": [],
+    "native_state": "OBSERVED_PARTIAL_POPULATION",
+    "native_events": [
+      {
+        "agent": "ai_metadata",
+        "surface": "claude",
+        "observed_at": "2026-11-28T06:17:42+08:00",
+        "receipt_sha256": "f1f7f74724e432dd96cfc9e91c34d725193e03ff1ce266b1ef070e7ab3c0d69b"
+      },
+      {
+        "agent": "ai_wallpaper",
+        "surface": "claude",
+        "observed_at": "2026-11-28T06:17:17+08:00",
+        "receipt_sha256": "bcad634476ae44cdd24725608ad0120401b7f9c78ccb79c5ba82ec45a2c91ab3"
+      },
+      {
+        "agent": "ai_trader",
+        "surface": "claude",
+        "observed_at": "2026-11-28T06:19:39+08:00",
+        "receipt_sha256": "b8a6489f343786801b39d89666a61200ed15bcfaffbaba06b43d966788b646e1"
+      },
+      {
+        "agent": "ai_heartlink",
+        "surface": "claude",
+        "observed_at": "2026-11-28T05:48:24+08:00",
+        "receipt_sha256": "5e8ab3d37c18a8123b387afbbcf44ffae4191539734a0a9b9cc9eec488cb077c"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-28T05:51:44+08:00",
+        "receipt_sha256": "3c4600ce031c86fad9e35f12ef684bce865b4bbf93667403568deddf4dd04fa0"
+      },
+      {
+        "agent": "ai_darkhero",
+        "surface": "claude",
+        "observed_at": "2026-11-28T06:19:57+08:00",
+        "receipt_sha256": "ba4373241e06a51f0299553bbb5dea291a9baebc4f30ebe9df9d901f73cc0fab"
+      },
+      {
+        "agent": "ai_scar3",
+        "surface": "claude",
+        "observed_at": "2026-11-28T06:36:28+08:00",
+        "receipt_sha256": "d8030d39137362b06a585ff8e14a8bda9bcdd935d7063e1ad9819f3364a6a698"
+      }
+    ],
     "runtime_release_sha256": "d92b177ceb0a2c42318f49c33f7eea1bd2b95d149716880ba6e8dd5249eea7e9"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
