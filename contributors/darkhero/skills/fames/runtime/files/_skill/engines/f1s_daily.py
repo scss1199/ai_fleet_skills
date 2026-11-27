@@ -579,7 +579,10 @@ def line_links(state: dict) -> int:
         except Exception:  # noqa: BLE001
             continue
         for row in links:
-            url = article_url(str(row.get("one_line") or "").strip())
+            # 2026-11-27: one_line is "<url> <note>"; passed whole, urlencode glued the note on as "+operator+%E8…"
+            # and the same video was fetched twice under a second key (state url 7cb36438cb90).
+            hit = URL.search(str(row.get("one_line") or ""))
+            url = article_url(hit.group(0)) if hit else ""
             key = _sha(url)
             if url.startswith("http") and key not in state["urls"]:
                 state["urls"][key] = {"url": url, "seat": relay.DEST[source], "session": "", "status": "pending",

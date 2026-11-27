@@ -12,7 +12,11 @@ asks first, and gets a grant only when:
   3. no other grant was given in the last SPACING_S seconds (one increase at a time, each settles before the next),
      and load granted in the last OBSERVE_TO_S seconds that the sensors do not show yet counts against BUDGET_W
      (2026-10-27: a job still loading its model looked steady, so the next +40 W could stack past the budget),
-  4. the sensor log is fresh (older than STALE_S = no grant: unknown power is not safe power).
+  4. the sensor log is fresh (older than STALE_S = no grant: unknown power is not safe power),
+  5. heavy grants repel (operator 2026-11-27, Khan EP11 GUE level repulsion; `_skill/engines/spacing.py`,
+     `_lean/fames/Spacing.lean`): a step of HEAVY_W or more waits until the last heavy grant is REPEL_S old, so
+     each heavy start's load is in the sensors before the next one is admitted. 24 h before: 470 grants, 25.2 % of
+     gaps under a quarter of the mean (Poisson 22.1 %, GUE 1.6 %), 227 of 457 gaps under 120 s.
 A job that needs more than MAX_STEP_W ramps itself in steps and asks before each one.
 
 Python:  from load_grant import wait_grant; g = wait_grant("ai_theater/stt", 40, timeout_s=900)  # g["ok"]
@@ -42,6 +46,7 @@ import shared_io  # noqa: E402  (tray/shared_io.py: FILE_SHARE_DELETE reads, per
 RING = "D:/__hwlog"
 STATE = os.path.join(TRAY, "state", "load_grant.json")
 LOCK = os.path.join(TRAY, "state", "load_grant.lock")
+RUNNING = os.path.join(TRAY, "state", "load_grant_running")  # one marker per live heavy `run`
 LOG = os.path.join(TRAY, "logs", "load_grant.log")
 WINDOW_S = 60
 STABLE_SPREAD_W = 30.0
@@ -51,6 +56,8 @@ MAX_STEP_W = 40.0
 # time (budget, steadiness window and spacing unchanged); nap and awake keep MAX_STEP_W.
 SLEEP_MAX_STEP_W = 60.0
 SPACING_S = 20.0
+HEAVY_W = 25.0            # 24 h of grants: 288 x 40 W, 42 x 25 W, 61 x 20 W, 78 x 5 W
+REPEL_S = 120.0           # = OBSERVE_TO_S: a heavy start has shown its rise by then
 STALE_S = 10.0
 TAIL_BYTES = 262144
 POWER_COLUMNS = ("cpu.CPU Package [W]", "a770.GPU Package [W]")
@@ -254,6 +261,56 @@ def pending_w(recent: list, now_w: float) -> float:
     return round(max(0.0, granted - shown), 1)
 
 
+def repel(charged_w: float, recent: list, now: float) -> str | None:
+    """Refusal reason while a heavy grant younger than REPEL_S stands; None when this step may start.
+    Kept out of `decide` (Lean grid, load_grant_conformance.py); proved in _lean/fames/Spacing.lean."""
+    if charged_w < HEAVY_W:
+        return None
+    heavy = [r for r in recent if float(r.get("charged_w") or 0) >= HEAVY_W and 0 <= now - float(r["epoch"]) < REPEL_S]
+    if not heavy:
+        return None
+    r = heavy[-1]
+    return f"repel: heavy grant to {r.get('owner')} {now - float(r['epoch']):.0f} s ago (< {REPEL_S:.0f} s)"
+
+
+def mark_running(owner: str, charged_w: float) -> str:
+    """Marker for a live heavy `run` (pid + create time, so a reused pid never counts); cleared by clear_running."""
+    import psutil
+
+    os.makedirs(RUNNING, exist_ok=True)
+    path = os.path.join(RUNNING, f"{os.getpid()}.json")
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump({"owner": owner, "charged_w": charged_w, "pid": os.getpid(),
+                   "created": psutil.Process().create_time()}, fh)
+    return path
+
+
+def clear_running() -> None:
+    try:
+        os.remove(os.path.join(RUNNING, f"{os.getpid()}.json"))   # this process's own runtime marker only
+    except OSError:
+        pass
+
+
+def busy(posture: str, charged_w: float) -> str | None:
+    """operator 2026-11-27 「剛剛又卡頓一次」: the watt gate let ten 40 W RLZ steps stack 120 s apart while the operator
+    sat at the box (cargo, rustc, Lean, pytest at once). Awake, a heavy step waits until no other heavy run lives."""
+    if posture != "awake" or charged_w < HEAVY_W or not os.path.isdir(RUNNING):
+        return None
+    import psutil
+
+    for name in os.listdir(RUNNING):
+        try:
+            with open(os.path.join(RUNNING, name), encoding="utf-8") as fh:
+                m = json.load(fh)
+            pid = int(m["pid"])
+            if psutil.Process(pid).create_time() == float(m["created"]):
+                return f"busy: {m.get('owner')} still running (awake: one heavy job at a time)"
+        except (OSError, ValueError, KeyError, psutil.Error):
+            continue
+    return None
+
+
 def max_step_w(posture: str = "awake") -> float:
     return SLEEP_MAX_STEP_W if posture == "sleep" else MAX_STEP_W
 
@@ -353,6 +410,10 @@ def try_grant(owner: str, step_w: float) -> dict:
             result = decide(owner, step_w, power, last, now, learned_step(owner, now), pending, posture)
             result["posture"] = posture
             if result["ok"]:
+                why = repel(result["charged_w"], recent, now) or busy(posture, result["charged_w"])
+                if why:
+                    result = {"ok": False, "reason": why, "posture": posture}
+            if result["ok"]:
                 recent.append({"owner": owner, "charged_w": result["charged_w"], "epoch": now,
                                "before_w": power.get("now_w")})
                 tmp = STATE + ".tmp"
@@ -402,8 +463,18 @@ def main(argv=None) -> int:
         # Handles must be passed explicitly: with CREATE_NO_WINDOW and no redirect the child writes to its own hidden
         # console and its whole output is lost (2026-11-25: a pytest run under a grant left nothing but the grant line).
         sys.stdout.flush()
-        return subprocess.call(cmd, stdout=sys.stdout, stderr=sys.stderr,
-                               creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        heavy = float(g.get("charged_w") or a.step) >= HEAVY_W
+        if heavy:
+            try:
+                mark_running(a.owner, float(g.get("charged_w") or a.step))
+            except Exception:
+                heavy = False                      # no marker = old behaviour; never block the job itself
+        try:
+            return subprocess.call(cmd, stdout=sys.stdout, stderr=sys.stderr,
+                                   creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        finally:
+            if heavy:
+                clear_running()
     return 0
 
 

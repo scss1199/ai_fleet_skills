@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "id": "FAMES",
-  "version": "1.45.415",
+  "version": "1.45.416",
   "updated": "2026-09-23",
   "full_en": "First-principles Adaptive Minimal-token Evidence-aligned Self-consistency",
   "purpose": "Fleet-wide umbrella and standalone trigger for the complete FP, MTM, SCF, AEX, and SEAL contract.",
@@ -2473,7 +2473,7 @@
       "completion_rule": "Scope completion/release does not clear unrelated parent obligations; task completion requires fresh accepted evidence and closed work",
       "unsupported": "Arbitrary recursive child delegation, transitive lineage and cumulative child budgets are not added or proven by this entrypoint"
     },
-    "hot_directive": "F1S 做法在技能、按需載入（紅線見 T1）：①不准曲解→f1s-intake 原話列要做／不做／限制／驗收，不擴不縮不替換，已決定不再問，不新開 .md/.json；③馬斯克五步→mtm-mto-first 先重用再寫、改碼前全域搜尋、只改要改的行；④⑤⑥ztm-verify-before-done 主張要有本回合證據否則 UNKNOWN、綠測試才說修好、「需要你決定」只問一次、只寫使用者點名的檔案；⑥b 引擎檔要有讀回者或 TTL。路由：登入→browser-login-handoff；查資料／OCR→mtm-api-pool-offload；無原始碼→rea-reverse-engineering；前端→web-ui-taste。平行（預設）：f1s_parallel.py plan→run→close --evidence→merge --verify --strict，判斷與整合留主對話。對話分層與陰陽（operator 11-21/11-23）：L1 定方向收編，每 cwd 一個常駐 L2 執行，L3 短任務完成即 archive；陰陽、EoCC／SAC、閒置收編細則見技能 fames operator-manual「Conversation layers and yin-yang」。「在這裡執行此任務：…」＝已核准。提案 inbox.py send ai_darkhero <seat> --kind task，f1s-evolve 整合。單說「FAMES」＝列各階段狀態。",
+    "hot_directive": "F1S 做法在技能、按需載入（紅線見 T1）：①不准曲解→f1s-intake 原話列要做／不做／限制／驗收，不擴不縮不替換，已決定不再問，不新開 .md/.json；③馬斯克五步→mtm-mto-first 先重用再寫、改碼前全域搜尋、只改要改的行；④⑤⑥ztm-verify-before-done 主張要有本回合證據否則 UNKNOWN、綠測試才說修好、「需要你決定」只問一次、只寫使用者點名的檔案；⑥b 引擎檔要有讀回者或 TTL。路由：登入→browser-login-handoff；查資料／OCR→mtm-api-pool-offload；無原始碼→rea-reverse-engineering；前端→web-ui-taste。平行（預設）：f1s_parallel.py plan→run→close --evidence→merge --verify --strict，判斷與整合留主對話。對話分層與陰陽（operator 11-21/11-23，11-26/27 改）：每 cwd 只一個主對話（定方向＋執行），平行與短任務用本對話 Agent 子代理（進度條顯示），不開子對話視窗，陰＝f1s_yinyang tick 機械判；陰陽、EoCC／SAC、閒置收編細則見技能 fames operator-manual「Conversation layers and yin-yang」。「在這裡執行此任務：…」＝已核准。提案 inbox.py send ai_darkhero <seat> --kind task，f1s-evolve 整合。單說「FAMES」＝列各階段狀態。",
     "phase_execution": {
       "schema": 1,
       "required": true,

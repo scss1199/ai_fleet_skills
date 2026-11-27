@@ -48,7 +48,7 @@ CONTROL_STATE = os.path.join(REGISTRY, "f1s-control.json")
 SESSION_SCOPE = os.path.join(REGISTRY, "f1s-session-scope.json")  # {"sessions": {<id>: <the one thing it does>}}
 TECHNIQUES = os.path.join(REGISTRY, "f1s-apply.json")
 UNCLAIMED_AFTER_S = 3600
-STALE_OWNER_AFTER_S = 6 * 3600  # owner transcript silent this long: the claim blocks every other chat (ai_metadata #14/#15, 11-10)
+STALE_OWNER_AFTER_S = 3600  # owner transcript silent this long (= cache TTL): wake the seat (operator 11-27 「不要像白癡一樣停下來」; was 6 h)
 HANDOVER_AFTER_S = 3600  # owner transcript silent this long (the cache TTL): a same-seat chat holding evidence may answer
 CLAUDE_PROJECTS = os.path.join(os.path.expanduser("~"), ".claude", "projects")
 CURATOR_FALLBACK = "ai_darkhero"
@@ -187,8 +187,10 @@ def _hub_rel(path: str) -> str:
 
 
 def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None = None, routine: bool = False,
-          ledger: bool = False, machine: dict | None = None, station: bool = False) -> dict:
-    """station=True: a lean station may take it when no conversation owns it; unlike routine it is still reviewed.
+          ledger: bool = False, machine: dict | None = None, station: bool = False, not_sessions=()) -> dict:
+    """not_sessions: conversations that refused the work for their own role (rlz_chain); claim refuses them and
+    f1s_live does not wake them for this order.
+    station=True: a lean station may take it when no conversation owns it; unlike routine it is still reviewed.
     ledger=True: an engine reads the answer back into its own table (f1s_fanout), so any answer closes the order.
     machine={...}: an engine issues it from inside a seat's own session (Stop hook), so the curator-session check is
     skipped; the order is marked `"machine": true` and the dict's fields (e.g. "gap") are stored on it. Never routine-free."""
@@ -223,6 +225,8 @@ def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None 
             order["ledger"] = True
     if station and not freeze and not forbid:
         order["station"] = True
+    if not_sessions:
+        order["not_sessions"] = sorted({str(x) for x in not_sessions if x})
     doc["orders"].append(order)
     _save(seat, doc)
     return order
@@ -458,6 +462,18 @@ def _evidence_fresh(order: dict, seat: str = "") -> bool:
     return False
 
 
+ROLE_CANNOT = re.compile(
+    r"(?:陰|yin|審查者|reviewer|判決者)[^。\n]{0,24}(?:不能|不可|不改|不寫|不做|cannot|can't|does not|doesn't|never)"
+    r"[^。\n]{0,12}(?:改|寫|碼|做|執行|edit|code|take|port)"
+    r"|(?:需由|須由|交給|轉給|由)[^。\n]{0,12}(?:陽|yang|執行者|執行對話|L1)[^。\n]{0,8}(?:接手|做|執行|處理|take)"
+    r"|(?:誰|哪個對話|另派|which (?:chat|session))[^。\n]{0,12}(?:接|做|執行|take)"
+    # 2026-11-27 ai_theater#79/#80: 「陰的任務）禁止改程式碼…交給有權寫程式的對話」 passed the three lines above
+    r"|(?:陰|yin|審查者|reviewer|判決者)[^。\n]{0,24}禁止[^。\n]{0,6}(?:改|寫)"
+    r"|有權寫程式的對話|(?:不|未)接 ?RLZ", re.IGNORECASE)
+ROLE_RULE = ("角色不是 --cannot 的理由，也不是問 operator 的理由（operator 2026-11-27「我創造陰陽架構就是要讓他們互相推動"
+             "不是浪費時間問問題等指示」）：每 cwd 只有一個主對話（operator 2026-11-26「所有的agent progress 不要額外開一個視窗 直接在輸入對話上面顯示」、11-27 重申）：令由收到的對話自己 claim 自己做，要平行就在本對話開 Agent 子代理（進度顯示在輸入框上方的進度條），不 start_session、不另開陰／陽子對話；陰的判決本來就是 f1s_yinyang.py tick 機械跑；方向取捨（停或改目標）量測後自己選一條，丟掉的選項寫一句理由。")
+
+
 def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = None,
            session: str | None = None, note: str = "") -> dict:
     """evidence -> done (note = the seat's counts / commit / what it left, read back by f1s_fanout.collect);
@@ -468,6 +484,8 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
     if bool(evidence) == bool(reason.strip()):
         raise ValueError("answer with --evidence PATH... [--note TEXT], --cannot REASON, or --note TEXT alone; not both")
     reason = (reason or note).strip()
+    if not evidence and ROLE_CANNOT.search(reason):
+        raise ValueError(f"order #{n}: {ROLE_RULE}")
     # `commit:<sha>` is evidence too: seats were writing a one-off runtime/curator-<n>.txt per order only to have a path
     # to name (2026-11-13: ai_trader, ai_photo, sdnext_a770), and nothing ever read those files again.
     missing = [p for p in evidence if (_seat_commit_time(seat, cwd, p[len(COMMIT):]) is None if p.startswith(COMMIT)
@@ -479,6 +497,9 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
     if order["status"] != "open":
         raise ValueError(f"order #{n} is {order['status']}, not open")
     sid = _session_id(session)
+    if sid and sid in (order.get("not_sessions") or []):
+        raise PermissionError(f"order #{n} excludes conversation {sid[:8]} (it refused this work for its role): "
+                              "another conversation of the seat answers it")
     if owner_of(order) and owner_of(order) != sid:
         # A measured `--cannot` hands over too: ai_search #19 2026-11-20, owner fad3b104 silent 3 h, the seat's measured
         # cannot (lines up only by order #17's required tests, prune dead 0) was refused and waited for the 6 h STALE line.
@@ -531,6 +552,8 @@ def claim(seat: str, n: int, release: bool = False, cwd: str | None = None, sess
     order = _find(doc, n)
     if order["status"] != "open":
         raise ValueError(f"order #{n} is {order['status']}, not open")
+    if not release and sid in (order.get("not_sessions") or []):
+        raise PermissionError(f"order #{n} excludes conversation {sid[:8]}: it refused this work for its role")
     current = owner_of(order)
     if current and current != sid:
         # The session's own folder decides, not the shell cwd: `cd C:\ai_workspace` let ai_trader's main chat
@@ -689,7 +712,7 @@ ARCHIVE_BG_HINT = ("bg=relay (a live watch): first check the watched thing can s
 
 # ai_photo 2026-11-18: archive_session refuses an idle chat while Remote Control is on ("still has live work").
 ARCHIVE_RC_HINT = ("If archive_session says live work and the target is idle (isRunning=false) with remoteControlActive=true, "
-                   "call set_remote_control(enabled=false) on it, then archive_session again; for self, "
+                   "and its work is finished (session-consolidate.py due listed it), call set_remote_control(enabled=false) on it, then archive_session again; for self, "
                    "set_remote_control(self, false) before archive_session(self). Still refused with Remote Control "
                    "off and no bg listed (or bg=sidebar): the app's task list is stale, no successor helps; leave it "
                    "for the operator's sidebar archive and say so in one line.")
@@ -1426,9 +1449,9 @@ def article_lane_line(lane: str | None = None) -> str:
     lane = article_lane() if lane is None else lane
     if lane:
         return f"ARTICLE LANE — article relay and technique rows belong to {lane} ({ARTICLE_LANE_TITLE}): send_message them there, do not work them here."
-    return (f"ARTICLE LANE MISSING — no live {ARTICLE_LANE_TITLE} chat: start_session now (user_asked, fresh, cwd ai_darkhero, "
-            f"title {ARTICLE_LANE_TITLE}, Sonnet) to read the waiting articles, write their notes (f1s_vault.py) and close the "
-            "technique rows (f1s_apply.py list --seat ai_darkhero), then forward article work there.")
+    return (f"ARTICLE LANE — no live {ARTICLE_LANE_TITLE} chat, and none is opened (operator 2026-11-26: no extra session "
+            "windows): run the waiting articles in this chat through an Agent subagent (Sonnet) that writes their notes "
+            "(f1s_vault.py) and closes the technique rows (f1s_apply.py list --seat ai_darkhero); its progress shows in the band.")
 
 
 def _waiting_techniques(seat: str) -> str:
@@ -1449,7 +1472,7 @@ def _waiting_techniques(seat: str) -> str:
 def _fanout_line() -> str:
     """A completed F1S fan-out the curator has not reported yet (f1s_fanout.py); empty when none or on any error."""
     lines = []
-    for name in ("f1s_fanout", "f1s_reuse", "f1s_posture", "f1s_watch"):     # one line each: fan-out due, reuse ledger, night queue, HubClock/tray RED
+    for name in ("f1s_fanout", "f1s_reuse", "f1s_posture", "f1s_watch", "rlz_chain"):  # one line each: fan-out due, reuse ledger, night queue, HubClock/tray RED, RLZ relay
         try:
             lines.append(__import__(name).curator_line())
         except Exception:  # noqa: BLE001
@@ -1484,6 +1507,98 @@ def _unclaimed_orders() -> str:
     return "\n".join(lines)
 
 
+def nudge_unclaimed(now: float | None = None, every_s: float = UNCLAIMED_AFTER_S) -> list[str]:
+    """Wake the seat's own chats for an order nobody took (operator 2026-11-27 「令沒人接就自動叫醒陽」). Stamps `wake_at`
+    on each open order unowned past UNCLAIMED_AFTER_S or whose owner wrote nothing for STALE_OWNER_AFTER_S, again at most every `every_s`: the stamp changes that order's
+    key in f1s_live.order_index, so every idle waiter of the seat wakes on it (the yang claims; a yin forwards by the
+    Stop hook's route rule). A file write only when a stamp is due, so the event watch that runs this cannot loop."""
+    now = time.time() if now is None else now
+    woke = []
+    for seat in _seats_with_orders():
+        doc, changed = load(seat), False
+        for o in doc["orders"]:
+            if o.get("status") != "open" or (owner_of(o) and _claim_silent_s(o, now) <= STALE_OWNER_AFTER_S):
+                continue                                    # owned and the owner still writes: nothing to wake
+            try:
+                age = now - time.mktime(time.strptime(o.get("issued_at", ""), "%Y-%m-%dT%H:%M:%S"))
+                last = time.mktime(time.strptime(o["wake_at"], "%Y-%m-%dT%H:%M:%S")) if o.get("wake_at") else 0.0
+            except (TypeError, ValueError):
+                continue
+            if (owner_of(o) or age > UNCLAIMED_AFTER_S) and now - last >= every_s:   # a silent owner is due at once
+                if owner_of(o):
+                    # 11-27 ai_career#95 / jci_taipei#121: the woken chats read "owned by 3b33ccae, not mine" and ended
+                    # with 沒有下一步 while that owner was long gone. Drop the silent claim so the wake lands on a free order.
+                    o["released_silent"] = {"session": owner_of(o), "at": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now))}
+                    o.pop("owner", None)
+                o["wake_at"] = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now))
+                o["wakes"] = int(o.get("wakes") or 0) + 1
+                woke.append(f"{seat}#{o['n']}")
+                changed = True
+        if changed:
+            _save(seat, doc)
+    return woke
+
+
+def _listdir(path: str) -> list[str]:
+    try:
+        return os.listdir(path)
+    except OSError:
+        return []
+
+
+def waiting_seats() -> set[str]:
+    """Seats with at least one idle conversation whose f1s_live waiter is waiting: only those hear a wake_at stamp.
+    11-27: ai_network had 13 conversations and none waiting, so its silent-owned #54 woke nobody."""
+    out = set()
+    root = os.path.join(REGISTRY, "fames-hot")
+    for f in _listdir(root):
+        if f.startswith("wait-") and f.endswith(".json"):
+            try:
+                with open(os.path.join(root, f), encoding="utf-8") as fh:
+                    w = json.load(fh)
+            except (OSError, ValueError):
+                continue
+            if isinstance(w, dict) and w.get("state") == "waiting" and not w.get("ended") and w.get("seat"):
+                out.add(str(w["seat"]))
+    return out
+
+
+STATION_FAIL_MAX = 2
+STATION_EVERY_S = 3600
+
+
+def station_unheard(woke: list[str], now: float, spawn, waiting: set[str] | None = None) -> str | None:
+    """A woken order in a seat where nobody waits goes to one lean station (f1s_live.spawn_station), at most one per call
+    (heavy starts repel, `_skill/engines/spacing.py`) and per order every STATION_EVERY_S, never after STATION_FAIL_MAX
+    station failures. Returns "seat#n" handed, or None."""
+    waiting = waiting_seats() if waiting is None else waiting
+    for key in woke:
+        seat, _, n = key.rpartition("#")
+        if seat in waiting or not os.path.isdir(os.path.join(HUB, seat)):
+            continue
+        doc = load(seat)
+        o = next((x for x in doc["orders"] if str(x.get("n")) == n and x.get("status") == "open"), None)
+        if o is None or int((o.get("station_failures") or {}).get("count") or 0) >= STATION_FAIL_MAX:
+            continue
+        try:
+            last = time.mktime(time.strptime(o["station_at"], "%Y-%m-%dT%H:%M:%S")) if o.get("station_at") else 0.0
+        except (TypeError, ValueError):
+            last = 0.0
+        if now - last < STATION_EVERY_S:
+            continue
+        o["station_at"] = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now))
+        _save(seat, doc)
+        owner = owner_of(o)
+        if owner:                                           # the silent owner's lock goes first, or the station cannot claim
+            try:
+                claim(seat, int(o["n"]), release=True, cwd=os.path.join(HUB, seat), session=owner)
+            except (ValueError, PermissionError, KeyError):
+                continue
+        spawn(seat, os.path.join(HUB, seat), int(o["n"]))
+        return key
+    return None
+
+
 def _claim_silent_s(order: dict, now: float | None = None) -> float:
     """How long the owner of this claim has been silent. A station- owner has no transcript (2026-11-17: ai_trader#145 was
     named stale seconds after a station took it), so the age of its claim decides; an unreadable claim time is not stale."""
@@ -1506,13 +1621,16 @@ def _owner_silent_s(session_id: str, now: float | None = None) -> float:
     except OSError:
         return 0.0
     newest = None
+    short = len(session_id) < 36 and session_id.replace("-", "").isalnum()   # claims keep an 8-char prefix (11-27: read as silent forever)
     for d in dirs:
-        path = os.path.join(CLAUDE_PROJECTS, d, f"{session_id}.jsonl")
-        try:
-            m = os.path.getmtime(path)
-        except OSError:
-            continue
-        newest = m if newest is None else max(newest, m)
+        paths = ([os.path.join(CLAUDE_PROJECTS, d, f) for f in _listdir(os.path.join(CLAUDE_PROJECTS, d)) if f.startswith(session_id) and f.endswith(".jsonl")]
+                 if short else [os.path.join(CLAUDE_PROJECTS, d, f"{session_id}.jsonl")])
+        for path in paths:
+            try:
+                m = os.path.getmtime(path)
+            except OSError:
+                continue
+            newest = m if newest is None else max(newest, m)
     return float("inf") if newest is None else max(0.0, now - newest)
 
 

@@ -329,6 +329,30 @@ def _alive(pid: int | None) -> bool:
         return True
 
 
+DECISIONS = HUB / "_registry" / "fames-hot" / "wake-decisions.jsonl"
+DECISIONS_MAX = 2000
+
+
+def note_decision(seat: str, session_id: str, **fields) -> None:
+    """One line per settled idle-wake decision (read by `f1s_live.py why <seat>`): on 2026-11-27 the ai_career waiter
+    overwrote its only record and why it stayed quiet could not be proven. Kept to the last DECISIONS_MAX lines."""
+    try:
+        line = json.dumps({"at": _iso(), "seat": seat, "session": session_id[:8], **fields}, ensure_ascii=False)
+        rows = DECISIONS.read_text(encoding="utf-8").splitlines() if DECISIONS.is_file() else []
+        rows = (rows + [line])[-DECISIONS_MAX:]
+        DECISIONS.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    except OSError:
+        pass
+
+
+def why(seat: str, limit: int = 20) -> list[dict]:
+    try:
+        rows = [json.loads(x) for x in DECISIONS.read_text(encoding="utf-8").splitlines() if x.strip()]
+    except (OSError, ValueError):
+        return []
+    return [r for r in rows if r.get("seat") == seat][-limit:]
+
+
 def shipping(now: float | None = None) -> bool:
     """A ship-f1s run is between its first and last step (pid alive, under SHIP_MAX_S): its bump, bundle and
     install rewrite the watched files minutes apart (1.45.81, 2026-10-24), so waking now would wake again later."""
@@ -500,6 +524,8 @@ def order_index(hook, seat: str) -> dict | None:
             status = o.get("status")
             if own and status == "open":
                 row = ["open", o.get("n"), o.get("issued_at"), o.get("reopened_at"), o.get("do"), o.get("freeze"), o.get("forbid")]
+                if o.get("wake_at"):
+                    row.append(o["wake_at"])                # curator_orders.nudge_unclaimed: nobody took it or its owner went silent
             elif not own and status in ("done", "cannot"):
                 row = ["answer", o.get("n"), status, (o.get("answer") or {}).get("at")]
             else:
@@ -508,7 +534,8 @@ def order_index(hook, seat: str) -> dict | None:
             out[key] = {"title": str(o.get("title") or "") if own else "", "n": o.get("n"),
                         "routine": own and o.get("routine") is True and not (o.get("owner") or {}).get("session")
                         and not o.get("reopened_at") and isinstance(o.get("n"), int),
-                        "ledger": bool(o.get("ledger"))}
+                        "ledger": bool(o.get("ledger")),
+                        "not_sessions": list(o.get("not_sessions") or []) if own else []}
     return out
 
 
@@ -971,8 +998,15 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
                 titles = None if index is None else {k: v["title"] for k, v in index.items()}
                 rows = None if titles is None else sorted(titles)
                 grew = rows is None or known is None or bool(set(rows) - set(known))
+                fresh = [] if index is None or known is None else [index[k] for k in set(index) - set(known)
+                                                                  if index[k].get("title")]
+                barred = [] if index is None or known is None else [k for k in set(index) - set(known)
+                                                                   if session_id in index[k].get("not_sessions", [])]
                 if contract == state["contract"]:
                     text = ""
+                elif barred and len(barred) == len(set(index) - set(known)) and base == state["base"]:
+                    text = ""                              # only orders this chat refused for its role (rlz_chain
+                                                           # not_sessions, ai_theater#79 2026-11-27): another chat takes them
                 elif not grew and not review_only and not (directive_only and upgrade_wake()):
                     # nothing new to act on: an order was answered, closed or judged, alone or together with an upgrade
                     # (2026-11-19: 77 of 340 live wakes in two days ran no tool at 177K average context; the upgrade
@@ -997,6 +1031,15 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
                     state["station_held"] = int(state.get("station_held") or 0) + route[1]
                 else:
                     text = hook.live_update(doc, event="IdleWake", watch_seat=sig_seat)
+                    if not text and fresh:
+                        # 2026-11-27 ai_career#95: a released order was re-stamped, the row key grew, and the shared
+                        # update text still came back empty (its delivery ledger already held the lines), so the
+                        # waiter recorded IdleQuiet and the chat never heard of the order. A new own open order
+                        # always wakes: its text goes out whole.
+                        text = hook._curator_orders(sig_seat, session_id)
+                        hook._midturn_changed(surface_id, session_id, record_only=True, seat=sig_seat, cwd=cwd,
+                                              event="IdleWake")
+                note_decision(seat, session_id, grew=grew, fresh=len(fresh), woke=bool(text))
                 state["contract"], state["base"], state["orders"], state["order_rows"] = contract, base, orders, rows
                 _drop_bytes()
                 if text:

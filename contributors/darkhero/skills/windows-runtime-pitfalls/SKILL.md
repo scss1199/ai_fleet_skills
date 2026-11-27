@@ -123,6 +123,11 @@ parent_skill: ztm-verify-before-done
   做法：持久化上次推送的集合＋每項窗口截止；每輪算 retracted＝上次集合 − 本次集合 且 now＜窗口截止，retracted 非空就推，
   測試要同時覆蓋「撤回有推」與「到期沒推」。適用每個 seat 的 LINE／通知閘。（ai_trader 3a6ab78cd：東森 2614 截止日早上
   spread +10.9%→+9.0% 掉出申購名單卻無訊息；subscription_apply_list.py run() retracted／was，tests/test_subscription_apply_list.py）
+- **回饋處理狀態寫回來源列，不動 updated_at**：入口網站的回饋（便利貼、留言）由本地鏡像以 `updated_at > since` 增量拉取並轉成工作
+  prompt 時，處理完要把 status／reply／ref／resolved_at 寫回來源那一列，且這次寫入**不得**更新 updated_at——狀態寫入不是編輯，
+  否則拉取器下一輪又把已處理項排進佇列。作者再編輯＝更新 updated_at 並把 status 設回 open（重新開啟）；UI 徽章只數 open。
+  寫回端點只收 bearer（非公開）。測試要覆蓋「resolve 後增量拉取不再回傳」與「編輯後重新開啟」。（ai_trader e50e5593c：
+  web/src/worker.js POST /api/notes/:id/resolve、portal_sync.py resolve，test_portal_sync_notes.py）
 - **時間窗口／黑名單時段要管「已持有的狀態」，不只擋新動作**：閘放在「有沒有持倉」判斷之後，只會擋進場，
   窗口前最後一刻進的單會被抱著跨過窗口（ai_trader fx_scalp_runner 排除 21、0 UTC 的 rollover，20:30 UTC 進場抱到 21:00 後：
   付了 swap、連吃 3 次 60 s 報價停滯，excluded_hour 計數仍是 0）。規則：設定了任何時間窗口（排除時段、休市、維護、黑名單）
