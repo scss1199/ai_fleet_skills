@@ -1870,6 +1870,16 @@ ELEMENTS = [
      "requires": None, "detail": "rejected 2026-11-27 f1s-evolve: an image-prompt craft tip for character-art seats, not an F1S rule; the row claimed text in f1s-reverse-learning that was never written (CONTRADICTION held fames-converge); nothing added to any skill"},
     {"id": "EVO-jci-taipei-backup-dual-system-20261127", "element": "jci_taipei reverse-learn memory (ledger 2f6764f1abe8, f1s-harvest 1.992): 會議紀錄兩套備份（jcitaipei1957 Drive 快照 + altos D:/jci_taipei-backup）", "verdict": "INFO",
      "requires": None, "detail": "rejected 2026-11-27 f1s-evolve: a jci_taipei-specific operating fact (its own Drive account, altos path, sync_drive.py) that stays in that seat's memory; not generalizable to F1S; the row claimed f1s-reverse-learning text that was never written (CONTRADICTION held fames-converge); nothing added to any skill"},
+    # f1s-evolve 2026-11-28: ai_darkhero x2 + jci_taipei reverse-learn proposals
+    {"id": "EVO-ai-darkhero-start-here-direct-spawn-covered-20261128", "element": "ai_darkhero reverse-learn correction f79e50cbac35 (ledger c81f388e889d, f1s-harvest 3.696): 不要等「在此開始」就直接開始；所有「在此開始」＝直接產生子對話；流程 rust-lean 化", "verdict": "INFO",
+     "requires": None, "detail": "rejected as already covered: f1s_spawn.py (Rust f1s spawn decide, Lean SpawnRs, test_f1s_spawn.py) has REUSE/DROP/START/QUEUE and no CARD outcome, and the operator-manual carries the same rule; the operator's later 2026-11-26/27 words (no extra session windows, yin = f1s_yinyang tick) narrow child chats to one main chat per cwd, so nothing wider is added",
+     "check_text": ("operator_manual", "f1s_spawn.py request")},
+    {"id": "EVO-ai-darkhero-rlz-laggard-cwds-covered-20261128", "element": "ai_darkhero reverse-learn correction b7ab6d5987fa (ledger cd2334782504, f1s-harvest 4.481): 查哪些有對話的 cwd 還沒完全 rust-lean 化，用陰陽架構推動", "verdict": "INFO",
+     "requires": None, "detail": "rejected as already covered: rlz_chain.py tick (event + clock via f1s_event_watch) measures rs_lines per seat, issues the RLZ order, judges it mechanically and hands the baton with a parallel pool; its RLZ CHAIN line reaches the curator every turn; yin judging is f1s_yinyang tick; no text added",
+     "check_text": ("yinyang_engine", "def cmd_tick(")},
+    {"id": "EVO-jci-operator-named-project-chats-stay-open-20261128", "element": "jci_taipei reverse-learn memory never-archive-yearbook-trainee-sessions (ledger ddc7b966a7c4, f1s-harvest 4.396): 元月刊與 2027-01 見習講習會的對話任務沒完成前不准 archive", "verdict": "REFINE",
+     "requires": None, "detail": "session-consolidate keep:unfinished (2026-11-27) only held chats whose last report named something undone; a section ending 沒有下一步 still came out archive:closed and SESSION ARCHIVE DUE (12月見習講習會宣傳（續） was listed due on 2026-11-28). OPERATOR_KEEP title match now gives keep:operator-named in classify and skips the chat in due(); only the operator closes them (test_operator_named_project_is_never_archive_or_due). T1 close-when-done is not edited and not weakened: its own text bars closing unfinished work",
+     "check_text": ("session_consolidate", "OPERATOR_KEEP = re.compile(")},
 ]
 def sha(path: Path) -> str:
     try:

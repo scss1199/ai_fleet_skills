@@ -1,0 +1,999 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# token-class: ZT
+"""f1s_daily.py — every conversation on this machine feeds F1S back once a day, and every open one gets the result.
+operator 2026-10-27: 「建立一個每日自動整理全部對話內容來反向升級f1s的工作流程 順便去包含文章(如果我沒有特別要求
+馬上讀哪個文章的話 就是會24hr小時內讀完配合所有正在執行或封存的任務)整理出有用的東西 提高矩陣作用 並動態作用回所有
+正在跑的對話」 (asked in altos, executed on darkhero; altos receives this file through the FAMES package).
+
+One HubClock rider (`f1s-daily`, 6 h) runs `tick`; zero Claude tokens, free pool only, zero foreground:
+  1. SCAN     ~/.claude/projects/*/*.jsonl incrementally (byte offset per transcript; a new transcript older than
+              NEW_FILE_DAYS is only counted). Per seat (from each row's cwd): sessions (open = f1s_live waiter armed,
+              else archived), operator correction prompts, 「需要你決定」 lines, repeated tool-error signatures, and the
+              URLs the operator pasted (an URL a tool in the same session already fetched counts as read on request).
+  2. ARTICLES every unread URL (conversation URLs + LINE links the bot could not read, article_relay) is read on the
+              free pool (distill-url.py) inside ARTICLE_SLA_S; each receipt carries read_at, the summary, the key points
+              and the open/archived sessions it relates to (free-pool match over session titles). LINE content cards
+              that arrived in the window are related the same way.
+  3. DAILY    (once per local day): corrections and repeated errors become `conversation` items that f1s-harvest
+              scores, triages and proposes to f1s-evolve (canonical only through its T1 / Lean / test gates); the
+              seat matrix (open / archived / corrections / decisions / errors / articles) lands in digest-<date>.json
+              and as `f1s_daily` on each project-matrix.json project, with the gaps; live.md is rewritten.
+  4. LIVE     _registry/f1s-daily/live.md is watched by claude_session_hook (MIDTURN_WATCH + instruction files):
+              every open conversation gets its diff at the next prompt or tool call, f1s_live wakes the idle ones.
+Never reads fracdigi / quant transcripts; ai_ut prompt text never leaves the machine (counted, not quoted).
+  python f1s_daily.py tick [--force-daily] [--json]
+  python f1s_daily.py status [--json]
+  python f1s_daily.py conversations [--json]   # publish this host's conversation index now + refresh live.md
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import importlib.util
+import json
+import os
+import re
+import sys
+import subprocess  # noqa: F401 - tests/test_f1s_daily.py patches this seam to prove no process is spawned
+import threading
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+HUB = Path(os.environ.get("AI_WORKSPACE") or HERE.parents[1])
+PROJECTS = Path.home() / ".claude" / "projects"
+OUT = HUB / "_registry" / "f1s-daily"
+STATE = OUT / "state.json"
+LIVE = OUT / "live.md"
+LOCK = OUT / "tick.lock"
+MATRIX = HUB / "_registry" / "project-matrix.json"
+CURATOR = "ai_darkhero"
+
+NEVER = ("fracdigi", "quant")          # vault red line: not even read
+LOCAL_ONLY = ("ai_ut",)                # proprietary: counted, never quoted, never sent to the pool
+NEW_FILE_DAYS = 14
+FIRST_READ_BYTES = 32 * 1024 * 1024
+KEEP_DAYS = 14
+ARTICLE_SLA_S = 24 * 3600
+ARTICLES_PER_TICK = 40                 # 6 h rider: 160 a day keeps a backlog inside the 24 h SLA
+# 2026-10-31: a tick measured 14 min 50 s for 40 articles (~22 s each: fetch + free-model digest) and HubClock
+# kills a rider at 600 s (DEFAULT_MAX_RUNTIME) - f1s-daily was rc 124 four runs straight and no digest landed.
+# The article pass stops at this budget and the rest waits for the next tick; scan + daily still run after it.
+ARTICLE_BUDGET_S = 420
+DAILY_AFTER_HOUR = 3
+LIVE_MAX_CHARS = 2600
+NW = 0x08000000 if os.name == "nt" else 0
+
+CORRECTION = re.compile(r"不要|不是|不准|不對|錯了|搞錯|為什麼|為何|嚴禁|禁止|別再|別給|別問|別用|我說|我要的是|不用|"
+                        r"廢話|說謊|推託|浪費|又沒|又是|又不|還是沒|沒有用|根本|亂[改做寫講]")
+URL = re.compile(r"https?://[^\s<>\"'）)」】\u3000-\u303f\u4e00-\u9fff\uff00-\uffef]+")
+SECRET = re.compile(r"(?:sk-|ghp_|gho_|xox[bp]-|AIza|eyJ)[A-Za-z0-9_\-.]{10,}|[A-Za-z0-9_\-]{40,}")
+DECISION = re.compile(r"需要你決定|需要你(?:來)?(?:選|決)|請你決定|由你決定")
+MACHINE_ENTRY = ("sdk-cli", "sdk-py", "sdk-ts")
+# F1S-generated prompts typed into a chat by a tick (article_relay curator-order drive): not the operator's words.
+# f1s-evolve 2026-11-26: two such dispatches were harvested as operator "corrections" (ledger 8d59e0f6b788, 11c2d885a64b).
+# 2026-11-26: an f1s-evolve-tick prompt quoting a 300-char-cut order ("…watch?v=UwxUt", "https://www.youtube.com/") and
+# the ARTICLE RELAY prompt itself were harvested as operator-pasted links (state urls af19c8c079fd, fef0e980f7d3).
+MACHINE_PROMPT = re.compile(r"^(?:處理 \S+ 的 curator 校正令|ARTICLE RELAY\b|You are the hub curator seat \S+, running unattended)")
+# Not articles (first tick 2026-10-27 fetched localhost, sign-in pages and the operator's own deployments): a local or
+# private address, a sign-in / console / API host, a fleet deployment, a private Google doc, a vault seat's site.
+NOT_ARTICLE = re.compile(r"^(?:localhost|127\.|10\.|192\.168\.|\[|(?:accounts|id|auth|login|signin|secure\.id|console|dash|"
+                         r"api|developers|platform|cloud)\.)|\.(?:workers\.dev|vercel\.app|fly\.dev|onrender\.com|pages\.dev)$|"
+                         r"^(?:docs|drive)\.google\.com$")
+TOKEN_PARAM = re.compile(r"(?i)token|key|secret|sig|auth|code|session|passw|mcp_")
+
+
+def _now() -> float:
+    return time.time()
+
+
+def _iso(ts: float) -> str:
+    return datetime.fromtimestamp(ts, timezone.utc).isoformat(timespec="seconds")
+
+
+def _local(ts: float) -> str:
+    """Local naive second-resolution stamp: the one clock every stored ts / since / cut compares in."""
+    return datetime.fromtimestamp(ts).isoformat(timespec="seconds")[:19]
+
+
+def _row_ts(value) -> str:
+    """A transcript timestamp (UTC, `Z`) as a local naive stamp; '' when unparseable."""
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return ""
+    return _local(dt.timestamp()) if dt.tzinfo else dt.isoformat(timespec="seconds")[:19]
+
+
+def never(seat: str) -> bool:
+    return any(n in str(seat).lower() for n in NEVER)
+
+
+def _epoch(value) -> float:
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return 0.0
+
+
+def _read(path: Path, default):
+    try:
+        return json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return default
+
+
+def _write(path: Path, doc) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + f".{os.getpid()}.tmp")
+    tmp.write_text(doc if isinstance(doc, str) else json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def _module(name: str, file: str):
+    if name not in sys.modules:
+        spec = importlib.util.spec_from_file_location(name, HERE / file)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        spec.loader.exec_module(module)
+    return sys.modules[name]
+
+
+def _sha(text: str) -> str:
+    return hashlib.sha1(text.encode("utf-8")).hexdigest()[:12]
+
+
+def redact(text: str) -> str:
+    return SECRET.sub("[redacted]", text)
+
+
+def article_url(url: str) -> str:
+    """The URL worth reading as an article with credential-like query parameters removed, or '' for anything else."""
+    from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+    url = url.rstrip(".,;:!?。，")
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        return ""
+    host = (parts.hostname or "").lower()
+    if not host or "." not in host or "](" in url or NOT_ARTICLE.search(host) or never(host):
+        return ""
+    query = urlencode([(k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True) if not TOKEN_PARAM.search(k)])
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, query, ""))
+
+
+def seat_of_cwd(cwd: str) -> str:
+    """Seat from a row's cwd: the first path part under the hub (ai_x, jci_taipei), `hub` at the root, else ''."""
+    try:
+        rel = Path(cwd).resolve().relative_to(HUB.resolve())
+    except (ValueError, OSError):
+        return ""
+    head = rel.parts[0] if rel.parts else ""
+    if not head or head.startswith((".", "_")):
+        return "hub"
+    return head
+
+
+def _blocks(row: dict) -> list:
+    msg = row.get("message")
+    content = msg.get("content") if isinstance(msg, dict) else None
+    if isinstance(content, str):
+        return [{"type": "text", "text": content}]
+    return content if isinstance(content, list) else []
+
+
+def _human_text(row: dict) -> str:
+    """The operator's own prompt text, or '' for tool results, hook/meta rows and headless (sdk) prompts."""
+    if row.get("type") != "user" or row.get("entrypoint") in MACHINE_ENTRY:
+        return ""
+    if any(row.get(f) for f in ("isMeta", "isCompactSummary", "isVisibleInTranscriptOnly", "isSidechain")):
+        return ""
+    blocks = _blocks(row)
+    if not blocks or any(isinstance(b, dict) and b.get("type") == "tool_result" for b in blocks):
+        return ""
+    text = "\n".join(str(b.get("text") or "") for b in blocks if isinstance(b, dict) and b.get("type") == "text")
+    return "" if text.lstrip().startswith("<") or MACHINE_PROMPT.match(text.lstrip()) else text.strip()
+
+
+def error_sig(text: str) -> str:
+    """A tool error's signature: first meaningful line, numbers / paths / quoted values folded."""
+    # A shell error starts with "Exit code 1": the line after it says what failed (first tick: 702 "Exit code N").
+    line = next((ln.strip() for ln in str(text).splitlines() if ln.strip() and not re.fullmatch(r"Exit code \d+", ln.strip())), "")
+    line = re.sub(r"<[^>]{0,40}>", "", line)
+    line = re.sub(r"[A-Za-z]:[\\/][^\s'\"]+|/[\w.\-/]+", "<path>", line)
+    line = re.sub(r"'[^']*'|\"[^\"]*\"", "<v>", line)
+    line = re.sub(r"\d+", "N", line)
+    return redact(line)[:140]
+
+
+def _tool_inputs(row: dict) -> str:
+    return " ".join(json.dumps(b.get("input") or {}, ensure_ascii=False)
+                    for b in _blocks(row) if isinstance(b, dict) and b.get("type") == "tool_use")
+
+
+def scan_file(path: Path, rec: dict, state: dict, now: float) -> None:
+    """Read the transcript from its recorded offset; complete lines only."""
+    size = path.stat().st_size
+    start = int(rec.get("offset") or 0)
+    if size < start:                                   # rewritten: start over
+        start = 0
+    if size == start:
+        return
+    with path.open("rb") as fh:
+        fh.seek(start)
+        data = fh.read()
+    end = data.rfind(b"\n")
+    if end < 0:
+        return
+    rec["offset"] = start + end + 1
+    sid = path.stem
+    sess = state["sessions"].setdefault(sid, {"seat": rec.get("seat") or "", "title": "", "first": "", "last": ""})
+    for raw in data[:end].split(b"\n"):
+        if b'"type":"user"' not in raw and b'"type":"assistant"' not in raw:
+            continue
+        try:
+            row = json.loads(raw.decode("utf-8", "replace"))
+        except ValueError:
+            continue
+        ts = _row_ts(row.get("timestamp"))
+        if not sess["seat"]:
+            sess["seat"] = seat_of_cwd(str(row.get("cwd") or ""))
+        seat = sess["seat"]
+        if not seat or never(seat):
+            continue
+        sess["first"] = sess["first"] or ts
+        sess["last"] = max(sess["last"], ts)
+        if row.get("type") == "user":
+            text = _human_text(row)
+            if text:
+                if not sess["title"]:
+                    sess["title"] = "" if seat in LOCAL_ONLY else redact(text[:120]).replace("\n", " ")
+                if len(text) <= 1500 and CORRECTION.search(text):
+                    state["corrections"].append({"seat": seat, "session": sid, "ts": ts,
+                                                 "text": "" if seat in LOCAL_ONLY else redact(text[:400])})
+                for url in ([] if seat in LOCAL_ONLY else URL.findall(text)):   # ai_ut URLs never leave
+                    url = article_url(url)
+                    if not url:
+                        continue
+                    key = _sha(url)
+                    state["urls"].setdefault(key, {"url": url, "seat": seat, "session": sid, "seen": ts,
+                                                   "source": "conversation", "status": "pending"})
+            for b in _blocks(row):
+                if isinstance(b, dict) and b.get("type") == "tool_result" and b.get("is_error"):
+                    body = b.get("content")
+                    if isinstance(body, list):
+                        body = " ".join(str(x.get("text") or "") for x in body if isinstance(x, dict))
+                    sig = error_sig(str(body or ""))
+                    if sig:
+                        e = state["errors"].setdefault(seat, {}).setdefault(sig, {"n": 0, "last": "", "sessions": []})
+                        e["n"] += 1
+                        e["last"] = max(e["last"], ts)
+                        if sid not in e["sessions"]:
+                            e["sessions"] = (e["sessions"] + [sid])[-5:]
+        else:
+            inputs = _tool_inputs(row)
+            if "http" in inputs:
+                for key, u in state["urls"].items():
+                    if u["status"] == "pending" and u["session"] == sid and u["url"] in inputs:
+                        u.update(status="read_in_session", read_at=ts)
+            for b in _blocks(row):
+                if isinstance(b, dict) and b.get("type") == "text":
+                    for ln in str(b.get("text") or "").splitlines():
+                        if DECISION.search(ln):
+                            state["decisions"].append({"seat": seat, "session": sid, "ts": ts,
+                                                       "text": "" if seat in LOCAL_ONLY else redact(ln.strip()[:200])})
+
+
+def scan(state: dict, now: float) -> dict:
+    files = state.setdefault("files", {})
+    read = new = 0
+    for path in sorted(PROJECTS.glob("*/*.jsonl")):
+        low = path.parent.name.lower()
+        if any(n in low for n in NEVER):
+            continue
+        key = str(path)
+        rec = files.get(key)
+        try:
+            st = path.stat()
+        except OSError:
+            continue
+        if rec is None:
+            new += 1
+            rec = files[key] = {"offset": 0}
+            if now - st.st_mtime > NEW_FILE_DAYS * 86400:
+                rec["offset"] = st.st_size               # old: counted as archived, never read back
+                state["sessions"].setdefault(path.stem, {"seat": "", "title": "", "first": "",
+                                                         "last": _local(st.st_mtime), "old": True})
+                continue
+            rec["offset"] = max(0, st.st_size - FIRST_READ_BYTES)
+        if rec.get("offset", 0) == st.st_size:
+            continue
+        try:
+            scan_file(path, rec, state, now)
+            read += 1
+        except OSError:
+            continue
+    return {"transcripts": len(files), "new": new, "read": read}
+
+
+def prune(state: dict, now: float) -> None:
+    cut = _local(now - KEEP_DAYS * 86400)
+    state["corrections"] = [c for c in state["corrections"] if c["ts"] >= cut][-2000:]
+    state["decisions"] = [d for d in state["decisions"] if d["ts"] >= cut][-2000:]
+    for seat, sigs in state["errors"].items():
+        state["errors"][seat] = {k: v for k, v in sigs.items() if v["last"] >= cut}
+    state["urls"] = {k: v for k, v in state["urls"].items()
+                     if v["status"] == "pending" or str(v.get("read_at") or v["seen"]) >= cut}
+
+
+# ── cross-host conversation index (operator 2026-11-21 on altos) ────────────────────────────────
+# 「每一處登入的claude code app對話不一致時間差很大」: the desktop app lists only its own local_ sessions and a fleet-job
+# (sdk-cli) conversation never appears there, so no host could see another host's conversations. Every host publishes
+# metadata only (id prefix, empty title - repo is public, seat, kind, first/last UTC, running|idle) to contributors/<slug>/f1s-daily/
+# conversations.json on the carrier; the reader merges every host's newest copy into live.md. Never prompt or reply text.
+CONV_FILE = "conversations.json"
+CONV_DAYS = 14
+CONV_ROWS = 60
+CONV_HEAD_BYTES = 128 * 1024
+CONV_RUNNING_S = 600                   # written in the last 10 min = mid-turn when no live record says otherwise
+APP_SESSIONS = Path(os.environ.get("APPDATA") or str(Path.home())) / "Claude" / "claude-code-sessions"
+LIVE_SESSIONS = Path.home() / ".claude" / "sessions"
+TITLE_ROW = re.compile(rb'"type":"(?:custom-title|ai-title)"')
+
+
+def _app_titles() -> dict:
+    """cliSessionId -> desktop app title ('' when untitled) for every session the app store knows; {} without the store."""
+    out = {}
+    for p in APP_SESSIONS.glob("*/*/local_*.json") if APP_SESSIONS.is_dir() else []:
+        d = _read(p, {})
+        sid = d.get("cliSessionId") if isinstance(d, dict) else None
+        if sid:                                        # member = the app can list it; the title may be empty
+            out[sid] = str(d.get("title") or "")
+    return out
+
+
+def _live_status() -> dict:
+    """CLI sessionId -> busy|idle from ~/.claude/sessions/<pid>.json (same source as session-consolidate.live_sessions)."""
+    out = {}
+    for p in LIVE_SESSIONS.glob("*.json") if LIVE_SESSIONS.is_dir() else []:
+        d = _read(p, {})
+        if isinstance(d, dict) and d.get("sessionId"):
+            out[d["sessionId"]] = str(d.get("status") or "")
+    return out
+
+
+def _conv_meta(path: Path, rec: dict, size: int) -> None:
+    """entrypoint / seat / first stamp from the head once; the latest app or AI title from bytes appended since."""
+    if "ep" not in rec:
+        with path.open("rb") as fh:
+            head = fh.read(CONV_HEAD_BYTES)
+        rec.update(ep="", seat="", first="")
+        for raw in head.split(b"\n"):
+            if b'"entrypoint"' not in raw and b'"cwd"' not in raw:
+                continue
+            try:
+                row = json.loads(raw.decode("utf-8", "replace"))
+            except ValueError:
+                continue
+            rec["ep"] = rec["ep"] or str(row.get("entrypoint") or "")
+            rec["seat"] = rec["seat"] or seat_of_cwd(str(row.get("cwd") or ""))
+            if not rec["first"] and row.get("timestamp"):
+                try:
+                    rec["first"] = _iso(datetime.fromisoformat(str(row["timestamp"]).replace("Z", "+00:00")).timestamp())
+                except ValueError:
+                    pass
+            if rec["ep"] and rec["seat"] and rec["first"]:
+                break
+    start = int(rec.get("toff") or 0)
+    if size < start:                                   # rewritten: read the titles again
+        start = 0
+    if size > start:
+        with path.open("rb") as fh:
+            fh.seek(start)
+            data = fh.read()
+        for raw in data.split(b"\n"):
+            if TITLE_ROW.search(raw):
+                try:
+                    row = json.loads(raw.decode("utf-8", "replace"))
+                except ValueError:
+                    continue
+                rec["title"] = str(row.get("customTitle") or row.get("aiTitle") or rec.get("title") or "")
+        rec["toff"] = size
+
+
+def conversation_index(state: dict, now: float, host: str) -> dict:
+    """The carrier `conversations` block for this host; transcript metadata is cached in state['conv'] by size."""
+    cache = state.setdefault("conv", {})
+    titles, live = _app_titles(), _live_status()
+    counts = {"total": 0, "desktop": 0, "dispatched": 0, "active_48h": 0}
+    rows, seen, local = [], set(), {}
+    for path in PROJECTS.glob("*/*.jsonl"):
+        if any(n in path.parent.name.lower() for n in NEVER):
+            continue
+        try:
+            st = path.stat()
+        except OSError:
+            continue
+        sid = path.stem
+        seen.add(sid)
+        rec = cache.setdefault(sid, {})
+        try:
+            if rec.get("size") != st.st_size:
+                _conv_meta(path, rec, st.st_size)
+                rec["size"] = st.st_size
+        except OSError:
+            continue
+        if never(rec.get("seat") or ""):
+            continue
+        # desktop = the app's own store knows it (what the app list can show); a host without the store falls back
+        # to the transcript's entrypoint. 2026-11-21 darkhero: entrypoint said 720 desktop, the store held 508.
+        kind = "desktop" if (sid in titles if titles else rec.get("ep") == "claude-desktop") else "dispatched"
+        counts["total"] += 1
+        counts[kind] += 1
+        counts["active_48h"] += now - st.st_mtime < 48 * 3600
+        if now - st.st_mtime > CONV_DAYS * 86400:
+            continue
+        seat = rec.get("seat") or ""
+        if seat not in LOCAL_ONLY:                     # resolved for THIS host's reader only, never sent to the carrier
+            local[sid[:8]] = redact(titles.get(sid) or rec.get("title") or "").replace("\n", " ")[:40]
+        status = live.get(sid)
+        running = status == "busy" or (status is None and now - st.st_mtime < CONV_RUNNING_S)
+        rows.append({"id": sid[:8], "title": "", "seat": seat, "kind": kind,
+                     "first": rec.get("first") or _iso(st.st_mtime), "last": _iso(st.st_mtime),
+                     "state": "running" if running else "idle"})
+    for sid in [s for s in cache if s not in seen]:
+        cache.pop(sid)
+    rows.sort(key=lambda r: r["last"], reverse=True)
+    state["conv_titles"] = {"host": host, "titles": {r["id"]: local[r["id"]] for r in rows[:CONV_ROWS] if local.get(r["id"])}}
+    return {"schema": 1, "host": host, "generated": _iso(now), "counts": counts, "rows": rows[:CONV_ROWS]}
+
+
+def _carrier():
+    """(fleet-job-dispatch module, carrier clone, this host's contributor slug) - the fleet-hygiene publish path."""
+    fjd = _module("fleet_job_dispatch_for_daily", "fleet-job-dispatch.py")
+    hyg = _module("fleet_hygiene_for_daily", "fleet-hygiene.py")
+    return fjd, fjd.repo_root(HUB), hyg.contributor_slug(HUB, hyg.this_host())
+
+
+def publish_conversations(state: dict, now: float) -> dict:
+    """Write contributors/<slug>/f1s-daily/conversations.json on the carrier; fail-open (the digest never breaks)."""
+    try:
+        fjd, repo, slug = _carrier()
+        block = conversation_index(state, now, slug)
+        _write(OUT / CONV_FILE, {"conversations": block})
+        pub = fjd._publish(repo, HUB, {f"contributors/{slug}/f1s-daily/{CONV_FILE}": {"conversations": block}},
+                           f"chore(f1s-daily/{slug}): conversation index")
+        return {"ok": bool(pub.get("ok")), "commit": pub.get("commit"), "error": pub.get("error"),
+                "counts": block["counts"], "rows": len(block["rows"])}
+    except Exception as exc:  # noqa: BLE001 - recorded in the tick, never raised
+        return {"ok": False, "error": f"{type(exc).__name__}: {exc}"[:200]}
+
+
+def fleet_conversations() -> list[dict]:
+    """Every host's newest `conversations` block under contributors/*/f1s-daily/*.json on origin/main of the carrier."""
+    try:
+        fjd, repo, _ = _carrier()
+    except Exception:  # noqa: BLE001
+        return []
+    ls = fjd.git(repo, "ls-tree", "-r", "--name-only", "origin/main", "contributors")
+    best: dict = {}
+    for rel in (ls.stdout.splitlines() if ls.returncode == 0 else []):
+        parts = rel.split("/")
+        if len(parts) != 4 or parts[2] != "f1s-daily" or not parts[3].endswith(".json"):
+            continue
+        if not (parts[3] == CONV_FILE or parts[3].startswith("digest-")):
+            continue
+        show = fjd.git(repo, "show", f"origin/main:{rel}")
+        try:
+            block = (json.loads(show.stdout) or {}).get("conversations") if show.returncode == 0 else None
+        except ValueError:
+            block = None
+        if isinstance(block, dict) and str(block.get("generated") or "") > str(best.get(parts[1], {}).get("generated") or ""):
+            best[parts[1]] = block | {"contributor": parts[1]}
+    return sorted(best.values(), key=lambda b: str(b.get("generated")), reverse=True)
+
+
+def conversations_section(blocks: list[dict], now: float, per_host: int = 3, local: dict | None = None) -> list[str]:
+    """Carrier rows carry no title (the carrier repo is public, 2026-11-21): this host's own rows get the title from
+    `local` ({"host", "titles": {id8: title}}, resolved on this machine); every other host shows id8 + seat + time."""
+    if not blocks:
+        return []
+    lines = ["## 跨機對話狀態 (carrier contributors/*/f1s-daily conversations; app 清單只代表本機)"]
+    mine = (local or {}).get("titles") or {}
+    for b in blocks:
+        names = mine if (local or {}).get("host") in (b.get("host"), b.get("contributor")) else {}
+        try:
+            age_h = (now - datetime.fromisoformat(str(b["generated"])).timestamp()) / 3600
+        except (KeyError, ValueError):
+            age_h = float("nan")
+        c = b.get("counts") or {}
+        recent = "; ".join(f"{names.get(r.get('id')) or r.get('id')}｜{r.get('seat')}｜{str(r.get('last'))[5:16]}Z"
+                           + ("｜running" if r.get("state") == "running" else "")
+                           for r in (b.get("rows") or [])[:per_host])
+        lines.append(f"- [{b.get('host') or b.get('contributor')}] {str(b.get('generated'))[5:16]}Z ({age_h:.1f}h ago) "
+                     f"total {c.get('total')} desktop {c.get('desktop')} dispatched {c.get('dispatched')} "
+                     f"48h {c.get('active_48h')}: {recent}")
+    return lines
+
+
+def splice_section(text: str, section: list[str]) -> str:
+    """Replace (or insert before `## Articles`) the cross-host block of live.md; keeps the LIVE_MAX_CHARS cap."""
+    head = "## 跨機對話狀態"
+    out, skip = [], False
+    for ln in text.splitlines():
+        if ln.startswith(head):
+            skip = True
+            continue
+        if skip and ln.startswith("- "):
+            continue
+        skip = False
+        out.append(ln)
+    if section:
+        at = next((i for i, ln in enumerate(out) if ln.startswith("## Articles") or ln == "(truncated)"), len(out))
+        out[at:at] = section
+    text = "\n".join(out) + "\n"
+    return text if len(text) <= LIVE_MAX_CHARS else text[:LIVE_MAX_CHARS - 40].rsplit("\n", 1)[0] + "\n(truncated)\n"
+
+
+def refresh_live_conversations(now: float, state: dict | None = None) -> int:
+    """Re-splice the cross-host block into live.md every tick (the rest of live.md is rewritten once a day)."""
+    if not LIVE.is_file():
+        return 0
+    blocks = fleet_conversations()
+    old = LIVE.read_text(encoding="utf-8")
+    new = splice_section(old, conversations_section(blocks, now, local=(state or {}).get("conv_titles")))
+    if new != old:
+        _write(LIVE, new)
+    return len(blocks)
+
+
+# ── articles ────────────────────────────────────────────────────────────────────────────────────
+def _pool():
+    try:
+        return _module("_llm", "_llm.py").Pool()
+    except Exception:  # noqa: BLE001 — another host may not carry the pool: articles wait, scan goes on
+        return None
+
+
+def open_sessions() -> set[str]:
+    """Conversations whose f1s_live waiter is armed (idle) or that are mid-turn; the rest count as archived."""
+    try:
+        return {r["session_id"] for r in _module("f1s_live", "f1s_live.py").status()
+                if r.get("waiter") not in ("host_gone", "disabled", "expired", None, "")}
+    except Exception:  # noqa: BLE001
+        return set()
+
+
+def line_links(state: dict) -> int:
+    """LINE links the bot could not read (article_relay.pending) join the queue; nothing is marked handed there."""
+    try:
+        relay = _module("article_relay", "article_relay.py")
+    except Exception:  # noqa: BLE001
+        return 0
+    added = 0
+    for source in relay.DEST:
+        try:
+            _arts, links, _st = relay.pending(source)
+        except Exception:  # noqa: BLE001
+            continue
+        for row in links:
+            # 2026-11-27: one_line is "<url> <note>"; passed whole, urlencode glued the note on as "+operator+%E8…"
+            # and the same video was fetched twice under a second key (state url 7cb36438cb90).
+            hit = URL.search(str(row.get("one_line") or ""))
+            url = article_url(hit.group(0)) if hit else ""
+            key = _sha(url)
+            if url.startswith("http") and key not in state["urls"]:
+                state["urls"][key] = {"url": url, "seat": relay.DEST[source], "session": "", "status": "pending",
+                                      "seen": _local(float(row["at"])),
+                                      "source": f"line:{source}"}
+                added += 1
+    return added
+
+
+def line_cards(since: float) -> list[dict]:
+    """LINE content cards that arrived since `since` (already read by the bot): related, not re-read."""
+    out = []
+    try:
+        relay = _module("article_relay", "article_relay.py")
+        for source in relay.DEST:
+            d = relay.out_dir(source)
+            for row in _read(d / "index.json", {}).get("items") or []:
+                if row.get("mode") in relay.CONTENT_MODES and relay._epoch(row.get("arrived_at")) >= since:
+                    out.append({"source": f"line:{source}", "item": row.get("item"), "title": row.get("title") or "",
+                                "summary": str(row.get("one_line") or "")[:300], "seat": relay.DEST[source],
+                                "card": str(d / "cards" / f"{row.get('item')}.md")})
+    except Exception:  # noqa: BLE001
+        pass
+    return out
+
+
+RELATE_PROMPT = (
+    "An article was read for a multi-project AI fleet. Pick the conversations (tasks) it is useful for, from the list "
+    "below, at most 5, only real relevance. Output ONLY JSON: {\"related\":[{\"session\":\"<id>\",\"why\":\"<one short "
+    "Traditional Chinese reason>\"}]} — an empty list when nothing fits.\n\nARTICLE:\n%s\n\nTASKS:\n%s")
+
+
+def relate(pool, article: str, tasks: list[dict]) -> list[dict]:
+    if pool is None or not tasks:
+        return []
+    listing = "\n".join(json.dumps({"session": t["id"][:8], "seat": t["seat"], "state": t["state"],
+                                    "title": t["title"]}, ensure_ascii=False) for t in tasks)
+    try:
+        msgs = [{"role": "user", "content": RELATE_PROMPT % (article[:2500], listing)}]
+        raw = _within(lambda: pool.chat_for("extract", msgs, jsonmode=True, max_tokens=600), 45)
+        m = re.search(r"\{[\s\S]*\}", str(raw or ""))
+        picks = json.loads(m.group(0)).get("related") or [] if m else []
+    except Exception:  # noqa: BLE001 — a pool failure relates nothing; it never stops the batch
+        return []
+    if not isinstance(picks, list):
+        return []
+    picks = [p for p in picks if isinstance(p, dict)]
+    by8 = {t["id"][:8]: t for t in tasks}
+    out = []
+    for p in picks[:5]:
+        t = by8.get(str(p.get("session") or "")[:8])
+        if t:
+            out.append({"session": t["id"], "seat": t["seat"], "state": t["state"], "why": str(p.get("why") or "")[:120]})
+    return out
+
+
+def task_list(state: dict, opened: set[str], n: int = 60) -> list[dict]:
+    rows = [{"id": sid, "seat": s["seat"], "title": s["title"], "last": s["last"],
+             "state": "open" if sid in opened else "archived"}
+            for sid, s in state["sessions"].items() if s.get("title") and s["seat"] not in LOCAL_ONLY]
+    rows.sort(key=lambda r: (r["state"] != "open", r["last"]), reverse=False)
+    opened_rows = [r for r in rows if r["state"] == "open"]
+    archived = sorted((r for r in rows if r["state"] != "open"), key=lambda r: r["last"], reverse=True)
+    return (opened_rows + archived)[:n]
+
+
+def _within(fn, seconds: float):
+    """Run fn in a daemon thread; a free-pool call that blocks past the budget is abandoned, not waited for (rc 124 on 11-04)."""
+    box: dict = {}
+
+    def run():
+        try:
+            box["v"] = fn()
+        except BaseException as exc:  # noqa: BLE001 - handed back to the caller's except
+            box["e"] = exc
+    th = threading.Thread(target=run, daemon=True)
+    th.start()
+    th.join(seconds)
+    if th.is_alive():
+        raise TimeoutError(f"article fetch exceeded {int(seconds)}s")
+    if "e" in box:
+        raise box["e"]
+    return box.get("v")
+
+
+def read_articles(state: dict, now: float, opened: set[str], limit: int = ARTICLES_PER_TICK,
+                  budget_s: float = ARTICLE_BUDGET_S) -> dict:
+    for u in state["urls"].values():                   # SLA: every pending URL past 24h is late, read or not
+        if u["status"] == "pending":
+            u["late"] = now - _epoch(u["seen"]) > ARTICLE_SLA_S
+    pool = _pool()
+    todo = sorted((u for u in state["urls"].values() if u["status"] == "pending"), key=lambda u: u["seen"])[:limit]
+    if not todo:
+        return {"read": 0, "pending": 0}
+    if pool is None:
+        return {"read": 0, "pending": len(todo), "blocked": "free pool (_llm.py) not on this host"}
+    try:
+        distill = _module("distill_url", "distill-url.py")
+    except Exception as exc:  # noqa: BLE001
+        return {"read": 0, "pending": len(todo), "blocked": f"distill-url: {type(exc).__name__}"}
+    tasks = task_list(state, opened)
+    done = failed = 0
+    budget_hit = False
+    t0 = time.time()
+    for u in todo:
+        if (done or failed) and time.time() - t0 >= budget_s:
+            budget_hit = True                     # the rest stays pending for the next tick (SLA still tracked)
+            break
+        try:        # one youtube/sider delegate may run 600 s = the whole rider (rc 124 on 11-02..11-04): cap it to the budget left
+            os.environ["DISTILL_DELEGATE_TIMEOUT_S"] = str(max(30, int(min(240, budget_s - (time.time() - t0)))))
+            res = _within(lambda: distill.distill_one(u["url"]), max(15.0, min(90.0, budget_s - (time.time() - t0))))
+            res = res if isinstance(res, dict) else {}
+        except Exception as exc:  # noqa: BLE001 — one bad URL never stops the batch
+            res = {"error": f"{type(exc).__name__}: {exc}"[:200]}
+        dig = res.get("digest") if isinstance(res.get("digest"), dict) else {}
+        summary = str(dig.get("summary") or dig.get("snapshot") or "")
+        points = dig.get("key_points") or dig.get("hub_skill") or []
+        delegated = res.get("delegated") if isinstance(res.get("delegated"), dict) else {}
+        if not summary and delegated.get("rc") == 0:     # youtube / sider engines write their own digest
+            summary = str(delegated.get("stdout") or "")[-600:]
+        if not summary:
+            res.setdefault("error", res.get("reason") or res.get("status") or dig.get("__error__") or "")
+        if not isinstance(points, list):
+            points = [str(points)]
+        u["read_at"] = _local(now)
+        u["late"] = now - _epoch(u["seen"]) > ARTICLE_SLA_S
+        if summary.strip():
+            u.update(status="read", title=str(res.get("title") or res.get("_title") or "")[:160],
+                     summary=summary[:600], points=[str(p)[:200] for p in points[:6]])
+            u["related"] = relate(pool, summary + "\n" + "\n".join(u["points"]), tasks)
+            done += 1
+        else:
+            u["attempts"] = int(u.get("attempts") or 0) + 1
+            u["error"] = str(res.get("error") or res.get("verdict") or "no text")[:200]
+            if u["attempts"] >= 3:
+                u["status"] = "unreadable"            # never fabricated: recorded as unreadable with the reason
+            failed += 1
+    out = {"read": done, "failed": failed, "pending": sum(1 for u in state["urls"].values() if u["status"] == "pending")}
+    if budget_hit:
+        out["budget_hit"] = True
+        out["elapsed_s"] = round(time.time() - t0, 1)
+    return out
+
+
+# ── daily ───────────────────────────────────────────────────────────────────────────────────────
+def lessons(state: dict, since: str) -> list[dict]:
+    """f1s-harvest `conversation` items: one per correction prompt, one per repeated tool-error signature (>=3)."""
+    out = []
+    for c in state["corrections"]:
+        if c["ts"] >= since and c["text"]:
+            out.append({"kind": "conversation", "seat": c["seat"], "name": "correction " + _sha(c["text"]),
+                        "path": str(PROJECTS), "state": "correction", "summary": c["text"][:300], "text": c["text"]})
+    # Same window as render_live: a signature whose last hit is older than `since` is history, not a lesson
+    # (2026-10-28: the 10-13 write-gate probe session resurfaced as "repeated tool error x4" 15 days later).
+    for seat, sigs in state["errors"].items():
+        if seat in LOCAL_ONLY:
+            continue
+        for sig, e in sigs.items():
+            if e["n"] >= 3 and e["last"] >= since:
+                out.append({"kind": "conversation", "seat": seat, "name": "tool-error " + _sha(sig), "path": str(PROJECTS),
+                            "state": "tool-error", "summary": f"repeated tool error x{e['n']}: {sig}", "text": sig})
+    return out
+
+
+def matrix(state: dict, opened: set[str], since: str) -> dict:
+    rows: dict[str, dict] = {}
+
+    def row(seat: str) -> dict:
+        return rows.setdefault(seat, {"open": 0, "archived": 0, "corrections_24h": 0, "decisions_24h": 0,
+                                      "errors_repeated": 0, "articles_related": 0})
+    for sid, s in state["sessions"].items():
+        if s.get("seat"):
+            row(s["seat"])["open" if sid in opened else "archived"] += 1
+    for c in state["corrections"]:
+        if c["ts"] >= since:
+            row(c["seat"])["corrections_24h"] += 1
+    for d in state["decisions"]:
+        if d["ts"] >= since:
+            row(d["seat"])["decisions_24h"] += 1
+    for seat, sigs in state["errors"].items():
+        row(seat)["errors_repeated"] = sum(1 for e in sigs.values() if e["n"] >= 3)
+    for u in state["urls"].values():
+        for r in u.get("related") or []:
+            row(r["seat"])["articles_related"] += 1
+    return rows
+
+
+def gaps(rows: dict) -> dict:
+    """Seats with conversations but no project-matrix entry, and registered projects with no conversation."""
+    projects = _read(MATRIX, {}).get("projects") or {}
+    seats = {s for s in rows if s not in ("hub", "")}
+    return {"unregistered_seats": sorted(s for s in seats if s not in projects),
+            "registered_without_conversations": sorted(p for p in projects if p not in seats and not never(p))}
+
+
+def write_matrix(rows: dict, gap: dict, day: str) -> str:
+    """Each registered project gets `f1s_daily` (its row + day); the rest of the file stays byte-identical."""
+    try:
+        original = MATRIX.read_text(encoding="utf-8-sig")
+        doc = json.loads(original)
+    except (OSError, ValueError):
+        return "unreadable"
+    indent = next((n for n in (2, 1, 4) if json.dumps(doc, ensure_ascii=False, indent=n) + "\n" in (original, original + "\n")
+                   or json.dumps(doc, ensure_ascii=False, indent=n) == original), None)
+    if indent is None:
+        return "format-unknown (not written)"
+    for name, proj in (doc.get("projects") or {}).items():
+        if isinstance(proj, dict):
+            proj["f1s_daily"] = {"day": day, **rows.get(name, {"open": 0, "archived": 0}),
+                                 "gap": "no conversations" if name in gap["registered_without_conversations"] else ""}
+    text = json.dumps(doc, ensure_ascii=False, indent=indent) + ("\n" if original.endswith("\n") else "")
+    if text != original:
+        _write(MATRIX, text)
+    return "written"
+
+
+def fleet_hygiene_rows(since: str) -> list[dict]:
+    """Every host's latest hygiene.json from the carrier clone (fleet-hygiene.py fleet), newest first; none = no section."""
+    try:
+        mod = _module("fleet_hygiene_for_daily", "fleet-hygiene.py")
+        rows = mod.fleet()
+    except Exception:  # noqa: BLE001 - the digest never fails on a missing or broken sibling
+        return []
+    return sorted((r for r in rows if str(r.get("at") or "") >= since[:10]), key=lambda r: str(r.get("at")), reverse=True)[:6]
+
+
+def render_live(day: str, state: dict, rows: dict, gap: dict, since: str) -> str:
+    lines = [f"# F1S daily digest {day} (f1s_daily.py; replaces the previous one)",
+             "Apply from this turn in every conversation: the operator corrections below are the operator's own words "
+             "from other conversations; do not repeat what they reject. Articles: use them where the related task is yours."]
+    corr = [c for c in state["corrections"] if c["ts"] >= since and c["text"]]
+    if corr:
+        lines.append("## Operator corrections (24h)")
+        for c in corr[-8:]:
+            lines.append(f"- [{c['seat']}] 「{c['text'][:160].replace(chr(10), ' ')}」")
+    errs = sorted(((e["n"], seat, sig) for seat, sigs in state["errors"].items() if seat not in LOCAL_ONLY
+                   for sig, e in sigs.items() if e["n"] >= 3 and e["last"] >= since), reverse=True)
+    if errs:
+        lines.append("## Repeated tool errors (fix the cause, not the retry)")
+        lines += [f"- [{seat}] x{n}: {sig[:120]}" for n, seat, sig in errs[:6]]
+    try:                      # one line: how much prose was said twice (f1s_repeat, operator 2026-11-09)
+        rep = _module("f1s_repeat", "f1s_repeat.py").line(1)
+    except Exception:  # noqa: BLE001 - a missing scanner never breaks the digest
+        rep = ""
+    if rep:
+        lines.append(rep)
+    hyg = fleet_hygiene_rows(since)
+    if hyg:   # before the articles: live.md is capped at LIVE_MAX_CHARS and the first render of 2026-10-30 cut this off
+        lines.append("## Fleet hygiene (每台自己的 check/sweep 報告, fleet-hygiene.py fleet)")
+        for h in hyg:
+            act = h.get("activity") or {}
+            lines.append(f"- [{h['contributor']}] {str(h.get('at'))[5:16]} cwd {h.get('seats')} 違規 {h.get('violations')} "
+                         f"(active {act.get('ACTIVE')}/idle {act.get('IDLE')}/dormant {act.get('DORMANT')}) 搬 {h.get('moved')} "
+                         f"_delete {h.get('delete_gb')} GB" + (f" 首項 {h['findings'][0][:60]}" if h.get("findings") else "")
+                         + (f" 過期記憶 {h['stale_memories']} 檔(fleet-hygiene.py memories,改或刪該記憶)"
+                            if isinstance(h.get("stale_memories"), int) and h["stale_memories"] else ""))
+    arts = [u for u in state["urls"].values() if u["status"] == "read" and str(u.get("read_at") or "") >= since]
+    if arts:
+        lines.append("## Articles read (24h)")
+        for u in arts[:6]:
+            rel = ", ".join(f"{r['seat']}:{r['session'][:8]}({r['state']})" for r in (u.get("related") or [])[:3]) or "none"
+            lines.append(f"- {(u.get('title') or u['url'])[:80]} — {str(u.get('summary') or '')[:140]} — related: {rel}")
+    dec = {s: r["decisions_24h"] for s, r in rows.items() if r["decisions_24h"]}
+    if dec:
+        lines.append("## 「需要你決定」 asked (24h): " + ", ".join(f"{s} {n}" for s, n in sorted(dec.items())))
+    if gap["unregistered_seats"]:
+        lines.append("## Matrix gaps: unregistered seats " + ", ".join(gap["unregistered_seats"]))
+    text = "\n".join(lines) + "\n"
+    return text if len(text) <= LIVE_MAX_CHARS else text[:LIVE_MAX_CHARS - 40].rsplit("\n", 1)[0] + "\n(truncated)\n"
+
+
+def daily(state: dict, now: float, opened: set[str]) -> dict:
+    day = datetime.fromtimestamp(now).strftime("%Y-%m-%d")
+    since = _local(now - 86400)
+    rows = matrix(state, opened, since)
+    gap = gaps(rows)
+    items = lessons(state, since)
+    _write(OUT / "lessons.json", {"day": day, "items": items})   # f1s-harvest reads this (kind `conversation`)
+    live = render_live(day, state, rows, gap, since)
+    if live != (LIVE.read_text(encoding="utf-8") if LIVE.is_file() else ""):
+        _write(LIVE, live)
+    digest = {"schema": "f1s-daily/1", "day": day, "generated": _iso(now), "matrix": rows, "gaps": gap,
+              "lessons": len(items), "corrections_24h": sum(r["corrections_24h"] for r in rows.values()),
+              "articles": [{k: u.get(k) for k in ("url", "source", "seat", "seen", "read_at", "late", "status", "title",
+                                                   "summary", "points", "related", "error")}
+                           for u in state["urls"].values() if str(u.get("read_at") or u["seen"]) >= since],
+              "line_cards": [], "live": str(LIVE), "project_matrix": write_matrix(rows, gap, day)}
+    pool = _pool()
+    tasks = task_list(state, opened)
+    t_rel = time.time()
+    for card in line_cards(now - 86400):     # relating is a bonus: past 120 s cards go out unrelated (rider limit 600 s)
+        card["related"] = (relate(pool, card["title"] + "\n" + card["summary"], tasks)
+                           if time.time() - t_rel < 120 else [])
+        digest["line_cards"].append(card)
+    _write(OUT / f"digest-{day}.json", digest)
+    state["last_daily"] = day
+    return {"day": day, "digest": str(OUT / f"digest-{day}.json"), "lessons": len(items),
+            "project_matrix": digest["project_matrix"], "live_chars": len(live)}
+
+
+def _load_grant(owner: str, step_w: float) -> dict:
+    scripts = HUB / "ai_darkhero" / "tray" / "scripts"
+    if not (scripts / "load_grant.py").is_file():
+        return {"ok": True, "reason": "no load scheduler on this host"}
+    if str(scripts) not in sys.path:
+        sys.path.append(str(scripts))
+    try:
+        import load_grant as lg  # noqa: E402
+        return lg.wait_grant(owner, step_w, 600.0)
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "reason": f"load grant failed: {type(exc).__name__}"}
+
+
+def load_state() -> dict:
+    st = _read(STATE, {})
+    for k, v in (("files", {}), ("sessions", {}), ("corrections", []), ("decisions", []), ("errors", {}), ("urls", {})):
+        st.setdefault(k, v)
+    return st
+
+
+def _holder_alive() -> bool:
+    """A killed tick leaves its lock behind; only a live holder pid keeps it (unknown = alive, fail safe)."""
+    try:
+        pid = int(LOCK.read_text(encoding="utf-8").strip() or 0)
+        import psutil
+        return pid > 0 and psutil.pid_exists(pid) and "python" in psutil.Process(pid).name().lower()
+    except (OSError, ValueError):
+        return True
+    except Exception:
+        return True
+
+
+def tick(force_daily: bool = False, now: float | None = None) -> dict:
+    now = now or _now()
+    OUT.mkdir(parents=True, exist_ok=True)
+    try:
+        fd = os.open(LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.write(fd, str(os.getpid()).encode())
+        os.close(fd)
+    except FileExistsError:
+        try:
+            if now - LOCK.stat().st_mtime < 3 * 3600 and _holder_alive():
+                return {"skipped": "another tick holds the lock"}
+            LOCK.unlink()
+        except FileNotFoundError:                      # the holder released it between open and stat
+            pass
+        return tick(force_daily, now)
+    try:
+        grant = _load_grant("f1s-daily/tick", 5.0)
+        if not grant.get("ok"):
+            return {"deferred": grant.get("reason")}
+        state = load_state()
+        result = {"at": _iso(now), "scan": scan(state, now)}
+        prune(state, now)
+        _write(STATE, state)
+        result["line_links"] = line_links(state)
+        opened = open_sessions()
+        result["articles"] = read_articles(state, now, opened)
+        _write(STATE, state)
+        hour = datetime.fromtimestamp(now).hour
+        today = datetime.fromtimestamp(now).strftime("%Y-%m-%d")
+        if force_daily or (state.get("last_daily") != today and hour >= DAILY_AFTER_HOUR):
+            result["daily"] = daily(state, now, opened)
+            _write(STATE, state)
+        result["conversations"] = publish_conversations(state, now)
+        result["fleet_conversations"] = refresh_live_conversations(now, state)
+        state.setdefault("ticks", []).append({k: result[k] for k in result if k != "at"} | {"at": result["at"]})
+        state["ticks"] = state["ticks"][-20:]
+        _write(STATE, state)
+        return result
+    finally:
+        try:
+            LOCK.unlink()
+        except OSError:
+            pass
+
+
+def status() -> dict:
+    st = load_state()
+    urls = list(st["urls"].values())
+    return {"transcripts": len(st["files"]), "sessions": len(st["sessions"]), "corrections": len(st["corrections"]),
+            "decisions": len(st["decisions"]), "urls_pending": sum(u["status"] == "pending" for u in urls),
+            "urls_read": sum(u["status"] == "read" for u in urls), "urls_late": sum(bool(u.get("late")) for u in urls),
+            "last_daily": st.get("last_daily"), "last_tick": (st.get("ticks") or [{}])[-1].get("at"),
+            "live": str(LIVE) if LIVE.is_file() else None}
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    c = sub.add_parser("conversations", help="publish this host's conversation index and refresh live.md")
+    c.add_argument("--json", action="store_true")
+    t = sub.add_parser("tick")
+    t.add_argument("--force-daily", action="store_true")
+    t.add_argument("--json", action="store_true")
+    s = sub.add_parser("status")
+    s.add_argument("--json", action="store_true")
+    a = ap.parse_args(argv)
+    try:
+        if a.cmd == "conversations":
+            state, now = load_state(), _now()
+            doc = publish_conversations(state, now)
+            doc["fleet_hosts"] = refresh_live_conversations(now, state)
+            _write(STATE, state)
+        else:
+            doc = tick(a.force_daily) if a.cmd == "tick" else status()
+    except Exception as exc:  # noqa: BLE001 — a failure never leaves the rider red forever; it is printed
+        doc = {"error": f"{type(exc).__name__}: {exc}"}
+    print(json.dumps(doc, ensure_ascii=False, indent=1 if getattr(a, "json", False) else None))
+    return 1 if "error" in doc else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
