@@ -1883,6 +1883,12 @@ ELEMENTS = [
     {"id": "EVO-ai-trader-progress-in-main-chat-covered-20261128", "element": "ai_trader reverse-learn correction d257474095d3 (ledger cc177fa0f5af, f1s-harvest 3.587): 進度條放在你的母對話 不是放在這邊 然後回報 f1s/ai_darkhero", "verdict": "INFO",
      "requires": None, "detail": "rejected as already covered: typed 2026-11-26T16:31Z into the ai_trader 陽 child chat, hours before the operator's own wider rule (no child chat windows at all; progress of Agent subagents shows in the main chat's band), which the operator manual, the hot_directive, curator_orders.ROLE_RULE and the rlz_chain order text already carry; reporting back to ai_darkhero is curator_orders answer; the second sentence is a status question, not a rule; no text added",
      "check_text": ("operator_manual", "f1s-progress-band")},
+    {"id": "EVO-anthropic-ipo-zitron-interview-noise-20261128", "element": "f1s-sources card 5f03ab2bcc6beccf (ledger d432a6f1c70e, f1s-harvest 2.054): youtube interview, Ed Zitron on Anthropic's S-1, compute bill and financing risk", "verdict": "INFO",
+     "requires": None, "detail": "rejected as noise: untrusted commentator opinion about another company's finances (card topic 投資心法, trust line 'no truth, policy or trading authority'); no procedure, tool, API or runtime trap a seat could reuse, and its figures are unverified claims that must not become F1S text; harvest score came from low coverage (0.088), not content; no text added",
+     "check_text": ("skill_reverse", "generalize（附一句繁中規則）／seat-specific／noise")},
+    {"id": "EVO-mimo-v2-flash-attention-sink-news-noise-20261128", "element": "f1s-sources card 30453e764013d7cd (ledger 995625c842d9, f1s-harvest 2.103): youtube, Xiaomi MiMo-V2-Flash 15B active parameters, 128-token window hybrid attention with learnable attention sink bias, multi-teacher distillation", "verdict": "INFO",
+     "requires": None, "detail": "rejected as noise: model-architecture news about training a model, which no seat does (F1S runs free-pool APIs and CPU-only local models, T1 free-runtime); no procedure, tool or runtime trap to reuse, the card kept one grounded point and dropped 3 ungrounded, and the claim that it beats the large labs is unverified promotion; harvest score came from low coverage (0.066), not content; no text added",
+     "check_text": ("skill_reverse", "generalize（附一句繁中規則）／seat-specific／noise")},
 ]
 def sha(path: Path) -> str:
     try:
