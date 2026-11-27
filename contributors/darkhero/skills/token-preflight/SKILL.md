@@ -40,9 +40,11 @@ Two habits, mechanised by `_skill/engines/session-consolidate.py`:
    home-page style suggestion such as 「繼續 `<branch>` 上進行中的工作：查看未提交的變更…」 — open one session per
    item in the same turn and let it start at once (operator 2026-11-13 「不要問"新增工作階段" 直接開子對話開始任務」:
    never an `offer` or `own_initiative` card, which waits for a click). On the operator's own message use
-   `start_session` with `user_asked`; on a turn the app refuses starts (session events, hooks, ticks) use a
-   headless `f1s_station.py run` child with the brief embedded in the prompt, or a curator order sent into the
-   seat's open chat. A session opened for another seat's cwd is detached to top level right after it starts. The parent only folds
+   `start_session` with `user_asked`; on a turn the app refuses starts (session events, hooks, ticks, Remote
+   Control) queue it: `f1s_spawn.py request <seat> --role R --title T --prompt-file F` (rule `f1s spawn decide`,
+   Lean `_lean/f1s/SpawnRs.lean`: live → reuse, queued → drop, else start/queue, never a card); the SPAWN QUEUE
+   line then starts it on the next operator-typed turn. A headless `f1s_station.py run` child still fits work that
+   needs no resident chat. A session opened for another seat's cwd is detached to top level right after it starts. The parent only folds
    results back in after reading the child's commit, tests or files. Topic hub (jci_taipei 2026-11-18 元月刊、
    tpejc): once the operator names a chat as the hub for a topic, every ask on that topic goes into that chat; the
    hub compares state, opens the child, reads its evidence back, and never opens a second chat for the same topic.

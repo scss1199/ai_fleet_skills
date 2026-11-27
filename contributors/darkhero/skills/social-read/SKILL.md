@@ -13,6 +13,8 @@ python "$E" --search "blender" --limit 5                           # 查三個�
 ```
 
 - 結束碼：0 讀到（VERIFIED）、2 擋下（`reason` 寫原因）、3 UNKNOWN。讀不到照實寫 reason，不要改用瀏覽器自己登入。
+- `logged_in_no_text`（純圖片貼文，預設 `--ocr-budget 0` 不讀圖）不是終點：先加 `--ocr-budget 3` 重跑（免費池讀圖）；仍無字才在已登入的內建瀏覽器窗格截圖、在對話裡讀圖。
+  Threads 分享連結轉成 `?error=invalid_post`＝貼文已刪，這才是最終讀不到（ai_trader 2026-11-10：「沒有資料不是藉口」）。
 - 走已登入的 session，一篇約 10 秒。Cookie 由 ai_metadata 保管在 `ai_metadata/secrets/{instagram,threads}/cookies.txt`；
   不讀、不複製、不印出。`session_rejected` 表示 cookie 過期，告訴 ai_darkhero。
   過期期間若內建瀏覽器窗格已登入 IG，就在那裡讀該貼文（不登入、不換帳號），絕不問 operator 要不要登入（jci_taipei 2026-11-17）。

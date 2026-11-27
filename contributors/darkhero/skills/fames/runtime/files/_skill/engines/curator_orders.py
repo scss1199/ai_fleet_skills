@@ -733,7 +733,17 @@ def injection(seat: str, session_id: str = "") -> str:
         return ""
     return "\n".join(t for t in (_injection(seat, session_id), station_line(seat),
                                  anger_line(seat, session_id) or handoff_line(seat, session_id),
-                                 model_lane_line(seat, session_id)) if t)
+                                 model_lane_line(seat, session_id), spawn_line(seat)) if t)
+
+
+def spawn_line(seat: str) -> str:
+    """operator 2026-11-27: queued child sessions (f1s_spawn.py) start on the next operator-typed turn, never as a
+    card. "" when none wait or anything fails (fail-open)."""
+    try:
+        import f1s_spawn
+        return f1s_spawn.line(seat)
+    except Exception:
+        return ""
 
 
 def model_lane_line(seat: str, session_id: str = "", transcript=None) -> str:

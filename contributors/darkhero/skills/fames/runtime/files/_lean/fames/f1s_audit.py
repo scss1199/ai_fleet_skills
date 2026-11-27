@@ -1837,6 +1837,27 @@ ELEMENTS = [
      "requires": None,
      "detail": "f1s-evolve 2026-11-26: rejected as covered; same ask as 08ec427aa699 and 78ad5528e5ad (adopted today as EVO-yinyang-push-is-mechanical-20261126) and EVO-yinyang-selfpush-covered-20261124: git_smart starts f1s_yinyang.py tick on every commit and a queued goal opens by itself; f1s_yinyang.py status this tick lists ai_trader fx_grid/fx_kill/main/money/rollout ACCEPT; ai_trader's own order note already folded it into its memory",
      "check_text": ("git_smart", "Every commit is a yin round")},
+    {"id": "EVO-harvest-propose-drops-generated-career-20261126", "element": "ai_career reverse-learn proposal b54cf0fc58d1 (skill ai_career-verify)", "verdict": "REFINE",
+     "requires": None,
+     "detail": "f1s-evolve 2026-11-26: rejected as an echo of f1s_verifyskill.py output; it still arrived after the harvest skip because the ledger was last scanned 03:40 (skip shipped 14:22) and propose sent a stale goals.json row at 15:25; propose now re-checks the evidence file for the generated mark, test test_propose_drops_stale_goals_whose_file_is_f1s_verifyskill_output; ledger row marked rejected",
+     "check_text": ("harvest_engine", "if r.get(\"id\") not in set(skip) and not _generated(str(r.get(\"path\", \"\")))")},
+    {"id": "EVO-harvest-propose-drops-generated-photo-20261126", "element": "ai_photo reverse-learn proposal 2ab7bd07215e (skill ai_photo-verify)", "verdict": "INFO",
+     "requires": None,
+     "detail": "f1s-evolve 2026-11-26: rejected as an echo of f1s_verifyskill.py output (same stale-goal path as ai_career b54cf0fc58d1); covered by the propose generated-mark re-check; ledger row marked rejected",
+     "check_text": ("harvest_engine", "so propose re-checks the evidence file itself instead of trusting a stale goal list")},
+    {"id": "EVO-data-gap-not-end-state-20261126", "element": "ai_trader reverse-learn proposal 6101279c0ade (memory data-gaps-closed-20261110)", "verdict": "REFINE",
+     "requires": None,
+     "detail": "f1s-evolve 2026-11-26: adopted the generalizable part: a no-data / unreadable verdict is not an end state while a free route is untried (operator 11-10 quote; ai_trader closed 4/4 gaps and 3/6 unreadables the same day with free sources); seat-specific parts (histock broker8, look-ahead open, market_events families, article_judgment) stay in ai_trader",
+     "check_text": ("skill_pool", "缺資料不是終點")},
+    {"id": "EVO-social-read-no-text-ladder-20261126", "element": "ai_trader reverse-learn proposal 6101279c0ade (memory data-gaps-closed-20261110)", "verdict": "REFINE",
+     "requires": None,
+     "detail": "f1s-evolve 2026-11-26: social-read exit 2 logged_in_no_text (line/social_session.py raises it when no caption/OCR/speech section; OCR only runs with --ocr-budget > 0) gets a ladder: rerun with --ocr-budget 3 on the free pool, then a signed-in built-in browser screenshot; Threads ?error=invalid_post is the only final unreadable",
+     "check_text": ("skill_social", "`logged_in_no_text`（純圖片貼文")},
+    # f1s-evolve 2026-11-27: ai_darkhero jci_taipei reverse-learn proposals
+    {"id": "EVO-ai-darkhero-character-identity-key-20261127", "element": "ai_darkhero reverse-learn article (ledger b3187e4572a4, f1s-harvest 2.004): AI 古風角色妝造 - 身分和服飾是關鍵，精緻五官不足以表達角色身分", "verdict": "INFO",
+     "requires": None, "detail": "rejected 2026-11-27 f1s-evolve: an image-prompt craft tip for character-art seats, not an F1S rule; the row claimed text in f1s-reverse-learning that was never written (CONTRADICTION held fames-converge); nothing added to any skill"},
+    {"id": "EVO-jci-taipei-backup-dual-system-20261127", "element": "jci_taipei reverse-learn memory (ledger 2f6764f1abe8, f1s-harvest 1.992): 會議紀錄兩套備份（jcitaipei1957 Drive 快照 + altos D:/jci_taipei-backup）", "verdict": "INFO",
+     "requires": None, "detail": "rejected 2026-11-27 f1s-evolve: a jci_taipei-specific operating fact (its own Drive account, altos path, sync_drive.py) that stays in that seat's memory; not generalizable to F1S; the row claimed f1s-reverse-learning text that was never written (CONTRADICTION held fames-converge); nothing added to any skill"},
 ]
 def sha(path: Path) -> str:
     try:

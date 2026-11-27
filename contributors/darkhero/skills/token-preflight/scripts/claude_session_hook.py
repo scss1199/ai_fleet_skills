@@ -500,6 +500,49 @@ def _slim_context(text: str, *, event: str="", hard_lines_state: str | None=None
         return text
 
 
+# Claude Code caps hook additionalContext at 10,000 characters; anything longer is saved to a file and the model sees a
+# 2,000-character preview (code.claude.com/docs/en/hooks). 2026-11-27 scan of 200 transcripts: 72 of 335 SessionStart
+# injections were over the cap, so most of their lines never reached the model.
+CONTEXT_BUDGET = 9500
+_BUDGET_KEEP = ("ROLLOVER", "CURATOR ORDER", "STANDING RULES", "T1 HARD LINES", "OPERATOR RED LINES", "SPAWN QUEUE")
+
+
+def _budget_context(text: str, budget: int = CONTEXT_BUDGET) -> str:
+    """Fit text under budget: drop duplicate lines, then shorten the longest unprotected lines, then drop the last
+    unprotected lines. Lines starting with a _BUDGET_KEEP prefix (hand-over, orders, hard lines) are never touched.
+    Pure; never raises."""
+    try:
+        if len(text) <= budget:
+            return text
+        seen, lines = set(), []
+        for line in text.split("\n"):
+            k = line.strip()
+            if k and k in seen:
+                continue
+            seen.add(k)
+            lines.append(line)
+        keep = [l.lstrip().upper().startswith(_BUDGET_KEEP) for l in lines]
+
+        def size() -> int:
+            return sum(len(l) + 1 for l in lines) - 1
+
+        cap = 1200
+        while size() > budget and cap >= 300:
+            for i, l in enumerate(lines):
+                if not keep[i] and len(l) > cap:
+                    lines[i] = l[:cap - 1] + "…"
+            cap -= 300
+        i = len(lines) - 1
+        while size() > budget and i >= 0:
+            if not keep[i]:
+                lines.pop(i)
+                keep.pop(i)
+            i -= 1
+        return "\n".join(lines)
+    except Exception:
+        return text
+
+
 def _contract_dedup(surface_id: str, session_id: str, text: str, *, agent_id: str="", reset: bool=False,
                     compact: bool=False) -> str:
     """Drop the contract lines this conversation already holds verbatim, and record the rest as held.
@@ -1046,7 +1089,9 @@ def main():
     t1_state=None
     if event == "SessionStart":
         # The hard lines must not depend on the FAMES harness above having succeeded.
-        t1_state,hard_lines=_hard_lines(cwd)
+        # 2026-11-27 (D1): the hook cwd follows a tool's `cd`; after a compaction in _skill/engines/rust the charter
+        # walk stopped at the hub root and re-injected ~5 KB of T1 the seat charter already carries. Use the open cwd.
+        t1_state,hard_lines=_hard_lines(_session_seat(doc, None)[1])
         if hard_lines:
             context=(context+"\n"+hard_lines).strip()
         # operator 2026-10-13: every conversation sees its seat's own lying / 推託 / junk-file record, and
@@ -1080,6 +1125,8 @@ def main():
         handover=_rollover_start(agent, session_id)
         if handover:
             context=(handover+"\n"+context).strip()
+    if event == "SessionStart":
+        context=_budget_context(context)
     status_path=CODEX_STATUS if surface_id == "open-agent-standard" else STATUS
     status_path.parent.mkdir(parents=True,exist_ok=True)
     status_path.write_text(json.dumps({"schema":3,"last_fired":datetime.now(timezone.utc).isoformat(),"event":event,"cwd":cwd,"agent":agent,"surface_id":surface_id,"runtime_event_observed":bool(locals().get("runtime_event_observed", False)),"fames_state":state,"t1_hard_lines":t1_state,"session_source":session_source or None,"agc":{k:(result.get("auto_goal_compact") or {}).get(k) for k in ("state","agent","seat_resolution","refreshed","trigger","precompact_hook_armed","elapsed_ms")} if isinstance(locals().get("result"),dict) else None},indent=2),encoding="utf-8")

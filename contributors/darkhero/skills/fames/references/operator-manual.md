@@ -544,7 +544,7 @@ contract is `jci_taipei/_line/MEETING-MINUTES-CONTRACT.md` in the configured wor
 
 ## Conversation layers and yin-yang
 
-對話分層（operator 2026-11-21）：L1 主對話只定方向、判斷與收編；每 cwd 至多一個常駐執行對話（L2，start_session user_asked 直接開，不出卡片不問）負責落地；短任務由 L2 開 L3 子代理／station／子對話，完成回報並 archive_session(self)。
+對話分層（operator 2026-11-21）：L1 主對話只定方向、判斷與收編；每 cwd 至多一個常駐執行對話（L2，start_session user_asked 直接開，不出卡片不問；回合被 app 拒開時 f1s_spawn.py request 排隊，下一個 operator 親打的回合由 SPAWN QUEUE 行直接開，規則 f1s spawn／_lean/f1s/SpawnRs.lean 無卡片出口）負責落地；短任務由 L2 開 L3 子代理／station／子對話，完成回報並 archive_session(self)。
 
 陰陽（operator 2026-11-23）＝陰、陽是兩個常駐對話，互相推動、都不關閉：陽是唯一 L2 執行對話；陰用最低檔模型、只在陽 commit 後醒，跑 f1s_yinyang.py round（open --goal --verify --metric），引擎 R1–R5 判（兩次 REJECT、省不過花費或 Krylov 尾和<一輪即 STOP），陰不判不改碼，回陽 sha＋判決；STOP 兩對話一起收。互推是機械的、L1 不轉話也不整合（operator 2026-11-26「讓他們能夠自動推動對方」）：陽 commit→git_smart._yin_tick→f1s_yinyang.py tick→curator_orders 令陽＋f1s_live 喚醒閒置對話；鏈斷了修這條鏈，不由 L1 代傳。
 
