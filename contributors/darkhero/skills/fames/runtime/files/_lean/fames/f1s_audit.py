@@ -1880,6 +1880,9 @@ ELEMENTS = [
     {"id": "EVO-jci-operator-named-project-chats-stay-open-20261128", "element": "jci_taipei reverse-learn memory never-archive-yearbook-trainee-sessions (ledger ddc7b966a7c4, f1s-harvest 4.396): 元月刊與 2027-01 見習講習會的對話任務沒完成前不准 archive", "verdict": "REFINE",
      "requires": None, "detail": "session-consolidate keep:unfinished (2026-11-27) only held chats whose last report named something undone; a section ending 沒有下一步 still came out archive:closed and SESSION ARCHIVE DUE (12月見習講習會宣傳（續） was listed due on 2026-11-28). OPERATOR_KEEP title match now gives keep:operator-named in classify and skips the chat in due(); only the operator closes them (test_operator_named_project_is_never_archive_or_due). T1 close-when-done is not edited and not weakened: its own text bars closing unfinished work",
      "check_text": ("session_consolidate", "OPERATOR_KEEP = re.compile(")},
+    {"id": "EVO-ai-trader-progress-in-main-chat-covered-20261128", "element": "ai_trader reverse-learn correction d257474095d3 (ledger cc177fa0f5af, f1s-harvest 3.587): 進度條放在你的母對話 不是放在這邊 然後回報 f1s/ai_darkhero", "verdict": "INFO",
+     "requires": None, "detail": "rejected as already covered: typed 2026-11-26T16:31Z into the ai_trader 陽 child chat, hours before the operator's own wider rule (no child chat windows at all; progress of Agent subagents shows in the main chat's band), which the operator manual, the hot_directive, curator_orders.ROLE_RULE and the rlz_chain order text already carry; reporting back to ai_darkhero is curator_orders answer; the second sentence is a status question, not a rule; no text added",
+     "check_text": ("operator_manual", "f1s-progress-band")},
 ]
 def sha(path: Path) -> str:
     try:
