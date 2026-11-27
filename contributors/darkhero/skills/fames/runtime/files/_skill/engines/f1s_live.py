@@ -84,6 +84,7 @@ HW_ALERT_EVERY_S = 1800.0
 REVIEW_CLAIM = HUB / "_registry" / "fames-hot" / "review-claim.json"
 REVIEW_LEASE_S = 1800.0
 REVIEW_CONFIRM_S = 1.0
+ORDER_LEASE_S = 1800.0                                     # claim_orders: one idle chat per new order
 ACTIVE_TYPES = ("user", "assistant")
 # Real Claude / Codex conversations carry a UUID; the FAMES run-cases probes write ids like "claude-session".
 SESSION_ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
@@ -765,6 +766,40 @@ def idle_rollover_due(seat: str, session_id: str, transcript: Path, idle_s: floa
             "while the cache is warm, and do no new work here. " + line)
 
 
+WAKE_ROLLOVER_SEATS = ("ai_photo", "ai_theater")      # `live_wake.wake_rollover_seats`: ["*"] = every seat, [] = off
+
+
+def wake_rollover_due(seat: str, session_id: str, transcript: Path, done: bool) -> str:
+    """yin 2026-11-28: an order wake that lands in a chat over the FAT CHAT line (`handoff_over_k`, 150K) re-reads all of
+    it for every call of the order's work (over-150K share 15% of the other cwds' spend on 11-28). For the listed seats
+    the wake instead carries the existing roll-over steps at that line: the chat hands over, and the cleared chat gets
+    the same open orders on its first prompt (every prompt carries the seat's orders), so no work is dropped. Once per
+    conversation, like the idle roll-over; "" under the line, off, already armed, already used, or on any error."""
+    if done or not seat or not session_id:
+        return ""
+    try:
+        cfg = json.loads(CONFIG.read_text(encoding="utf-8-sig")).get("live_wake") or {}
+    except (OSError, ValueError, AttributeError):
+        cfg = {}
+    seats = cfg.get("wake_rollover_seats", list(WAKE_ROLLOVER_SEATS))
+    if not isinstance(seats, list) or not ("*" in seats or seat in seats) or rollover_armed(seat):
+        return ""
+    context = context_tokens(transcript, settled=True)
+    try:
+        mod = _curator_orders()
+        over = int(float(cfg.get("handoff_over_k", mod.HANDOFF_OVER_K)) * 1000)
+        if not over or context <= over:
+            return ""
+        line = str(mod.handoff_line(seat, session_id, context=context, over=over, rollover=over) or "")
+    except Exception:  # noqa: BLE001
+        return ""
+    if not line.startswith("ROLL OVER"):
+        return ""
+    return ("WAKE ROLL OVER: new orders arrived for this seat while this chat holds more than the FAT CHAT line. Hand "
+            "over now and do not start the orders here; the cleared chat receives the same open orders at its first "
+            "prompt. " + line)
+
+
 START_GRACE_S = 8.0     # the SessionStart hooks inject the brief and a typed first prompt lands within this
 START_WAIT_S = 120.0    # the cleared conversation's transcript may appear only at its first row
 
@@ -872,6 +907,30 @@ def claim_review(session_id: str, now: float | None = None, sleep=time.sleep) ->
         _write(REVIEW_CLAIM, {"key": key, "session": session_id, "at": now, "iso": _iso(now), "queue": queue})
         sleep(REVIEW_CONFIRM_S)
         return _read(REVIEW_CLAIM).get("session") == session_id
+    except OSError:
+        return True
+
+
+def claim_orders(seat: str, keys, session_id: str, now: float | None = None, sleep=time.sleep) -> bool:
+    """True when this conversation takes the new open orders `keys` of `seat`: no other conversation claimed the same
+    set in the last ORDER_LEASE_S. 2026-11-28: one new order woke every idle chat of its seat at once (jci_taipei
+    16:03 UTC, five chats for one self-review; 44 of 94 (cwd, order) pairs woke more than once in two days). The others
+    get the order on their next prompt. A re-stamped or reissued order changes the key and wakes one chat again.
+    One file per seat so two seats claiming at once cannot overwrite each other; unreadable -> True (wake as before)."""
+    import hashlib
+    keys = sorted(str(k) for k in keys or ())
+    if not seat or not keys:
+        return True
+    now = now if now is not None else _now()
+    path = HUB / "_registry" / "fames-hot" / f"order-claim-{seat}.json"
+    key = hashlib.sha256(json.dumps(keys).encode("utf-8")).hexdigest()[:16]
+    held = _read(path)
+    if held.get("key") == key and (held.get("session") == session_id or now - float(held.get("at") or 0) < ORDER_LEASE_S):
+        return held.get("session") == session_id
+    try:
+        _write(path, {"key": key, "session": session_id, "at": now, "iso": _iso(now), "rows": keys})
+        sleep(REVIEW_CONFIRM_S)
+        return _read(path).get("session") == session_id
     except OSError:
         return True
 
@@ -1029,6 +1088,14 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
                             pass                           # the order stays open: the next prompt carries it
                     state["station_sent"] = int(state.get("station_sent") or 0) + len(route[0])
                     state["station_held"] = int(state.get("station_held") or 0) + route[1]
+                elif (fresh and not review_only and base == state["base"] and not directive_only
+                      and not claim_orders(sig_seat, set(index) - set(known), session_id, sleep=sleep)):
+                    text = ""                              # another idle chat of this seat took these new orders
+                    state["order_claimed"] = int(state.get("order_claimed") or 0) + 1
+                elif (fresh and not review_only and base == state["base"]
+                      and (roll := wake_rollover_due(sig_seat, session_id, transcript, bool(state.get("idle_rollover"))))):
+                    text = roll                            # the order goes to the cleared chat, not this fat one
+                    state["idle_rollover"] = _iso()
                 else:
                     text = hook.live_update(doc, event="IdleWake", watch_seat=sig_seat)
                     if not text and fresh:
@@ -1042,8 +1109,8 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
                 note_decision(seat, session_id, grew=grew, fresh=len(fresh), woke=bool(text))
                 state["contract"], state["base"], state["orders"], state["order_rows"] = contract, base, orders, rows
                 _drop_bytes()
-                if text:
-                    return finish(2, "woke", HEAD + "\n" + text)
+                if text:  # a hand-over must not carry HEAD's "answer any open curator order now"
+                    return finish(2, "woke", text if text.startswith("WAKE ROLL OVER") else HEAD + "\n" + text)
                 # Nothing it must act on (or nothing to say): record it, or the same change re-enters the settle loop
                 # forever; the next prompt still carries the new version line.
                 hook._midturn_changed(surface_id, session_id, record_only=True, seat=sig_seat, cwd=cwd, event="IdleQuiet")
