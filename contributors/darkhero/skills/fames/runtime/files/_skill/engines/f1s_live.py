@@ -885,11 +885,26 @@ def review_queue() -> list | None:
         return None
 
 
+def review_owner() -> str:
+    """The conversation registered for the review queue (curator_orders.reviewer), or "" when none or unreadable."""
+    try:
+        spec = importlib.util.spec_from_file_location("f1s_live_curator_orders",
+                                                      HUB / "_skill" / "engines" / "curator_orders.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return str(mod.reviewer() or "")
+    except Exception:  # noqa: BLE001 - no owner known: any curator chat may claim, as before
+        return ""
+
+
 def claim_review(session_id: str, now: float | None = None, sleep=time.sleep) -> bool:
     """True when this conversation takes the curator review queue: it is not empty and no other conversation claimed
     the same queue in the last REVIEW_LEASE_S. Two waiters claiming at once: the last write stands, and only its owner
     finds itself on the re-read. An unreadable queue or claim file -> True (wake as before)."""
     import hashlib
+    owner = review_owner()
+    if owner and session_id != owner:
+        return False                                       # the queue has an owner (`review --take`): only that chat wakes
     queue = review_queue()
     if queue is None:
         return True

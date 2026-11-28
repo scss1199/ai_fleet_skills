@@ -613,6 +613,42 @@ def out_of_scope(session_id: str | None) -> bool:
         return False
 
 
+REVIEWER_QUIET_S = 3 * 86400
+
+
+def reviewer(now: float | None = None) -> str:
+    """The conversation that owns the curator review queue (`review --take`), or "" when none is registered or its
+    transcript is gone or silent for REVIEWER_QUIET_S (the queue then goes to any curator chat, as before).
+    Operator 2026-11-28: 16 answered orders sat as a hint in every ai_darkhero chat and each one left them to another;
+    the queue has one owner, the others are told it is not theirs, and only the owner is woken for it."""
+    try:
+        with open(SESSION_SCOPE, encoding="utf-8") as fh:
+            sid = str(((json.load(fh).get("reviewer")) or {}).get("session") or "")
+        path = _transcript_of(sid)
+        if path and (time.time() if now is None else now) - os.path.getmtime(path) < REVIEWER_QUIET_S:
+            return sid
+    except (OSError, ValueError, AttributeError):
+        pass
+    return ""
+
+
+def take_review(session_id: str) -> dict:
+    """Register `session_id` as the review owner; the other keys of the scope file are kept."""
+    if not session_id:
+        raise SystemExit("review --take: no CLAUDE_CODE_SESSION_ID (run it inside the conversation that takes the queue)")
+    try:
+        with open(SESSION_SCOPE, encoding="utf-8") as fh:
+            doc = json.load(fh)
+    except (OSError, ValueError):
+        doc = {}
+    doc["reviewer"] = {"session": session_id, "at": _now()}
+    tmp = SESSION_SCOPE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, ensure_ascii=False, indent=1)
+    os.replace(tmp, SESSION_SCOPE)
+    return doc["reviewer"]
+
+
 ARCHIVE_DUE = os.path.join(REGISTRY, "session-consolidate", "archive-due.json")
 ARCHIVE_DUE_STAMP = os.path.join(REGISTRY, "session-consolidate", "archive-due.stamp")
 ARCHIVE_DUE_REFRESH_S = 30 * 60
@@ -1443,6 +1479,15 @@ def _injection(seat: str, session_id: str = "") -> str:
         if not queue:
             return "\n".join(t for t in (techniques, unclaimed) if t)
         rows = "; ".join(f"{s}#{o['n']} {review_flag(o, s)} {o['title']}" for s, o in queue[:6])
+        owner = reviewer()
+        if owner and session_id and session_id != owner:
+            return "\n".join(t for t in (f"CURATOR REVIEW — {len(queue)} answered order(s) wait for the review chat "
+                                         f"{owner[:8]} (woken for them); not this conversation's work.", techniques, unclaimed) if t)
+        if owner and session_id == owner:
+            return "\n".join(t for t in (f"CURATOR REVIEW — YOURS, act now without being asked: {len(queue)} answered order(s): "
+                                         f"{rows}. Run `curator_orders.py review`, check each answer's evidence, then close "
+                                         f"<seat> <n> [<n> ...] or reopen <seat> <n> --note TEXT in this turn, and report the "
+                                         f"counts.", techniques, unclaimed) if t)
         return "\n".join(t for t in (f"CURATOR REVIEW — {len(queue)} answered order(s): {rows}. `curator_orders.py review` "
                                      f"prints each answer's evidence and note; then close <seat> <n> [<n> ...] or "
                                      f"reopen <seat> <n> --note TEXT.", techniques, unclaimed) if t)
@@ -1854,7 +1899,9 @@ def main(argv=None) -> int:
     s = sub.add_parser("close")
     s.add_argument("seat")
     s.add_argument("n", type=int, nargs="+")
-    sub.add_parser("review")
+    s = sub.add_parser("review")
+    s.add_argument("--take", action="store_true", help="this conversation owns the review queue from now on")
+    s.add_argument("--session", default=None)
     s = sub.add_parser("rollover-brief", help="park the seat and print the hand-over prompt for a new conversation")
     s.add_argument("--seat", required=True)
     s.add_argument("--session", default="")
@@ -1871,6 +1918,9 @@ def main(argv=None) -> int:
             print(text)
         except UnicodeEncodeError:
             sys.stdout.write(text.encode(sys.stdout.encoding or "utf-8", "backslashreplace").decode(sys.stdout.encoding or "utf-8") + "\n")
+        return 0
+    if a.cmd == "review" and a.take:
+        print(json.dumps(take_review(_session_id(a.session)), ensure_ascii=False))
         return 0
     if a.cmd == "review":
         print("\n".join(review_table()) or "review queue empty")
