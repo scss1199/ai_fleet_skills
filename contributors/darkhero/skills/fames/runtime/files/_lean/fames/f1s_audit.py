@@ -1901,6 +1901,9 @@ ELEMENTS = [
     {"id": "EVO-solow-paradox-ai-productivity-noise-20261128", "element": "f1s-sources card 53b701279de7663a (ledger ab7647c3366c, f1s-harvest 1.995): youtube, 'AI 为什么还没有提高生产效率', Solow paradox, on-screen work got faster while off-screen production did not reorganise", "verdict": "INFO",
      "requires": None, "detail": "rejected as noise: macro-economic commentary (Solow 1987, Ford 1913 assembly line) from an untrusted source whose captured text is 295 chars (trust line 'no truth, policy or trading authority'); no procedure, tool, API or runtime trap a seat could reuse, and the card dropped 1 ungrounded point; harvest score came from low coverage (0.113), not content; no text added",
      "check_text": ("skill_reverse", "generalize（附一句繁中規則）／seat-specific／noise")},
+    {"id": "EVO-load-grant-cpu-only-class-20261128", "element": "tray/scripts/load_grant.py a770_owner: an owner whose exact last segment is in CPU_ONLY_CLASSES ('rlz') is not an A770 owner, so a CPU-only job of a seat named *a770* skips the a770_window 15-min record precheck", "verdict": "REFINE",
+     "requires": None, "detail": "sdnext_a770 proposal: tray/logs/load_grant.log 2026-11-28T14:06:39 and 14:21:40 refused owner sdnext_a770/rlz (cargo test, pytest; no card use) with no_record because the SEAT name contains 'a770'. Only the exact last segment 'rlz' is exempt; sdnext_a770/t2i, sdnext_a770/tests, relay/sdnext_a770 and every other a770 name keep the window. budget / step / steadiness / spacing / repel in decide() are untouched, so no power rule is loosened; a job that loads the card must not name itself rlz. tray/tests/test_a770_window.py::test_a_cpu_only_class_of_an_a770_seat_skips_the_window_but_nothing_else_does",
+     "check_text": ("load_grant", "CPU_ONLY_CLASSES: tuple[str, ...] = (\"rlz\",)")},
 ]
 def sha(path: Path) -> str:
     try:

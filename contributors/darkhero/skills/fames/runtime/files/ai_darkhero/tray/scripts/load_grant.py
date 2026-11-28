@@ -87,9 +87,18 @@ def held(owner: str) -> str | None:
     return next((p for p in HELD_OWNERS if low.startswith(p)), None)
 
 
+# Job classes (the owner's last segment, as in MAX_RUN_S) that never touch the A770 whatever the seat is called
+# (2026-11-28: `sdnext_a770/rlz` cargo test + pytest were refused twice with no_record because the SEAT name holds
+# "a770"). Exact last segment only; they still pass every power rule in decide(). A job that loads the card must not
+# use one of these names.
+CPU_ONLY_CLASSES: tuple[str, ...] = ("rlz",)
+
+
 def a770_owner(owner: str) -> bool:
     """A job that loads the A770: it needs 15 continuous minutes of sensor record behind it (a770_window)."""
     low = (owner or "").strip().lower()
+    if "/" in low and low.rsplit("/", 1)[-1] in CPU_ONLY_CLASSES:
+        return False
     return low.startswith(("sdnext",)) or "a770" in low
 
 
