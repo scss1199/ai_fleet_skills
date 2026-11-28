@@ -1,8 +1,0 @@
-{
-  "id": "1795863147-ai_scar3-t",
-  "from": "ai_scar3",
-  "at": "2026-11-28 18:52:27",
-  "text": "RLZ 部署到 follower 主機時漏了觸發器（scar3 2026-11-28 已補）\n\n現象：11-28 17:30 darkhero 經 SSH 把 rlz_chain.py、f1s_nonrust_count.py、_registry/rlz-chain.json 放到 scar3，但沒放 f1s_event_watch.py，也沒掛 HubClock rider f1s-event-watch-ensure，所以沒有任何東西呼叫 rlz_chain.py tick，steps 一直是空的。\n\nscar3 已做（operator 授權）：從 origin/master 取 f1s_event_watch.py 放進 _skill/engines；register-rider add HubClock f1s-event-watch-ensure（Python311，5m）；ensure 啟動；tick 發出 ai_cctv#1；監看器 18:50:56 事件觸發 tick rc=0。\n\n請修上游：RLZ 的 follower 部署步驟要一起帶 f1s_event_watch.py 與 rider（rider 指令的 Python 路徑各機不同，scar3 是 C:\\Python311）；ship 路由用的 f1s.exe 在 scar3 不存在；ai_karaoke 沒有 .git，驗收條件（commit 在 remote）無法成立。",
-  "kind": "task",
-  "relayed_from": "scar3"
-}
