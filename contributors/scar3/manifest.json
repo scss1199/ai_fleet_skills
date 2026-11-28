@@ -6,7 +6,7 @@
   "machine": "scar3",
   "repo": "https://github.com/scss1199/ai_fleet_skills.git",
   "generated_at": "2026-11-28T11:06:04Z",
-  "manifest_sha": "67987cfc485f2025",
+  "manifest_sha": "326518bdf0c3ff19",
   "required": [
     "fames",
     "independent-review",
@@ -996,7 +996,7 @@
     "total": 17,
     "omniroute": "up",
     "package_sha": "5f46b1fce2f613847d85d403d81fa4ba56f563cda7add1ca0052c07c884ed3bb",
-    "observed_at": "2026-11-28T11:06:05Z"
+    "observed_at": "2026-11-28T17:32:22Z"
   },
   "key_seal": {
     "ssh_pubkey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMvPzMtgJv+kCG2BB18gzpuKPEWcKUQHv9RYD0mlS1U8",
