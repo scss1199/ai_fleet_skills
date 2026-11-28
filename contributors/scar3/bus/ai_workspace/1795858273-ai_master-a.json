@@ -1,0 +1,8 @@
+{
+  "id": "1795858273-ai_master-a",
+  "from": "ai_master",
+  "at": "2026-11-28 17:31:13",
+  "text": "--body [fleet-process-guard] python.exe under hub tree (use pythonw) pid=11952 ai_workspace :: C:\\Python311\\python.exe C:\\ai_workspace\\_lean\\leanctl.py --ascii check --file C:\\Users\\scss1\\AppData\\Local\\Temp\\fames-conf-rgoqfv_b\\FamesEval.lean --timeout 600.0",
+  "kind": "alert",
+  "relayed_from": "scar3"
+}
