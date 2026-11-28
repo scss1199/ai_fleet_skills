@@ -154,6 +154,34 @@ Formulas and default parameters fetched by the free pool (`mtm-api-pool-offload`
 source page, then recompute before using them. Sort each claim into fact OK / number corrected /
 refuted by backtest / untested / self-report only; a claim with no recomputation or test stays untested.
 
+## Numeric probe: conjecture -> numbers -> Lean lemma -> honest status (2026-11-28)
+
+For an idea about an open problem ("this formula should make it easy"), run four steps and report all four:
+
+1. **Name the exact formula** and what is proved about it, with the source. An idea that turns out to be a
+   known equivalent of the conjecture is not a shortcut: say "equivalent, still open".
+2. **Numeric probe** (`python C:/ai_workspace/_skill/engines/zeta_probe.py all`, mpmath, CPU, ~3 s, JSON):
+   `zeros --n N` finds zeros of `ζ(1/2+it)` by sign changes of Hardy's Z, compares them with Odlyzko's
+   table, and checks the count against `N(T)` (all zeros below that height are on the line);
+   `ramanujan --alpha a` evaluates both sides of Ramanujan's Möbius formula; `riesz` tabulates the
+   Riesz and Hardy–Littlewood sums; `master` checks Ramanujan's master theorem on them; `minus12` shows
+   `1+2+3+… → ζ(-1)`. Numbers cover finitely many cases: evidence, never proof.
+3. **Lean lemma**: prove the steps Mathlib supports and list the ones it does not.
+   `_skill/engines/lean/riemann_zeta_steps.lean` (PROVED, receipt beside it): `ζ(-1) = -1/12`,
+   `ζ(0) = -1/2`, `ζ(-2) = 0`, no zero with `Re s ≥ 1`, zeros reflect under `s ↦ 1-s`, every non-trivial
+   zero has `0 < Re s < 1`, and `RiemannHypothesis ↔` "every zero in that strip has `Re s = 1/2`".
+4. **Status line**: proved / equivalent-and-open / numerically consistent / refuted. Never "nearly proved".
+
+Worked verdict (Ramanujan's formula as a road to the Riemann hypothesis): no shortcut.
+`1+2+3+… = -1/12` continued in the exponent is `ζ(s)` itself. Ramanujan's Möbius sum
+`P(x) = Σ μ(n)/n·(e^{-x/n²} - 1) = Σ_{k≥1} (-x)^k/(k!·ζ(2k+1))` satisfies, for `αβ = π`,
+`√α·P(α²) - √β·P(β²) = -1/(2√β)·Σ_ρ Γ((1-ρ)/2)/ζ'(ρ)·β^ρ` (Hardy–Littlewood 1916, Acta Math. 41;
+Titchmarsh §9.8; assumes simple zeros; checked here to 1e-21 with 12 zeros): the right side is the sum
+over all non-trivial zeros. The master theorem gives `∫₀^∞ x^{s-1} P(x) dx = Γ(s)/ζ(1-2s)`, whose poles
+are the zeros again. `RH ⟺ P(x) = O(x^{-1/4+ε})` (Hardy–Littlewood) and `RH ⟺ Riesz(x) = O(x^{1/4+ε})`
+(Riesz 1916, Acta Math. 40; en.wikipedia.org/wiki/Riesz_function, read 2026-11-28): both are open, and
+Riesz himself wrote that he could not tell whether the condition makes the hypothesis easier to verify.
+
 ## Tactics worth trying first
 
 `decide` (small decidable facts) · `omega` (linear ℕ/ℤ arithmetic) · `norm_num` (numerals) ·
