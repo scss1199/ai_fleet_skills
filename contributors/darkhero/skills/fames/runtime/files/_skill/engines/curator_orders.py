@@ -48,6 +48,7 @@ CONTROL_STATE = os.path.join(REGISTRY, "f1s-control.json")
 SESSION_SCOPE = os.path.join(REGISTRY, "f1s-session-scope.json")  # {"sessions": {<id>: <the one thing it does>}}
 TECHNIQUES = os.path.join(REGISTRY, "f1s-apply.json")
 UNCLAIMED_AFTER_S = 3600
+NUDGE_MAX = 4                                       # nudge_unclaimed wakes per order, doubling gap
 STALE_OWNER_AFTER_S = 3600  # owner transcript silent this long (= cache TTL): wake the seat (operator 11-27 「不要像白癡一樣停下來」; was 6 h)
 HANDOVER_AFTER_S = 3600  # owner transcript silent this long (the cache TTL): a same-seat chat holding evidence may answer
 CLAUDE_PROJECTS = os.path.join(os.path.expanduser("~"), ".claude", "projects")
@@ -754,9 +755,78 @@ def station_line(seat: str, now: float | None = None) -> str:
 def injection(seat: str, session_id: str = "") -> str:
     if out_of_scope(session_id):
         return ""
-    return "\n".join(t for t in (_injection(seat, session_id), station_line(seat),
+    return "\n".join(t for t in (once_per_context(seat, session_id, _injection(seat, session_id)), station_line(seat),
                                  anger_line(seat, session_id) or handoff_line(seat, session_id),
                                  model_lane_line(seat, session_id), spawn_line(seat)) if t)
+
+
+DELIVERED = os.path.join(HUB, "_registry", "fames-hot", "orders-delivered.json")
+DELIVERED_TTL_S = 2 * 86400
+
+
+def _transcript_of(session_id: str) -> str:
+    import glob as _glob
+    if not session_id or not session_id.replace("-", "").isalnum():
+        return ""
+    found = _glob.glob(os.path.join(CLAUDE_PROJECTS, "*", f"{session_id}.jsonl"))
+    return found[0] if found else ""
+
+
+def _compacted_since(path: str, offset: int) -> bool:
+    """A compact_boundary row written after byte `offset` (the context that saw the block is gone). True when unsure."""
+    try:
+        if os.path.getsize(path) < offset:
+            return True
+        with open(path, "rb") as fh:
+            fh.seek(offset)
+            while True:
+                chunk = fh.read(1 << 20)
+                if not chunk:
+                    return False
+                if b'"compact_boundary"' in chunk:
+                    return True
+                if len(chunk) == 1 << 20:
+                    fh.seek(-32, 1)                       # a marker split across two chunks
+    except OSError:
+        return True
+
+
+def once_per_context(seat: str, session_id: str, block: str, now: float | None = None) -> str:
+    """ai_theater 2026-11-28 (F1S waste): the full orders block (~6K chars) reached the owning conversation 4x in its
+    first 15 tool calls (SessionStart, prompt, mid-turn, prompt) with the text unchanged, ~24K chars of repeats. The same
+    text goes to the same context once: an unchanged block (sha256) since the last delivery, with no compaction in
+    between, becomes one line; a changed block, a new conversation or a compaction gets the full text again. Any error
+    or unknown transcript = the full text (fail-open, no order is ever lost)."""
+    if not block or not session_id:
+        return block
+    try:
+        import hashlib
+        now = time.time() if now is None else now
+        sha = hashlib.sha256(block.encode("utf-8")).hexdigest()[:12]
+        path = _transcript_of(session_id)
+        if not path:
+            return block
+        try:
+            with open(DELIVERED, encoding="utf-8") as fh:
+                state = json.load(fh)
+        except (OSError, ValueError):
+            state = {}
+        rec = state.get(session_id) or {}
+        if rec.get("sha") == sha and rec.get("path") == path and not _compacted_since(path, int(rec.get("offset", 0))):
+            nums = list(dict.fromkeys(re.findall(r"#(\d+)", block)))[:8]
+            tag = " ".join(f"#{n}" for n in nums) or "the block"
+            return (f"CURATOR ORDERS — {tag} unchanged since this conversation received them (sha {sha}); the full text "
+                    "returns when an order changes or after a compaction.")
+        state = {k: v for k, v in state.items() if now - float((v or {}).get("t", 0)) < DELIVERED_TTL_S}
+        state[session_id] = {"sha": sha, "path": path, "offset": os.path.getsize(path), "t": now, "seat": seat}
+        os.makedirs(os.path.dirname(DELIVERED), exist_ok=True)
+        tmp = DELIVERED + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(state, fh)
+        os.replace(tmp, DELIVERED)
+    except Exception:  # noqa: BLE001
+        return block
+    return block
 
 
 def spawn_line(seat: str) -> str:
@@ -1524,7 +1594,11 @@ def nudge_unclaimed(now: float | None = None, every_s: float = UNCLAIMED_AFTER_S
                 last = time.mktime(time.strptime(o["wake_at"], "%Y-%m-%dT%H:%M:%S")) if o.get("wake_at") else 0.0
             except (TypeError, ValueError):
                 continue
-            if (owner_of(o) or age > UNCLAIMED_AFTER_S) and now - last >= every_s:   # a silent owner is due at once
+            wakes = int(o.get("wakes") or 0)
+            if wakes >= NUDGE_MAX:
+                continue                                    # 2026-11-28 token audit: sdnext_a770#34 woke 7x hourly for
+                                                            # nothing; past NUDGE_MAX the order waits for a prompt/curator
+            if (owner_of(o) or age > UNCLAIMED_AFTER_S) and now - last >= every_s * (2 ** wakes):   # backoff 1,2,4,8 h
                 if owner_of(o):
                     # 11-27 ai_career#95 / jci_taipei#121: the woken chats read "owned by 3b33ccae, not mine" and ended
                     # with 沒有下一步 while that owner was long gone. Drop the silent claim so the wake lands on a free order.
@@ -1739,6 +1813,9 @@ def main(argv=None) -> int:
     s = sub.add_parser("list")
     s.add_argument("seat", nargs="?")
     s.add_argument("--full", action="store_true", help="every field of every order, closed ones too")
+    s = sub.add_parser("show", help="one order, every field (ai_theater 2026-11-28: chats guessed this name and failed)")
+    s.add_argument("seat")
+    s.add_argument("n", type=int)
     s = sub.add_parser("deliver")
     s.add_argument("seat")
     s.add_argument("n", type=int)
@@ -1792,6 +1869,8 @@ def main(argv=None) -> int:
         elif a.cmd == "list":
             seats = [a.seat] if a.seat else _seats_with_orders()
             out = {s: load(s)["orders"] if a.full else _brief(load(s)["orders"]) for s in seats}
+        elif a.cmd == "show":
+            out = next((o for o in load(a.seat)["orders"] if o.get("n") == a.n), {"error": f"no order {a.seat}#{a.n}"})
         elif a.cmd == "answer":
             out = answer(a.seat, a.n, a.evidence or (), a.cannot or "", note=a.note)
         elif a.cmd == "claim":
@@ -1804,7 +1883,7 @@ def main(argv=None) -> int:
     except (PermissionError, ValueError) as exc:
         print(f"refused: {exc}")
         return 2
-    if isinstance(out, dict) and "do" in out:      # the seat already holds the order's text; this line only confirms the step
+    if a.cmd != "show" and isinstance(out, dict) and "do" in out:      # the seat already holds the order's text; this line only confirms the step
         out = {k: out.get(k) for k in ("n", "status", "title")}
     print(json.dumps(out, ensure_ascii=False, indent=None if a.cmd == "list" else 2))
     if a.cmd == "issue" and (line := delivery_line(a.seat)):

@@ -610,11 +610,45 @@ def _orders_files(seat: str) -> list[Path]:
     return [root/f"{seat}.json"]
 
 
+def _orders_sig(path: Path) -> str:
+    """What a seat must receive from its own order file: the text and stamps of its orders (n, title, do, issued_at, wake_at, reopen, freeze, forbid: the fields f1s_live.order_rows wakes on),
+    not the file's stat. ai_ziyaoastro 2026-11-28: its own `claim` rewrote the file (owner field only) and the next tool
+    call re-sent the unchanged #100 text as a MID-TURN UPDATE, the third copy in one turn. claim / answer / close change
+    no order text, so they are no upgrade; a new order or a reopen is. The digest is cached per stat, so an unchanged
+    file costs one stat and one small read. Unreadable or unexpected rows = the stat, as before."""
+    stat="%s:%s"%(path.stat().st_mtime_ns,path.stat().st_size)
+    try:
+        import hashlib
+        cache=HUB/"_registry"/"fames-hot"/f"orders-sig-{path.stem}.json"
+        try:
+            kept=json.loads(cache.read_text(encoding="utf-8"))
+            if kept.get("stat")==stat and kept.get("sig"):
+                return str(kept["sig"])
+        except (OSError,ValueError,AttributeError):
+            pass
+        rows=json.loads(path.read_text(encoding="utf-8-sig"))["orders"]
+        if not all(isinstance(o,dict) for o in rows):
+            return stat
+        text=json.dumps([[o.get("n"),o.get("title"),o.get("do"),o.get("issued_at"),o.get("wake_at"),o.get("reopened_at"),
+                          o.get("note") if o.get("reopened_at") else None,o.get("freeze"),o.get("forbid")]
+                         for o in rows],ensure_ascii=False,sort_keys=True)
+        sig="orders:"+hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+        cache.parent.mkdir(parents=True,exist_ok=True)
+        cache.write_text(json.dumps({"stat":stat,"sig":sig}),encoding="utf-8")
+        return sig
+    except Exception:
+        return stat
+
+
 def _midturn_sig(seat: str="") -> str:
     """stat() of the files an upgrade rewrites plus this seat's curator orders (T1 f1s-governs: an order must not
-    wait for the next prompt either)."""
-    paths=[HUB/rel for rel in MIDTURN_WATCH]+_orders_files(seat)
-    return "|".join("%s:%s"%(p.stat().st_mtime_ns,p.stat().st_size) if p.is_file() else "-" for p in paths)
+    wait for the next prompt either). A seat's own order file counts by its order text (_orders_sig); the curator
+    watches every seat's file by stat, because an answer is what it reviews."""
+    stat=lambda p: "%s:%s"%(p.stat().st_mtime_ns,p.stat().st_size) if p.is_file() else "-"
+    orders=_orders_files(seat)
+    own=len(orders)==1 and seat != _seat_for_cwd(str(HUB))
+    return "|".join([stat(HUB/rel) for rel in MIDTURN_WATCH]
+                    +[(_orders_sig(p) if own and p.is_file() else stat(p)) for p in orders])
 
 
 def _midturn_path(surface_id: str, session_id: str, agent_id: str="") -> Path:
