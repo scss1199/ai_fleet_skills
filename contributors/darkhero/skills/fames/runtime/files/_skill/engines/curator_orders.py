@@ -792,7 +792,7 @@ def injection(seat: str, session_id: str = "") -> str:
     if out_of_scope(session_id):
         return ""
     return "\n".join(t for t in (once_per_context(seat, session_id, _injection(seat, session_id)), station_line(seat),
-                                 anger_line(seat, session_id) or thrash_line(seat, session_id) or handoff_line(seat, session_id),
+                                 anger_line(seat, session_id) or thrash_line(seat, session_id) or stale_window_line(seat, session_id) or handoff_line(seat, session_id),
                                  model_lane_line(seat, session_id), spawn_line(seat)) if t)
 
 
@@ -1412,6 +1412,54 @@ def thrash_line(seat: str, session_id: str = "", path: str | None = None, now: f
         return (f"ROLL OVER (this conversation auto-compacted {hits} times in {window_s // 60} min{each}: its process holds an "
                 "older compact window than the cwd's current autoCompactWindow, so every compaction refills the same fixed "
                 "context). Do not do this prompt's work here. " + _rollover_steps(seat, session_id))
+    except Exception:
+        return ""
+
+
+STALE_TRIGGER_MARGIN = 33_000   # Claude Code auto-compacts at about (window - 33K)
+STALE_BELOW = 20_000            # the last 3 compactions fired this far under that point: the process holds an older window
+STALE_HEADROOM = 40_000         # and what they leave (trigger - first context after it) is under this: the chat is thrashing
+
+
+def stale_window_line(seat: str, session_id: str = "", path: str | None = None, window: int | None = None) -> str:
+    """2026-11-28: f1s_window raises a cwd's autoCompactWindow daily but only new processes read it; ai_theater 5b5a93b8 kept
+    compacting at 116-128K under a 190K window. ROLL OVER when the last 3 auto compactions each fired > STALE_BELOW under
+    (window - 33K) and the first context after each is within STALE_HEADROOM of the pre size. Hint only; "" when unsure."""
+    try:
+        if window is None:
+            import f1s_window
+            window = f1s_window.current(HUB, seat)
+            if window == f1s_window.DEFAULT:        # the cwd has no window of its own: nothing was raised
+                return ""
+        path = path if path is not None else _transcript_of(session_id)
+        if not path or not os.path.isfile(path):
+            return ""
+        rows, pending = [], None                    # [pre, first usage after it]
+        with open(path, "rb") as fh:
+            for raw in fh:
+                if pending is None and b'"compact_boundary"' in raw:
+                    try:
+                        meta = json.loads(raw).get("compactMetadata") or {}
+                        pending = [int(meta["preTokens"]), 0] if meta.get("trigger") == "auto" else None
+                    except (ValueError, TypeError, KeyError, AttributeError):
+                        pending = None
+                elif pending is not None and b'"usage"' in raw:
+                    try:
+                        u = (json.loads(raw).get("message") or {}).get("usage") or {}
+                        pending[1] = sum(int(u.get(k) or 0) for k in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"))
+                    except (ValueError, TypeError, AttributeError):
+                        continue
+                    if pending[1]:
+                        rows.append(pending)
+                        pending = None
+        last = rows[-3:]
+        expect = window - STALE_TRIGGER_MARGIN
+        if len(last) < 3 or any(pre > expect - STALE_BELOW for pre, _ in last) or sum(pre - post for pre, post in last) / 3 >= STALE_HEADROOM:
+            return ""
+        pres = [pre // 1000 for pre, _ in last]
+        return (f"ROLL OVER (the last 3 auto compactions fired at {pres}K but the cwd's autoCompactWindow {window // 1000}K means ~{expect // 1000}K: "
+                "this process holds an older, smaller window and each compaction leaves under "
+                f"{STALE_HEADROOM // 1000}K of room). Do not do this prompt's work here. " + _rollover_steps(seat, session_id))
     except Exception:
         return ""
 

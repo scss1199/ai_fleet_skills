@@ -249,6 +249,10 @@ parent_skill: ztm-verify-before-done
   或 `load_grant.py run --owner … --step … -- <cmd>`）。放行條件：近 60 s CPU+A770 功率 p90−p10 ≤ 30 W、這一步 ≤ 40 W、
   加上去 ≤ 250 W、距上一次放行 ≥ 20 s、感測紀錄是新的。超過 40 W 的工作要自己分段加，每段再申請；被拒就等，不要硬跑。
   托盤狀態列顯示目前功率與最新一次放行。
+  等待是內建的：`wait`／`run` 每 2 s 重問一次直到 `--timeout`（預設 900 s），不要自己寫重試迴圈或手動重跑；只有
+  `step …`、`held` 開頭的拒絕等也沒用（改小 `--step` 或分段）。`run` 有執行上限：owner 尾段 rlz／tests／ship 3600 s、
+  其他 7200 s，到點結束整棵行程樹回 124。自己的測試套件用 `--max-s` 設成上次全綠耗時的約 3 倍（ai_theater 2026-11-28：
+  全套 214 s 的 pytest 因單一測試一次送約 100 萬筆卡到 3600 s 上限；pytest-timeout 對卡在子行程的測試不會觸發）。
   全機控制權歸 ai_darkhero（operator 2026-11-11）：電源姿態 sleep/nap/awake、夜間佇列、tray、load grant 的設定只由
   ai_darkhero 改；其他 seat 只用 `load_grant.py wait/run` 與 `f1s_posture.py` 排隊申請，要改設定就向 ai_darkhero 提案，不自己動。
 - **「A770 現在有沒有負載／兩個模型一起跑會不會不穩」先讀紀錄，不做同時加壓測試**（sdnext_a770 2026-11-21）：
