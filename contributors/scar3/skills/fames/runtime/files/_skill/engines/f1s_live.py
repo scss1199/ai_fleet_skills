@@ -331,6 +331,53 @@ def _alive(pid: int | None) -> bool:
 
 
 DECISIONS = HUB / "_registry" / "fames-hot" / "wake-decisions.jsonl"
+
+
+def _code_sig() -> tuple:
+    try:
+        st = os.stat(os.path.abspath(__file__))
+        return (st.st_mtime_ns, st.st_size)
+    except OSError:
+        return ()
+
+
+# 2026-11-28 01:52Z: six idle jci_taipei chats woke at once for one order (6 x ~150K cold) although claim_orders had
+# shipped 8 h earlier: five waiters had started before it and decided with the code they were born with. A waiter whose
+# own file changed hands its doc to the new file (main -> handoff) instead of deciding with old code.
+CODE_SIG = _code_sig()
+HANDOFF_ENV = "F1S_LIVE_HANDOFF"
+HANDOFF_MAX = 8                                            # handoffs in one chain; past it the old code decides
+
+
+def code_changed() -> bool:
+    if int(os.environ.get(HANDOFF_ENV) or 0) >= HANDOFF_MAX:
+        return False
+    now = _code_sig()
+    return bool(now) and bool(CODE_SIG) and now != CODE_SIG
+
+
+def handoff(raw: bytes, run=None, write=None) -> int:
+    """Rerun this `wait` doc on the current f1s_live.py (no window) and pass its exit code and wake text through."""
+    import subprocess
+    run = run or subprocess.run
+    env = dict(os.environ, **{HANDOFF_ENV: str(int(os.environ.get(HANDOFF_ENV) or 0) + 1)})
+    try:
+        r = run([sys.executable, os.path.abspath(__file__), "wait"], input=raw, env=env, stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    except OSError:
+        return 0
+    if r.returncode == 2 and r.stderr:
+        try:
+            (write or _stderr_write)(r.stderr)
+        except Exception:  # noqa: BLE001
+            return 0
+        return 2
+    return 0
+
+
+def _stderr_write(data: bytes) -> None:
+    sys.stderr.buffer.write(data)
+    sys.stderr.flush()
 DECISIONS_MAX = 2000
 
 
@@ -1020,6 +1067,8 @@ def wait(doc: dict, *, hook=None, poll_s: float = POLL_S, grace_s: float = GRACE
     while True:
         if _read(path).get("token") != token:
             return 0, ""                                   # a newer waiter owns this conversation now
+        if code_changed():
+            return finish(3, "handoff")                    # main() reruns this doc on the new code
         if transcript.is_file() and _size(transcript) > offset and turned_active(transcript, offset):
             return finish(0, "active")
         if not _alive(state.get("claude_pid")):
@@ -1207,6 +1256,8 @@ def main(argv=None) -> int:
         code, text = start(doc) if a.cmd == "start" else wait(doc)
     except Exception:
         return 0
+    if code == 3 and a.cmd == "wait":
+        return handoff(raw.encode("utf-8"))
     if code == 2 and text:
         data = text.encode("utf-8", "replace")
         try:
