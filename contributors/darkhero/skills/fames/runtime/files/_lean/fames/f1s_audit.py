@@ -1889,6 +1889,9 @@ ELEMENTS = [
     {"id": "EVO-mimo-v2-flash-attention-sink-news-noise-20261128", "element": "f1s-sources card 30453e764013d7cd (ledger 995625c842d9, f1s-harvest 2.103): youtube, Xiaomi MiMo-V2-Flash 15B active parameters, 128-token window hybrid attention with learnable attention sink bias, multi-teacher distillation", "verdict": "INFO",
      "requires": None, "detail": "rejected as noise: model-architecture news about training a model, which no seat does (F1S runs free-pool APIs and CPU-only local models, T1 free-runtime); no procedure, tool or runtime trap to reuse, the card kept one grounded point and dropped 3 ungrounded, and the claim that it beats the large labs is unverified promotion; harvest score came from low coverage (0.066), not content; no text added",
      "check_text": ("skill_reverse", "generalize（附一句繁中規則）／seat-specific／noise")},
+    {"id": "EVO-solow-paradox-ai-productivity-noise-20261128", "element": "f1s-sources card 53b701279de7663a (ledger ab7647c3366c, f1s-harvest 1.995): youtube, 'AI 为什么还没有提高生产效率', Solow paradox, on-screen work got faster while off-screen production did not reorganise", "verdict": "INFO",
+     "requires": None, "detail": "rejected as noise: macro-economic commentary (Solow 1987, Ford 1913 assembly line) from an untrusted source whose captured text is 295 chars (trust line 'no truth, policy or trading authority'); no procedure, tool, API or runtime trap a seat could reuse, and the card dropped 1 ungrounded point; harvest score came from low coverage (0.113), not content; no text added",
+     "check_text": ("skill_reverse", "generalize（附一句繁中規則）／seat-specific／noise")},
 ]
 def sha(path: Path) -> str:
     try:
