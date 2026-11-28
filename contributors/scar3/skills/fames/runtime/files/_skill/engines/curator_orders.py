@@ -48,7 +48,8 @@ CONTROL_STATE = os.path.join(REGISTRY, "f1s-control.json")
 SESSION_SCOPE = os.path.join(REGISTRY, "f1s-session-scope.json")  # {"sessions": {<id>: <the one thing it does>}}
 TECHNIQUES = os.path.join(REGISTRY, "f1s-apply.json")
 UNCLAIMED_AFTER_S = 3600
-STALE_OWNER_AFTER_S = 6 * 3600  # owner transcript silent this long: the claim blocks every other chat (ai_metadata #14/#15, 11-10)
+NUDGE_MAX = 4                                       # nudge_unclaimed wakes per order, doubling gap
+STALE_OWNER_AFTER_S = 3600  # owner transcript silent this long (= cache TTL): wake the seat (operator 11-27 「不要像白癡一樣停下來」; was 6 h)
 HANDOVER_AFTER_S = 3600  # owner transcript silent this long (the cache TTL): a same-seat chat holding evidence may answer
 CLAUDE_PROJECTS = os.path.join(os.path.expanduser("~"), ".claude", "projects")
 CURATOR_FALLBACK = "ai_darkhero"
@@ -187,8 +188,10 @@ def _hub_rel(path: str) -> str:
 
 
 def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None = None, routine: bool = False,
-          ledger: bool = False, machine: dict | None = None, station: bool = False) -> dict:
-    """station=True: a lean station may take it when no conversation owns it; unlike routine it is still reviewed.
+          ledger: bool = False, machine: dict | None = None, station: bool = False, not_sessions=()) -> dict:
+    """not_sessions: conversations that refused the work for their own role (rlz_chain); claim refuses them and
+    f1s_live does not wake them for this order.
+    station=True: a lean station may take it when no conversation owns it; unlike routine it is still reviewed.
     ledger=True: an engine reads the answer back into its own table (f1s_fanout), so any answer closes the order.
     machine={...}: an engine issues it from inside a seat's own session (Stop hook), so the curator-session check is
     skipped; the order is marked `"machine": true` and the dict's fields (e.g. "gap") are stored on it. Never routine-free."""
@@ -223,6 +226,8 @@ def issue(seat: str, title: str, do: str, freeze=(), forbid=(), cwd: str | None 
             order["ledger"] = True
     if station and not freeze and not forbid:
         order["station"] = True
+    if not_sessions:
+        order["not_sessions"] = sorted({str(x) for x in not_sessions if x})
     doc["orders"].append(order)
     _save(seat, doc)
     return order
@@ -458,6 +463,18 @@ def _evidence_fresh(order: dict, seat: str = "") -> bool:
     return False
 
 
+ROLE_CANNOT = re.compile(
+    r"(?:陰|yin|審查者|reviewer|判決者)[^。\n]{0,24}(?:不能|不可|不改|不寫|不做|cannot|can't|does not|doesn't|never)"
+    r"[^。\n]{0,12}(?:改|寫|碼|做|執行|edit|code|take|port)"
+    r"|(?:需由|須由|交給|轉給|由)[^。\n]{0,12}(?:陽|yang|執行者|執行對話|L1)[^。\n]{0,8}(?:接手|做|執行|處理|take)"
+    r"|(?:誰|哪個對話|另派|which (?:chat|session))[^。\n]{0,12}(?:接|做|執行|take)"
+    # 2026-11-27 ai_theater#79/#80: 「陰的任務）禁止改程式碼…交給有權寫程式的對話」 passed the three lines above
+    r"|(?:陰|yin|審查者|reviewer|判決者)[^。\n]{0,24}禁止[^。\n]{0,6}(?:改|寫)"
+    r"|有權寫程式的對話|(?:不|未)接 ?RLZ", re.IGNORECASE)
+ROLE_RULE = ("角色不是 --cannot 的理由，也不是問 operator 的理由（operator 2026-11-27「我創造陰陽架構就是要讓他們互相推動"
+             "不是浪費時間問問題等指示」）：每 cwd 只有一個主對話（operator 2026-11-26「所有的agent progress 不要額外開一個視窗 直接在輸入對話上面顯示」、11-27 重申）：令由收到的對話自己 claim 自己做，要平行就在本對話開 Agent 子代理（進度顯示在輸入框上方的進度條），不 start_session、不另開陰／陽子對話；陰的判決本來就是 f1s_yinyang.py tick 機械跑；方向取捨（停或改目標）量測後自己選一條，丟掉的選項寫一句理由。")
+
+
 def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = None,
            session: str | None = None, note: str = "") -> dict:
     """evidence -> done (note = the seat's counts / commit / what it left, read back by f1s_fanout.collect);
@@ -468,6 +485,8 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
     if bool(evidence) == bool(reason.strip()):
         raise ValueError("answer with --evidence PATH... [--note TEXT], --cannot REASON, or --note TEXT alone; not both")
     reason = (reason or note).strip()
+    if not evidence and ROLE_CANNOT.search(reason):
+        raise ValueError(f"order #{n}: {ROLE_RULE}")
     # `commit:<sha>` is evidence too: seats were writing a one-off runtime/curator-<n>.txt per order only to have a path
     # to name (2026-11-13: ai_trader, ai_photo, sdnext_a770), and nothing ever read those files again.
     missing = [p for p in evidence if (_seat_commit_time(seat, cwd, p[len(COMMIT):]) is None if p.startswith(COMMIT)
@@ -479,6 +498,9 @@ def answer(seat: str, n: int, evidence=(), reason: str = "", cwd: str | None = N
     if order["status"] != "open":
         raise ValueError(f"order #{n} is {order['status']}, not open")
     sid = _session_id(session)
+    if sid and sid in (order.get("not_sessions") or []):
+        raise PermissionError(f"order #{n} excludes conversation {sid[:8]} (it refused this work for its role): "
+                              "another conversation of the seat answers it")
     if owner_of(order) and owner_of(order) != sid:
         # A measured `--cannot` hands over too: ai_search #19 2026-11-20, owner fad3b104 silent 3 h, the seat's measured
         # cannot (lines up only by order #17's required tests, prune dead 0) was refused and waited for the 6 h STALE line.
@@ -531,6 +553,8 @@ def claim(seat: str, n: int, release: bool = False, cwd: str | None = None, sess
     order = _find(doc, n)
     if order["status"] != "open":
         raise ValueError(f"order #{n} is {order['status']}, not open")
+    if not release and sid in (order.get("not_sessions") or []):
+        raise PermissionError(f"order #{n} excludes conversation {sid[:8]}: it refused this work for its role")
     current = owner_of(order)
     if current and current != sid:
         # The session's own folder decides, not the shell cwd: `cd C:\ai_workspace` let ai_trader's main chat
@@ -587,6 +611,42 @@ def out_of_scope(session_id: str | None) -> bool:
             return session_id in (json.load(fh).get("sessions") or {})
     except (OSError, ValueError, AttributeError):
         return False
+
+
+REVIEWER_QUIET_S = 3 * 86400
+
+
+def reviewer(now: float | None = None) -> str:
+    """The conversation that owns the curator review queue (`review --take`), or "" when none is registered or its
+    transcript is gone or silent for REVIEWER_QUIET_S (the queue then goes to any curator chat, as before).
+    Operator 2026-11-28: 16 answered orders sat as a hint in every ai_darkhero chat and each one left them to another;
+    the queue has one owner, the others are told it is not theirs, and only the owner is woken for it."""
+    try:
+        with open(SESSION_SCOPE, encoding="utf-8") as fh:
+            sid = str(((json.load(fh).get("reviewer")) or {}).get("session") or "")
+        path = _transcript_of(sid)
+        if path and (time.time() if now is None else now) - os.path.getmtime(path) < REVIEWER_QUIET_S:
+            return sid
+    except (OSError, ValueError, AttributeError):
+        pass
+    return ""
+
+
+def take_review(session_id: str) -> dict:
+    """Register `session_id` as the review owner; the other keys of the scope file are kept."""
+    if not session_id:
+        raise SystemExit("review --take: no CLAUDE_CODE_SESSION_ID (run it inside the conversation that takes the queue)")
+    try:
+        with open(SESSION_SCOPE, encoding="utf-8") as fh:
+            doc = json.load(fh)
+    except (OSError, ValueError):
+        doc = {}
+    doc["reviewer"] = {"session": session_id, "at": _now()}
+    tmp = SESSION_SCOPE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, ensure_ascii=False, indent=1)
+    os.replace(tmp, SESSION_SCOPE)
+    return doc["reviewer"]
 
 
 ARCHIVE_DUE = os.path.join(REGISTRY, "session-consolidate", "archive-due.json")
@@ -689,7 +749,7 @@ ARCHIVE_BG_HINT = ("bg=relay (a live watch): first check the watched thing can s
 
 # ai_photo 2026-11-18: archive_session refuses an idle chat while Remote Control is on ("still has live work").
 ARCHIVE_RC_HINT = ("If archive_session says live work and the target is idle (isRunning=false) with remoteControlActive=true, "
-                   "call set_remote_control(enabled=false) on it, then archive_session again; for self, "
+                   "and its work is finished (session-consolidate.py due listed it), call set_remote_control(enabled=false) on it, then archive_session again; for self, "
                    "set_remote_control(self, false) before archive_session(self). Still refused with Remote Control "
                    "off and no bg listed (or bg=sidebar): the app's task list is stale, no successor helps; leave it "
                    "for the operator's sidebar archive and say so in one line.")
@@ -731,9 +791,88 @@ def station_line(seat: str, now: float | None = None) -> str:
 def injection(seat: str, session_id: str = "") -> str:
     if out_of_scope(session_id):
         return ""
-    return "\n".join(t for t in (_injection(seat, session_id), station_line(seat),
-                                 anger_line(seat, session_id) or handoff_line(seat, session_id),
-                                 model_lane_line(seat, session_id)) if t)
+    return "\n".join(t for t in (once_per_context(seat, session_id, _injection(seat, session_id)), station_line(seat),
+                                 anger_line(seat, session_id) or thrash_line(seat, session_id) or handoff_line(seat, session_id),
+                                 model_lane_line(seat, session_id), spawn_line(seat)) if t)
+
+
+DELIVERED = os.path.join(HUB, "_registry", "fames-hot", "orders-delivered.json")
+DELIVERED_TTL_S = 2 * 86400
+
+
+def _transcript_of(session_id: str) -> str:
+    import glob as _glob
+    if not session_id or not session_id.replace("-", "").isalnum():
+        return ""
+    found = _glob.glob(os.path.join(CLAUDE_PROJECTS, "*", f"{session_id}.jsonl"))
+    return found[0] if found else ""
+
+
+def _compacted_since(path: str, offset: int) -> bool:
+    """A compact_boundary row written after byte `offset` (the context that saw the block is gone). True when unsure."""
+    try:
+        if os.path.getsize(path) < offset:
+            return True
+        with open(path, "rb") as fh:
+            fh.seek(offset)
+            while True:
+                chunk = fh.read(1 << 20)
+                if not chunk:
+                    return False
+                if b'"compact_boundary"' in chunk:
+                    return True
+                if len(chunk) == 1 << 20:
+                    fh.seek(-32, 1)                       # a marker split across two chunks
+    except OSError:
+        return True
+
+
+def once_per_context(seat: str, session_id: str, block: str, now: float | None = None) -> str:
+    """ai_theater 2026-11-28 (F1S waste): the full orders block (~6K chars) reached the owning conversation 4x in its
+    first 15 tool calls (SessionStart, prompt, mid-turn, prompt) with the text unchanged, ~24K chars of repeats. The same
+    text goes to the same context once: an unchanged block (sha256) since the last delivery, with no compaction in
+    between, becomes one line; a changed block, a new conversation or a compaction gets the full text again. Any error
+    or unknown transcript = the full text (fail-open, no order is ever lost)."""
+    if not block or not session_id:
+        return block
+    try:
+        import hashlib
+        now = time.time() if now is None else now
+        sha = hashlib.sha256(block.encode("utf-8")).hexdigest()[:12]
+        path = _transcript_of(session_id)
+        if not path:
+            return block
+        try:
+            with open(DELIVERED, encoding="utf-8") as fh:
+                state = json.load(fh)
+        except (OSError, ValueError):
+            state = {}
+        rec = state.get(session_id) or {}
+        if rec.get("sha") == sha and rec.get("path") == path and not _compacted_since(path, int(rec.get("offset", 0))):
+            nums = list(dict.fromkeys(re.findall(r"#(\d+)", block)))[:8]
+            tag = " ".join(f"#{n}" for n in nums) or "the block"
+            return (f"CURATOR ORDERS — {tag} unchanged since this conversation received them (sha {sha}); the full text "
+                    "returns when an order changes or after a compaction.")
+        state = {k: v for k, v in state.items() if now - float((v or {}).get("t", 0)) < DELIVERED_TTL_S}
+        state[session_id] = {"sha": sha, "path": path, "offset": os.path.getsize(path), "t": now, "seat": seat}
+        os.makedirs(os.path.dirname(DELIVERED), exist_ok=True)
+        tmp = DELIVERED + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(state, fh)
+        os.replace(tmp, DELIVERED)
+    except Exception:  # noqa: BLE001
+        return block
+    return block
+
+
+def spawn_line(seat: str) -> str:
+    """operator 2026-11-27: queued child sessions (f1s_spawn.py) start on the next operator-typed turn, never as a
+    card. "" when none wait or anything fails (fail-open)."""
+    try:
+        import f1s_spawn
+        return f1s_spawn.line(seat)
+    except Exception:
+        return ""
 
 
 def model_lane_line(seat: str, session_id: str = "", transcript=None) -> str:
@@ -762,12 +901,27 @@ def model_lane_line(seat: str, session_id: str = "", transcript=None) -> str:
                     if ml.family(model):
                         break
         hosts = [h for h in _projects_host_ids(session_id)] if session_id else []
-        out = ml.line(hosts[0] if hosts else session_id, model, transcript=transcript)
-        if seat == curator():
+        main = seat if hosts and not ml.is_child_name(_session_name(session_id)) else ""
+        out = ml.line(hosts[0] if hosts else session_id, model, transcript=transcript, seat=main)
+        if main == curator():                          # child chats get neither the switch line nor the refresh prompt
             out = "\n".join(t for t in (out, ml.stale_prompt()) if t)
         return out
     except Exception:
         return ""
+
+
+def _session_name(session_id: str) -> str:
+    """Title of a CLI transcript uuid's desktop conversation, from ~/.claude/sessions/<pid>.json; "" when unknown."""
+    import glob as _glob
+    for f in _glob.glob(os.path.join(os.path.expanduser("~"), ".claude", "sessions", "*.json")):
+        try:
+            with open(f, encoding="utf-8") as fh:
+                d = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        if d.get("sessionId") == session_id:
+            return str(d.get("name") or "")
+    return ""
 
 
 def _projects_host_ids(session_id: str) -> list:
@@ -1214,6 +1368,54 @@ def anger_line(seat: str, session_id: str = "", times: list | None = None, n: in
             "this prompt's work here, a fresh conversation takes the task with the operator's own words. " + _rollover_steps(seat, session_id))
 
 
+THRASH_N = 3                   # auto compactions inside THRASH_WINDOW_S that end one conversation, 0 = off
+THRASH_WINDOW_S = 1800
+
+
+def thrash_line(seat: str, session_id: str = "", path: str | None = None, now: float | None = None,
+                n: int = THRASH_N, window_s: int = THRASH_WINDOW_S) -> str:
+    """2026-11-28: sdnext_a770 61d746cd auto-compacted 67 times in 5 h (one every 2-3 min, 99K -> 23K), 28.9M in
+    f1s_waste `resume`: its process kept the compact window it started with although the cwd's autoCompactWindow
+    was raised later, and ~60K of every refill is fixed re-injection. A conversation that auto-compacted `n` times
+    in `window_s` is rolled over (the size roll-over's steps), so the new process reads the current window. "" otherwise."""
+    if not n:
+        return ""
+    try:
+        import time as _time
+        from datetime import datetime as _dt
+        path = path if path is not None else _transcript_of(session_id)
+        if not path or not os.path.isfile(path):
+            return ""
+        now = _time.time() if now is None else now
+        hits, freed = 0, []
+        with open(path, "rb") as fh:
+            for raw in fh:
+                if b'"compact_boundary"' not in raw:
+                    continue
+                try:
+                    row = json.loads(raw)
+                    meta = row.get("compactMetadata") or {}
+                    if meta.get("trigger") != "auto":
+                        continue
+                    at = _dt.fromisoformat(str(row.get("timestamp", "")).replace("Z", "+00:00")).timestamp()
+                except (ValueError, TypeError, AttributeError):
+                    continue
+                if 0 <= now - at <= window_s:
+                    hits += 1
+                    try:
+                        freed.append(int(meta.get("preTokens", 0)))
+                    except (TypeError, ValueError):
+                        pass
+        if hits < n:
+            return ""
+        each = f", each at only ~{round(sum(freed) / len(freed) / 1000)}K" if freed else ""
+        return (f"ROLL OVER (this conversation auto-compacted {hits} times in {window_s // 60} min{each}: its process holds an "
+                "older compact window than the cwd's current autoCompactWindow, so every compaction refills the same fixed "
+                "context). Do not do this prompt's work here. " + _rollover_steps(seat, session_id))
+    except Exception:
+        return ""
+
+
 def handoff_line(seat: str, session_id: str = "", context: int | None = None, over: int | None = None,
                  rollover: int | None = None) -> str:
     """operator 2026-11-14: the ai_darkhero main chat spent 17.4M in two days, 692 calls at 160K each, most of them tool calls.
@@ -1325,6 +1527,15 @@ def _injection(seat: str, session_id: str = "") -> str:
         if not queue:
             return "\n".join(t for t in (techniques, unclaimed) if t)
         rows = "; ".join(f"{s}#{o['n']} {review_flag(o, s)} {o['title']}" for s, o in queue[:6])
+        owner = reviewer()
+        if owner and session_id and session_id != owner:
+            return "\n".join(t for t in (f"CURATOR REVIEW — {len(queue)} answered order(s) wait for the review chat "
+                                         f"{owner[:8]} (woken for them); not this conversation's work.", techniques, unclaimed) if t)
+        if owner and session_id == owner:
+            return "\n".join(t for t in (f"CURATOR REVIEW — YOURS, act now without being asked: {len(queue)} answered order(s): "
+                                         f"{rows}. Run `curator_orders.py review`, check each answer's evidence, then close "
+                                         f"<seat> <n> [<n> ...] or reopen <seat> <n> --note TEXT in this turn, and report the "
+                                         f"counts.", techniques, unclaimed) if t)
         return "\n".join(t for t in (f"CURATOR REVIEW — {len(queue)} answered order(s): {rows}. `curator_orders.py review` "
                                      f"prints each answer's evidence and note; then close <seat> <n> [<n> ...] or "
                                      f"reopen <seat> <n> --note TEXT.", techniques, unclaimed) if t)
@@ -1416,9 +1627,9 @@ def article_lane_line(lane: str | None = None) -> str:
     lane = article_lane() if lane is None else lane
     if lane:
         return f"ARTICLE LANE — article relay and technique rows belong to {lane} ({ARTICLE_LANE_TITLE}): send_message them there, do not work them here."
-    return (f"ARTICLE LANE MISSING — no live {ARTICLE_LANE_TITLE} chat: start_session now (user_asked, fresh, cwd ai_darkhero, "
-            f"title {ARTICLE_LANE_TITLE}, Sonnet) to read the waiting articles, write their notes (f1s_vault.py) and close the "
-            "technique rows (f1s_apply.py list --seat ai_darkhero), then forward article work there.")
+    return (f"ARTICLE LANE — no live {ARTICLE_LANE_TITLE} chat, and none is opened (operator 2026-11-26: no extra session "
+            "windows): run the waiting articles in this chat through an Agent subagent (Sonnet) that writes their notes "
+            "(f1s_vault.py) and closes the technique rows (f1s_apply.py list --seat ai_darkhero); its progress shows in the band.")
 
 
 def _waiting_techniques(seat: str) -> str:
@@ -1439,7 +1650,7 @@ def _waiting_techniques(seat: str) -> str:
 def _fanout_line() -> str:
     """A completed F1S fan-out the curator has not reported yet (f1s_fanout.py); empty when none or on any error."""
     lines = []
-    for name in ("f1s_fanout", "f1s_reuse", "f1s_posture", "f1s_watch"):     # one line each: fan-out due, reuse ledger, night queue, HubClock/tray RED
+    for name in ("f1s_fanout", "f1s_reuse", "f1s_posture", "f1s_watch", "rlz_chain"):  # one line each: fan-out due, reuse ledger, night queue, HubClock/tray RED, RLZ relay
         try:
             lines.append(__import__(name).curator_line())
         except Exception:  # noqa: BLE001
@@ -1474,6 +1685,102 @@ def _unclaimed_orders() -> str:
     return "\n".join(lines)
 
 
+def nudge_unclaimed(now: float | None = None, every_s: float = UNCLAIMED_AFTER_S) -> list[str]:
+    """Wake the seat's own chats for an order nobody took (operator 2026-11-27 「令沒人接就自動叫醒陽」). Stamps `wake_at`
+    on each open order unowned past UNCLAIMED_AFTER_S or whose owner wrote nothing for STALE_OWNER_AFTER_S, again at most every `every_s`: the stamp changes that order's
+    key in f1s_live.order_index, so every idle waiter of the seat wakes on it (the yang claims; a yin forwards by the
+    Stop hook's route rule). A file write only when a stamp is due, so the event watch that runs this cannot loop."""
+    now = time.time() if now is None else now
+    woke = []
+    for seat in _seats_with_orders():
+        doc, changed = load(seat), False
+        for o in doc["orders"]:
+            if o.get("status") != "open" or (owner_of(o) and _claim_silent_s(o, now) <= STALE_OWNER_AFTER_S):
+                continue                                    # owned and the owner still writes: nothing to wake
+            try:
+                age = now - time.mktime(time.strptime(o.get("issued_at", ""), "%Y-%m-%dT%H:%M:%S"))
+                last = time.mktime(time.strptime(o["wake_at"], "%Y-%m-%dT%H:%M:%S")) if o.get("wake_at") else 0.0
+            except (TypeError, ValueError):
+                continue
+            wakes = int(o.get("wakes") or 0)
+            if wakes >= NUDGE_MAX:
+                continue                                    # 2026-11-28 token audit: sdnext_a770#34 woke 7x hourly for
+                                                            # nothing; past NUDGE_MAX the order waits for a prompt/curator
+            if (owner_of(o) or age > UNCLAIMED_AFTER_S) and now - last >= every_s * (2 ** wakes):   # backoff 1,2,4,8 h
+                if owner_of(o):
+                    # 11-27 ai_career#95 / jci_taipei#121: the woken chats read "owned by 3b33ccae, not mine" and ended
+                    # with 沒有下一步 while that owner was long gone. Drop the silent claim so the wake lands on a free order.
+                    o["released_silent"] = {"session": owner_of(o), "at": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now))}
+                    o.pop("owner", None)
+                o["wake_at"] = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now))
+                o["wakes"] = int(o.get("wakes") or 0) + 1
+                woke.append(f"{seat}#{o['n']}")
+                changed = True
+        if changed:
+            _save(seat, doc)
+    return woke
+
+
+def _listdir(path: str) -> list[str]:
+    try:
+        return os.listdir(path)
+    except OSError:
+        return []
+
+
+def waiting_seats() -> set[str]:
+    """Seats with at least one idle conversation whose f1s_live waiter is waiting: only those hear a wake_at stamp.
+    11-27: ai_network had 13 conversations and none waiting, so its silent-owned #54 woke nobody."""
+    out = set()
+    root = os.path.join(REGISTRY, "fames-hot")
+    for f in _listdir(root):
+        if f.startswith("wait-") and f.endswith(".json"):
+            try:
+                with open(os.path.join(root, f), encoding="utf-8") as fh:
+                    w = json.load(fh)
+            except (OSError, ValueError):
+                continue
+            if isinstance(w, dict) and w.get("state") == "waiting" and not w.get("ended") and w.get("seat"):
+                out.add(str(w["seat"]))
+    return out
+
+
+STATION_FAIL_MAX = 2
+STATION_EVERY_S = 3600
+
+
+def station_unheard(woke: list[str], now: float, spawn, waiting: set[str] | None = None) -> str | None:
+    """A woken order in a seat where nobody waits goes to one lean station (f1s_live.spawn_station), at most one per call
+    (heavy starts repel, `_skill/engines/spacing.py`) and per order every STATION_EVERY_S, never after STATION_FAIL_MAX
+    station failures. Returns "seat#n" handed, or None."""
+    waiting = waiting_seats() if waiting is None else waiting
+    for key in woke:
+        seat, _, n = key.rpartition("#")
+        if seat in waiting or not os.path.isdir(os.path.join(HUB, seat)):
+            continue
+        doc = load(seat)
+        o = next((x for x in doc["orders"] if str(x.get("n")) == n and x.get("status") == "open"), None)
+        if o is None or int((o.get("station_failures") or {}).get("count") or 0) >= STATION_FAIL_MAX:
+            continue
+        try:
+            last = time.mktime(time.strptime(o["station_at"], "%Y-%m-%dT%H:%M:%S")) if o.get("station_at") else 0.0
+        except (TypeError, ValueError):
+            last = 0.0
+        if now - last < STATION_EVERY_S:
+            continue
+        o["station_at"] = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now))
+        _save(seat, doc)
+        owner = owner_of(o)
+        if owner:                                           # the silent owner's lock goes first, or the station cannot claim
+            try:
+                claim(seat, int(o["n"]), release=True, cwd=os.path.join(HUB, seat), session=owner)
+            except (ValueError, PermissionError, KeyError):
+                continue
+        spawn(seat, os.path.join(HUB, seat), int(o["n"]))
+        return key
+    return None
+
+
 def _claim_silent_s(order: dict, now: float | None = None) -> float:
     """How long the owner of this claim has been silent. A station- owner has no transcript (2026-11-17: ai_trader#145 was
     named stale seconds after a station took it), so the age of its claim decides; an unreadable claim time is not stale."""
@@ -1496,13 +1803,16 @@ def _owner_silent_s(session_id: str, now: float | None = None) -> float:
     except OSError:
         return 0.0
     newest = None
+    short = len(session_id) < 36 and session_id.replace("-", "").isalnum()   # claims keep an 8-char prefix (11-27: read as silent forever)
     for d in dirs:
-        path = os.path.join(CLAUDE_PROJECTS, d, f"{session_id}.jsonl")
-        try:
-            m = os.path.getmtime(path)
-        except OSError:
-            continue
-        newest = m if newest is None else max(newest, m)
+        paths = ([os.path.join(CLAUDE_PROJECTS, d, f) for f in _listdir(os.path.join(CLAUDE_PROJECTS, d)) if f.startswith(session_id) and f.endswith(".jsonl")]
+                 if short else [os.path.join(CLAUDE_PROJECTS, d, f"{session_id}.jsonl")])
+        for path in paths:
+            try:
+                m = os.path.getmtime(path)
+            except OSError:
+                continue
+            newest = m if newest is None else max(newest, m)
     return float("inf") if newest is None else max(0.0, now - newest)
 
 
@@ -1611,6 +1921,9 @@ def main(argv=None) -> int:
     s = sub.add_parser("list")
     s.add_argument("seat", nargs="?")
     s.add_argument("--full", action="store_true", help="every field of every order, closed ones too")
+    s = sub.add_parser("show", help="one order, every field (ai_theater 2026-11-28: chats guessed this name and failed)")
+    s.add_argument("seat")
+    s.add_argument("n", type=int)
     s = sub.add_parser("deliver")
     s.add_argument("seat")
     s.add_argument("n", type=int)
@@ -1634,7 +1947,9 @@ def main(argv=None) -> int:
     s = sub.add_parser("close")
     s.add_argument("seat")
     s.add_argument("n", type=int, nargs="+")
-    sub.add_parser("review")
+    s = sub.add_parser("review")
+    s.add_argument("--take", action="store_true", help="this conversation owns the review queue from now on")
+    s.add_argument("--session", default=None)
     s = sub.add_parser("rollover-brief", help="park the seat and print the hand-over prompt for a new conversation")
     s.add_argument("--seat", required=True)
     s.add_argument("--session", default="")
@@ -1652,6 +1967,9 @@ def main(argv=None) -> int:
         except UnicodeEncodeError:
             sys.stdout.write(text.encode(sys.stdout.encoding or "utf-8", "backslashreplace").decode(sys.stdout.encoding or "utf-8") + "\n")
         return 0
+    if a.cmd == "review" and a.take:
+        print(json.dumps(take_review(_session_id(a.session)), ensure_ascii=False))
+        return 0
     if a.cmd == "review":
         print("\n".join(review_table()) or "review queue empty")
         return 0
@@ -1664,6 +1982,8 @@ def main(argv=None) -> int:
         elif a.cmd == "list":
             seats = [a.seat] if a.seat else _seats_with_orders()
             out = {s: load(s)["orders"] if a.full else _brief(load(s)["orders"]) for s in seats}
+        elif a.cmd == "show":
+            out = next((o for o in load(a.seat)["orders"] if o.get("n") == a.n), {"error": f"no order {a.seat}#{a.n}"})
         elif a.cmd == "answer":
             out = answer(a.seat, a.n, a.evidence or (), a.cannot or "", note=a.note)
         elif a.cmd == "claim":
@@ -1676,7 +1996,7 @@ def main(argv=None) -> int:
     except (PermissionError, ValueError) as exc:
         print(f"refused: {exc}")
         return 2
-    if isinstance(out, dict) and "do" in out:      # the seat already holds the order's text; this line only confirms the step
+    if a.cmd != "show" and isinstance(out, dict) and "do" in out:      # the seat already holds the order's text; this line only confirms the step
         out = {k: out.get(k) for k in ("n", "status", "title")}
     print(json.dumps(out, ensure_ascii=False, indent=None if a.cmd == "list" else 2))
     if a.cmd == "issue" and (line := delivery_line(a.seat)):

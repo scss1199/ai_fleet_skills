@@ -500,6 +500,49 @@ def _slim_context(text: str, *, event: str="", hard_lines_state: str | None=None
         return text
 
 
+# Claude Code caps hook additionalContext at 10,000 characters; anything longer is saved to a file and the model sees a
+# 2,000-character preview (code.claude.com/docs/en/hooks). 2026-11-27 scan of 200 transcripts: 72 of 335 SessionStart
+# injections were over the cap, so most of their lines never reached the model.
+CONTEXT_BUDGET = 9500
+_BUDGET_KEEP = ("ROLLOVER", "CURATOR ORDER", "STANDING RULES", "T1 HARD LINES", "OPERATOR RED LINES", "SPAWN QUEUE")
+
+
+def _budget_context(text: str, budget: int = CONTEXT_BUDGET) -> str:
+    """Fit text under budget: drop duplicate lines, then shorten the longest unprotected lines, then drop the last
+    unprotected lines. Lines starting with a _BUDGET_KEEP prefix (hand-over, orders, hard lines) are never touched.
+    Pure; never raises."""
+    try:
+        if len(text) <= budget:
+            return text
+        seen, lines = set(), []
+        for line in text.split("\n"):
+            k = line.strip()
+            if k and k in seen:
+                continue
+            seen.add(k)
+            lines.append(line)
+        keep = [l.lstrip().upper().startswith(_BUDGET_KEEP) for l in lines]
+
+        def size() -> int:
+            return sum(len(l) + 1 for l in lines) - 1
+
+        cap = 1200
+        while size() > budget and cap >= 300:
+            for i, l in enumerate(lines):
+                if not keep[i] and len(l) > cap:
+                    lines[i] = l[:cap - 1] + "…"
+            cap -= 300
+        i = len(lines) - 1
+        while size() > budget and i >= 0:
+            if not keep[i]:
+                lines.pop(i)
+                keep.pop(i)
+            i -= 1
+        return "\n".join(lines)
+    except Exception:
+        return text
+
+
 def _contract_dedup(surface_id: str, session_id: str, text: str, *, agent_id: str="", reset: bool=False,
                     compact: bool=False) -> str:
     """Drop the contract lines this conversation already holds verbatim, and record the rest as held.
@@ -567,11 +610,45 @@ def _orders_files(seat: str) -> list[Path]:
     return [root/f"{seat}.json"]
 
 
+def _orders_sig(path: Path) -> str:
+    """What a seat must receive from its own order file: the text and stamps of its orders (n, title, do, issued_at, wake_at, reopen, freeze, forbid: the fields f1s_live.order_rows wakes on),
+    not the file's stat. ai_ziyaoastro 2026-11-28: its own `claim` rewrote the file (owner field only) and the next tool
+    call re-sent the unchanged #100 text as a MID-TURN UPDATE, the third copy in one turn. claim / answer / close change
+    no order text, so they are no upgrade; a new order or a reopen is. The digest is cached per stat, so an unchanged
+    file costs one stat and one small read. Unreadable or unexpected rows = the stat, as before."""
+    stat="%s:%s"%(path.stat().st_mtime_ns,path.stat().st_size)
+    try:
+        import hashlib
+        cache=HUB/"_registry"/"fames-hot"/f"orders-sig-{path.stem}.json"
+        try:
+            kept=json.loads(cache.read_text(encoding="utf-8"))
+            if kept.get("stat")==stat and kept.get("sig"):
+                return str(kept["sig"])
+        except (OSError,ValueError,AttributeError):
+            pass
+        rows=json.loads(path.read_text(encoding="utf-8-sig"))["orders"]
+        if not all(isinstance(o,dict) for o in rows):
+            return stat
+        text=json.dumps([[o.get("n"),o.get("title"),o.get("do"),o.get("issued_at"),o.get("wake_at"),o.get("reopened_at"),
+                          o.get("note") if o.get("reopened_at") else None,o.get("freeze"),o.get("forbid")]
+                         for o in rows],ensure_ascii=False,sort_keys=True)
+        sig="orders:"+hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+        cache.parent.mkdir(parents=True,exist_ok=True)
+        cache.write_text(json.dumps({"stat":stat,"sig":sig}),encoding="utf-8")
+        return sig
+    except Exception:
+        return stat
+
+
 def _midturn_sig(seat: str="") -> str:
     """stat() of the files an upgrade rewrites plus this seat's curator orders (T1 f1s-governs: an order must not
-    wait for the next prompt either)."""
-    paths=[HUB/rel for rel in MIDTURN_WATCH]+_orders_files(seat)
-    return "|".join("%s:%s"%(p.stat().st_mtime_ns,p.stat().st_size) if p.is_file() else "-" for p in paths)
+    wait for the next prompt either). A seat's own order file counts by its order text (_orders_sig); the curator
+    watches every seat's file by stat, because an answer is what it reviews."""
+    stat=lambda p: "%s:%s"%(p.stat().st_mtime_ns,p.stat().st_size) if p.is_file() else "-"
+    orders=_orders_files(seat)
+    own=len(orders)==1 and seat != _seat_for_cwd(str(HUB))
+    return "|".join([stat(HUB/rel) for rel in MIDTURN_WATCH]
+                    +[(_orders_sig(p) if own and p.is_file() else stat(p)) for p in orders])
 
 
 def _midturn_path(surface_id: str, session_id: str, agent_id: str="") -> Path:
@@ -1046,7 +1123,9 @@ def main():
     t1_state=None
     if event == "SessionStart":
         # The hard lines must not depend on the FAMES harness above having succeeded.
-        t1_state,hard_lines=_hard_lines(cwd)
+        # 2026-11-27 (D1): the hook cwd follows a tool's `cd`; after a compaction in _skill/engines/rust the charter
+        # walk stopped at the hub root and re-injected ~5 KB of T1 the seat charter already carries. Use the open cwd.
+        t1_state,hard_lines=_hard_lines(_session_seat(doc, None)[1])
         if hard_lines:
             context=(context+"\n"+hard_lines).strip()
         # operator 2026-10-13: every conversation sees its seat's own lying / 推託 / junk-file record, and
@@ -1080,6 +1159,8 @@ def main():
         handover=_rollover_start(agent, session_id)
         if handover:
             context=(handover+"\n"+context).strip()
+    if event == "SessionStart":
+        context=_budget_context(context)
     status_path=CODEX_STATUS if surface_id == "open-agent-standard" else STATUS
     status_path.parent.mkdir(parents=True,exist_ok=True)
     status_path.write_text(json.dumps({"schema":3,"last_fired":datetime.now(timezone.utc).isoformat(),"event":event,"cwd":cwd,"agent":agent,"surface_id":surface_id,"runtime_event_observed":bool(locals().get("runtime_event_observed", False)),"fames_state":state,"t1_hard_lines":t1_state,"session_source":session_source or None,"agc":{k:(result.get("auto_goal_compact") or {}).get(k) for k in ("state","agent","seat_resolution","refreshed","trigger","precompact_hook_armed","elapsed_ms")} if isinstance(locals().get("result"),dict) else None},indent=2),encoding="utf-8")

@@ -826,15 +826,6 @@ def _prompt_identity_and_start(prompt: str | None, row: dict) -> tuple[str | Non
     return _sha(prompt), started
 
 
-def _latest_user_prompt(doc: dict) -> tuple[str | None, float | None]:
-    """Return only the latest real user prompt identity and timestamp.
-
-    The raw prompt is kept only in memory long enough to hash it and is never
-    returned or persisted.
-    """
-    return _prompt_identity_and_start(*_latest_prompt_row(doc))
-
-
 def _seat_from_cwd(raw_cwd: object) -> str | None:
     raw = str(raw_cwd or "").strip()
     if not raw:

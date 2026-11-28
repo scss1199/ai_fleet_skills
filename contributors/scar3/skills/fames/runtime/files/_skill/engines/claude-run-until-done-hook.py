@@ -118,7 +118,7 @@ REASON_ORDERS = (
     "above them. Before ending the turn, do the order and answer it: {command} <n> --evidence <path>, or "
     "--cannot \"<reason>\" when a red line or the operator's instruction here forbids it, or --cannot \"not yet: "
     "<missing prerequisite>, <date>\" when it cannot be done yet (a claim alone keeps it open and pushes every Stop; "
-    "the curator reopens it when the prerequisite exists). (push {n}/{cap})"
+    "the curator reopens it when the prerequisite exists). Your role is never the reason: 每 cwd 只有一個主對話（operator 2026-11-26「所有的agent progress 不要額外開一個視窗 直接在輸入對話上面顯示」、11-27 重申）：令由收到的對話自己 claim 自己做，要平行就在本對話開 Agent 子代理（進度顯示在輸入框上方的進度條），不 start_session、不另開陰／陽子對話；陰的判決本來就是 f1s_yinyang.py tick 機械跑；方向取捨（停或改目標）量測後自己選一條，丟掉的選項寫一句理由. (push {n}/{cap})"
 )
 REASON_CAPTURE = (
     "run-until-done / live capture (operator 2026-10-24: a Google Meet caption scraper in a background tab stalled at "
@@ -159,6 +159,32 @@ def _unattended_capture(text: str, session_id: str) -> str | None:
         except Exception:  # noqa: BLE001 - fail open: a broken watch store never blocks a turn
             return None
         return hit.group(0)
+    return None
+
+
+# 「需要你決定」 asked about who does the work or which way to go is the chats' own job, not the operator's
+# (operator 2026-11-27: ai_photo's yin answered RLZ #71 cannot 「本對話是 yin 審查者」 and asked 「由誰接 RLZ #71，yang 或
+# 另派執行對話？」; 7 seat chats sat idle on such lines). Lines naming operator-only authority stay decisions.
+ROUTING_LINE = re.compile(r"(?:需要你(?:決定|授權)|需要 ?operator ?決定)[^\n]*", re.IGNORECASE)
+ROUTING_WORDS = re.compile(r"誰|哪個|哪一個|yang|yin|陽|陰|接手|另派|改派|派給|take over|stand down|執行對話|rollout|"
+                           r"改寫目標|要停止|還是改|是否繼續|要不要繼續|哪條|which", re.IGNORECASE)
+OPERATOR_ONLY = re.compile(r"密碼|password|登入|sign.?in|2FA|驗證碼|OTP|付款|付費|花錢|購買|刷卡|錢|刪除|永久|金鑰|secret|"
+                           r"token|cookie|OAuth|TWNIC|NS |DNS|A770|簽|寄出|發送|公開|發布|上架|帳號|本人|實體|手機|"
+                           r"重開機|reboot|BIOS|電源", re.IGNORECASE)
+REASON_ROUTING = (
+    "run-until-done / 陰陽互推 (operator 2026-11-27「我創造陰陽架構就是要讓他們互相推動不是浪費時間問問題等指示」): "
+    "「需要你決定」只留給 operator 本人的權限（密碼、付錢、永久刪除、對外發送、金鑰、A770 負載）。這一行問的是分工或方向"
+    "（{line!r}），那是對話之間自己的事：每 cwd 只有一個主對話（operator 2026-11-26「所有的agent progress 不要額外開一個視窗 直接在輸入對話上面顯示」、11-27 重申）：令由收到的對話自己 claim 自己做，要平行就在本對話開 Agent 子代理（進度顯示在輸入框上方的進度條），不 start_session、不另開陰／陽子對話；陰的判決本來就是 f1s_yinyang.py tick 機械跑；方向取捨（停或改目標）量測後自己選一條，丟掉的選項寫一句理由。現在就做（claim／本對話的 Agent 子代理），"
+    "做完只寫一行結果，不要再問。(push {n}/{cap})"
+)
+
+
+def routing_question(text: str) -> str | None:
+    """The 「需要你決定」 line when it asks who works or which way to go and names no operator-only authority."""
+    for hit in ROUTING_LINE.finditer(text[-TAIL_CHARS:]):
+        line = hit.group(0)
+        if ROUTING_WORDS.search(line) and not OPERATOR_ONLY.search(line):
+            return line.strip()[:160]
     return None
 
 
@@ -482,13 +508,16 @@ def _decide(doc: dict, cfg: dict) -> dict | None:
         return None
     text, turn_uuid = closing_text(path)
     verdict, matched = judge(text, cfg)
-    decided = bool(OPERATOR_DECISION.search(text[-TAIL_CHARS:]))
+    routing = routing_question(text)
+    decided = bool(OPERATOR_DECISION.search(text[-TAIL_CHARS:])) and not routing
     pinned = [] if decided else _pinned_unshipped(path)
     seat, orders = ("", []) if decided or pinned else _open_orders(doc, path)
     # An unwatched capture is checked even after 「需要你決定」: a decision line does not watch a recording.
     capture = None if pinned or orders else _unattended_capture(text, session_id)
     if pinned:
         verdict, matched = "block", "pinned_unshipped:" + ",".join(pinned)
+    elif routing:
+        verdict, matched = "block", "routing_question:" + routing
     elif orders:
         verdict, matched = "block", f"curator_orders:{seat}#" + ",".join(str(o.get("n")) for o in orders)
     elif capture:
@@ -544,6 +573,8 @@ def _decide(doc: dict, cfg: dict) -> dict | None:
         import pinned_drift
         reason = REASON_PINNED.format(paths=", ".join(pinned), command=pinned_drift.ship_command(pinned),
                                       n=state["blocks"], cap=per_turn)
+    elif routing:
+        reason = REASON_ROUTING.format(line=routing, n=state["blocks"], cap=per_turn)
     elif orders:
         import curator_orders
         reason = REASON_ORDERS.format(orders=", ".join(f"#{o.get('n')} {o.get('title')}" for o in orders), seat=seat,

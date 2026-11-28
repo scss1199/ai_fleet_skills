@@ -641,6 +641,37 @@ def _log_refusal(jid, cmd, rule, viols):
         pass
 
 
+def _widen_affinity(proc):
+    """Give a rider the whole system CPU mask instead of the daemon's own pin.
+
+    fames-local-compute.json rule `hubclock-resident` pins the daemon to p=1 e=1 ([0, 16]), and Windows children
+    inherit the parent's mask, so on 2026-11-25 all 8 concurrent riders shared those 2 logical CPUs: rc 124 at
+    600 s, fames-converge/fleet-skill-pulse 2 h overdue, metadata-acq-tick holding the heavy slot ~3 h. The pin was
+    meant for the light resident loop, not its work. Fail-open: a refused call leaves the inherited mask.
+    """
+    if os.name != "nt":
+        return
+    handle = getattr(proc, "_handle", None)
+    if not handle:
+        return
+    try:
+        import ctypes
+        from ctypes import wintypes
+        k32 = ctypes.WinDLL("kernel32", use_last_error=True)  # private prototypes: 64-bit HANDLEs, not c_int
+        get_mask = k32.GetProcessAffinityMask
+        get_mask.argtypes = [wintypes.HANDLE, ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t)]
+        get_mask.restype = wintypes.BOOL
+        set_mask = k32.SetProcessAffinityMask
+        set_mask.argtypes = [wintypes.HANDLE, ctypes.c_size_t]
+        set_mask.restype = wintypes.BOOL
+        pmask, smask = ctypes.c_size_t(), ctypes.c_size_t()
+        if get_mask(wintypes.HANDLE(int(handle)), ctypes.byref(pmask), ctypes.byref(smask)) and smask.value:
+            if smask.value != pmask.value:
+                set_mask(wintypes.HANDLE(int(handle)), smask.value)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def dispatch(job):
     """Fire-and-forget: spawn the command with NO console window, do NOT wait. Returns the Popen (or None)."""
     jid = job.get("id", "?")
@@ -690,6 +721,7 @@ def dispatch(job):
                 proc = subprocess.Popen(cmd, shell=True, **kw)
             else:
                 proc = subprocess.Popen(argv, shell=False, **kw)
+            _widen_affinity(proc)  # before the rider can start children; fail-open
             _attach_meter(proc)  # before the rider can start children; fail-open, counts only
         finally:
             if err:
@@ -1435,7 +1467,9 @@ class HubClock:
 
     def _class_full(self, job):
         """v2 class caps: '' when the rider may start, else the reason (e.g. 'class heavy 1/1')."""
-        if self._protected(job):
+        # load_grant self-gated riders are metered per load step already (same exemption as _held); 2026-11-26 a
+        # 29-min f1s-evolve held the one heavy slot back to back and starved a 0.9 s janeliao-line-live.
+        if self._protected(job) or self._rider(job["id"]).get("self_gated"):
             return ""
         cls = self._rider(job["id"]).get("class")
         cap = (self.plan.get("caps") or {}).get(cls)
@@ -1443,7 +1477,8 @@ class HubClock:
             return ""
         by_id = {j.get("id"): j for j in self.jobs}
         n = sum(1 for rid in self.running
-                if self._rider(rid).get("class") == cls and not self._protected(by_id.get(rid) or {"id": rid}))
+                if self._rider(rid).get("class") == cls and not self._rider(rid).get("self_gated")
+                and not self._protected(by_id.get(rid) or {"id": rid}))
         return "class %s %d/%d" % (cls, n, cap) if n >= cap else ""
 
     def _held(self, job, now):

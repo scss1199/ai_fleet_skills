@@ -12,12 +12,16 @@ asks first, and gets a grant only when:
   3. no other grant was given in the last SPACING_S seconds (one increase at a time, each settles before the next),
      and load granted in the last OBSERVE_TO_S seconds that the sensors do not show yet counts against BUDGET_W
      (2026-10-27: a job still loading its model looked steady, so the next +40 W could stack past the budget),
-  4. the sensor log is fresh (older than STALE_S = no grant: unknown power is not safe power).
+  4. the sensor log is fresh (older than STALE_S = no grant: unknown power is not safe power),
+  5. heavy grants repel (operator 2026-11-27, Khan EP11 GUE level repulsion; `_skill/engines/spacing.py`,
+     `_lean/fames/Spacing.lean`): a step of HEAVY_W or more waits until the last heavy grant is REPEL_S old, so
+     each heavy start's load is in the sensors before the next one is admitted. 24 h before: 470 grants, 25.2 % of
+     gaps under a quarter of the mean (Poisson 22.1 %, GUE 1.6 %), 227 of 457 gaps under 120 s.
 A job that needs more than MAX_STEP_W ramps itself in steps and asks before each one.
 
 Python:  from load_grant import wait_grant; g = wait_grant("ai_theater/stt", 40, timeout_s=900)  # g["ok"]
 CLI:     python load_grant.py wait --owner ai_theater/stt --step 40 [--timeout 900]   (exit 0 granted, 2 not)
-         python load_grant.py run --owner seat/tests --step 60 -- python -m pytest -q ...
+         python load_grant.py run --owner seat/tests --step 60 [--max-s 1800] -- python -m pytest -q ...
          python load_grant.py status
 State: tray/state/load_grant.json (last grant). Log: tray/logs/load_grant.log (one JSON line per decision).
 """
@@ -42,6 +46,13 @@ import shared_io  # noqa: E402  (tray/shared_io.py: FILE_SHARE_DELETE reads, per
 RING = "D:/__hwlog"
 STATE = os.path.join(TRAY, "state", "load_grant.json")
 LOCK = os.path.join(TRAY, "state", "load_grant.lock")
+RUNNING = os.path.join(TRAY, "state", "load_grant_running")  # one marker per live heavy `run`
+QUEUE = os.path.join(TRAY, "state", "load_grant_queue")  # one ticket per live heavy `wait_grant`
+TICKET_TTL_S = 30.0       # a waiter re-touches its ticket every poll; silent longer = gone
+# Run cap (2026-11-28: an ai_theater/rlz pytest ran 87 min at one full core and held the heavy slot for every waiter).
+# Keyed by the owner's last segment; `run --max-s` overrides; at the cap the child tree is ended and the slot freed.
+MAX_RUN_S = {"rlz": 3600.0, "tests": 3600.0, "ship": 3600.0}
+MAX_RUN_DEFAULT_S = 7200.0
 LOG = os.path.join(TRAY, "logs", "load_grant.log")
 WINDOW_S = 60
 STABLE_SPREAD_W = 30.0
@@ -51,6 +62,8 @@ MAX_STEP_W = 40.0
 # time (budget, steadiness window and spacing unchanged); nap and awake keep MAX_STEP_W.
 SLEEP_MAX_STEP_W = 60.0
 SPACING_S = 20.0
+HEAVY_W = 25.0            # 24 h of grants: 288 x 40 W, 42 x 25 W, 61 x 20 W, 78 x 5 W
+REPEL_S = 120.0           # = OBSERVE_TO_S: a heavy start has shown its rise by then
 STALE_S = 10.0
 TAIL_BYTES = 262144
 POWER_COLUMNS = ("cpu.CPU Package [W]", "a770.GPU Package [W]")
@@ -74,9 +87,18 @@ def held(owner: str) -> str | None:
     return next((p for p in HELD_OWNERS if low.startswith(p)), None)
 
 
+# Job classes (the owner's last segment, as in MAX_RUN_S) that never touch the A770 whatever the seat is called
+# (2026-11-28: `sdnext_a770/rlz` cargo test + pytest were refused twice with no_record because the SEAT name holds
+# "a770"). Exact last segment only; they still pass every power rule in decide(). A job that loads the card must not
+# use one of these names.
+CPU_ONLY_CLASSES: tuple[str, ...] = ("rlz",)
+
+
 def a770_owner(owner: str) -> bool:
     """A job that loads the A770: it needs 15 continuous minutes of sensor record behind it (a770_window)."""
     low = (owner or "").strip().lower()
+    if "/" in low and low.rsplit("/", 1)[-1] in CPU_ONLY_CLASSES:
+        return False
     return low.startswith(("sdnext",)) or "a770" in low
 
 
@@ -254,6 +276,139 @@ def pending_w(recent: list, now_w: float) -> float:
     return round(max(0.0, granted - shown), 1)
 
 
+def repel(charged_w: float, recent: list, now: float) -> str | None:
+    """Refusal reason while a heavy grant younger than REPEL_S stands; None when this step may start.
+    Kept out of `decide` (Lean grid, load_grant_conformance.py); proved in _lean/fames/Spacing.lean."""
+    if charged_w < HEAVY_W:
+        return None
+    heavy = [r for r in recent if float(r.get("charged_w") or 0) >= HEAVY_W and 0 <= now - float(r["epoch"]) < REPEL_S]
+    if not heavy:
+        return None
+    r = heavy[-1]
+    return f"repel: heavy grant to {r.get('owner')} {now - float(r['epoch']):.0f} s ago (< {REPEL_S:.0f} s)"
+
+
+def mark_running(owner: str, charged_w: float) -> str:
+    """Marker for a live heavy `run` (pid + create time, so a reused pid never counts); cleared by clear_running."""
+    import psutil
+
+    os.makedirs(RUNNING, exist_ok=True)
+    path = os.path.join(RUNNING, f"{os.getpid()}.json")
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump({"owner": owner, "charged_w": charged_w, "pid": os.getpid(),
+                   "created": psutil.Process().create_time()}, fh)
+    return path
+
+
+def clear_running() -> None:
+    try:
+        os.remove(os.path.join(RUNNING, f"{os.getpid()}.json"))   # this process's own runtime marker only
+    except OSError:
+        pass
+
+
+def _ticket_path(pid: int | None = None) -> str:
+    return os.path.join(QUEUE, f"{pid or os.getpid()}.json")
+
+
+def touch_ticket(owner: str, step_w: float, since: float, own: bool = False) -> str:
+    """FIFO ticket (2026-11-28: f1s/ship polled 900 s and lost every slot to rlz riders that asked later). Rewritten
+    each poll, so its mtime is the heartbeat; `own` = this waiter's last refusal was its own (step/held/A770 window)
+    and must not hold the others back."""
+    import psutil
+
+    os.makedirs(QUEUE, exist_ok=True)
+    path = _ticket_path()
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump({"owner": owner, "step_w": step_w, "pid": os.getpid(), "created": psutil.Process().create_time(),
+                   "since": since, "own": own}, fh)
+    return path
+
+
+def drop_ticket() -> None:
+    try:
+        os.remove(_ticket_path())   # this process's own ticket only
+    except OSError:
+        pass
+
+
+def older_waiter(since: float, me: int | None = None) -> dict | None:
+    """Oldest live heavy waiter that asked before `since`. Expired: dead pid (or pid reused: create time differs) or
+    no heartbeat for TICKET_TTL_S. Stale files are skipped, never deleted here."""
+    if not os.path.isdir(QUEUE):
+        return None
+    import psutil
+
+    me = os.getpid() if me is None else me
+    now = time.time()
+    best = None
+    for name in os.listdir(QUEUE):
+        path = os.path.join(QUEUE, name)
+        try:
+            if now - os.path.getmtime(path) > TICKET_TTL_S:
+                continue
+            with open(path, encoding="utf-8") as fh:
+                t = json.load(fh)
+            pid = int(t["pid"])
+            if pid == me or t.get("own") or float(t.get("step_w") or 0) < HEAVY_W or float(t["since"]) >= since:
+                continue
+            if psutil.Process(pid).create_time() != float(t["created"]):
+                continue
+        except (OSError, ValueError, KeyError, TypeError, psutil.Error):
+            continue
+        if best is None or float(t["since"]) < float(best["since"]):
+            best = t
+    return best
+
+
+def max_run_s(owner: str, override: float | None = None) -> float:
+    if override:
+        return float(override)
+    return MAX_RUN_S.get(owner.rsplit("/", 1)[-1], MAX_RUN_DEFAULT_S)
+
+
+def end_tree(proc) -> int:
+    """Terminate a child and all its descendants (then kill what is left after 5 s); returns how many were ended."""
+    import psutil
+
+    try:
+        root = psutil.Process(proc.pid)
+        tree = root.children(recursive=True) + [root]
+    except psutil.Error:
+        return 0
+    for p in tree:
+        try:
+            p.terminate()
+        except psutil.Error:
+            pass
+    _, alive = psutil.wait_procs(tree, timeout=5)
+    for p in alive:
+        try:
+            p.kill()
+        except psutil.Error:
+            pass
+    return len(tree)
+
+
+def busy(posture: str, charged_w: float) -> str | None:
+    """operator 2026-11-27 「剛剛又卡頓一次」: the watt gate let ten 40 W RLZ steps stack 120 s apart while the operator
+    sat at the box (cargo, rustc, Lean, pytest at once). Awake, a heavy step waits until no other heavy run lives."""
+    if posture != "awake" or charged_w < HEAVY_W or not os.path.isdir(RUNNING):
+        return None
+    import psutil
+
+    for name in os.listdir(RUNNING):
+        try:
+            with open(os.path.join(RUNNING, name), encoding="utf-8") as fh:
+                m = json.load(fh)
+            pid = int(m["pid"])
+            if psutil.Process(pid).create_time() == float(m["created"]):
+                return f"busy: {m.get('owner')} still running (awake: one heavy job at a time)"
+        except (OSError, ValueError, KeyError, psutil.Error):
+            continue
+    return None
+
+
 def max_step_w(posture: str = "awake") -> float:
     return SLEEP_MAX_STEP_W if posture == "sleep" else MAX_STEP_W
 
@@ -315,7 +470,7 @@ def unmetered_host(ring: str = RING, host: str | None = None) -> bool:
     return not os.path.isdir(ring) and not host.startswith("dark-hero")
 
 
-def try_grant(owner: str, step_w: float) -> dict:
+def try_grant(owner: str, step_w: float, since: float | None = None) -> dict:
     """One attempt; the grant is recorded under an exclusive file lock so two jobs never step at the same moment."""
     import msvcrt
 
@@ -353,6 +508,14 @@ def try_grant(owner: str, step_w: float) -> dict:
             result = decide(owner, step_w, power, last, now, learned_step(owner, now), pending, posture)
             result["posture"] = posture
             if result["ok"]:
+                why = repel(result["charged_w"], recent, now) or busy(posture, result["charged_w"])
+                if not why and result["charged_w"] >= HEAVY_W:
+                    w = older_waiter(now if since is None else since)
+                    if w:
+                        why = f"queued: {w.get('owner')} waiting {now - float(w['since']):.0f} s (FIFO)"
+                if why:
+                    result = {"ok": False, "reason": why, "posture": posture}
+            if result["ok"]:
                 recent.append({"owner": owner, "charged_w": result["charged_w"], "epoch": now,
                                "before_w": power.get("now_w")})
                 tmp = STATE + ".tmp"
@@ -368,14 +531,31 @@ def try_grant(owner: str, step_w: float) -> dict:
             msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
 
 
+SHARED_REASONS = ("unsteady", "repel", "busy", "queued", "another grant", "last grant", "power", "bad_input_power")
+
+
 def wait_grant(owner: str, step_w: float, timeout_s: float = 900.0, poll_s: float = 2.0) -> dict:
-    deadline = time.time() + timeout_s
-    while True:
-        result = try_grant(owner, step_w)
-        if result["ok"] or time.time() >= deadline or result["reason"].startswith(("step ", "held")):
-            _log({k: result[k] for k in ("ok", "owner", "step_w", "reason", "posture") if k in result})
-            return result
-        time.sleep(poll_s)
+    start = time.time()
+    deadline = start + timeout_s
+    heavy = step_w >= HEAVY_W
+    own = False
+    try:
+        while True:
+            if heavy:
+                try:
+                    touch_ticket(owner, step_w, start, own)
+                except Exception:  # noqa: BLE001  no ticket = old behaviour, never block the waiter itself
+                    pass
+            result = try_grant(owner, step_w, since=start)
+            if result["ok"] or time.time() >= deadline or result["reason"].startswith(("step ", "held")):
+                _log({k: result[k] for k in ("ok", "owner", "step_w", "reason", "posture") if k in result})
+                return result
+            # over budget is shared; any reason not in the shared list (A770 window etc.) is this waiter's own
+            own = not (result["reason"].startswith(SHARED_REASONS) or "budget" in result["reason"])
+            time.sleep(poll_s)
+    finally:
+        if heavy:
+            drop_ticket()
 
 
 def main(argv=None) -> int:
@@ -387,6 +567,8 @@ def main(argv=None) -> int:
         s.add_argument("--step", type=float, required=True, help="watts this job is about to add")
         s.add_argument("--timeout", type=float, default=900.0)
         if name == "run":
+            s.add_argument("--max-s", type=float, default=None,
+                           help="end the job tree after this many seconds (default: per owner class, MAX_RUN_S)")
             s.add_argument("command", nargs=argparse.REMAINDER)
     sub.add_parser("status")
     a = ap.parse_args(argv)
@@ -402,8 +584,26 @@ def main(argv=None) -> int:
         # Handles must be passed explicitly: with CREATE_NO_WINDOW and no redirect the child writes to its own hidden
         # console and its whole output is lost (2026-11-25: a pytest run under a grant left nothing but the grant line).
         sys.stdout.flush()
-        return subprocess.call(cmd, stdout=sys.stdout, stderr=sys.stderr,
-                               creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        heavy = float(g.get("charged_w") or a.step) >= HEAVY_W
+        if heavy:
+            try:
+                mark_running(a.owner, float(g.get("charged_w") or a.step))
+            except Exception:
+                heavy = False                      # no marker = old behaviour; never block the job itself
+        try:
+            cap = max_run_s(a.owner, a.max_s)
+            proc = subprocess.Popen(cmd, stdout=sys.stdout, stderr=sys.stderr,
+                                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+            try:
+                return proc.wait(timeout=cap)
+            except subprocess.TimeoutExpired:
+                n = end_tree(proc)
+                _log({"ok": False, "owner": a.owner, "killed": n, "reason": f"run cap: ended after {cap:.0f} s"})
+                print(f"load_grant: {a.owner} ended at its {cap:.0f} s cap ({n} processes)", file=sys.stderr)
+                return 124
+        finally:
+            if heavy:
+                clear_running()
     return 0
 
 

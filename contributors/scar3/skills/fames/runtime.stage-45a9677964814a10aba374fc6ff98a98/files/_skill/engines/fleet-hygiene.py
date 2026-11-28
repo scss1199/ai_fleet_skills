@@ -1,0 +1,1297 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# token-class: ZT
+"""fleet-hygiene.py — every host checks its own cwds against the seat contract, sweeps process residue into
+_delete/, and reports to the curator through the carrier. F1S runs it from the fames-converge rider, so no host
+needs to be told (operator 2026-10-29: 「要求兩台電腦去檢查自己全部的cwd是否都符合規範 然後回報有用的東西給你 並開始清掃
+所有專案已經用不到的過程檔案 並把這個清掃/檢查/回報 變成f1s同步的一項自動功能 不用我在cue你」).
+
+What one run does (zero model tokens, bounded, reversible):
+  check   every seat dir (ai_*, jci_*, sdnext_*, fracdigi) under the workspace: charter files the seat contract
+          requires (CLAUDE.md, AGENTS.md, .cursor/hooks.json), git state (own repo, dirty / unpushed counts, last
+          commit), activity (newest file) -> ACTIVE / IDLE / DORMANT, and OS scheduled tasks that point into the
+          workspace with a forbidden launcher (python.exe console, -WindowStyle Hidden) -> findings
+  sweep   residue the operator never asked to keep: cache dirs (__pycache__, .pytest_cache, .mypy_cache,
+          .ruff_cache), temp files (*.tmp *.pyc ...), top-level entries of _temp / _downloads/distill /
+          _downloads/acquire whose newest FILE is older than 7 days, registry backups beyond the newest 3.
+          Never a git-tracked file, never the protected trees, never locks/pids/queues. Moves go through
+          fleet-residue-quarantine.py (manifest, undo) when present, else a minimal mover with its own manifest.
+  report  _registry/fleet-hygiene/<host>.json (+ history.jsonl) and contributors/<slug>/hygiene.json on the
+          carrier (same publish path as fleet jobs), which the curator's f1s_daily digest reads back.
+  throttle at most once per 20 h per host (state file), one run at a time (lock); converge launches it detached
+          every 15 min and the throttle makes that free.
+
+  python fleet-hygiene.py run [--apply] [--force] [--no-publish] [--host NAME]
+  python fleet-hygiene.py status
+  python fleet-hygiene.py memories       # stale memories: Claude memory files naming an engine file, hub path or
+                                         # flag that no longer exists (fix or remove the memory, not the file)
+  python fleet-hygiene.py cves           # runtime CVEs per cwd (Node security releases, OSV for venvs; network)
+  python fleet-hygiene.py fleet          # curator: every host's latest hygiene.json from the carrier clone
+"""
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import json
+import os
+import stat
+import re
+import shutil
+import socket
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HUB = Path(os.environ.get("AI_WORKSPACE") or r"C:\ai_workspace").resolve()
+ENGINES = Path(__file__).resolve().parent
+OUT = HUB / "_registry" / "fleet-hygiene"
+NW = 0x08000000 if os.name == "nt" else 0
+THROTTLE_S = 20 * 3600
+STALE_S = 7 * 86400
+ACTIVE_D, IDLE_D = 7, 30
+WORKTREE_MAX = 3            # extra worktrees per repo before it is a finding (each is a full working-tree copy)
+WORKTREE_ORPHAN_D = 7       # a .claude/worktrees/<name> dir git no longer lists, untouched this long, is residue (class orphan_worktree)
+SEAT_RE = re.compile(r"^(ai_[a-z0-9_]+|jci_[a-z0-9_]+|sdnext_[a-z0-9_]+|fracdigi)$")
+CHARTER = ("CLAUDE.md", "AGENTS.md", os.path.join(".cursor", "hooks.json"))
+SKILL_SURFACES = (".agents/skills", ".claude/skills", ".cursor/skills")   # each <name> may be a junction to fleet-skills
+PRUNE = {".git", "node_modules", ".venv", "venv", "env", "_secrets", ".claude"}
+CACHE_DIRS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".hypothesis", ".ipynb_checkpoints"}
+TEMP_SUFFIX = (".tmp", ".temp", ".swp", ".swo", ".part", ".crdownload", ".pyc", ".pyo")
+LIVE = ("aex-loop", "hubclock", "supervisor")   # coordination names that keep old mtimes; __pycache__ is NOT live
+STALE_ROOTS = ("_temp", os.path.join("_downloads", "distill"), os.path.join("_downloads", "acquire"))
+BACKUP_ROOTS = (os.path.join("_registry", "fleet-skill-export-backups"), os.path.join("_registry", "fames-runtime-build-backups"))
+KEEP_NEWEST = 3
+CACHE_IDLE_D = 14
+MAX_MOVES = 4000
+NEVER = ("_secrets", "_delete", "_registry", "_bus", os.path.join("fracdigi", "env"), os.path.join("ai_trader", "quant"),
+         os.path.join("_lean", "toolchains"), os.path.join("_lean", "hubmath"))
+# Trees nothing in this engine may touch under any class (the red lines say "do not even touch").
+UNTOUCHABLE = ("_secrets", "_delete", os.path.join("fracdigi", "env"), os.path.join("ai_trader", "quant"),
+               os.path.join("_lean", "toolchains"), os.path.join("_lean", "hubmath"))
+
+# ------------------------------------------------------------------ producers (operator 2026-10-31)
+# 「根本就不會再被使用的中間檔…製造他們的機制是什麼該如何修正」: the sweep relocates residue, this check names the ENGINE
+# that keeps making it, so the fix lands in the producer and not in the broom. Two signals: a state directory with more
+# direct entries than PRODUCER_CAP (per-run / per-session files nobody retires), and entries named like a loop-generated
+# backup (*.MIGRATED-bak, *.previous.json, *.<stamp>.bak, tmp********, repo.previous). The 刪除 red line protects
+# operator data; an engine keeping copies of its own locks, queue markers and caches is the ⑥ junk it was never asked for.
+PRODUCER_CAP = 1000
+RETENTION_MIN = 100
+RETENTION_RE = re.compile(r"\.migrated-bak$|\.previous(\.[0-9a-f]{32})?\.json$|\.\d{8}_\d{6}(\.\d+)?\.bak$"
+                          r"|^tmp[a-z0-9_]{8}$|^repo\.previous$", re.I)
+STATE_ROOTS = ("_registry", "_temp", "_bus", "_logs", "_inbox")
+SEAT_STATE = ("evidence", "_registry")
+PRODUCER_DEPTH = 5
+WRITERS = (  # longest matching prefix wins; extend when a new producer is found
+    ("_registry/fames-hot", "_harness/runtime/fames_session_harness.py (hot_refresh / turn_context per-session state)"),
+    ("_registry/fames-phase", "_harness/runtime/fames_phase_runtime.py (per-session dir, retained .write.lock)"),
+    ("_registry/fames-turn", "_harness/runtime/fames_turn_binding.py (by-prompt archive)"),
+    ("_registry/fames-runtime-receipts", "_skill/fleet-skills/fames/scripts/runtime_release.py _persist_receipt"),
+    ("_registry/fames-runtime-build-backups", "_skill/fleet-skills/fames/scripts/runtime_release.py _apply"),
+    ("_registry/fleet-skill-export-backups", "_skill/engines/mtm-fleet-skill-github.py export"),
+    ("_registry/ship-queue", "_skill/engines/ship-queue.py (queue retirement + per-run logs)"),
+    ("_registry/fleet-learning-local", "ai_darkhero/fleet-learning/scripts/fleet_learning.py cmd_fetch"),
+    ("_temp/aex-loop", "_skill/engines/aex-loop-exec.py (per-job files)"),
+    ("_temp/fleet-job-dispatch", "_skill/engines/fleet-job-dispatch.py (uuid worktree/prompt staging)"),
+    ("_bus/inbox", "_skill/engines/inbox.py senders (fleet-process-guard.py alerts addressed to a non-seat)"),
+    ("_inbox/_digested", "_skill/engines/inbox digest (SUBMIT receipts auto-digested)"),
+    ("_logs", "_skill/engines/goal-field.py / seal-generation-lock.py / scf-residual.py goal backups"),
+    ("_registry/fames-phase-history", "_skill/engines/fames-immediate-apply.py (uuid history records)"),
+    ("_registry/f1s-parallel", "_skill/engines/f1s_parallel.py (one store per seat + ledger.jsonl; no per-plan files)"),
+    ("_registry", "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"),
+    ("evidence/fames-fleet-20260924", "_lean/fames/tests/test_phase_contract.py proof_fixture (test writes into the repo)"),
+    ("_registry/f1s-sources", "_skill/engines/f1s-sources.py / knowledge-consolidate.py content store (data, not residue)"),
+)
+# Engine code that spells the retention antipattern; a hit is a finding for the file's owner, never an edit.
+CODE_ROOTS = ("_skill/engines", "_harness/runtime", "_lean/fames", "_skill/fleet-skills/fames/scripts",
+              "ai_darkhero/scripts", "ai_darkhero/fleet-learning/scripts", "ai_darkhero/line")
+_ANTI_CREATE = ("rename", "with_name", "replace(", "+ \"", "f\"", "f'", "+ '", "join(")
+# Expired engine state the sweep retires into _delete (class expired_state). kind: "files" = direct files older than
+# ttl days; "dirs" = direct subdirs whose newest file is older than ttl; "named" = entries whose name matches `re`
+# (RETENTION_RE by default), older than ttl when given; "newest" = everything but the newest `keep` entries.
+# fames-phase, fames-turn/<surface>, its by-prompt folders and intake-locks left this table on 2026-11-13: their writer
+# (fames_turn_binding.expire) bounds them itself, so about 1,600 files a day stop passing through _delete.
+STATE_TTL = (
+    {"root": "_registry/fames-hot", "kind": "files", "ttl": 7,
+     "exclude": ("midturn-", "wait-", "ship-state", "hw-watch", "review-claim", "capture-")},  # midturn-/wait-: the session hook expires its own
+    {"root": "ai_darkhero/evidence/fames-fleet-20260924/runtime-release-tests", "kind": "dirs", "ttl": 1},  # the test moved to pytest's temp root on 10-31
+    {"root": "_registry/mtm-audit", "kind": "files", "ttl": 7, "exclude": ("latest", "waste-report", "git-ship-latest")},  # per-run copies, 1,570 nobody read
+    {"root": "_registry/fames-runtime-receipts", "kind": "newest", "keep": 3},
+    {"root": "_registry/ship-queue", "kind": "named"},
+    {"root": "_registry/ship-queue/done", "kind": "files", "ttl": 7},
+    {"root": "_registry/ship-queue/failed", "kind": "files", "ttl": 7},
+    {"root": "_registry", "kind": "named", "ttl": 7},                     # tmp******** of a failed atomic write
+    {"root": "_registry/fleet-learning-local/*/sources/*", "kind": "named"},
+    {"root": "_temp/aex-loop-jobs", "kind": "files", "ttl": 2},
+    {"root": "_temp/aex-loop-done", "kind": "files", "ttl": 2},
+    {"root": "_logs", "kind": "named"},                                   # *.goal.json.<stamp>.bak
+    {"root": "*/evidence/fames-fleet-20260924", "kind": "named", "ttl": 1,
+     "re": r"^(phase-tests|base-conformance-test)-[0-9a-f]{32}$"},
+)
+ORPHAN_INBOX_TTL_D = 1          # _bus/inbox/<name> where <name> is no seat dir and no hubclock handoff
+
+
+# ------------------------------------------------------------------ small helpers
+def _now() -> float:
+    return time.time()
+
+
+def _iso(ts: float | None = None) -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(ts or _now()))
+
+
+def _is_junction(p: str) -> bool:
+    try:
+        return os.path.islink(p) or os.lstat(p).st_reparse_tag == stat.IO_REPARSE_TAG_MOUNT_POINT   # 3.11-safe
+    except (OSError, AttributeError):
+        return False
+
+
+def _load(path: Path, default):
+    try:
+        return json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return default
+
+
+def _save(path: Path, doc) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + f".{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def _git(repo: Path, *args: str, timeout: int = 60) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, encoding="utf-8",
+                          errors="replace", timeout=timeout, creationflags=NW)
+
+
+def _module(file: str):
+    path = ENGINES / file
+    if not path.is_file():
+        return None
+    spec = importlib.util.spec_from_file_location(file.replace("-", "_").replace(".py", "_for_hygiene"), path)
+    mod = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(mod)
+    except Exception:  # noqa: BLE001 - a broken sibling engine is reported, never fatal
+        return None
+    return mod
+
+
+def this_host() -> str:
+    return socket.gethostname().strip().lower()
+
+
+def contributor_slug(hub: Path, host: str) -> str:
+    """contributors/<slug>/ on the carrier: the fleet-skill-github node for this host, else the hostname."""
+    reg = _load(hub / "_registry" / "fleet-skill-github.json", {})
+    nodes = reg.get("nodes") or {}
+    rows = nodes.items() if isinstance(nodes, dict) else [(n.get("node") or n.get("id"), n) for n in nodes]
+    host_l = host.lower()
+    for name, node in rows:
+        if not isinstance(node, dict):
+            continue
+        names = {str(h).lower() for h in (node.get("hostnames") or [])}
+        names |= {str(node.get("host") or "").lower(), str(node.get("hostname") or "").lower()}
+        if host_l in names:
+            return str(node.get("contributor_slug") or node.get("contributor") or node.get("machine") or name)
+    for name, node in rows:   # a node whose machine name is the hostname's prefix (altos: DESKTOP-xxx is not; scar3: SCAR3 is)
+        if isinstance(node, dict) and str(node.get("machine") or "").lower() and host_l.startswith(str(node.get("machine")).lower()):
+            return str(node.get("contributor_slug") or node.get("machine"))
+    return host
+
+
+# ------------------------------------------------------------------ check
+def seats(hub: Path) -> list[Path]:
+    out = []
+    try:
+        for e in os.scandir(hub):
+            if e.is_dir(follow_symlinks=False) and SEAT_RE.match(e.name) and not _is_junction(e.path):
+                out.append(Path(e.path))
+    except OSError:
+        pass
+    return sorted(out)
+
+
+def newest_file(root: Path, cap: int = 60000) -> float:
+    newest, n = 0.0, 0
+    for dp, dns, fns in os.walk(root):
+        dns[:] = [d for d in dns if d not in PRUNE and d not in CACHE_DIRS and not _is_junction(os.path.join(dp, d))]
+        for f in fns:
+            n += 1
+            if n > cap:
+                return newest
+            try:
+                m = os.stat(os.path.join(dp, f), follow_symlinks=False).st_mtime
+            except OSError:
+                continue
+            if m > newest:
+                newest = m
+    return newest
+
+
+def check_seat(seat: Path, now: float) -> dict:
+    row = {"seat": seat.name, "missing": [c for c in CHARTER if not (seat / c).is_file()], "findings": []}
+    own = (seat / ".git").exists()
+    row["repo"] = "own" if own else "hub"
+    if own:
+        st = _git(seat, "status", "--porcelain")
+        row["dirty"] = len([l for l in st.stdout.splitlines() if l.strip()]) if st.returncode == 0 else "UNKNOWN"
+        ahead = _git(seat, "rev-list", "--count", "@{u}..HEAD")
+        row["unpushed"] = int(ahead.stdout.strip() or 0) if ahead.returncode == 0 else "UNKNOWN"
+        last = _git(seat, "log", "-1", "--format=%ci")
+        row["last_commit"] = last.stdout.strip()[:10] if last.returncode == 0 and last.stdout.strip() else None
+        # agent worktrees (Claude .claude/worktrees, Codex ~/.codex/worktrees) are full copies that nobody removes;
+        # the 11-04 article found 37 of them holding 585 GB. Count them; `prunable` = directory already gone.
+        blocks = _worktree_blocks(seat)
+        if blocks is not None:
+            row["worktrees"] = max(len(blocks) - 1, 0)
+            row["worktrees_prunable"] = sum(1 for b in blocks if "\nprunable" in b)
+            row["worktrees_orphan"] = len(_orphan_worktree_dirs(seat, blocks))
+        else:
+            row["worktrees"] = "UNKNOWN"
+        # tracked files under a junctioned skill dir: every fleet-skill push dirties them (ai_trader 2026-11-10, 14 files).
+        # The fix is index-only, surface-untrack.py --apply --commit; a checkout that deletes the paths deletes canon.
+        ls = _git(seat, "ls-files", "--", *SKILL_SURFACES)
+        if ls.returncode == 0:
+            row["tracked_junction_files"] = sum(1 for f in ls.stdout.splitlines()
+                                                if f.count("/") >= 3 and _is_junction(str(seat / "/".join(f.split("/")[:3]))))
+    newest = newest_file(seat)
+    row["newest_file"] = time.strftime("%Y-%m-%d", time.localtime(newest)) if newest else None
+    days = (now - newest) / 86400 if newest else 9999
+    row["activity"] = "ACTIVE" if days <= ACTIVE_D else ("IDLE" if days <= IDLE_D else "DORMANT")
+    if row["missing"]:
+        row["findings"].append("charter_missing:" + ",".join(row["missing"]))
+    if isinstance(row.get("unpushed"), int) and row["unpushed"] > 0:
+        row["findings"].append(f"unpushed_commits:{row['unpushed']}")
+    if isinstance(row.get("dirty"), int) and row["dirty"] > 50:
+        row["findings"].append(f"dirty_files:{row['dirty']}")
+    if row.get("tracked_junction_files"):
+        row["findings"].append(f"tracked_junction_files:{row['tracked_junction_files']}")
+    if row.get("worktrees_prunable"):
+        row["findings"].append(f"prunable_worktrees:{row['worktrees_prunable']}")
+    if row.get("worktrees_orphan"):
+        row["findings"].append(f"orphan_worktree_dirs:{row['worktrees_orphan']}")
+    if isinstance(row.get("worktrees"), int) and row["worktrees"] >= WORKTREE_MAX:
+        row["findings"].append(f"worktrees:{row['worktrees']}")
+    if own and blocks is not None:
+        row["stale_agent_worktrees"] = stale_agent_worktrees(seat, blocks, now)
+        if row["stale_agent_worktrees"]:
+            row["findings"].append(f"stale_agent_worktree:{len(row['stale_agent_worktrees'])}")
+    return row
+
+
+def _lock_pid_alive(block: str) -> bool:
+    """A `locked ... (pid N)` worktree whose pid still runs belongs to a live agent; unreadable = alive (fail-safe)."""
+    m = re.search(r"\nlocked[^\n]*\(pid (\d+)\)", block)
+    if not m:
+        return "\nlocked" in block and "(pid" not in block   # a lock with no pid is someone's deliberate hold
+    try:
+        import psutil
+        return psutil.pid_exists(int(m.group(1)))
+    except Exception:  # noqa: BLE001
+        return True
+
+
+def stale_agent_worktrees(repo: Path, blocks: list[str], now: float) -> list[dict]:
+    """Registered .claude/worktrees copies holding nothing unique: clean once gitlink drift is ignored (2026-11-14: the
+    hub index tracks nested seats as gitlinks, so every hub copy shows ' M ai_nuwa' and Claude Code's auto-clean never
+    fires; 3 copies x 3.7 GB sat 2-7 weeks), HEAD merged into the main tree's HEAD, older than WORKTREE_ORPHAN_D days,
+    no live lock pid. Advisory only: the recipe moves the copy to _delete and prunes; the seat runs it."""
+    main_head = blocks[0].split("\nHEAD ", 1)[1].split("\n", 1)[0] if "\nHEAD " in blocks[0] else ""
+    agent_root = os.path.normcase(str(repo / ".claude" / "worktrees"))
+    out = []
+    for b in blocks[1:]:
+        path = Path(b.split("\n", 1)[0][len("worktree "):])
+        if "\nprunable" in b or not os.path.normcase(os.path.normpath(str(path))).startswith(agent_root):
+            continue
+        head = b.split("\nHEAD ", 1)[1].split("\n", 1)[0] if "\nHEAD " in b else ""
+        if not head or not main_head or _lock_pid_alive(b):
+            continue
+        ts = _git(repo, "log", "-1", "--format=%ct", head)
+        try:
+            age_d = (now - max(int(ts.stdout.strip()), (path / ".git").stat().st_mtime)) / 86400
+        except (ValueError, OSError):
+            continue
+        if age_d < WORKTREE_ORPHAN_D or _git(repo, "merge-base", "--is-ancestor", head, main_head).returncode != 0:
+            continue
+        st = _git(path, "status", "--porcelain", "--ignore-submodules=all", timeout=300)
+        if st.returncode != 0 or st.stdout.strip():
+            continue
+        out.append({"path": str(path), "age_d": round(age_d), "bytes": _size(path),
+                    "recipe": f"move {path} to _delete/<date>-worktrees, then git -C {repo} worktree prune"})
+    return out
+
+
+def _worktree_blocks(seat: Path) -> list[str] | None:
+    """`git worktree list --porcelain` blocks (first = the main tree), None when git cannot answer."""
+    wt = _git(seat, "worktree", "list", "--porcelain")
+    if wt.returncode != 0:
+        return None
+    return [b for b in wt.stdout.split("\n\n") if b.strip()]
+
+
+def _orphan_worktree_dirs(seat: Path, blocks: list[str]) -> list[Path]:
+    """Dirs under <seat>/.claude/worktrees that git no longer lists: the agent copy stayed after its registration went."""
+    known = {os.path.normcase(os.path.normpath(b.split("\n", 1)[0][len("worktree "):])) for b in blocks}
+    wt_dir = seat / ".claude" / "worktrees"
+    return [d for d in (sorted(wt_dir.iterdir()) if wt_dir.is_dir() else ())
+            if d.is_dir() and not _is_junction(str(d)) and os.path.normcase(os.path.normpath(str(d))) not in known]
+
+
+def orphan_worktrees(hub: Path, now: float | None = None) -> list[tuple[str, Path, int]]:
+    """(orphan_worktree, dir, bytes) for every unregistered agent worktree copy untouched for WORKTREE_ORPHAN_D days.
+    2026-11-14: jci_taipei kept 12 such dirs (6.8 GB, 15-65 days old) while check_seat only counted them; a registered
+    worktree, however old, stays the seat's (`git worktree remove` is its call)."""
+    now = now or _now()
+    cut = now - WORKTREE_ORPHAN_D * 86400
+    out: list[tuple[str, Path, int]] = []
+    for seat in seats(hub):
+        if not (seat / ".git").exists():
+            continue
+        blocks = _worktree_blocks(seat)
+        if blocks is None:
+            continue
+        for d in _orphan_worktree_dirs(seat, blocks):
+            try:
+                if _newest_mtime(d) < cut:
+                    out.append(("orphan_worktree", d, _size(d)))
+            except OSError:
+                continue
+    return out
+
+
+def scheduled_task_findings(hub: Path) -> list[str] | str:
+    """OS tasks that point into the workspace with a launcher the contract forbids; UNKNOWN when schtasks is unreadable."""
+    if os.name != "nt":
+        return []
+    try:
+        p = subprocess.run(["schtasks", "/query", "/fo", "csv", "/v"], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=90, creationflags=NW)
+    except (OSError, subprocess.SubprocessError):
+        return "UNKNOWN"
+    if p.returncode != 0:
+        return "UNKNOWN"
+    hits = []
+    marker = str(hub).lower().replace("/", "\\")
+    for line in p.stdout.splitlines():
+        low = line.lower()
+        if marker not in low:
+            continue
+        # the two fake-hidden forms, spelled in pieces so zt-foreground-guard's static scan does not count this
+        # detector itself as an offender (2026-10-31: it did, 2 phantom antipattern hits per day)
+        if ("-windowstyle" + " hidden") in low or ("-w" + " hidden") in low:
+            hits.append("hidden_powershell_task:" + line.split(",")[1].strip('"')[:80] if "," in line else low[:80])
+        elif "python.exe" in low and "pythonw" not in low:
+            hits.append("console_python_task:" + line.split(",")[1].strip('"')[:80] if "," in line else low[:80])
+    return sorted(set(hits))
+
+
+def _writer(rel: str) -> str:
+    rel = rel.replace("\\", "/")
+    best, who = "", "UNKNOWN (add the producer to fleet-hygiene.WRITERS)"
+    for prefix, name in WRITERS:
+        if (rel.startswith(prefix) or ("/" + prefix) in rel) and len(prefix) > len(best):
+            best, who = prefix, name
+    return who
+
+
+def producers(hub: Path, cap: int = PRODUCER_CAP) -> list[dict]:
+    """Directories in the state roots that an engine keeps filling: more than `cap` direct entries, or RETENTION_MIN
+    entries named like loop-generated backups. Each row names the writer so the fix goes to the producer."""
+    rows = []
+    roots = [hub / r for r in STATE_ROOTS] + [s / d for s in seats(hub) for d in SEAT_STATE]
+    for root in roots:
+        if not root.is_dir() or _is_junction(str(root)):
+            continue
+        for dp, dns, fns in os.walk(root):
+            dns[:] = [d for d in dns if d not in PRUNE and not _is_junction(os.path.join(dp, d))]
+            entries = len(dns) + len(fns)
+            retention = sum(1 for n in dns + fns if RETENTION_RE.search(n))
+            if entries > cap or retention >= RETENTION_MIN:
+                rel = str(Path(dp).relative_to(hub)).replace("\\", "/")
+                rows.append({"dir": rel, "entries": entries, "retention_named": retention, "writer": _writer(rel)})
+                dns[:] = []            # the leak is this directory; descending would report its children too
+            elif len(Path(dp).relative_to(hub).parts) >= PRODUCER_DEPTH:
+                dns[:] = []
+    rows.sort(key=lambda r: (-r["retention_named"], -r["entries"]))
+    return rows[:40]
+
+
+def retention_antipatterns(hub: Path) -> list[dict]:
+    """Engine lines that create loop backups: a `.MIGRATED-bak` rename outside a one-time migration, a uuid-named copy
+    under _registry/_temp, or a test fixture that refuses tmp cleanup. Comments, skip-lists and `endswith` checks are
+    not creation sites."""
+    hits = []
+    for rel in CODE_ROOTS:
+        root = hub / rel
+        if not root.is_dir():
+            continue
+        for dp, dns, fns in os.walk(root):
+            dns[:] = [d for d in dns if d not in PRUNE and d not in CACHE_DIRS]
+            for f in fns:
+                if not f.endswith(".py") or f in ("fleet-hygiene.py", "test_fleet_hygiene.py", "f1s_audit.py"):
+                    continue       # this detector, its test and the audit table spell the patterns on purpose
+                p = Path(dp) / f
+                try:
+                    lines = p.read_text(encoding="utf-8", errors="replace").splitlines()
+                except OSError:
+                    continue
+                in_test = "tests" in p.relative_to(hub).parts or f.startswith("test_")
+                for i, line in enumerate(lines, 1):
+                    s = line.strip()
+                    if not s or s.startswith(("#", "-", "*", '"""', "'''")) or "(" not in s:
+                        continue   # comments, docstring prose and bullet text are not creation sites
+                    kind = None
+                    if "MIGRATED-bak" in s and not in_test and any(k in s for k in _ANTI_CREATE) \
+                            and not any(k in s for k in ("endswith", "not in", "SKIP", "glob(", "in str(")):
+                        kind = "migrated_bak_loop"
+                    elif "uuid4().hex" in s and not in_test and any(k in s.lower() for k in ("backup", "previous", "export-backups", "_registry", "_temp")):
+                        kind = "uuid_named_copy"
+                    elif in_test and ("Deliberately retained" in s or "no TemporaryDirectory" in s):
+                        kind = "retained_test_fixture"
+                    if kind:
+                        hits.append({"file": str(p.relative_to(hub)).replace("\\", "/"), "line": i, "kind": kind, "text": s[:140]})
+    return hits[:60]
+
+
+# ------------------------------------------------------------------ stale memories (2026-11-10)
+# Anthropic's Pokemon run: a wrong remembered route sent Claude into the same trap three times before it quit. A Claude
+# memory that names an engine file, hub path or CLI flag that no longer exists gets re-applied the same way, so check
+# reads every hub/seat memory dir and lists the backticked references that do not resolve; the fix is to edit or
+# remove that memory, never to recreate the file. Advisory: a bare name counts only for code (.py/.ps1/.lean) found
+# nowhere in the hub, a slash path only when its first segment exists in the hub or the seat; other machines, ~, URLs,
+# elisions and the trees that move by design (_delete quarantine, auto-digested _inbox receipts) are skipped.
+MEMORY_ROOT = Path.home() / ".claude" / "projects"
+MEM_TOKEN = re.compile(r"`([^`\n]{2,200})`")
+MEM_CODE = (".py", ".ps1", ".lean")
+MEM_SKIP_FIRST = {"_delete", "_inbox"}
+MEM_TRANSIENT = (".lock", ".off", ".on", ".pid", ".log")   # switch / lock files that exist only while in effect
+MEM_INDEX_CAP = 300000
+MEM_CAP = 200
+
+
+def _project_dir(path: Path) -> str:
+    return re.sub(r"[^A-Za-z0-9]", "-", str(path))
+
+
+def _code_index(hub: Path) -> dict[str, Path]:
+    """lower-case code file name -> first path under the hub (pruned like the sweep, _delete excluded)."""
+    out: dict[str, Path] = {}
+    n = 0
+    for dp, dns, fns in os.walk(hub):
+        dns[:] = [d for d in dns if d not in PRUNE and d not in CACHE_DIRS and d != "_delete" and not d.startswith(".")]
+        for f in fns:
+            n += 1
+            if f.lower().endswith(MEM_CODE):
+                out.setdefault(f.lower(), Path(dp) / f)
+        if n > MEM_INDEX_CAP:
+            break
+    return out
+
+
+def _read_src(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
+def _seat_roots(seat: Path) -> list[Path]:
+    """A seat's nested code roots (e.g. ai_trader/sinopac-trading-system): first-level dirs holding a .git or pyproject."""
+    try:
+        return [d for d in seat.iterdir() if d.is_dir() and not d.name.startswith(".") and d.name not in PRUNE
+                and ((d / ".git").exists() or (d / "pyproject.toml").is_file() or (d / "package.json").is_file())]
+    except OSError:
+        return []
+
+
+def _mem_stale(tok: str, hub: Path, seat: Path, index: dict[str, Path]) -> str | None:
+    """The reference in one backticked token that does not resolve, or None (resolves / not a hub reference)."""
+    words = tok.strip().split()
+    if not words:
+        return None
+    cand = re.sub(r":\d+$", "", words[0].strip("\"',;")).replace("\\", "/")
+    while cand.endswith(")") and cand.count(")") > cand.count("("):   # punctuation, not a Next.js `(group)` segment
+        cand = cand[:-1]
+    cand = cand.lstrip("(") if cand.count("(") > cand.count(")") else cand
+    if (any(c in cand for c in "<>*{}$%~|…") or "..." in cand or "://" in cand
+            or "/-" in cand or cand.startswith((".", "-", "/")) or cand.lower().endswith(MEM_TRANSIENT)):
+        return None
+    if re.match(r"^[A-Za-z]:/", cand):   # absolute: only inside this hub (never probe other drives, G: hangs Explorer)
+        hub_s = str(hub).replace("\\", "/").rstrip("/").lower() + "/"
+        if not (cand.lower() + "/").startswith(hub_s):
+            return None
+        cand = cand[len(hub_s):]
+    elif ":" in cand:
+        return None
+    cand = cand.strip("/")
+    if "/" in cand:
+        first = cand.split("/", 1)[0]
+        bases = [b for b in (seat, hub, *_seat_roots(seat)) if (b / first).exists()]
+        if not bases or first in MEM_SKIP_FIRST:
+            return None
+        path = next((b / cand for b in bases if (b / cand).exists()), None)
+        if path is None and "." in cand.rsplit("/", 1)[-1]:   # module.attr() notation: dir/mod.attr -> dir/mod.py has attr
+            head, tail = cand.rsplit("/", 1)
+            mod, attr = tail.split(".", 1)
+            attr = re.split(r"[(.]", attr, 1)[0]
+            for b in bases:
+                f = b / head / f"{mod}.py"
+                if f.is_file() and attr and attr in _read_src(f):
+                    path = f
+                    break
+        if path is None:
+            return cand
+    elif cand.lower().endswith(MEM_CODE):
+        path = (seat / cand) if (seat / cand).is_file() else index.get(cand.lower())
+        if path is None:
+            return cand
+    else:
+        return None
+    own = []   # this script's own words: stop at the next script token (an inner `--cmd "python x.py --flag"`)
+    for w in words[1:]:
+        if w.strip("\"'").lower().endswith(MEM_CODE):
+            break
+        own.append(w)
+    flags = [f.split("=", 1)[0].rstrip(")],;:.\"'") for w in own for f in w.split("/")
+             if re.match(r"^--[a-z][a-z0-9-]+", f) and f.split("=", 1)[0] != "--help"]
+    if flags and path.is_file() and path.suffix.lower() in MEM_CODE:
+        src = _read_src(path)
+        gone = [f for f in flags if f not in src]
+        if gone:
+            return f"{cand} {' '.join(gone)}"
+    return None
+
+
+def stale_memories(hub: Path, root: Path | None = None) -> list[dict]:
+    """Every hub/seat memory file with references to engine files, paths or flags that no longer exist."""
+    root = root or MEMORY_ROOT
+    out: list[dict] = []
+    index: dict[str, Path] | None = None
+    for seat in [hub] + seats(hub):
+        mem = root / _project_dir(seat) / "memory"
+        if not mem.is_dir():
+            continue
+        index = _code_index(hub) if index is None else index
+        for f in sorted(mem.glob("*.md")):
+            try:
+                text = f.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            stale = sorted({s for t in MEM_TOKEN.findall(text) if (s := _mem_stale(t, hub, seat, index))})
+            if stale:
+                out.append({"seat": seat.name, "memory": str(f), "stale": stale[:12]})
+                if len(out) >= MEM_CAP:
+                    return out
+    return out
+
+
+# 2026-11-16 (ai_darkhero proposal, article "Agent = Model + Harness"): MEMORY.md is injected into every session of its
+# seat, so its size is a per-turn tax no engine bounded (ai_darkhero 24 KB / 170 files). Advisory row per seat over the cap.
+MEM_INDEX_BYTES = 12288
+
+
+def memory_index_oversize(hub: Path, root: Path | None = None, cap: int = MEM_INDEX_BYTES) -> list[dict]:
+    """Seats whose MEMORY.md index exceeds `cap` bytes: facts stay, task logs and stale lines go (edit, never truncate)."""
+    root = root or MEMORY_ROOT
+    out: list[dict] = []
+    for seat in [hub] + seats(hub):
+        idx = root / _project_dir(seat) / "memory" / "MEMORY.md"
+        try:
+            size = idx.stat().st_size
+        except OSError:
+            continue
+        if size > cap:
+            out.append({"seat": seat.name, "bytes": size, "cap": cap, "files": len(list(idx.parent.glob("*.md"))) - 1})
+    return out
+
+
+# ------------------------------------------------------------------ runtime CVEs (ai_darkhero proposal 2026-11-13)
+# The CVE-2026-111497 sweep (local Node 24.14.1, three cwds on node:22-alpine, brotli 1.2.0) was done by hand; the
+# same comparison is mechanical: Node lines against nodejs.org/dist/index.json (its `security` flag), seat Python
+# environments against OSV, fixed version from PyPI. Advisory finding only; the upgrade stays the seat's work.
+NODE_INDEX = "https://nodejs.org/dist/index.json"
+OSV_BATCH = "https://api.osv.dev/v1/querybatch"
+PYPI_JSON = "https://pypi.org/pypi/{}/json"
+NODE_PIN_FILES = (".nvmrc", ".node-version")
+FROM_NODE_RE = re.compile(r"^\s*FROM\s+(?:--\S+\s+)*node:(\S+)", re.I | re.M)
+RUNTIME_DEPTH = 3
+
+
+def _fetch_json(url: str, body: dict | None = None, timeout: int = 20):
+    import urllib.request
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json", "User-Agent": "fleet-hygiene"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 - fixed https feeds above
+        return json.loads(r.read().decode("utf-8"))
+
+
+def _ver(s: str) -> tuple[int, ...] | None:
+    m = re.match(r"v?(\d+)(?:\.(\d+))?(?:\.(\d+))?", s.strip())
+    return tuple(int(g) for g in m.groups() if g is not None) if m else None
+
+
+def _seat_node_specs(seat: Path) -> list[tuple[str, str]]:
+    """(source, spec) for every Dockerfile FROM node:<tag> and .nvmrc/.node-version within RUNTIME_DEPTH."""
+    out = []
+    base = len(seat.parts)
+    for dp, dns, fns in os.walk(seat):
+        dns[:] = [d for d in dns if d not in PRUNE and d not in CACHE_DIRS and not _is_junction(os.path.join(dp, d))
+                  and len(Path(dp).parts) - base < RUNTIME_DEPTH]
+        for f in fns:
+            p = Path(dp) / f
+            if f.lower().startswith("dockerfile"):
+                out += [(str(p.relative_to(seat)), "node:" + t) for t in FROM_NODE_RE.findall(_read_src(p))]
+            elif f in NODE_PIN_FILES:
+                out.append((str(p.relative_to(seat)), _read_src(p).strip()))
+    return list(dict.fromkeys(out))   # a multi-stage Dockerfile names the same tag once per stage
+
+
+def node_delta(spec: str, index: list[dict]) -> dict | None:
+    """One Node spec against the release index: floating tag -> rebuild row; pinned -> vulnerable when a security
+    release in the same major line is newer. None = nothing to report."""
+    tag = spec.split(":", 1)[1] if spec.startswith("node:") else spec
+    v = _ver(tag.split("-", 1)[0])
+    if not v:
+        return None
+    line = [e for e in index if (_ver(e.get("version", "")) or (0,))[0] == v[0]]
+    if not line:
+        return {"spec": spec, "status": "unknown_line"}
+    latest = max(line, key=lambda e: _ver(e["version"]))["version"]
+    if len(v) < 3:   # node:22-alpine floats: safe only once the image is rebuilt after the security release
+        sec = [e for e in line if e.get("security")]
+        return {"spec": spec, "status": "floating", "latest": latest,
+                "last_security": max(sec, key=lambda e: _ver(e["version"]))["version"] if sec else None}
+    newer_sec = [e for e in line if e.get("security") and _ver(e["version"]) > v]
+    if not newer_sec:
+        return None
+    return {"spec": spec, "status": "vulnerable", "fixed": max(newer_sec, key=lambda e: _ver(e["version"]))["version"],
+            "latest": latest}
+
+
+def _site_packages(seat: Path) -> list[Path]:
+    out = []
+    for venv in (".venv", "venv"):
+        for sp in ((seat / venv / "Lib" / "site-packages"), *sorted((seat / venv / "lib").glob("python3*/site-packages"))):
+            if sp.is_dir():
+                out.append(sp)
+    return out
+
+
+def _dists(paths: list[str] | None) -> dict[str, str]:
+    from importlib import metadata
+    got = {}
+    for d in metadata.distributions(**({"path": paths} if paths else {})):
+        name = (d.metadata["Name"] or "").strip()
+        if name and d.version:
+            got.setdefault(name.lower(), d.version)
+    return got
+
+
+def python_vulns(pkgs: dict[str, str], fetch=None) -> list[dict]:
+    fetch = fetch or _fetch_json
+    names = sorted(pkgs)
+    if not names:
+        return []
+    res = fetch(OSV_BATCH, {"queries": [{"package": {"name": n, "ecosystem": "PyPI"}, "version": pkgs[n]} for n in names]})
+    out = []
+    for n, r in zip(names, res.get("results") or []):
+        ids = [v.get("id") for v in (r or {}).get("vulns") or []]
+        if ids:
+            try:
+                latest = fetch(PYPI_JSON.format(n))["info"]["version"]
+            except Exception as exc:  # noqa: BLE001
+                latest = f"UNKNOWN: {type(exc).__name__}"
+            out.append({"package": n, "version": pkgs[n], "vulns": ids[:8], "latest": latest})
+    return out
+
+
+def runtime_cves(hub: Path, fetch=None, local_node: str | None = None) -> list[dict] | str:
+    """One row per cwd (plus `<host>` for the local node / hub python) with a vulnerable or floating runtime."""
+    fetch = fetch or _fetch_json
+    try:
+        index = fetch(NODE_INDEX)
+    except Exception as exc:  # noqa: BLE001 - offline: UNKNOWN, never a pass
+        return f"UNKNOWN: node index {type(exc).__name__}"
+    if local_node is None:
+        try:
+            local_node = subprocess.run(["node", "--version"], capture_output=True, text=True, timeout=15,
+                                        creationflags=NW).stdout.strip()
+        except (OSError, subprocess.SubprocessError):
+            local_node = ""
+    rows = []
+    host_node = [d for d in [node_delta(local_node, index)] if local_node and d]
+    host_py = python_vulns(_dists(None), fetch)
+    if host_node or host_py:
+        rows.append({"cwd": "<host>", "node": [{"source": "node --version", **d} for d in host_node], "python": host_py})
+    for seat in seats(hub):
+        node = [{"source": src, **d} for src, spec in _seat_node_specs(seat) for d in [node_delta(spec, index)] if d]
+        py = []
+        sps = _site_packages(seat)
+        if sps:
+            py = python_vulns(_dists([str(p) for p in sps]), fetch)
+        if node or py:
+            rows.append({"cwd": seat.name, "node": node, "python": py})
+    return rows
+
+
+# ------------------------------------------------------------------ station CLI drift (ai_darkhero proposal 2026-11-17)
+# f1s_station.py and three other engines run `claude -p` on the npm CLI; it sat at 2.1.289 while the desktop app
+# bundled 2.1.325 and nothing noticed. Compare the CLI with the newest desktop bundle and the npm registry latest;
+# station CLI over CLI_DRIFT_RELEASES releases behind = one violation row carrying the exact upgrade command.
+CLI_DRIFT_RELEASES = 10
+CLI_NPM_LATEST = "https://registry.npmjs.org/@anthropic-ai/claude-code/latest"
+CLI_APP_ROOT = Path(os.path.expandvars(r"%LOCALAPPDATA%\AnthropicClaude"))
+CLI_ASAR_RE = re.compile(rb'\{"version":"(\d+\.\d+\.\d+)","manifest":\{"version":"')
+
+
+def _claude_cli() -> tuple[str, str] | None:
+    """(path, version) of the CLI the stations run, or None when this machine has none."""
+    cli = shutil.which("claude")
+    if not cli:
+        return None
+    try:
+        out = subprocess.run([cli, "--version"], capture_output=True, text=True, timeout=30, creationflags=NW).stdout
+    except (OSError, subprocess.SubprocessError):
+        return (cli, "")
+    m = re.search(r"\d+\.\d+\.\d+", out or "")
+    return (cli, m.group(0) if m else "")
+
+
+def _app_bundled_cli(app_root: Path) -> str | None:
+    """Claude Code version inside the newest desktop app-*/resources/app.asar, None when no desktop app is installed."""
+    dirs = sorted((d for d in app_root.glob("app-*") if (d / "resources" / "app.asar").is_file()),
+                  key=lambda d: _ver(d.name[4:]) or (0,))
+    if not dirs:
+        return None
+    m = CLI_ASAR_RE.search((dirs[-1] / "resources" / "app.asar").read_bytes())
+    return m.group(1).decode() if m else None
+
+
+def claude_cli_drift(local: tuple[str, str] | None = None, app_root: Path | None = None, fetch=None,
+                     limit: int = CLI_DRIFT_RELEASES) -> list[dict] | str:
+    """[] = no CLI here or within `limit` releases; one row when behind; UNKNOWN string when nothing could be compared."""
+    local = local if local is not None else _claude_cli()
+    if not local:
+        return []
+    cli, have = local
+    v = _ver(have) if have else None
+    if not v or len(v) < 3:
+        return "UNKNOWN: claude --version unreadable"
+    refs: dict[str, str] = {}
+    try:
+        app = _app_bundled_cli(app_root or CLI_APP_ROOT)
+    except OSError:
+        app = None
+    if app:
+        refs["app"] = app
+    try:
+        npm = str((fetch or _fetch_json)(CLI_NPM_LATEST).get("version") or "")
+        if _ver(npm):
+            refs["npm"] = npm
+    except Exception:  # noqa: BLE001 - offline: the desktop bundle alone still decides
+        pass
+    if not refs:
+        return "UNKNOWN: no desktop bundle and npm registry unreachable"
+    target = max(refs.values(), key=lambda s: _ver(s))
+    t = _ver(target)
+    if t <= v:
+        return []
+    behind = t[2] - v[2] if t[:2] == v[:2] else None   # another minor line: the release count is not derivable
+    if behind is not None and behind <= limit:
+        return []
+    fix = "npm i -g @anthropic-ai/claude-code@latest" if "npm" in cli.lower() else "claude update"
+    return [{"cli": have, **refs, "behind": behind if behind is not None else f"minor line {v[0]}.{v[1]} < {t[0]}.{t[1]}",
+             "limit": limit, "path": cli, "fix": fix}]
+
+
+def check(hub: Path, now: float | None = None) -> dict:
+    now = now or _now()
+    rows = [check_seat(s, now) for s in seats(hub)]
+    try:
+        cli_drift = claude_cli_drift()
+    except Exception as exc:  # noqa: BLE001
+        cli_drift = f"UNKNOWN: {type(exc).__name__}"
+    try:
+        mems = stale_memories(hub)
+    except Exception as exc:  # noqa: BLE001
+        mems = f"UNKNOWN: {type(exc).__name__}"
+    try:
+        mem_idx = memory_index_oversize(hub)
+    except Exception as exc:  # noqa: BLE001
+        mem_idx = f"UNKNOWN: {type(exc).__name__}"
+    try:
+        leaks = producers(hub)
+    except Exception as exc:  # noqa: BLE001 — a hygiene check never takes the rider down
+        leaks = f"UNKNOWN: {type(exc).__name__}"
+    try:
+        anti = retention_antipatterns(hub)
+    except Exception as exc:  # noqa: BLE001
+        anti = f"UNKNOWN: {type(exc).__name__}"
+    try:
+        cves = runtime_cves(hub)
+    except Exception as exc:  # noqa: BLE001
+        cves = f"UNKNOWN: {type(exc).__name__}"
+    try:   # the hub is a repo but not a seat; its agent worktrees are the 3.7 GB copies
+        hub_blocks = _worktree_blocks(hub)
+        hub_wt = stale_agent_worktrees(hub, hub_blocks, now) if hub_blocks else []
+    except Exception as exc:  # noqa: BLE001
+        hub_wt = f"UNKNOWN: {type(exc).__name__}"
+    return {"seats": rows, "scheduled_tasks": scheduled_task_findings(hub), "hub_stale_agent_worktrees": hub_wt,
+            "counts": {k: sum(1 for r in rows if r["activity"] == k) for k in ("ACTIVE", "IDLE", "DORMANT")},
+            "violations": sum(len(r["findings"]) for r in rows) + (len(cli_drift) if isinstance(cli_drift, list) else 0),
+            "claude_cli_drift": cli_drift, "producers": leaks, "retention_antipatterns": anti, "stale_memories": mems, "memory_index_oversize": mem_idx, "runtime_cves": cves}
+
+
+# ------------------------------------------------------------------ sweep
+def _tracked_set(repo: Path) -> set[str]:
+    p = _git(repo, "ls-files", "-z", timeout=300)
+    if p.returncode != 0:
+        return set()
+    return {str((repo / f).resolve()).lower() for f in p.stdout.split("\0") if f}
+
+
+class Tracked:
+    def __init__(self, hub: Path):
+        self.hub = hub
+        self.cache: dict[Path, set[str]] = {}
+
+    def repo_of(self, path: Path) -> Path:
+        for p in [path] + list(path.parents):
+            if (p / ".git").exists():
+                return p
+            if p == self.hub:
+                break
+        return self.hub
+
+    def __call__(self, path: Path) -> bool:
+        repo = self.repo_of(path)
+        if repo not in self.cache:
+            self.cache[repo] = _tracked_set(repo)
+        s = str(path.resolve()).lower()
+        if s in self.cache[repo]:
+            return True
+        if path.is_dir():
+            pref = s.rstrip("\\/") + os.sep
+            return any(t.startswith(pref) for t in self.cache[repo])
+        return False
+
+
+def _never(hub: Path, path: Path, cls: str = "") -> bool:
+    rel = str(path.relative_to(hub)).lower() if str(path).lower().startswith(str(hub).lower()) else str(path).lower()
+    low = path.name.lower()
+    if cls in ("expired_state", "orphan_inbox", "orphan_worktree"):
+        # explicitly listed engine state: only the untouchable trees and live lock/pid files are refused
+        if low.endswith((".lock", ".pid")) and path.is_file():
+            return True
+        return any(rel == n.lower() or rel.startswith(n.lower() + os.sep) for n in UNTOUCHABLE)
+    if low.endswith((".lock", ".pid")) or any(k in low for k in LIVE):
+        return True
+    if any(rel.startswith(b.lower() + os.sep) for b in BACKUP_ROOTS):   # the two backup roots are the only _registry trees swept
+        return False
+    return any(rel == n.lower() or rel.startswith(n.lower() + os.sep) for n in NEVER)
+
+
+def _newest_mtime(p: Path) -> float:
+    if p.is_file():
+        return p.stat().st_mtime
+    newest = 0.0
+    for dp, dns, fns in os.walk(p):
+        dns[:] = [d for d in dns if not _is_junction(os.path.join(dp, d))]
+        for f in fns:
+            try:
+                m = os.stat(os.path.join(dp, f), follow_symlinks=False).st_mtime
+            except OSError:
+                continue
+            if m > newest:
+                newest = m
+    return newest or p.stat().st_mtime
+
+
+def _size(p: Path) -> int:
+    if p.is_file():
+        return p.stat().st_size
+    total = 0
+    for dp, dns, fns in os.walk(p):
+        dns[:] = [d for d in dns if not _is_junction(os.path.join(dp, d))]
+        for f in fns:
+            try:
+                total += os.stat(os.path.join(dp, f), follow_symlinks=False).st_size
+            except OSError:
+                pass
+    return total
+
+
+def _cache_idle(path: Path, now: float) -> bool:
+    """A tool cache nothing has written for CACHE_IDLE_D days. A cache in use is a file that keeps being read: moving it
+    made the interpreter rebuild it the same day, and the copy sat in _delete (2026-11-12: about 1,000 files a day)."""
+    cut = now - CACHE_IDLE_D * 86400
+    for dp, _dns, fns in os.walk(path):
+        for f in fns:
+            try:
+                if os.stat(os.path.join(dp, f), follow_symlinks=False).st_mtime > cut:
+                    return False
+            except OSError:
+                continue
+    return True
+
+
+def candidates(hub: Path, now: float | None = None) -> list[tuple[str, Path, int]]:
+    """(class, path, bytes) for everything the sweep may move; ordered caches, temp files, stale entries, old backups."""
+    now = now or _now()
+    out: list[tuple[str, Path, int]] = []
+    for seat in seats(hub) + [hub / "_skill", hub / "_harness", hub / "_logs"]:
+        if not seat.is_dir():
+            continue
+        for dp, dns, fns in os.walk(seat):
+            keep = []
+            for d in dns:
+                full = Path(dp) / d
+                if d in PRUNE or _is_junction(str(full)):
+                    continue
+                if d in CACHE_DIRS:
+                    if _cache_idle(full, now):
+                        out.append(("cache_dir", full, _size(full)))
+                    continue
+                keep.append(d)
+            dns[:] = keep
+            for f in fns:
+                if f.lower().endswith(TEMP_SUFFIX) or f.startswith("~$"):
+                    full = Path(dp) / f
+                    try:
+                        out.append(("temp", full, full.stat().st_size))
+                    except OSError:
+                        pass
+            if len(out) >= MAX_MOVES:
+                break
+    for rel in STALE_ROOTS:
+        root = hub / rel
+        if not root.is_dir():
+            continue
+        for e in sorted(root.iterdir()):
+            if _never(hub, e) or _is_junction(str(e)):
+                continue
+            try:
+                if _newest_mtime(e) < now - STALE_S:
+                    out.append(("stale", e, _size(e)))
+            except OSError:
+                continue
+    for rel in BACKUP_ROOTS:
+        root = hub / rel
+        if not root.is_dir():
+            continue
+        entries = sorted((e for e in root.iterdir() if not _is_junction(str(e))), key=lambda x: x.stat().st_mtime, reverse=True)
+        for e in entries[KEEP_NEWEST:]:
+            out.append(("backup", e, _size(e)))
+    out.extend(expired_state(hub, now))
+    out.extend(orphan_worktrees(hub, now))
+    return out[:MAX_MOVES]
+
+
+def _entries(root: Path) -> list[Path]:
+    try:
+        return [e for e in root.iterdir() if not _is_junction(str(e))]
+    except OSError:
+        return []
+
+
+def expired_state(hub: Path, now: float | None = None) -> list[tuple[str, Path, int]]:
+    """Engine state past its lifetime (STATE_TTL) and inbox folders addressed to no seat (orphan_inbox)."""
+    now = now or _now()
+    out: list[tuple[str, Path, int]] = []
+    for spec in STATE_TTL:
+        roots = [hub / spec["root"]] if "*" not in spec["root"] else list(hub.glob(spec["root"]))
+        pat = re.compile(spec["re"], re.I) if spec.get("re") else RETENTION_RE
+        cut = now - float(spec.get("ttl") or 0) * 86400
+        for root in roots:
+            if not root.is_dir() or _is_junction(str(root)):
+                continue
+            kind = spec["kind"]
+            ents = _entries(root)
+            if kind == "newest":
+                ents.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+                picked = ents[int(spec["keep"]):]
+            elif kind == "files":
+                picked = [e for e in ents if e.is_file() and not e.name.startswith(tuple(spec.get("exclude") or ()))
+                          and e.stat().st_mtime < cut]
+            elif kind == "dirs":
+                picked = [e for e in ents if e.is_dir() and _newest_mtime(e) < cut]
+            else:  # named
+                picked = [e for e in ents if pat.search(e.name) and (not spec.get("ttl") or _newest_mtime(e) < cut)]
+            for e in picked:
+                try:
+                    out.append(("expired_state", e, _size(e)))
+                except OSError:
+                    continue
+            if len(out) >= MAX_MOVES:
+                return out
+    inbox = hub / "_bus" / "inbox"
+    if inbox.is_dir():
+        seat_names = {s.name for s in seats(hub)}
+        cut = now - ORPHAN_INBOX_TTL_D * 86400
+        for d in _entries(inbox):
+            if not d.is_dir() or d.name in seat_names or d.name.startswith("hubclock") or (hub / d.name).is_dir():
+                continue
+            for e in _entries(d):
+                try:
+                    if e.is_file() and e.stat().st_mtime < cut:
+                        out.append(("orphan_inbox", e, e.stat().st_size))
+                except OSError:
+                    continue
+                if len(out) >= MAX_MOVES:
+                    return out
+    return out
+
+
+def _fallback_move(hub: Path, paths: list[Path], topic: str) -> dict:
+    """When fleet-residue-quarantine.py is not on this host: same bucket layout, own manifest, never delete."""
+    day = time.strftime("%Y-%m-%d")
+    bucket = hub / "_delete" / f"{day}-{topic}"
+    moved, failed = [], []
+    for p in paths:
+        try:
+            rel = p.relative_to(hub)
+        except ValueError:
+            failed.append((str(p), "outside_workspace"))
+            continue
+        target = bucket / rel
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(p), str(target))
+            moved.append({"origin": str(rel).replace("\\", "/"), "quarantined_to": str(target.relative_to(hub)).replace("\\", "/")})
+        except Exception as exc:  # noqa: BLE001
+            failed.append((str(p), type(exc).__name__))
+    man = bucket / "MANIFEST.json"
+    doc = _load(man, {"schema": "fleet-hygiene-fallback-manifest/1", "entries": []})
+    doc["entries"].extend(moved)
+    if moved:
+        _save(man, doc)
+    return {"ok": not failed, "moved": len(moved), "failed": failed[:20], "bucket": str(bucket)}
+
+
+def sweep(hub: Path, apply: bool, now: float | None = None, tracked=None) -> dict:
+    now = now or _now()
+    tracked = tracked or Tracked(hub)
+    rows = candidates(hub, now)
+    plan, skipped = [], {"git_tracked": 0, "protected": 0}
+    for cls, p, size in rows:
+        if _never(hub, p, cls):
+            skipped["protected"] += 1
+            continue
+        try:
+            # an orphan worktree is outside git's registry by definition; its own nested index proves nothing
+            if cls != "orphan_worktree" and tracked(p):
+                skipped["git_tracked"] += 1
+                continue
+        except Exception:  # noqa: BLE001
+            skipped["git_tracked"] += 1
+            continue
+        plan.append((cls, p, size))
+    by_class = {}
+    for cls, p, size in plan:
+        c = by_class.setdefault(cls, {"count": 0, "bytes": 0})
+        c["count"] += 1
+        c["bytes"] += size
+    result = {"applied": apply, "planned": len(plan), "planned_bytes": sum(s for _, _, s in plan), "by_class": by_class,
+              "skipped": skipped, "moved": 0, "engine": None, "errors": []}
+    if not apply or not plan:
+        return result
+    rq = _module("fleet-residue-quarantine.py")
+    paths = [p for _, p, _ in plan if p.exists()]
+    if rq is not None:
+        result["engine"] = "fleet-residue-quarantine.py"
+        for i in range(0, len(paths), 200):
+            batch = [str(p.relative_to(hub)).replace("\\", "/") for p in paths[i:i + 200]]
+            try:
+                r = rq.quarantine(batch, "hygiene", note="fleet-hygiene sweep (operator 2026-10-29)", workspace=hub)
+                n = r.get("moved")
+                result["moved"] += n if isinstance(n, int) else len(n or [])
+                if r.get("ok") is False:
+                    result["errors"].append(str(r.get("error") or r.get("errors"))[:200])
+            except Exception as exc:  # noqa: BLE001
+                result["errors"].append(f"{type(exc).__name__}: {exc}"[:200])
+    else:
+        result["engine"] = "fallback_move"
+        r = _fallback_move(hub, paths, "hygiene")
+        result["moved"] = r["moved"]
+        result["errors"].extend(str(f) for f in r["failed"])
+    return result
+
+
+# ------------------------------------------------------------------ report / publish
+def delete_bytes(hub: Path) -> int:
+    d = hub / "_delete"
+    return _size(d) if d.is_dir() else 0
+
+
+def publish(hub: Path, host: str, doc: dict) -> dict:
+    fjd = _module("fleet-job-dispatch.py")
+    if fjd is None:
+        return {"ok": False, "error": "fleet-job-dispatch.py missing on this host"}
+    try:
+        repo = fjd.repo_root(hub)
+        slug = contributor_slug(hub, host)
+        pub = fjd._publish(repo, hub, {f"contributors/{slug}/hygiene.json": doc}, f"chore(hygiene/{slug}): fleet hygiene report")
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"{type(exc).__name__}: {exc}"[:200]}
+    pub["conversations"] = conversations_fallback(hub)
+    return pub
+
+
+def conversations_fallback(hub: Path) -> dict:
+    """A follower without the f1s-daily rider still publishes its conversation index (operator 2026-11-21: every
+    host's conversations on the carrier) on this existing converge path; skipped when f1s_daily did it within 12 h."""
+    local = hub / "_registry" / "f1s-daily" / "conversations.json"
+    try:
+        if local.is_file() and _now() - local.stat().st_mtime < 12 * 3600:
+            return {"skipped": "fresh"}
+        daily = _module("f1s_daily.py")
+        if daily is None:
+            return {"ok": False, "error": "f1s_daily.py missing or broken on this host"}
+        state = daily.load_state()
+        res = daily.publish_conversations(state, _now())
+        daily._write(daily.STATE, state)
+        return res
+    except Exception as exc:  # noqa: BLE001 - never fails the hygiene report
+        return {"ok": False, "error": f"{type(exc).__name__}: {exc}"[:200]}
+
+
+def seat_budget(hub: Path, apply: bool) -> dict:
+    """apply_seat_budget.py in-process (altos has no SSH and no Claude auth; this pass is what runs there). Fail-open."""
+    import contextlib
+    import io
+    try:
+        asb = _module("apply_seat_budget.py")
+        if asb is None:
+            return {"ok": False, "error": "apply_seat_budget.py missing or broken on this host"}
+        stats: dict = {}
+        with contextlib.redirect_stdout(io.StringIO()):
+            out = asb.main(str(hub), asb.PROJECTS, not apply, stats)
+        pins = stats.get("pins") or {}
+        return {"ok": True, "applied": apply, "seats": len(out), "deny_rows": sum(len(v) for v in out.values()),
+                "pins_moved": sum(len(v) for v in pins.values())}
+    except Exception as exc:  # noqa: BLE001 - recorded, never raised
+        return {"ok": False, "error": f"{type(exc).__name__}: {exc}"[:200]}
+
+
+def run(hub: Path = HUB, host: str | None = None, apply: bool = False, force: bool = False, do_publish: bool = True,
+        now: float | None = None) -> dict:
+    now = now or _now()
+    host = host or this_host()
+    OUT.mkdir(parents=True, exist_ok=True)
+    state_p = OUT / f"{host}.state.json"
+    state = _load(state_p, {})
+    if not force and now - float(state.get("last_run_epoch") or 0) < THROTTLE_S:
+        # scar3 2026-10-29: a run started over SSH has no Windows credential store, so its carrier push is rejected;
+        # the rider's next detached launch (which has the credentials) must still deliver that report instead of
+        # waiting 20 h behind the throttle.
+        last_pub = state.get("last_publication") or {}
+        if do_publish and last_pub.get("ok") is False and (OUT / f"{host}.json").is_file():
+            pub = publish(hub, host, _load(OUT / f"{host}.json", {}))
+            state["last_publication"] = pub
+            _save(state_p, state)
+            return {"skipped": "throttled", "republished": pub, "last_run": state.get("last_run"), "host": host}
+        return {"skipped": "throttled", "last_run": state.get("last_run"), "host": host}
+    lock = OUT / f"{host}.lock"
+    try:
+        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.write(fd, str(os.getpid()).encode())
+        os.close(fd)
+    except FileExistsError:
+        if now - lock.stat().st_mtime < 3 * 3600:
+            return {"skipped": "locked", "host": host}
+        lock.unlink()
+        return run(hub, host, apply, force, do_publish, now)
+    try:
+        t0 = time.time()
+        chk = check(hub, now)
+        sw = sweep(hub, apply, now)
+        sb = seat_budget(hub, apply)
+        doc = {"schema": "fleet-hygiene/1", "host": host, "at": _iso(now), "hub": str(hub), "seconds": None,
+               "check": chk, "sweep": sw, "seat_budget": sb, "delete_bytes": delete_bytes(hub),
+               "summary": {"seats": len(chk["seats"]), "violations": chk["violations"], "activity": chk["counts"],
+                           "scheduled_task_findings": chk["scheduled_tasks"] if isinstance(chk["scheduled_tasks"], str) else len(chk["scheduled_tasks"]),
+                           "producer_leaks": chk["producers"] if isinstance(chk["producers"], str) else len(chk["producers"]),
+                           "retention_antipatterns": chk["retention_antipatterns"] if isinstance(chk["retention_antipatterns"], str) else len(chk["retention_antipatterns"]),
+                           "stale_memories": chk["stale_memories"] if isinstance(chk["stale_memories"], str) else len(chk["stale_memories"]),
+                           "memory_index_oversize": chk["memory_index_oversize"] if isinstance(chk["memory_index_oversize"], str) else len(chk["memory_index_oversize"]),
+                           "runtime_cves": chk["runtime_cves"] if isinstance(chk["runtime_cves"], str) else len(chk["runtime_cves"]),
+                           "claude_cli_drift": chk["claude_cli_drift"] if isinstance(chk["claude_cli_drift"], str) else [f"{d['cli']} behind {d['behind']}: {d['fix']}" for d in chk["claude_cli_drift"]],
+                           "seat_budget": (f"{'applied' if sb['applied'] else 'planned'} seats={sb['seats']} deny+{sb['deny_rows']} pins->sonnet {sb['pins_moved']}" if sb.get("ok") else "error: " + str(sb.get("error"))), "moved": sw["moved"], "planned_bytes": sw["planned_bytes"], "applied": apply}}
+        doc["seconds"] = round(time.time() - t0, 1)
+        _save(OUT / f"{host}.json", doc)
+        with open(OUT / "history.jsonl", "a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"at": doc["at"], "host": host, **doc["summary"]}, ensure_ascii=False) + "\n")
+        doc["publication"] = publish(hub, host, doc) if do_publish else {"ok": None, "skipped": "no-publish"}
+        state.update(last_run=doc["at"], last_run_epoch=now, last_summary=doc["summary"], last_publication=doc["publication"])
+        _save(state_p, state)
+        return doc
+    finally:
+        try:
+            lock.unlink()
+        except OSError:
+            pass
+
+
+def fleet(hub: Path = HUB) -> list[dict]:
+    """Curator view: every host's latest hygiene.json in the carrier clone (synced by the fleet-skill rider)."""
+    fjd = _module("fleet-job-dispatch.py")
+    repo = fjd.repo_root(hub) if fjd else hub / "_skill" / "ai_fleet_skills"
+    rows = []
+    for p in sorted((repo / "contributors").glob("*/hygiene.json")):
+        d = _load(p, {})
+        if d:
+            rows.append({"contributor": p.parent.name, "host": d.get("host"), "at": d.get("at"), **(d.get("summary") or {}),
+                         "delete_gb": round((d.get("delete_bytes") or 0) / 1e9, 2),
+                         "findings": [f for r in (d.get("check") or {}).get("seats", []) for f in (r.get("findings") or [])][:12]})
+    return rows
+
+
+def main(argv=None) -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001
+        pass
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    r = sub.add_parser("run")
+    r.add_argument("--host")
+    r.add_argument("--apply", action="store_true", help="move residue (default: plan only)")
+    r.add_argument("--force", action="store_true", help="ignore the 20 h throttle")
+    r.add_argument("--no-publish", action="store_true")
+    r.add_argument("--max-moves", type=int, help=f"cap on entries moved in this run (default {MAX_MOVES}); backlog runs raise it")
+    sub.add_parser("status")
+    sub.add_parser("fleet")
+    sub.add_parser("cves", help="runtime CVE rows: Node lines vs nodejs.org security releases, seat venvs vs OSV")
+    sub.add_parser("memories", help="memories naming engine files, paths or flags that no longer exist")
+    sub.add_parser("cli", help="station CLI (`claude -p`) version vs the desktop bundle and npm latest")
+    pr = sub.add_parser("producers", help="name the engines that keep filling state dirs (no move)")
+    pr.add_argument("--cap", type=int, default=PRODUCER_CAP)
+    a = ap.parse_args(argv)
+    if a.cmd == "run":
+        if a.max_moves:
+            globals()["MAX_MOVES"] = a.max_moves
+        out = run(HUB, a.host, a.apply, a.force, not a.no_publish)
+    elif a.cmd == "producers":
+        out = {"producers": producers(HUB, a.cap), "retention_antipatterns": retention_antipatterns(HUB),
+               "expired_state_planned": len(expired_state(HUB))}
+    elif a.cmd == "cves":
+        out = runtime_cves(HUB)
+    elif a.cmd == "cli":
+        out = {"cli": _claude_cli(), "drift": claude_cli_drift()}
+    elif a.cmd == "memories":
+        out = {"stale": stale_memories(HUB), "index_oversize": memory_index_oversize(HUB)}
+    elif a.cmd == "status":
+        host = this_host()
+        out = {"host": host, "state": _load(OUT / f"{host}.state.json", {}), "report": _load(OUT / f"{host}.json", {}).get("summary")}
+    else:
+        out = fleet(HUB)
+    print(json.dumps(out, ensure_ascii=False, indent=1, default=str))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

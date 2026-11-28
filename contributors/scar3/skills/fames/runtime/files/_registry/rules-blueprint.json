@@ -84,7 +84,7 @@
         },
         {
           "id": "deletion",
-          "rule": "永久刪除一律 operator 親手執行,session 永不自刪;遷移=copy→fix→verify→改名 .MIGRATED-bak→soak→operator 砍。",
+          "rule": "永久刪除一律 operator 親手執行,session 永不自刪;遷移=copy→fix→verify→改名 .MIGRATED-bak→soak→operator 砍。引擎自有的鎖/心跳/暫存/輪替檔由寫它的引擎直接汰除,不留 .MIGRATED-bak 副本(.MIGRATED-bak 只限一次性遷移)。",
           "source": [
             "C:/ai_workspace/CLAUDE.md",
             "_registry/room-self-heal-protocol.md §4"
@@ -165,9 +165,10 @@
         },
         {
           "id": "close-when-done",
-          "rule": "【operator 2026-10-11】對話任務完成就自己關閉：全部收尾且沒有下一步時，最後寫「沒有下一步」並 archive_session(\"self\")；還有背景工作或待決就不關；下次由派送方取消封存續用。",
+          "rule": "【operator 2026-10-11／11-27】收尾且沒有下一步才關：最後寫「沒有下一步」並 archive_session(\"self\")；未驗證、未 commit／推、有待辦、背景工作或待決＝沒完成，自己或他人都不准關（判 session-consolidate.py）。",
           "source": [
-            "operator 2026-10-11 「對話任務完成就自己關閉」"
+            "operator 2026-10-11 「對話任務完成就自己關閉」",
+            "operator 2026-11-27 「注意不要隨便關閉還沒完成的對話」"
           ]
         },
         {

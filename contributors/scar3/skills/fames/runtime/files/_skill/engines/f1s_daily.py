@@ -72,6 +72,11 @@ URL = re.compile(r"https?://[^\s<>\"'）)」】\u3000-\u303f\u4e00-\u9fff\uff00-
 SECRET = re.compile(r"(?:sk-|ghp_|gho_|xox[bp]-|AIza|eyJ)[A-Za-z0-9_\-.]{10,}|[A-Za-z0-9_\-]{40,}")
 DECISION = re.compile(r"需要你決定|需要你(?:來)?(?:選|決)|請你決定|由你決定")
 MACHINE_ENTRY = ("sdk-cli", "sdk-py", "sdk-ts")
+# F1S-generated prompts typed into a chat by a tick (article_relay curator-order drive): not the operator's words.
+# f1s-evolve 2026-11-26: two such dispatches were harvested as operator "corrections" (ledger 8d59e0f6b788, 11c2d885a64b).
+# 2026-11-26: an f1s-evolve-tick prompt quoting a 300-char-cut order ("…watch?v=UwxUt", "https://www.youtube.com/") and
+# the ARTICLE RELAY prompt itself were harvested as operator-pasted links (state urls af19c8c079fd, fef0e980f7d3).
+MACHINE_PROMPT = re.compile(r"^(?:處理 \S+ 的 curator 校正令|ARTICLE RELAY\b|You are the hub curator seat \S+, running unattended)")
 # Not articles (first tick 2026-10-27 fetched localhost, sign-in pages and the operator's own deployments): a local or
 # private address, a sign-in / console / API host, a fleet deployment, a private Google doc, a vault seat's site.
 NOT_ARTICLE = re.compile(r"^(?:localhost|127\.|10\.|192\.168\.|\[|(?:accounts|id|auth|login|signin|secure\.id|console|dash|"
@@ -189,7 +194,7 @@ def _human_text(row: dict) -> str:
     if not blocks or any(isinstance(b, dict) and b.get("type") == "tool_result" for b in blocks):
         return ""
     text = "\n".join(str(b.get("text") or "") for b in blocks if isinstance(b, dict) and b.get("type") == "text")
-    return "" if text.lstrip().startswith("<") else text.strip()
+    return "" if text.lstrip().startswith("<") or MACHINE_PROMPT.match(text.lstrip()) else text.strip()
 
 
 def error_sig(text: str) -> str:
@@ -574,7 +579,10 @@ def line_links(state: dict) -> int:
         except Exception:  # noqa: BLE001
             continue
         for row in links:
-            url = article_url(str(row.get("one_line") or "").strip())
+            # 2026-11-27: one_line is "<url> <note>"; passed whole, urlencode glued the note on as "+operator+%E8…"
+            # and the same video was fetched twice under a second key (state url 7cb36438cb90).
+            hit = URL.search(str(row.get("one_line") or ""))
+            url = article_url(hit.group(0)) if hit else ""
             key = _sha(url)
             if url.startswith("http") and key not in state["urls"]:
                 state["urls"][key] = {"url": url, "seat": relay.DEST[source], "session": "", "status": "pending",

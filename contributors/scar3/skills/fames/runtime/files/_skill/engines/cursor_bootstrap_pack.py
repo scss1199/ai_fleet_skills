@@ -162,6 +162,8 @@ def _body(agent: str, rel_path: str) -> str:
     # T1 whole, never cut to a byte cap: rules_brief.charter_with_t1(), which decides whether
     # SessionStart must inject T1 itself, accepts only a charter that states every T1 rule
     # exactly. A body over MAX_BYTES fails main() instead.
+    # T1 comes first on purpose, and the charter carries no maintainer notes (the "T1 first" line and
+    # the "Cursor reads AGENTS.md" comment lived in the body until 2026-11-28; they cost 13 seats the cap).
     rules = rules_brief.format_rules(tiers=["T1"], max_bytes=1 << 30).strip()
     seat = os.path.join(HUB, rel_path).replace("\\", "/")
     pilot = _pilot_extra(agent)
@@ -177,13 +179,11 @@ def _body(agent: str, rel_path: str) -> str:
     # T1, at the top of the charter, states each of them with the same commands and paths
     # (guarded by _skill/tests/test_standing_rules_delivery.py).
     return f"""<!-- DERIVED — regenerate: python %AI_WORKSPACE%\\_skill\\engines\\cursor_bootstrap_pack.py -->
-<!-- Cursor reads AGENTS.md at session start. Open cwd MUST be {seat} (not hub root). -->
 
 # {agent} — Cursor bootstrap (≤{MAX_BYTES}B)
 
 > Identity + mandate load only when **cwd = `{seat}`**. Hub root `C:\\ai_workspace` silently makes you this machine's curator seat (`_registry/machine.json`; default `{HUB_CURATOR}`).
 > **THIS file is the seat charter.** `CLAUDE.md` starts with `@AGENTS.md`, so every engine reads the same bytes.
-> (T1 hard lines come first on purpose: a body over {MAX_BYTES} bytes fails this generator, and the cut it still writes loses only the tail.)
 
 ## Standing rules (portal rules tab = this source)
 
@@ -193,7 +193,7 @@ def _body(agent: str, rel_path: str) -> str:
 {pilot_block}
 ## FAMES complete-contract trigger
 
-FAMES 是預設契約，不是一次叫全部（operator 2026-10-08）：每次對話照 T1 `f1s`（F1S＝FAMES 一套系統）。FP、MTM 每個任務都做；SCF 要有已驗證結果，AEX 要有可比較的量測差距，SEAL 在宣稱完成時；Lean、Jev、HubClock、GitHub 只在各自條件成立時啟用。使用者單說「FAMES」＝在回報列出各階段狀態。SSOT：`_registry/fames-protocol.json`；Skill：`fames`。
+FAMES 是預設契約，不是一次叫全部（T1 `f1s`）：FP、MTM 每個任務都做；SCF 要有已驗證結果，AEX 要有可比較的量測差距，SEAL 在宣稱完成時；Lean、Jev、HubClock、GitHub 只在各自條件成立時啟用。單說「FAMES」＝回報列各階段狀態。SSOT：`_registry/fames-protocol.json`；Skill：`fames`。
 
 ## Milestone handoff
 
@@ -203,8 +203,8 @@ FAMES 是預設契約，不是一次叫全部（operator 2026-10-08）：每次�
 
 ## Obedience (operator 2026-06-24 — 違反=P=0)
 
-**MTM/MTO（SessionStart+每 session 1x remind 已注入）**：任務前 `prework.py`+`ztm-task-router.py` · Skill `mtm-mto-first` · 禁 TRN Read/Shell 迴圈 · `f1s_waste.py status --seat {agent}`  
-**AGC（auto-goal-compact 已注入）**：長 session 讀 `_registry/agc-compact/{agent}.md` 勿重讀 chat · Skill `agc-auto-goal-compact` · `agc-should-compact.py --agent {agent}`  
+**MTM/MTO**：任務前 `prework.py`+`ztm-task-router.py` · Skill `mtm-mto-first` · 禁 TRN Read/Shell 迴圈 · `f1s_waste.py status --seat {agent}`  
+**AGC**：長 session 讀 `_registry/agc-compact/{agent}.md` 勿重讀 chat · Skill `agc-auto-goal-compact` · `agc-should-compact.py --agent {agent}`  
 **平行**：獨立 ZTM 葉 → Multitask/Task 同 wave 全開；禁止無 merge 就宣稱完成  
 路由：`python %AI_WORKSPACE%\\_skill\\engines\\ztm-task-router.py "<keywords>"`
 
