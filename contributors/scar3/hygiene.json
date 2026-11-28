@@ -1,9 +1,9 @@
 {
   "schema": "fleet-hygiene/1",
   "host": "scar3",
-  "at": "2026-11-26T00:24:43",
+  "at": "2026-11-28T17:34:43",
   "hub": "C:\\ai_workspace",
-  "seconds": 213.8,
+  "seconds": 113.4,
   "check": {
     "seats": [
       {
@@ -32,7 +32,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-26",
+        "newest_file": "2026-11-28",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -47,7 +47,7 @@
           "charter_missing:CLAUDE.md,AGENTS.md,.cursor\\hooks.json"
         ],
         "repo": "hub",
-        "newest_file": "2026-11-26",
+        "newest_file": "2026-11-28",
         "activity": "ACTIVE"
       },
       {
@@ -55,7 +55,7 @@
         "missing": [],
         "findings": [],
         "repo": "hub",
-        "newest_file": "2026-11-26",
+        "newest_file": "2026-11-28",
         "activity": "ACTIVE"
       },
       {
@@ -70,7 +70,7 @@
         "worktrees_prunable": 0,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-26",
+        "newest_file": "2026-11-28",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -88,7 +88,7 @@
         "worktrees_prunable": 1,
         "worktrees_orphan": 0,
         "tracked_junction_files": 0,
-        "newest_file": "2026-11-26",
+        "newest_file": "2026-11-28",
         "activity": "ACTIVE",
         "stale_agent_worktrees": []
       },
@@ -128,7 +128,7 @@
     "producers": [
       {
         "dir": "_registry",
-        "entries": 420,
+        "entries": 421,
         "retention_named": 250,
         "writer": "tempfile leftovers of a failed atomic write (tmp********); writer UNKNOWN"
       },
@@ -307,7 +307,7 @@
               "PYSEC-2026-1374",
               "PYSEC-2026-1375"
             ],
-            "latest": "4.3.1"
+            "latest": "4.3.2"
           },
           {
             "package": "fsspec",
@@ -587,7 +587,7 @@
               "GHSA-5849-834g-hvw5",
               "GHSA-5hx5-vpf9-5wcv"
             ],
-            "latest": "7.1.1"
+            "latest": "7.2.0"
           },
           {
             "package": "python-multipart",
@@ -748,7 +748,7 @@
               "GHSA-8rjx-v5ww-45pp",
               "GHSA-94p9-xgh2-xp45"
             ],
-            "latest": "21.15.13"
+            "latest": "21.15.14"
           }
         ]
       }
@@ -756,9 +756,13 @@
   },
   "sweep": {
     "applied": true,
-    "planned": 1,
-    "planned_bytes": 207,
+    "planned": 4,
+    "planned_bytes": 1821285,
     "by_class": {
+      "cache_dir": {
+        "count": 3,
+        "bytes": 1821078
+      },
       "orphan_inbox": {
         "count": 1,
         "bytes": 207
@@ -768,7 +772,7 @@
       "git_tracked": 284,
       "protected": 0
     },
-    "moved": 1,
+    "moved": 4,
     "engine": "fleet-residue-quarantine.py",
     "errors": []
   },
@@ -779,7 +783,7 @@
     "deny_rows": 0,
     "pins_moved": 0
   },
-  "delete_bytes": 9893905174,
+  "delete_bytes": 9895816709,
   "summary": {
     "seats": 7,
     "violations": 5,
@@ -798,8 +802,8 @@
       "2.1.248 behind 84: claude update"
     ],
     "seat_budget": "applied seats=2 deny+0 pins->sonnet 0",
-    "moved": 1,
-    "planned_bytes": 207,
+    "moved": 4,
+    "planned_bytes": 1821285,
     "applied": true
   }
 }
