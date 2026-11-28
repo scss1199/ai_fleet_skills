@@ -865,12 +865,27 @@ def model_lane_line(seat: str, session_id: str = "", transcript=None) -> str:
                     if ml.family(model):
                         break
         hosts = [h for h in _projects_host_ids(session_id)] if session_id else []
-        out = ml.line(hosts[0] if hosts else session_id, model, transcript=transcript, seat=seat)
-        if seat == curator():
+        main = seat if hosts and not ml.is_child_name(_session_name(session_id)) else ""
+        out = ml.line(hosts[0] if hosts else session_id, model, transcript=transcript, seat=main)
+        if main == curator():                          # child chats get neither the switch line nor the refresh prompt
             out = "\n".join(t for t in (out, ml.stale_prompt()) if t)
         return out
     except Exception:
         return ""
+
+
+def _session_name(session_id: str) -> str:
+    """Title of a CLI transcript uuid's desktop conversation, from ~/.claude/sessions/<pid>.json; "" when unknown."""
+    import glob as _glob
+    for f in _glob.glob(os.path.join(os.path.expanduser("~"), ".claude", "sessions", "*.json")):
+        try:
+            with open(f, encoding="utf-8") as fh:
+                d = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        if d.get("sessionId") == session_id:
+            return str(d.get("name") or "")
+    return ""
 
 
 def _projects_host_ids(session_id: str) -> list:
