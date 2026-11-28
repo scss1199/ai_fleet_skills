@@ -2,12 +2,12 @@
   "conversations": {
     "schema": 1,
     "host": "scar3",
-    "generated": "2026-11-25T16:28:25+00:00",
+    "generated": "2026-11-28T09:36:45+00:00",
     "counts": {
       "total": 52,
       "desktop": 36,
       "dispatched": 16,
-      "active_48h": 1
+      "active_48h": 0
     },
     "rows": [
       {
