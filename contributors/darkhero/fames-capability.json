@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "host": "darkhero",
-  "package_sha": "da62aa95ecd2e2e2c12d6a8f05fdf95cee548321439099ca8cd5448b1f8aaa3a",
+  "package_sha": "c44947e601c203a6ab384299ea1a8adbcd5f9a91f85e1b3010cc0debcb292ce9",
   "capability_set_sha": "002100e540ce65e0504b6579090740bb4d4989e2f4415244e2ef65a22b885b23",
   "validator_set_sha": "08a3910048d9dea20a6d94563a2a797ecd32540d789ae122faeffd01abb253b5",
   "runner_state": "armed",
-  "observed_at": "2026-11-28T06:07:03.000350+00:00",
+  "observed_at": "2026-11-28T06:29:38.520069+00:00",
   "freshness_seconds": 0,
   "capability_manifest": [
     {
@@ -353,46 +353,9 @@
     "runtime_state": "PASS",
     "phase_proof_state": "PASS",
     "base_proof_state": "PASS",
-    "native_state": "OBSERVED_PARTIAL_POPULATION",
-    "native_events": [
-      {
-        "agent": "ai_photo",
-        "surface": "claude",
-        "observed_at": "2026-11-28T14:03:13+08:00",
-        "receipt_sha256": "65f9c6fec4d43c1a48bc0d6e8a45b84a0b045631ce3de38014b9b5bb82f9382c"
-      },
-      {
-        "agent": "jci_taipei",
-        "surface": "claude",
-        "observed_at": "2026-11-28T13:40:36+08:00",
-        "receipt_sha256": "da66ed299cf5e206796fd3ea8d9b4f61d1ce242e9d4ae6a8af8a08e8e90b3b8d"
-      },
-      {
-        "agent": "ai_darkhero",
-        "surface": "claude",
-        "observed_at": "2026-11-28T13:50:05+08:00",
-        "receipt_sha256": "1b3a31bb0eca952aa26a62bb53121a45eef1ad324527b0a955df0a8d573f3424"
-      },
-      {
-        "agent": "jci_taipei",
-        "surface": "claude",
-        "observed_at": "2026-11-28T13:32:23+08:00",
-        "receipt_sha256": "a83b4c2d99f1b7678161a1d76894c9b2b56f603234b8717c76db5603d0f7213f"
-      },
-      {
-        "agent": "jci_taipei",
-        "surface": "claude",
-        "observed_at": "2026-11-28T13:36:17+08:00",
-        "receipt_sha256": "e714ff214846b1f7a02c6bf03bf8cee8c431126e3265d62f8e9f2c8d979743ef"
-      },
-      {
-        "agent": "jci_taipei",
-        "surface": "claude",
-        "observed_at": "2026-11-28T13:52:25+08:00",
-        "receipt_sha256": "1d08e05762ddde290cceaa4017caad781a4426b2737980683fc7ff9c9cb65c2e"
-      }
-    ],
-    "runtime_release_sha256": "6245091a6616030d2a48efc1b423884ee44c12859130ed5232fb6f4b55e414a1"
+    "native_state": "UNKNOWN",
+    "native_events": [],
+    "runtime_release_sha256": "f13b7c0b4efe7e01fdbc11569f758b71b47de5280b3dda343410a7193b3000c8"
   },
   "capability_evidence_scope": "local_validator_cases_not_native_lifecycle"
 }
