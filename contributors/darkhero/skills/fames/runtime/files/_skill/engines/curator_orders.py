@@ -792,7 +792,7 @@ def injection(seat: str, session_id: str = "") -> str:
     if out_of_scope(session_id):
         return ""
     return "\n".join(t for t in (once_per_context(seat, session_id, _injection(seat, session_id)), station_line(seat),
-                                 anger_line(seat, session_id) or handoff_line(seat, session_id),
+                                 anger_line(seat, session_id) or thrash_line(seat, session_id) or handoff_line(seat, session_id),
                                  model_lane_line(seat, session_id), spawn_line(seat)) if t)
 
 
@@ -1366,6 +1366,54 @@ def anger_line(seat: str, session_id: str = "", times: list | None = None, n: in
         return ""
     return (f"ROLL OVER (the operator scolded this conversation {len(times)} times in 3 h): it has failed the operator; do not do "
             "this prompt's work here, a fresh conversation takes the task with the operator's own words. " + _rollover_steps(seat, session_id))
+
+
+THRASH_N = 3                   # auto compactions inside THRASH_WINDOW_S that end one conversation, 0 = off
+THRASH_WINDOW_S = 1800
+
+
+def thrash_line(seat: str, session_id: str = "", path: str | None = None, now: float | None = None,
+                n: int = THRASH_N, window_s: int = THRASH_WINDOW_S) -> str:
+    """2026-11-28: sdnext_a770 61d746cd auto-compacted 67 times in 5 h (one every 2-3 min, 99K -> 23K), 28.9M in
+    f1s_waste `resume`: its process kept the compact window it started with although the cwd's autoCompactWindow
+    was raised later, and ~60K of every refill is fixed re-injection. A conversation that auto-compacted `n` times
+    in `window_s` is rolled over (the size roll-over's steps), so the new process reads the current window. "" otherwise."""
+    if not n:
+        return ""
+    try:
+        import time as _time
+        from datetime import datetime as _dt
+        path = path if path is not None else _transcript_of(session_id)
+        if not path or not os.path.isfile(path):
+            return ""
+        now = _time.time() if now is None else now
+        hits, freed = 0, []
+        with open(path, "rb") as fh:
+            for raw in fh:
+                if b'"compact_boundary"' not in raw:
+                    continue
+                try:
+                    row = json.loads(raw)
+                    meta = row.get("compactMetadata") or {}
+                    if meta.get("trigger") != "auto":
+                        continue
+                    at = _dt.fromisoformat(str(row.get("timestamp", "")).replace("Z", "+00:00")).timestamp()
+                except (ValueError, TypeError, AttributeError):
+                    continue
+                if 0 <= now - at <= window_s:
+                    hits += 1
+                    try:
+                        freed.append(int(meta.get("preTokens", 0)))
+                    except (TypeError, ValueError):
+                        pass
+        if hits < n:
+            return ""
+        each = f", each at only ~{round(sum(freed) / len(freed) / 1000)}K" if freed else ""
+        return (f"ROLL OVER (this conversation auto-compacted {hits} times in {window_s // 60} min{each}: its process holds an "
+                "older compact window than the cwd's current autoCompactWindow, so every compaction refills the same fixed "
+                "context). Do not do this prompt's work here. " + _rollover_steps(seat, session_id))
+    except Exception:
+        return ""
 
 
 def handoff_line(seat: str, session_id: str = "", context: int | None = None, over: int | None = None,
