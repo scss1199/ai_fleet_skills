@@ -865,7 +865,7 @@ def model_lane_line(seat: str, session_id: str = "", transcript=None) -> str:
                     if ml.family(model):
                         break
         hosts = [h for h in _projects_host_ids(session_id)] if session_id else []
-        out = ml.line(hosts[0] if hosts else session_id, model, transcript=transcript)
+        out = ml.line(hosts[0] if hosts else session_id, model, transcript=transcript, seat=seat)
         if seat == curator():
             out = "\n".join(t for t in (out, ml.stale_prompt()) if t)
         return out

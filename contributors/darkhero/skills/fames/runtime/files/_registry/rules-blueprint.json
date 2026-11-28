@@ -84,7 +84,7 @@
         },
         {
           "id": "deletion",
-          "rule": "永久刪除一律 operator 親手執行,session 永不自刪;遷移=copy→fix→verify→改名 .MIGRATED-bak→soak→operator 砍。",
+          "rule": "永久刪除一律 operator 親手執行,session 永不自刪;遷移=copy→fix→verify→改名 .MIGRATED-bak→soak→operator 砍。引擎自有的鎖/心跳/暫存/輪替檔由寫它的引擎直接汰除,不留 .MIGRATED-bak 副本(.MIGRATED-bak 只限一次性遷移)。",
           "source": [
             "C:/ai_workspace/CLAUDE.md",
             "_registry/room-self-heal-protocol.md §4"
